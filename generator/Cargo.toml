@@ -1,0 +1,22 @@
+[package]
+name = "generator"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "generator"
+path = "src/bin/main.rs"
+
+[dependencies]
+common = { path = "../common" }
+grass = "0.13.4"
+pulldown-cmark = "0.13.1"
+serde = { workspace = true }
+tokio = { version = "1.50.0", features = ["full"] }
+toml = "1.0.6"
+yew = { version = "0.23.0", features = ["ssr"] }

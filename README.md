@@ -1,0 +1,1 @@
+# Yew Static Site Generator (SSG) Template

@@ -1,0 +1,16 @@
+# gitignore configuration for yew-ssg-template
+
+# IDE settings
+.vscode
+
+# LLM settings
+
+# LLM Plans
+plans/
+
+# Environment variables
+.env
+
+# Build Artifacts
+dist/
+target/
