@@ -5,8 +5,9 @@
 
 # LLM settings
 
-# LLM Plans
-plans/
+# LLM Plans and Context
+.context/
+.plans/
 
 # Environment variables
 .env
