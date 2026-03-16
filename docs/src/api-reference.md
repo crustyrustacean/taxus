@@ -57,6 +57,107 @@ pub struct BuildConfig {
 
 Implements `Default` with sensible defaults.
 
+### `content`
+
+Content types for parsing and managing Markdown files with TOML frontmatter.
+
+#### `Frontmatter`
+
+Page metadata parsed from TOML between `+++` markers.
+
+```rust
+pub struct Frontmatter {
+    pub title: String,
+    pub description: Option<String>,
+    pub date: Option<NaiveDate>,
+    pub template: Option<String>,
+    pub draft: bool,
+    pub extra: Option<toml::Value>,
+}
+```
+
+Implements `Default` with empty values and `draft: false`.
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `from_str(s: &str) -> Result<Self, toml::de::Error>` | Parse frontmatter from TOML string |
+| `template(&self) -> &str` | Get template name (defaults to "page.html") |
+
+#### `Page`
+
+A single page with frontmatter and Markdown content.
+
+```rust
+pub struct Page {
+    pub frontmatter: Frontmatter,
+    pub path: String,
+    pub source: PathBuf,
+    pub raw_content: String,
+    pub content: Option<String>,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `from_file<P: AsRef<Path>>(path: P) -> Result<Self>` | Parse a page from a Markdown file |
+| `from_str(content: &str, source: &str) -> Result<Self>` | Parse a page from a string |
+| `template(&self) -> &str` | Get the template name for this page |
+| `is_draft(&self) -> bool` | Check if this page is a draft |
+
+#### `Section`
+
+A section containing multiple pages (e.g., a blog).
+
+```rust
+pub struct Section {
+    pub frontmatter: Frontmatter,
+    pub path: String,
+    pub source: PathBuf,
+    pub pages: Vec<Page>,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `from_dir<P: AsRef<Path>>(dir: P) -> Result<Self>` | Create a section from a directory |
+| `add_page(&mut self, page: Page)` | Add a page to this section |
+| `sort_by_date(&mut self)` | Sort pages by date (newest first) |
+| `template(&self) -> &str` | Get the template name for this section |
+
+#### `ContentSource` Trait
+
+Trait for loading content from various sources.
+
+```rust
+pub trait ContentSource: Send + Sync {
+    fn load(&self, path: &Path) -> Result<String>;
+    fn exists(&self, path: &Path) -> bool;
+    fn list(&self) -> Result<Vec<PathBuf>>;
+}
+```
+
+#### `FilesystemContentSource`
+
+Default filesystem-based content source.
+
+```rust
+pub struct FilesystemContentSource {
+    root: PathBuf,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new<P: Into<PathBuf>>(root: P) -> Self` | Create a new filesystem content source |
+
 ### `error`
 
 Error types for the library.
@@ -68,6 +169,7 @@ Main error type.
 ```rust
 pub enum GeneratorError {
     Config(ConfigError),
+    Content(ContentError),
     Io { path: PathBuf, source: std::io::Error },
 }
 ```
@@ -87,6 +189,21 @@ pub enum ConfigError {
 }
 ```
 
+#### `ContentError`
+
+Content-related errors.
+
+```rust
+pub enum ContentError {
+    NotFound(PathBuf),
+    InvalidFrontmatter { path: PathBuf, source: toml::de::Error },
+    UnclosedFrontmatter(PathBuf),
+    Io { path: PathBuf, source: std::io::Error },
+    MissingField { field: &'static str, path: PathBuf },
+    InvalidPath(String),
+}
+```
+
 #### `Result`
 
 Result alias for generator operations.
@@ -100,8 +217,14 @@ pub type Result<T> = std::result::Result<T, GeneratorError>;
 The library re-exports commonly used types:
 
 ```rust
+// Configuration
 pub use config::{BuildConfig, SiteConfig, SiteMeta};
-pub use error::{GeneratorError, Result};
+
+// Content
+pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+
+// Errors
+pub use error::{ContentError, GeneratorError, Result};
 ```
 
 ## Usage Examples
@@ -120,6 +243,67 @@ fn main() -> Result<()> {
     
     // Programmatic creation
     let config = SiteConfig::new("My Site", "https://example.com");
+    
+    Ok(())
+}
+```
+
+### Loading a Page
+
+```rust
+use generator::{Page, Result};
+
+fn main() -> Result<()> {
+    // Load from file
+    let page = Page::from_file("content/about.md")?;
+    
+    println!("Title: {}", page.frontmatter.title);
+    println!("Path: {}", page.path);
+    println!("Draft: {}", page.is_draft());
+    
+    Ok(())
+}
+```
+
+### Loading a Section
+
+```rust
+use generator::{Section, Result};
+
+fn main() -> Result<()> {
+    let mut section = Section::from_dir("content/blog")?;
+    
+    // Add pages and sort by date
+    section.sort_by_date();
+    
+    println!("Section: {}", section.frontmatter.title);
+    for page in &section.pages {
+        println!("  - {}", page.frontmatter.title);
+    }
+    
+    Ok(())
+}
+```
+
+### Using ContentSource
+
+```rust
+use generator::{ContentSource, FilesystemContentSource, Result};
+use std::path::PathBuf;
+
+fn list_content() -> Result<()> {
+    let source = FilesystemContentSource::new("content");
+    
+    // List all markdown files
+    for file in source.list()? {
+        println!("Found: {}", file.display());
+    }
+    
+    // Check if file exists
+    if source.exists(&PathBuf::from("about.md")) {
+        let content = source.load(&PathBuf::from("about.md"))?;
+        println!("Content length: {} bytes", content.len());
+    }
     
     Ok(())
 }
@@ -144,9 +328,9 @@ fn validate_site() -> Result<(), String> {
 ### Error Handling
 
 ```rust
-use generator::{SiteConfig, GeneratorError, ConfigError};
+use generator::{SiteConfig, Page, GeneratorError, ConfigError, ContentError};
 
-fn load_config() {
+fn load_site() {
     match SiteConfig::from_dir(".") {
         Ok(config) => {
             println!("Site: {}", config.site.name);
@@ -156,6 +340,23 @@ fn load_config() {
         }
         Err(GeneratorError::Config(ConfigError::Parse(e))) => {
             eprintln!("Parse error: {}", e);
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+        }
+    }
+}
+
+fn load_page() {
+    match Page::from_file("content/about.md") {
+        Ok(page) => {
+            println!("Title: {}", page.frontmatter.title);
+        }
+        Err(GeneratorError::Content(ContentError::NotFound(path))) => {
+            eprintln!("Page not found: {}", path.display());
+        }
+        Err(GeneratorError::Content(ContentError::InvalidFrontmatter { path, source })) => {
+            eprintln!("Invalid frontmatter in {}: {}", path.display(), source);
         }
         Err(e) => {
             eprintln!("Error: {}", e);
@@ -209,3 +410,5 @@ The following are considered stable and will not change in minor versions:
 - Error type hierarchy
 - `SiteConfig::from_file` and `from_dir` signatures
 - `BuildConfig::default()` behavior
+- `Page::from_file` and `Page::from_str` signatures
+- `Frontmatter::from_str` signature

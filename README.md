@@ -6,7 +6,8 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 
 - **Static Site Generation**: Pre-rendered HTML pages for optimal performance and SEO
 - **Yew Components**: Reusable UI components built with Yew's functional component API
-- **Markdown Content**: Write content in Markdown files for easy content management
+- **Markdown Content**: Write content in Markdown files with TOML frontmatter
+- **Content System**: Pages, sections, and draft support with date-based sorting
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
 - **Reusable Library**: The generator is available as a library for programmatic use
@@ -24,6 +25,7 @@ yew-ssg/
 │   │   ├── lib.rs    # Library entry point
 │   │   ├── config.rs # Configuration types
 │   │   ├── error.rs  # Error handling
+│   │   ├── content/  # Content parsing (Page, Section, Frontmatter)
 │   │   └── bin/      # CLI binary
 │   └── tests/        # Integration tests
 ├── content/          # Markdown content files
@@ -62,12 +64,14 @@ cd client && trunk serve
 - **client**: The WebAssembly client application built with Yew
 - **common**: Shared components and utilities used by both client and generator
 - **generator**: A library and binary for static site generation
-  - `generator` (library): Reusable SSG library with configuration and error handling
+  - `generator` (library): Reusable SSG library with configuration, error handling, and content parsing
   - `generator` (binary): CLI tool that pre-renders pages
 
 ## Generator Library
 
-The generator is now available as a library for programmatic use:
+The generator is available as a library for programmatic use:
+
+### Loading Configuration
 
 ```rust
 use generator::{SiteConfig, Result};
@@ -77,6 +81,35 @@ fn main() -> Result<()> {
     let config = SiteConfig::from_dir(".")?;
     
     println!("Building site: {}", config.site.name);
+    Ok(())
+}
+```
+
+### Loading Content
+
+```rust
+use generator::{Page, Section, ContentSource, FilesystemContentSource, Result};
+
+fn main() -> Result<()> {
+    // Load a page from a file
+    let page = Page::from_file("content/about.md")?;
+    println!("Title: {}", page.frontmatter.title);
+    println!("Is draft: {}", page.is_draft());
+    
+    // Load a section (e.g., blog)
+    let mut section = Section::from_dir("content/blog")?;
+    section.sort_by_date();
+    
+    for page in &section.pages {
+        println!("Post: {}", page.frontmatter.title);
+    }
+    
+    // List all content files
+    let source = FilesystemContentSource::new("content");
+    for file in source.list()? {
+        println!("Found: {}", file.display());
+    }
+    
     Ok(())
 }
 ```
@@ -98,6 +131,44 @@ output_dir = "dist"
 static_dir = "static"
 styles_dir = "styles"
 templates_dir = "templates"
+```
+
+### Content Format
+
+Content files use Markdown with TOML frontmatter:
+
+```markdown
++++
+title = "My Page"
+description = "A brief description"
+date = 2024-01-15
+template = "custom.html"
+draft = false
+
+[extra]
+author = "John Doe"
+tags = ["rust", "web"]
++++
+
+# Page Content
+
+Your markdown content here.
+```
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- [Introduction](docs/src/introduction.md)
+- [Getting Started](docs/src/getting-started.md)
+- [Configuration](docs/src/configuration.md)
+- [Content](docs/src/content.md)
+- [API Reference](docs/src/api-reference.md)
+
+Build the documentation with [mdBook](https://rust-lang.github.io/mdBook/):
+
+```bash
+cd docs && mdbook serve
 ```
 
 ## License

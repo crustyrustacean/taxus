@@ -1,0 +1,3 @@
+[site]
+name = "Content Test Site"
+base_url = "https://content.example.com"
