@@ -1,0 +1,3 @@
+[site]
+name = "Minimal Site"
+base_url = "https://minimal.example.com"

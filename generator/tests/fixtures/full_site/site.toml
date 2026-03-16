@@ -1,0 +1,12 @@
+[site]
+name = "Full Site"
+base_url = "https://full.example.com"
+description = "A fully configured site"
+author = "Test Author"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"

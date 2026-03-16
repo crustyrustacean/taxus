@@ -8,6 +8,10 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 
+[lib]
+name = "generator"
+path = "src/lib.rs"
+
 [[bin]]
 name = "generator"
 path = "src/bin/main.rs"
@@ -16,7 +20,11 @@ path = "src/bin/main.rs"
 common = { path = "../common" }
 grass = "0.13.4"
 pulldown-cmark = "0.13.1"
-serde = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+thiserror = "2.0"
 tokio = { version = "1.50.0", features = ["full"] }
 toml = "1.0.6"
 yew = { version = "0.23.0", features = ["ssr"] }
+
+[dev-dependencies]
+tempfile = "3.10"

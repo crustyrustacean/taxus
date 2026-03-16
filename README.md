@@ -9,6 +9,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Markdown Content**: Write content in Markdown files for easy content management
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
+- **Reusable Library**: The generator is available as a library for programmatic use
 
 ## Project Structure
 
@@ -18,7 +19,13 @@ yew-ssg/
 ├── common/           # Shared components and code
 │   └── src/
 │       └── components/  # Reusable page components
-├── generator/        # Static site generator binary
+├── generator/        # Static site generator
+│   ├── src/
+│   │   ├── lib.rs    # Library entry point
+│   │   ├── config.rs # Configuration types
+│   │   ├── error.rs  # Error handling
+│   │   └── bin/      # CLI binary
+│   └── tests/        # Integration tests
 ├── content/          # Markdown content files
 │   └── pages/        # Page content in Markdown
 ├── static/           # Static assets (images, scripts)
@@ -54,7 +61,44 @@ cd client && trunk serve
 
 - **client**: The WebAssembly client application built with Yew
 - **common**: Shared components and utilities used by both client and generator
-- **generator**: The static site generator binary that pre-renders pages
+- **generator**: A library and binary for static site generation
+  - `generator` (library): Reusable SSG library with configuration and error handling
+  - `generator` (binary): CLI tool that pre-renders pages
+
+## Generator Library
+
+The generator is now available as a library for programmatic use:
+
+```rust
+use generator::{SiteConfig, Result};
+
+fn main() -> Result<()> {
+    // Load configuration from a directory
+    let config = SiteConfig::from_dir(".")?;
+    
+    println!("Building site: {}", config.site.name);
+    Ok(())
+}
+```
+
+### Configuration
+
+The generator supports configuration via `site.toml`:
+
+```toml
+[site]
+name = "My Site"
+base_url = "https://example.com"
+description = "A description"
+author = "Author Name"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+```
 
 ## License
 

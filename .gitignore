@@ -9,6 +9,9 @@
 .context/
 .plans/
 
+# Documentation
+docs/book/
+
 # Environment variables
 .env
 
