@@ -1,0 +1,3 @@
+[site]
+name = "Template Test Site"
+base_url = "https://template.example.com"

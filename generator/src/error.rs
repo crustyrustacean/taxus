@@ -16,6 +16,10 @@ pub enum GeneratorError {
     #[error("Content error: {0}")]
     Content(#[from] ContentError),
 
+    /// Template-related errors
+    #[error("Template error: {0}")]
+    Template(#[from] TemplateError),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -23,6 +27,37 @@ pub enum GeneratorError {
         #[source]
         source: std::io::Error,
     },
+}
+
+/// Template-related errors.
+#[derive(Debug, thiserror::Error)]
+pub enum TemplateError {
+    /// Template file not found
+    #[error("Template not found: {0}")]
+    NotFound(String),
+
+    /// Template rendering failed
+    #[error("Template rendering failed: {0}")]
+    Render(String),
+
+    /// Invalid template syntax
+    #[error("Invalid template syntax in {template}: {message}")]
+    Syntax {
+        template: String,
+        message: String,
+    },
+
+    /// I/O error reading template
+    #[error("I/O error reading template {path}: {source}")]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    /// Template directory not found
+    #[error("Template directory not found: {0}")]
+    DirNotFound(PathBuf),
 }
 
 /// Content-related errors.
@@ -166,5 +201,49 @@ mod tests {
         let content_err = ContentError::NotFound(PathBuf::from("test.md"));
         let gen_err: GeneratorError = content_err.into();
         assert!(matches!(gen_err, GeneratorError::Content(_)));
+    }
+
+    // TemplateError tests
+
+    #[test]
+    fn test_template_error_not_found() {
+        let err = TemplateError::NotFound("missing.html".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("Template not found"));
+        assert!(msg.contains("missing.html"));
+    }
+
+    #[test]
+    fn test_template_error_render() {
+        let err = TemplateError::Render("Failed to render".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("rendering failed"));
+    }
+
+    #[test]
+    fn test_template_error_syntax() {
+        let err = TemplateError::Syntax {
+            template: "bad.html".to_string(),
+            message: "Unclosed tag".to_string(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("Invalid template syntax"));
+        assert!(msg.contains("bad.html"));
+        assert!(msg.contains("Unclosed tag"));
+    }
+
+    #[test]
+    fn test_template_error_dir_not_found() {
+        let err = TemplateError::DirNotFound(PathBuf::from("templates"));
+        let msg = err.to_string();
+        assert!(msg.contains("Template directory not found"));
+        assert!(msg.contains("templates"));
+    }
+
+    #[test]
+    fn test_generator_error_from_template() {
+        let template_err = TemplateError::NotFound("test.html".to_string());
+        let gen_err: GeneratorError = template_err.into();
+        assert!(matches!(gen_err, GeneratorError::Template(_)));
     }
 }

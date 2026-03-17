@@ -5,6 +5,78 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-03-17
+
+### Added
+
+#### Generator Library Refactor (Phase 4: Template System)
+
+- **Template Module Structure**: Created template rendering module for the generator
+  - `generator/src/templates/mod.rs`: Template module with public API re-exports
+  - `generator/src/templates/context.rs`: Context types for template rendering
+  - `generator/src/templates/renderer.rs`: `TemplateRenderer` trait and `TeraRenderer` implementation
+
+- **Template Context Types**: Strongly-typed context for template rendering
+  - `TemplateContext`: Main context container with builder pattern methods
+  - `PageContext`: Page-specific variables (title, description, path, content, date, draft)
+  - `SectionContext`: Section-specific variables (title, path, pages list)
+  - `SiteContext`: Site-wide configuration (name, base_url, description, author)
+  - `extra`: HashMap for custom variables from frontmatter
+
+- **TemplateRenderer Trait**: Abstraction for template backends
+  - `render`: Render template with context
+  - `register_template`: Add template from string
+  - `has_template`: Check template existence
+  - `load_templates`: Load templates from directory
+
+- **TeraRenderer Implementation**: Tera-based template rendering
+  - Template loading from directories (`**/*.html` glob)
+  - Template registration from strings
+  - Template inheritance (`{% extends "base.html" %}`)
+  - Blocks, loops, and conditionals
+  - Filters including `safe` for unescaped HTML
+  - Context serialization for Tera
+
+- **Error Types**: Template-specific error handling
+  - `TemplateError::NotFound`: Template not found
+  - `TemplateError::Render`: Rendering failed
+  - `TemplateError::Syntax`: Invalid template syntax
+  - `TemplateError::Io`: I/O errors with path context
+  - `TemplateError::DirNotFound`: Template directory missing
+
+- **Testing Infrastructure**: Comprehensive test coverage
+  - 74 unit tests for error types, context serialization, and template rendering
+  - 16 integration tests for template rendering scenarios
+  - Test fixtures for template site with base, page, and section templates
+
+- **Dependencies**: Added new dependencies
+  - `tera = "1.20"` for template rendering
+  - `serde_json = "1.0"` for JSON serialization
+
+### Changed
+
+- **generator/src/lib.rs**: Added templates module and re-exports
+  - Re-exports: `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext`, `TemplateRenderer`, `TeraRenderer`, `TemplateError`
+
+- **generator/src/error.rs**: Added `TemplateError` type
+  - Added `Template` variant to `GeneratorError`
+  - Added 5 unit tests for template error types
+
+- **docs/src/api-reference.md**: Updated with template module documentation
+  - Added `TemplateRenderer`, `TeraRenderer` documentation
+  - Added context types documentation
+  - Added template usage examples
+
+- **README.md**: Updated with template system features
+  - Added template system to features list
+  - Added template rendering examples
+
+### Test Coverage
+
+- Unit tests: 74 tests covering error types, context serialization, and template rendering
+- Integration tests: 16 tests for template rendering scenarios
+- Total: 105 tests (74 unit + 31 integration)
+
 ## [0.1.2] - 2026-03-16
 
 ### Added

@@ -28,8 +28,12 @@
 pub mod config;
 pub mod content;
 pub mod error;
+pub mod templates;
 
 // Re-exports for convenience
 pub use config::{BuildConfig, SiteConfig, SiteMeta};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
-pub use error::{ContentError, GeneratorError, Result};
+pub use error::{ContentError, GeneratorError, Result, TemplateError};
+pub use templates::{
+    PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
+};

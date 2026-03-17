@@ -8,6 +8,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Yew Components**: Reusable UI components built with Yew's functional component API
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Content System**: Pages, sections, and draft support with date-based sorting
+- **Template System**: Flexible Tera-based templates with inheritance and custom context
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
 - **Reusable Library**: The generator is available as a library for programmatic use
@@ -26,6 +27,7 @@ yew-ssg/
 │   │   ├── config.rs # Configuration types
 │   │   ├── error.rs  # Error handling
 │   │   ├── content/  # Content parsing (Page, Section, Frontmatter)
+│   │   ├── templates/ # Template rendering (TeraRenderer, Context types)
 │   │   └── bin/      # CLI binary
 │   └── tests/        # Integration tests
 ├── content/          # Markdown content files
@@ -109,6 +111,61 @@ fn main() -> Result<()> {
     for file in source.list()? {
         println!("Found: {}", file.display());
     }
+    
+    Ok(())
+}
+```
+
+### Template Rendering
+
+```rust
+use generator::{
+    TeraRenderer, TemplateRenderer, TemplateContext,
+    SiteContext, PageContext, SectionContext,
+    Result
+};
+
+fn main() -> Result<()> {
+    // Create a template renderer
+    let mut renderer = TeraRenderer::new()?;
+    
+    // Register templates
+    renderer.register_template("base.html", r#"
+        <html>
+            <head><title>{% block title %}{% endblock %}</title></head>
+            <body>{% block content %}{% endblock %}</body>
+        </html>
+    "#)?;
+    
+    renderer.register_template("page.html", r#"
+        {% extends "base.html" %}
+        {% block title %}{{ page.title }}{% endblock %}
+        {% block content %}{{ page.content | safe }}{% endblock %}
+    "#)?;
+    
+    // Create context
+    let site = SiteContext {
+        name: "My Site".to_string(),
+        base_url: "https://example.com".to_string(),
+        description: None,
+        author: None,
+    };
+    
+    let page = PageContext {
+        title: "Hello World".to_string(),
+        description: None,
+        path: "/hello/".to_string(),
+        content: "<p>Welcome!</p>".to_string(),
+        raw_content: "Welcome!".to_string(),
+        date: None,
+        draft: false,
+    };
+    
+    let ctx = TemplateContext::new(site).with_page(page);
+    
+    // Render the template
+    let html = renderer.render("page.html", &ctx)?;
+    println!("{}", html);
     
     Ok(())
 }

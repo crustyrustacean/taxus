@@ -204,12 +204,121 @@ pub enum ContentError {
 }
 ```
 
+#### `TemplateError`
+
+Template-related errors.
+
+```rust
+pub enum TemplateError {
+    NotFound(String),
+    Render(String),
+    Syntax { template: String, message: String },
+    Io { path: PathBuf, source: std::io::Error },
+    DirNotFound(PathBuf),
+}
+```
+
 #### `Result`
 
 Result alias for generator operations.
 
 ```rust
 pub type Result<T> = std::result::Result<T, GeneratorError>;
+```
+
+### `templates`
+
+Template rendering types for Tera-based templates.
+
+#### `TemplateRenderer` Trait
+
+Trait for template rendering backends.
+
+```rust
+pub trait TemplateRenderer: Send + Sync {
+    fn render(&self, template: &str, context: &TemplateContext) -> Result<String, TemplateError>;
+    fn register_template(&mut self, name: &str, content: &str) -> Result<(), TemplateError>;
+    fn has_template(&self, name: &str) -> bool;
+    fn load_templates(&mut self, dir: &Path) -> Result<(), TemplateError>;
+}
+```
+
+#### `TeraRenderer`
+
+Tera-based template renderer.
+
+```rust
+pub struct TeraRenderer { /* ... */ }
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Result<Self, TemplateError>` | Create a new empty renderer |
+| `from_dir<P: AsRef<Path>>(dir: P) -> Result<Self, TemplateError>` | Create renderer and load templates from directory |
+
+#### `TemplateContext`
+
+Context for template rendering containing all available variables.
+
+```rust
+pub struct TemplateContext {
+    pub page: Option<PageContext>,
+    pub section: Option<SectionContext>,
+    pub site: SiteContext,
+    pub extra: HashMap<String, serde_json::Value>,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new(site: SiteContext) -> Self` | Create a new context with site defaults |
+| `with_page(self, page: PageContext) -> Self` | Add page context |
+| `with_section(self, section: SectionContext) -> Self` | Add section context |
+| `with_extra(self, extra: HashMap<String, JsonValue>) -> Self` | Add extra variables |
+
+#### `PageContext`
+
+Page-specific context for templates.
+
+```rust
+pub struct PageContext {
+    pub title: String,
+    pub description: Option<String>,
+    pub path: String,
+    pub content: String,
+    pub raw_content: String,
+    pub date: Option<String>,
+    pub draft: bool,
+}
+```
+
+#### `SectionContext`
+
+Section-specific context for templates.
+
+```rust
+pub struct SectionContext {
+    pub title: String,
+    pub path: String,
+    pub pages: Vec<PageContext>,
+}
+```
+
+#### `SiteContext`
+
+Site-wide context for templates.
+
+```rust
+pub struct SiteContext {
+    pub name: String,
+    pub base_url: String,
+    pub description: Option<String>,
+    pub author: Option<String>,
+}
 ```
 
 ## Re-exports
@@ -223,8 +332,14 @@ pub use config::{BuildConfig, SiteConfig, SiteMeta};
 // Content
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
 
+// Templates
+pub use templates::{
+    PageContext, SectionContext, SiteContext, TemplateContext,
+    TemplateRenderer, TeraRenderer,
+};
+
 // Errors
-pub use error::{ContentError, GeneratorError, Result};
+pub use error::{ContentError, GeneratorError, Result, TemplateError};
 ```
 
 ## Usage Examples
@@ -383,6 +498,109 @@ if let Some(desc) = &config.site.description {
 // Build configuration
 println!("Content: {:?}", config.build.content_dir);
 println!("Output: {:?}", config.build.output_dir);
+```
+
+### Template Rendering
+
+```rust
+use generator::{
+    TeraRenderer, TemplateRenderer, TemplateContext,
+    SiteContext, PageContext, Result
+};
+
+fn render_page() -> Result<()> {
+    // Create renderer and load templates
+    let mut renderer = TeraRenderer::new()?;
+    renderer.register_template("page.html", r#"
+        <article>
+            <h1>{{ page.title }}</h1>
+            {{ page.content | safe }}
+        </article>
+    "#)?;
+    
+    // Create context
+    let site = SiteContext {
+        name: "My Site".to_string(),
+        base_url: "https://example.com".to_string(),
+        description: None,
+        author: None,
+    };
+    
+    let page = PageContext {
+        title: "Hello".to_string(),
+        description: None,
+        path: "/hello/".to_string(),
+        content: "<p>World</p>".to_string(),
+        raw_content: "World".to_string(),
+        date: None,
+        draft: false,
+    };
+    
+    let ctx = TemplateContext::new(site).with_page(page);
+    
+    // Render
+    let html = renderer.render("page.html", &ctx)?;
+    println!("{}", html);
+    
+    Ok(())
+}
+```
+
+### Loading Templates from Directory
+
+```rust
+use generator::{TeraRenderer, TemplateRenderer, Result};
+
+fn load_templates() -> Result<()> {
+    // Load all .html templates from directory
+    let renderer = TeraRenderer::from_dir("templates")?;
+    
+    // Check if template exists
+    if renderer.has_template("base.html") {
+        println!("Base template loaded");
+    }
+    
+    Ok(())
+}
+```
+
+### Template Inheritance
+
+```rust
+use generator::{TeraRenderer, TemplateRenderer, TemplateContext, SiteContext, Result};
+
+fn render_with_inheritance() -> Result<()> {
+    let mut renderer = TeraRenderer::new()?;
+    
+    // Base template with blocks
+    renderer.register_template("base.html", r#"
+        <!DOCTYPE html>
+        <html>
+        <head>{% block title %}{% endblock %}</head>
+        <body>{% block content %}{% endblock %}</body>
+        </html>
+    "#)?;
+    
+    // Child template extending base
+    renderer.register_template("page.html", r#"
+        {% extends "base.html" %}
+        {% block title %}{{ page.title }}{% endblock %}
+        {% block content %}{{ page.content | safe }}{% endblock %}
+    "#)?;
+    
+    let site = SiteContext {
+        name: "My Site".to_string(),
+        base_url: "https://example.com".to_string(),
+        description: None,
+        author: None,
+    };
+    
+    // Render child template
+    let ctx = TemplateContext::new(site);
+    let html = renderer.render("page.html", &ctx)?;
+    
+    Ok(())
+}
 ```
 
 ## Feature Flags
