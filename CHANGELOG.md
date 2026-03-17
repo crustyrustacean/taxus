@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-03-17
+
+### Added
+
+#### Generator Library Refactor (Phase 5: Asset Processing)
+
+- **Asset Module Structure**: Created asset processing module for the generator
+  - `generator/src/assets/mod.rs`: Asset module with `AssetProcessor` trait and `AssetReport`
+  - `generator/src/assets/styles.rs`: `ScssProcessor` for compiling SCSS/SASS to CSS
+  - `generator/src/assets/static_files.rs`: `StaticCopier` for copying static files
+
+- **AssetProcessor Trait**: Abstraction for asset processing backends
+  - `process`: Process assets from source to destination
+  - `handles`: Check if processor handles a given file type
+  - `name`: Get processor name for logging
+
+- **ScssProcessor Implementation**: SCSS/SASS compilation using grass crate
+  - Compile SCSS to CSS with variable resolution
+  - Support for `@import` with include paths
+  - Optional minification (compressed output style)
+  - Automatic `.scss` → `.css` extension change
+
+- **StaticCopier Implementation**: Static file copying
+  - Copy files preserving directory structure
+  - Exclusion patterns (glob-style: `*.scss`, `**/*.scss`)
+  - Binary file support
+  - Nested directory handling
+
+- **AssetReport**: Processing statistics and error collection
+  - `files_processed`: Count of successfully processed files
+  - `files_skipped`: Count of skipped files (excluded)
+  - `errors`: List of error messages
+  - `merge`: Combine reports from multiple processors
+
+- **Error Types**: Asset-specific error handling
+  - `AssetError::NotFound`: Asset file not found
+  - `AssetError::Scss`: SCSS compilation error
+  - `AssetError::Io`: I/O errors with path context
+  - `AssetError::CopyFailed`: File copy failure
+
+- **Testing Infrastructure**: Comprehensive test coverage
+  - 21 unit tests for asset processing
+  - 14 integration tests for asset processing scenarios
+  - Test fixtures for asset site with SCSS and static files
+
+### Changed
+
+- **generator/src/lib.rs**: Added assets module and re-exports
+  - Re-exports: `AssetProcessor`, `AssetReport`, `ScssProcessor`, `StaticCopier`, `AssetError`
+
+- **generator/src/error.rs**: Added `AssetError` type
+  - Added `Asset` variant to `GeneratorError`
+  - Added 5 unit tests for asset error types
+
+- **docs/src/api-reference.md**: Updated with asset module documentation
+  - Added `AssetProcessor`, `ScssProcessor`, `StaticCopier` documentation
+  - Added `AssetReport` documentation
+  - Added asset processing examples
+
+- **README.md**: Updated with asset processing features
+  - Added asset processing to features list
+  - Added SCSS compilation examples
+
+### Test Coverage
+
+- Unit tests: 108 tests (21 new for assets)
+- Integration tests: 14 new tests for asset processing
+- Total: 153 tests (108 unit + 45 integration)
+
 ## [0.1.3] - 2026-03-17
 
 ### Added

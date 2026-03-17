@@ -20,6 +20,10 @@ pub enum GeneratorError {
     #[error("Template error: {0}")]
     Template(#[from] TemplateError),
 
+    /// Asset-related errors
+    #[error("Asset error: {0}")]
+    Asset(#[from] AssetError),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -117,6 +121,34 @@ pub enum ConfigError {
     /// Missing required field
     #[error("Missing required field '{field}' in configuration")]
     MissingField { field: &'static str },
+}
+
+/// Asset-related errors.
+#[derive(Debug, thiserror::Error)]
+pub enum AssetError {
+    /// Asset file not found
+    #[error("Asset not found: {0}")]
+    NotFound(PathBuf),
+
+    /// SCSS compilation error
+    #[error("SCSS compilation error: {0}")]
+    Scss(String),
+
+    /// I/O error with path context
+    #[error("I/O error for {path}: {source}")]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    /// File copy failure
+    #[error("Failed to copy from '{src}' to '{dest}': {reason}")]
+    CopyFailed {
+        src: PathBuf,
+        dest: PathBuf,
+        reason: String,
+    },
 }
 
 /// Result alias for generator operations.
@@ -245,5 +277,57 @@ mod tests {
         let template_err = TemplateError::NotFound("test.html".to_string());
         let gen_err: GeneratorError = template_err.into();
         assert!(matches!(gen_err, GeneratorError::Template(_)));
+    }
+
+    // AssetError tests
+
+    #[test]
+    fn test_asset_error_not_found() {
+        let err = AssetError::NotFound(PathBuf::from("static/missing.png"));
+        let msg = err.to_string();
+        assert!(msg.contains("Asset not found"));
+        assert!(msg.contains("static/missing.png"));
+    }
+
+    #[test]
+    fn test_asset_error_scss() {
+        let err = AssetError::Scss("Invalid syntax at line 5".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("SCSS compilation error"));
+        assert!(msg.contains("Invalid syntax at line 5"));
+    }
+
+    #[test]
+    fn test_asset_error_io() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
+        let err = AssetError::Io {
+            path: PathBuf::from("static/file.txt"),
+            source: io_err,
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("I/O error"));
+        assert!(msg.contains("static/file.txt"));
+        assert!(msg.contains("access denied"));
+    }
+
+    #[test]
+    fn test_asset_error_copy_failed() {
+        let err = AssetError::CopyFailed {
+            src: PathBuf::from("static/file.txt"),
+            dest: PathBuf::from("dist/static/file.txt"),
+            reason: "Permission denied".to_string(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("Failed to copy"));
+        assert!(msg.contains("static/file.txt"));
+        assert!(msg.contains("dist/static/file.txt"));
+        assert!(msg.contains("Permission denied"));
+    }
+
+    #[test]
+    fn test_generator_error_from_asset() {
+        let asset_err = AssetError::NotFound(PathBuf::from("test.png"));
+        let gen_err: GeneratorError = asset_err.into();
+        assert!(matches!(gen_err, GeneratorError::Asset(_)));
     }
 }

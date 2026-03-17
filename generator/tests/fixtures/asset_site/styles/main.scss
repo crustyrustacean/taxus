@@ -1,0 +1,25 @@
+// Main stylesheet
+@import 'variables';
+
+body {
+    font-family: $font-family;
+    color: $text-color;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h1, h2, h3 {
+    margin-top: 1.5em;
+    color: $heading-color;
+}
+
+a {
+    color: $link-color;
+    text-decoration: none;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+}

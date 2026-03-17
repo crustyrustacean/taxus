@@ -9,6 +9,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Content System**: Pages, sections, and draft support with date-based sorting
 - **Template System**: Flexible Tera-based templates with inheritance and custom context
+- **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
 - **Reusable Library**: The generator is available as a library for programmatic use
@@ -26,6 +27,7 @@ yew-ssg/
 │   │   ├── lib.rs    # Library entry point
 │   │   ├── config.rs # Configuration types
 │   │   ├── error.rs  # Error handling
+│   │   ├── assets/   # Asset processing (ScssProcessor, StaticCopier)
 │   │   ├── content/  # Content parsing (Page, Section, Frontmatter)
 │   │   ├── templates/ # Template rendering (TeraRenderer, Context types)
 │   │   └── bin/      # CLI binary
@@ -166,6 +168,42 @@ fn main() -> Result<()> {
     // Render the template
     let html = renderer.render("page.html", &ctx)?;
     println!("{}", html);
+    
+    Ok(())
+}
+```
+
+### Asset Processing
+
+```rust
+use generator::{
+    AssetProcessor, ScssProcessor, StaticCopier,
+    Result
+};
+use std::path::Path;
+
+fn main() -> Result<()> {
+    // Compile SCSS to CSS
+    let scss_processor = ScssProcessor::with_include_paths(
+        vec![Path::new("styles").to_path_buf()]
+    ).with_minify(true);
+    
+    let report = scss_processor.process(
+        Path::new("styles/main.scss"),
+        Path::new("dist/styles/main.css")
+    )?;
+    println!("Processed {} SCSS files", report.files_processed);
+    
+    // Copy static files with exclusions
+    let static_copier = StaticCopier::with_exclusions(
+        vec!["*.scss".to_string()]
+    );
+    
+    let report = static_copier.process(
+        Path::new("static"),
+        Path::new("dist/static")
+    )?;
+    println!("Copied {} static files", report.files_processed);
     
     Ok(())
 }

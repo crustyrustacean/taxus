@@ -218,6 +218,19 @@ pub enum TemplateError {
 }
 ```
 
+#### `AssetError`
+
+Asset-related errors.
+
+```rust
+pub enum AssetError {
+    NotFound(PathBuf),
+    Scss(String),
+    Io { path: PathBuf, source: std::io::Error },
+    CopyFailed { src: PathBuf, dest: PathBuf, reason: String },
+}
+```
+
 #### `Result`
 
 Result alias for generator operations.
@@ -225,6 +238,82 @@ Result alias for generator operations.
 ```rust
 pub type Result<T> = std::result::Result<T, GeneratorError>;
 ```
+
+### `assets`
+
+Asset processing types for SCSS compilation and static file copying.
+
+#### `AssetProcessor` Trait
+
+Trait for processing assets from source to destination.
+
+```rust
+pub trait AssetProcessor: Send + Sync {
+    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError>;
+    fn handles(&self, path: &Path) -> bool;
+    fn name(&self) -> &'static str;
+}
+```
+
+#### `ScssProcessor`
+
+SCSS/SASS processor for compiling stylesheets.
+
+```rust
+pub struct ScssProcessor {
+    include_paths: Vec<PathBuf>,
+    minify: bool,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create a new SCSS processor with default settings |
+| `with_include_paths(paths: Vec<PathBuf>) -> Self` | Create processor with include paths for `@import` |
+| `with_minify(minify: bool) -> Self` | Enable or disable CSS minification |
+
+#### `StaticCopier`
+
+Static file copier for assets that need no processing.
+
+```rust
+pub struct StaticCopier {
+    exclude_patterns: Vec<String>,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create a new static file copier |
+| `with_exclusions(patterns: Vec<String>) -> Self` | Create copier with exclusion patterns |
+
+#### `AssetReport`
+
+Report of processed assets.
+
+```rust
+pub struct AssetReport {
+    pub files_processed: usize,
+    pub files_skipped: usize,
+    pub errors: Vec<String>,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create a new empty report |
+| `add_processed(&mut self)` | Add a processed file to the report |
+| `add_skipped(&mut self)` | Add a skipped file to the report |
+| `add_error(&mut self, error: AssetError)` | Add an error to the report |
+| `has_errors(&self) -> bool` | Check if the report has any errors |
+| `total_files(&self) -> usize` | Get total files (processed + skipped) |
+| `merge(&mut self, other: AssetReport)` | Merge another report into this one |
 
 ### `templates`
 
@@ -338,8 +427,11 @@ pub use templates::{
     TemplateRenderer, TeraRenderer,
 };
 
+// Assets
+pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+
 // Errors
-pub use error::{ContentError, GeneratorError, Result, TemplateError};
+pub use error::{AssetError, ContentError, GeneratorError, Result, TemplateError};
 ```
 
 ## Usage Examples
@@ -598,6 +690,39 @@ fn render_with_inheritance() -> Result<()> {
     // Render child template
     let ctx = TemplateContext::new(site);
     let html = renderer.render("page.html", &ctx)?;
+    
+    Ok(())
+}
+```
+
+### Asset Processing
+
+```rust
+use generator::{AssetProcessor, ScssProcessor, StaticCopier, Result};
+use std::path::Path;
+
+fn process_assets() -> Result<()> {
+    // Compile SCSS to CSS
+    let scss_processor = ScssProcessor::with_include_paths(
+        vec![Path::new("styles").to_path_buf()]
+    ).with_minify(true);
+    
+    let report = scss_processor.process(
+        Path::new("styles/main.scss"),
+        Path::new("dist/styles/main.css")
+    )?;
+    println!("Processed {} SCSS files", report.files_processed);
+    
+    // Copy static files with exclusions
+    let static_copier = StaticCopier::with_exclusions(
+        vec!["*.scss".to_string()]
+    );
+    
+    let report = static_copier.process(
+        Path::new("static"),
+        Path::new("dist/static")
+    )?;
+    println!("Copied {} static files", report.files_processed);
     
     Ok(())
 }
