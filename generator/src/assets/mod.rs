@@ -69,7 +69,7 @@ pub trait AssetProcessor: Send + Sync {
 ///
 /// Contains statistics about the processing operation including
 /// files processed, skipped, and any errors encountered.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct AssetReport {
     /// Number of files successfully processed
     pub files_processed: usize,

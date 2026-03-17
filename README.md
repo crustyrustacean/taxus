@@ -11,6 +11,8 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Route System**: Automatic route discovery from content directory structure
 - **Template System**: Flexible Tera-based templates with inheritance and custom context
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
+- **Build System**: Unified build pipeline with `SiteBuilder` for orchestrating all stages
+- **CLI Interface**: Command-line interface with clap for flexible build options
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
 - **Reusable Library**: The generator is available as a library for programmatic use
@@ -29,6 +31,7 @@ yew-ssg/
 │   │   ├── config.rs # Configuration types
 │   │   ├── error.rs  # Error handling
 │   │   ├── assets/   # Asset processing (ScssProcessor, StaticCopier)
+│   │   ├── build/    # Build system (SiteBuilder, BuildReport, pipeline)
 │   │   ├── content/  # Content parsing (Page, Section, Frontmatter)
 │   │   ├── routes/   # Route discovery (RouteDiscovery, RouteRegistry)
 │   │   ├── templates/ # Template rendering (TeraRenderer, Context types)
@@ -52,10 +55,24 @@ yew-ssg/
 ### Build the Static Site
 
 ```bash
+# Build the site
 cargo run
-```
 
-This runs the generator to produce static HTML files.
+# Build with verbose output
+cargo run -- --verbose
+
+# Build including draft pages
+cargo run -- --include-drafts
+
+# Dry run (no files written)
+cargo run -- --dry-run
+
+# Clean and rebuild
+cargo run -- --clean
+
+# Build from a different directory
+cargo run -- --dir /path/to/site
+```
 
 ### Development
 
@@ -70,8 +87,8 @@ cd client && trunk serve
 - **client**: The WebAssembly client application built with Yew
 - **common**: Shared components and utilities used by both client and generator
 - **generator**: A library and binary for static site generation
-  - `generator` (library): Reusable SSG library with configuration, error handling, and content parsing
-  - `generator` (binary): CLI tool that pre-renders pages
+  - `generator` (library): Reusable SSG library with configuration, error handling, content parsing, and build system
+  - `generator` (binary): CLI tool with clap for building sites
 
 ## Generator Library
 
@@ -242,6 +259,34 @@ fn main() -> Result<()> {
         Path::new("dist/static")
     )?;
     println!("Copied {} static files", report.files_processed);
+    
+    Ok(())
+}
+```
+
+### Build System
+
+The `SiteBuilder` orchestrates the entire build pipeline:
+
+```rust
+use generator::{SiteBuilder, Result};
+use std::path::Path;
+
+fn main() -> Result<()> {
+    // Build a site from a directory
+    let report = SiteBuilder::from_dir(Path::new("."))?
+        .verbose(true)
+        .include_drafts(false)
+        .dry_run(false)
+        .build()?;
+    
+    // Print build summary
+    report.print_summary();
+    
+    println!("Pages rendered: {}", report.pages_rendered);
+    println!("Sections rendered: {}", report.sections_rendered);
+    println!("Total files: {}", report.total_files());
+    println!("Duration: {:.2}s", report.duration.as_secs_f64());
     
     Ok(())
 }

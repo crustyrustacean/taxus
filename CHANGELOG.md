@@ -5,6 +5,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2026-03-17
+
+### Added
+
+#### Generator Library Refactor (Phase 6: Build System)
+
+- **Build Module Structure**: Created build orchestration module for the generator
+  - `generator/src/build/mod.rs`: Build module with public API re-exports
+  - `generator/src/build/builder.rs`: `SiteBuilder` implementation
+  - `generator/src/build/pipeline.rs`: Build pipeline stage functions
+  - `generator/src/build/report.rs`: `BuildReport` for statistics and output
+
+- **SiteBuilder Struct**: Main entry point for building static sites
+  - `from_dir()`: Create builder from directory containing site.toml
+  - `new()`: Create builder from existing SiteConfig
+  - `dry_run()`: Enable dry-run mode (no files written)
+  - `verbose()`: Enable verbose output
+  - `include_drafts()`: Include draft pages in build
+  - `build()`: Execute the full build pipeline
+  - `clean()`: Clean the output directory
+
+- **BuildReport Struct**: Statistics and results from a build
+  - `pages_rendered`: Count of rendered pages
+  - `sections_rendered`: Count of rendered sections
+  - `drafts_skipped`: Count of skipped drafts
+  - `assets`: Asset processing report
+  - `duration`: Build duration
+  - `warnings`: List of warnings generated
+  - `total_files()`: Total files generated
+  - `has_warnings()`: Check for warnings
+  - `print_summary()`: Print build summary to stdout
+
+- **Build Pipeline Stages**: Individual functions for each build stage
+  - `load_config()`: Load configuration from directory
+  - `discover_routes()`: Discover routes from content directory
+  - `load_templates()`: Load templates from directory
+  - `process_content()`: Process content files into HTML
+  - `render_pages()`: Render pages with templates
+  - `process_assets()`: Process SCSS and static files
+  - `write_output()`: Write rendered pages to output
+
+- **Error Types**: Build-specific error handling
+  - `BuildError::NoContent`: No content found to build
+  - `BuildError::OutputDirCreation`: Failed to create output directory
+  - `BuildError::PageRenderFailed`: Page rendering failed
+  - `BuildError::ContentProcessing`: Content processing failed
+  - `BuildError::AssetProcessing`: Asset processing failed
+  - `BuildError::RouteDiscovery`: Route discovery failed
+
+- **CLI with clap**: Refactored binary with argument parsing
+  - `--dir`: Directory containing site.toml (default: ".")
+  - `--verbose`: Enable verbose output
+  - `--include-drafts`: Include draft pages in build
+  - `--dry-run`: Dry run mode (no files written)
+  - `--clean`: Clean output directory before build
+
+- **Testing Infrastructure**: Comprehensive test coverage
+  - 10 unit tests for BuildReport methods
+  - 6 unit tests for SiteBuilder configuration
+  - 4 unit tests for pipeline markdown processing
+  - 10 unit tests for BuildError types
+
+### Changed
+
+- **generator/src/lib.rs**: Added build module and re-exports
+  - Re-exports: `SiteBuilder`, `BuildReport`, `BuildError`
+
+- **generator/src/error.rs**: Added `BuildError` type
+  - Added `Build` variant to `GeneratorError`
+  - Added 10 unit tests for build error types
+
+- **generator/Cargo.toml**: Added clap dependency
+  - `clap = { version = "4.5", features = ["derive"] }`
+
+- **generator/src/bin/main.rs**: Complete refactor
+  - Replaced monolithic implementation with thin CLI wrapper
+  - Uses `SiteBuilder` for build orchestration
+  - Added clap for argument parsing
+
+- **generator/src/assets/mod.rs**: Added Clone derive to AssetReport
+
+### Test Coverage
+
+- Unit tests: 179 tests (26 new for build module)
+- Integration tests: 59 tests (unchanged)
+- Total: 238 tests (179 unit + 59 integration)
+
 ## [0.1.5] - 2026-03-17
 
 ### Added
