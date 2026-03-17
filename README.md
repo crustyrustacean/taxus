@@ -52,26 +52,61 @@ yew-ssg/
 
 ## Getting Started
 
+### Initialize a New Site
+
+Create a new site with the default structure:
+
+```bash
+# Initialize in the current directory
+cargo run -- init
+
+# Initialize in a new directory
+cargo run -- init my-site
+
+# Initialize with custom options
+cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+
+# Force initialization in a non-empty directory
+cargo run -- init my-site --force
+```
+
+This creates the following structure:
+
+```
+my-site/
+├── site.toml           # Site configuration
+├── content/
+│   └── _index.md       # Home page
+├── templates/
+│   ├── base.html       # Base template
+│   ├── page.html      # Page template
+│   └── section.html    # Section template
+├── static/
+│   └── .gitkeep        # Empty directory placeholder
+└── styles/
+    └── main.scss       # Basic stylesheet
+```
+
 ### Build the Static Site
 
 ```bash
 # Build the site
-cargo run
+cargo run -- build
 
 # Build with verbose output
-cargo run -- --verbose
+cargo run -- build --verbose
 
 # Build including draft pages
-cargo run -- --include-drafts
+cargo run -- build --include-drafts
 
 # Dry run (no files written)
-cargo run -- --dry-run
+cargo run -- build --dry-run
 
 # Clean and rebuild
-cargo run -- --clean
+cargo run -- build --clean
 
 # Build from a different directory
-cargo run -- --dir /path/to/site
+cargo run -- build --dir /path/to/site
 ```
 
 ### Development
@@ -287,6 +322,34 @@ fn main() -> Result<()> {
     println!("Sections rendered: {}", report.sections_rendered);
     println!("Total files: {}", report.total_files());
     println!("Duration: {:.2}s", report.duration.as_secs_f64());
+    
+    Ok(())
+}
+```
+
+### Site Initialization
+
+The `InitScaffolder` creates a new site with default structure:
+
+```rust
+use generator::{InitOptions, InitScaffolder, Result};
+use std::path::Path;
+
+fn main() -> Result<()> {
+    // Create options for the new site
+    let options = InitOptions::new("My Site", "https://example.com");
+    
+    // Create the scaffolder
+    let scaffolder = InitScaffolder::new(options);
+    
+    // Scaffold the site
+    let report = scaffolder.scaffold(Path::new("my-site"))?;
+    
+    // Print summary
+    report.print_summary();
+    
+    println!("Directories created: {}", report.directories_created);
+    println!("Files created: {}", report.files_created);
     
     Ok(())
 }

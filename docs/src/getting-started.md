@@ -12,19 +12,36 @@ Before you begin, ensure you have the following installed:
 
 ## Quick Start
 
-### 1. Clone the Repository
+### Option A: Initialize a New Site
+
+Create a new site from scratch:
 
 ```bash
+# Clone the repository
 git clone https://github.com/crustyrustacean/yew-ssg.git
 cd yew-ssg
+
+# Initialize a new site
+cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+
+# Navigate to the new site
+cd my-site
+
+# Build the site
+cargo run -- build
 ```
 
-### 2. Build the Static Site
+### Option B: Use the Example Site
 
-Run the generator to produce static HTML files:
+Build the existing example site:
 
 ```bash
-cargo run
+# Clone the repository
+git clone https://github.com/crustyrustacean/yew-ssg.git
+cd yew-ssg
+
+# Build the static site
+cargo run -- build
 ```
 
 This will:
@@ -32,7 +49,7 @@ This will:
 2. Process SCSS styles from `styles/`
 3. Generate HTML files in the `dist/` directory
 
-### 3. View the Generated Site
+### View the Generated Site
 
 You can serve the generated files using any static file server:
 
@@ -63,7 +80,10 @@ This will:
 
 | Command | Description |
 |---------|-------------|
-| `cargo run` | Build the static site |
+| `cargo run -- init [path]` | Initialize a new site |
+| `cargo run -- build` | Build the static site |
+| `cargo run -- build --verbose` | Build with verbose output |
+| `cargo run -- build --include-drafts` | Build including drafts |
 | `cargo test` | Run all tests |
 | `cargo doc` | Generate API documentation |
 | `cd client && trunk serve` | Start development server |

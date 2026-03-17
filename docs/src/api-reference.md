@@ -527,6 +527,79 @@ pub struct SiteContext {
 }
 ```
 
+### `init`
+
+Site initialization types for scaffolding new sites.
+
+#### `InitOptions`
+
+Configuration for site initialization.
+
+```rust
+pub struct InitOptions {
+    pub name: String,
+    pub base_url: String,
+    pub force: bool,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new(name: impl Into<String>, base_url: impl Into<String>) -> Self` | Create new options |
+| `with_force(self, force: bool) -> Self` | Set force flag |
+| `validate(&self) -> std::result::Result<(), InitError>` | Validate options |
+
+#### `InitScaffolder`
+
+Main entry point for creating new sites.
+
+```rust
+pub struct InitScaffolder { /* ... */ }
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new(options: InitOptions) -> Self` | Create scaffolder with options |
+| `scaffold(&self, path: &Path) -> Result<InitReport>` | Create directory structure and files |
+
+#### `InitReport`
+
+Statistics and results from initialization.
+
+```rust
+pub struct InitReport {
+    pub path: PathBuf,
+    pub directories_created: usize,
+    pub files_created: usize,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new(path: PathBuf) -> Self` | Create a new report |
+| `print_summary(&self)` | Print initialization summary |
+
+#### `DefaultTemplates`
+
+Default template content for new sites.
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `base_html() -> &'static str` | Get base.html template |
+| `page_html() -> &'static str` | Get page.html template |
+| `section_html() -> &'static str` | Get section.html template |
+| `main_scss() -> &'static str` | Get main.scss content |
+| `site_toml(name: &str, base_url: &str) -> String` | Generate site.toml content |
+| `index_md(site_name: &str) -> String` | Generate _index.md content |
+
 ## Re-exports
 
 The library re-exports commonly used types:
@@ -547,8 +620,11 @@ pub use templates::{
 // Assets
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 
+// Init
+pub use init::{DefaultTemplates, InitOptions, InitReport, InitScaffolder};
+
 // Errors
-pub use error::{AssetError, ContentError, GeneratorError, Result, TemplateError};
+pub use error::{AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError, TemplateError};
 ```
 
 ## Usage Examples

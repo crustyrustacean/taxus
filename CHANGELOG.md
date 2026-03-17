@@ -5,6 +5,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] - 2026-03-17
+
+### Added
+
+#### Init Command for Site Scaffolding
+
+- **Init Module Structure**: Created initialization module for scaffolding new sites
+  - `generator/src/init/mod.rs`: Init module with public API re-exports
+  - `generator/src/init/scaffold.rs`: `InitScaffolder` implementation
+  - `generator/src/init/templates.rs`: Default template content
+
+- **InitOptions Struct**: Configuration for site initialization
+  - `name`: Site name (used in configuration and templates)
+  - `base_url`: Base URL for the site
+  - `force`: Force initialization in non-empty directories
+  - `validate()`: Validate options before scaffolding
+
+- **InitScaffolder Struct**: Main entry point for creating new sites
+  - `new()`: Create scaffolder with options
+  - `scaffold()`: Create directory structure and files
+  - Creates: content/, templates/, static/, styles/ directories
+  - Generates: site.toml, _index.md, base.html, page.html, section.html, main.scss
+
+- **InitReport Struct**: Statistics and results from initialization
+  - `directories_created`: Count of directories created
+  - `files_created`: Count of files created
+  - `print_summary()`: Print initialization summary to stdout
+
+- **Error Types**: Init-specific error handling
+  - `InitError::DirectoryNotEmpty`: Directory is not empty
+  - `InitError::DirectoryCreation`: Failed to create directory
+  - `InitError::FileWrite`: Failed to write file
+  - `InitError::Cancelled`: User cancelled the operation
+  - `InitError::InvalidName`: Invalid site name
+  - `InitError::InvalidBaseUrl`: Invalid base URL
+
+- **CLI Subcommands**: Refactored binary with subcommand structure
+  - `yew-ssg init [path]`: Initialize a new site
+  - `yew-ssg init --name "My Site"`: Set site name
+  - `yew-ssg init --base-url "https://example.com"`: Set base URL
+  - `yew-ssg init --force`: Force initialization in non-empty directory
+  - `yew-ssg build`: Build the static site (moved to subcommand)
+
+- **User Prompt**: Interactive confirmation for non-empty directories
+  - Prompts user before initializing in non-empty directory
+  - Simple stdin reading for y/N confirmation
+
+- **Testing Infrastructure**: Comprehensive test coverage
+  - 14 unit tests for InitOptions validation
+  - 12 unit tests for InitScaffolder methods
+  - 7 unit tests for InitError types
+  - 14 integration tests for full scaffolding workflow
+
+### Changed
+
+- **generator/src/lib.rs**: Added init module and re-exports
+  - Re-exports: `InitOptions`, `InitScaffolder`, `InitReport`, `InitError`, `DefaultTemplates`
+
+- **generator/src/error.rs**: Added `InitError` type
+  - Added `Init` variant to `GeneratorError`
+  - Added 7 unit tests for init error types
+
+- **generator/src/bin/main.rs**: Refactored to use subcommands
+  - `Build` subcommand with existing options
+  - `Init` subcommand with new options
+
+- **README.md**: Updated documentation
+  - Added init command usage examples
+  - Added site initialization section
+  - Updated build command to use subcommand syntax
+
 ## [0.1.6] - 2026-03-17
 
 ### Added
