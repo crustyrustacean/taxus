@@ -158,6 +158,107 @@ pub struct FilesystemContentSource {
 |--------|-------------|
 | `new<P: Into<PathBuf>>(root: P) -> Self` | Create a new filesystem content source |
 
+### `routes`
+
+Route discovery and management types for mapping content files to URL paths.
+
+#### `RouteKind`
+
+Enum distinguishing between page and section routes.
+
+```rust
+pub enum RouteKind {
+    /// A single page (e.g., /about/)
+    Page,
+    /// A section index (e.g., /blog/)
+    Section,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `is_page(&self) -> bool` | Returns true if this is a page route |
+| `is_section(&self) -> bool` | Returns true if this is a section route |
+
+#### `RouteInfo`
+
+Information about a single route.
+
+```rust
+pub struct RouteInfo {
+    /// URL path (e.g., "/about/")
+    pub path: String,
+    /// Content file path relative to content directory
+    pub content_file: PathBuf,
+    /// Output file path relative to output directory
+    pub output_file: PathBuf,
+    /// Route type
+    pub kind: RouteKind,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new(path: String, content_file: PathBuf, output_file: PathBuf, kind: RouteKind) -> Result<Self, RouteError>` | Create a new route info with path validation |
+| `is_page(&self) -> bool` | Returns true if this is a page route |
+| `is_section(&self) -> bool` | Returns true if this is a section route |
+
+#### `RouteRegistry`
+
+Registry of all routes in the site.
+
+```rust
+pub struct RouteRegistry {
+    routes: HashMap<String, RouteInfo>,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create a new empty registry |
+| `register(&mut self, route: RouteInfo) -> Result<(), RouteError>` | Register a route (fails on duplicate) |
+| `get(&self, path: &str) -> Option<&RouteInfo>` | Get route by path |
+| `contains(&self, path: &str) -> bool` | Check if a route exists |
+| `len(&self) -> usize` | Get the number of routes |
+| `is_empty(&self) -> bool` | Check if the registry is empty |
+| `iter(&self) -> impl Iterator<Item = &RouteInfo>` | Iterate over all routes |
+| `pages(&self) -> impl Iterator<Item = &RouteInfo>` | Iterate over all page routes |
+| `sections(&self) -> impl Iterator<Item = &RouteInfo>` | Iterate over all section routes |
+| `generate_rust_manifest(&self) -> String` | Generate Rust code for client routing |
+
+#### `RouteDiscovery`
+
+Discovers routes from content directory structure.
+
+```rust
+pub struct RouteDiscovery {
+    content_dir: PathBuf,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new<P: Into<PathBuf>>(content_dir: P) -> Self` | Create a new route discovery |
+| `discover(&self) -> Result<RouteRegistry, RouteError>` | Discover all routes from content directory |
+| `discover_from_source<S: ContentSource>(&self, source: &S) -> Result<RouteRegistry, RouteError>` | Discover routes using ContentSource trait |
+
+##### Path Conversion Logic
+
+| Content File | URL Path | Output File | Route Kind |
+|--------------|----------|-------------|------------|
+| `_index.md` | `/` | `index.html` | Section |
+| `about.md` | `/about/` | `about/index.html` | Page |
+| `blog/_index.md` | `/blog/` | `blog/index.html` | Section |
+| `blog/first-post.md` | `/blog/first-post/` | `blog/first-post/index.html` | Page |
+
 ### `error`
 
 Error types for the library.
@@ -170,6 +271,9 @@ Main error type.
 pub enum GeneratorError {
     Config(ConfigError),
     Content(ContentError),
+    Template(TemplateError),
+    Asset(AssetError),
+    Route(RouteError),
     Io { path: PathBuf, source: std::io::Error },
 }
 ```
@@ -228,6 +332,19 @@ pub enum AssetError {
     Scss(String),
     Io { path: PathBuf, source: std::io::Error },
     CopyFailed { src: PathBuf, dest: PathBuf, reason: String },
+}
+```
+
+#### `RouteError`
+
+Route-related errors.
+
+```rust
+pub enum RouteError {
+    NotFound(String),
+    Duplicate(String),
+    InvalidPath(String),
+    DiscoveryFailed(String),
 }
 ```
 

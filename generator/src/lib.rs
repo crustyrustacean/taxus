@@ -29,13 +29,15 @@ pub mod assets;
 pub mod config;
 pub mod content;
 pub mod error;
+pub mod routes;
 pub mod templates;
 
 // Re-exports for convenience
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 pub use config::{BuildConfig, SiteConfig, SiteMeta};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
-pub use error::{AssetError, ContentError, GeneratorError, Result, TemplateError};
+pub use error::{AssetError, ContentError, GeneratorError, Result, RouteError, TemplateError};
+pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{
     PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
 };

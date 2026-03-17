@@ -24,6 +24,10 @@ pub enum GeneratorError {
     #[error("Asset error: {0}")]
     Asset(#[from] AssetError),
 
+    /// Route-related errors
+    #[error("Route error: {0}")]
+    Route(#[from] RouteError),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -149,6 +153,26 @@ pub enum AssetError {
         dest: PathBuf,
         reason: String,
     },
+}
+
+/// Route-related errors.
+#[derive(Debug, thiserror::Error)]
+pub enum RouteError {
+    /// Route not found
+    #[error("Route not found: {0}")]
+    NotFound(String),
+
+    /// Duplicate route detected
+    #[error("Duplicate route: {0}")]
+    Duplicate(String),
+
+    /// Invalid route path
+    #[error("Invalid route path: {0}")]
+    InvalidPath(String),
+
+    /// Content discovery failed
+    #[error("Content discovery failed: {0}")]
+    DiscoveryFailed(String),
 }
 
 /// Result alias for generator operations.
@@ -329,5 +353,46 @@ mod tests {
         let asset_err = AssetError::NotFound(PathBuf::from("test.png"));
         let gen_err: GeneratorError = asset_err.into();
         assert!(matches!(gen_err, GeneratorError::Asset(_)));
+    }
+
+    // RouteError tests
+
+    #[test]
+    fn test_route_error_not_found() {
+        let err = RouteError::NotFound("/missing/".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("Route not found"));
+        assert!(msg.contains("/missing/"));
+    }
+
+    #[test]
+    fn test_route_error_duplicate() {
+        let err = RouteError::Duplicate("/about/".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("Duplicate route"));
+        assert!(msg.contains("/about/"));
+    }
+
+    #[test]
+    fn test_route_error_invalid_path() {
+        let err = RouteError::InvalidPath("missing-slashes".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("Invalid route path"));
+        assert!(msg.contains("missing-slashes"));
+    }
+
+    #[test]
+    fn test_route_error_discovery_failed() {
+        let err = RouteError::DiscoveryFailed("Permission denied".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("Content discovery failed"));
+        assert!(msg.contains("Permission denied"));
+    }
+
+    #[test]
+    fn test_generator_error_from_route() {
+        let route_err = RouteError::NotFound("/test/".to_string());
+        let gen_err: GeneratorError = route_err.into();
+        assert!(matches!(gen_err, GeneratorError::Route(_)));
     }
 }

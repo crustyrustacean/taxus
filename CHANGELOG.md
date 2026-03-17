@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-03-17
+
+### Added
+
+#### Generator Library Refactor (Phase 3: Route System)
+
+- **Route Module Structure**: Created route discovery and management module for the generator
+  - `generator/src/routes/mod.rs`: Route module with public API re-exports
+  - `generator/src/routes/registry.rs`: `RouteKind`, `RouteInfo`, and `RouteRegistry` types
+  - `generator/src/routes/discovery.rs`: `RouteDiscovery` implementation
+
+- **RouteKind Enum**: Type distinguishing between page and section routes
+  - `Page`: Regular content pages (e.g., `/about/`)
+  - `Section`: Section index pages (e.g., `/blog/`)
+  - Helper methods: `is_page()`, `is_section()`
+
+- **RouteInfo Struct**: Information about a single route
+  - `path`: URL path (e.g., `/about/`)
+  - `content_file`: Source file path relative to content directory
+  - `output_file`: Output file path relative to output directory
+  - `kind`: RouteKind (Page or Section)
+  - Path validation ensuring proper `/` prefix and trailing slash
+
+- **RouteRegistry Struct**: HashMap-based storage for all routes
+  - `register()`: Add route with duplicate detection
+  - `get()`: Retrieve route by path
+  - `contains()`: Check if route exists
+  - `len()`, `is_empty()`: Count methods
+  - `iter()`: Iterate over all routes
+  - `pages()`: Iterator over page routes only
+  - `sections()`: Iterator over section routes only
+  - `generate_rust_manifest()`: Generate client router code (stub for future use)
+
+- **RouteDiscovery Struct**: Discovers routes from content directory
+  - `discover()`: Walk content directory and create routes from `.md` files
+  - `discover_from_source()`: Discover routes using `ContentSource` trait
+  - Automatic `_index.md` detection for section routes
+  - Path conversion: `about.md` → `/about/` → `about/index.html`
+
+- **Error Types**: Route-specific error handling
+  - `RouteError::NotFound`: Route not found
+  - `RouteError::Duplicate`: Duplicate route detected
+  - `RouteError::InvalidPath`: Invalid route path format
+  - `RouteError::DiscoveryFailed`: Content discovery failed
+
+- **Testing Infrastructure**: Comprehensive test coverage
+  - 28 unit tests for route types (registry and discovery)
+  - 14 integration tests for route discovery scenarios
+  - Tests using existing content fixtures
+
+### Changed
+
+- **generator/src/lib.rs**: Added routes module and re-exports
+  - Re-exports: `RouteDiscovery`, `RouteInfo`, `RouteKind`, `RouteRegistry`, `RouteError`
+
+- **generator/src/error.rs**: Added `RouteError` type
+  - Added `Route` variant to `GeneratorError`
+  - Added 5 unit tests for route error types
+
+- **docs/src/api-reference.md**: Updated with route module documentation
+  - Added `RouteKind`, `RouteInfo`, `RouteRegistry` documentation
+  - Added `RouteDiscovery` documentation
+  - Added route discovery examples
+
+- **README.md**: Updated with route system features
+  - Added route discovery to features list
+  - Added route registry usage examples
+
+### Test Coverage
+
+- Unit tests: 152 tests (28 new for routes)
+- Integration tests: 14 new tests for route discovery
+- Total: 211 tests (152 unit + 59 integration)
+
 ## [0.1.4] - 2026-03-17
 
 ### Added

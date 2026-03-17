@@ -8,6 +8,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Yew Components**: Reusable UI components built with Yew's functional component API
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Content System**: Pages, sections, and draft support with date-based sorting
+- **Route System**: Automatic route discovery from content directory structure
 - **Template System**: Flexible Tera-based templates with inheritance and custom context
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
 - **SCSS Styling**: Modern styling with SCSS support
@@ -29,6 +30,7 @@ yew-ssg/
 │   │   ├── error.rs  # Error handling
 │   │   ├── assets/   # Asset processing (ScssProcessor, StaticCopier)
 │   │   ├── content/  # Content parsing (Page, Section, Frontmatter)
+│   │   ├── routes/   # Route discovery (RouteDiscovery, RouteRegistry)
 │   │   ├── templates/ # Template rendering (TeraRenderer, Context types)
 │   │   └── bin/      # CLI binary
 │   └── tests/        # Integration tests
@@ -113,6 +115,42 @@ fn main() -> Result<()> {
     for file in source.list()? {
         println!("Found: {}", file.display());
     }
+    
+    Ok(())
+}
+```
+
+### Route Discovery
+
+```rust
+use generator::{RouteDiscovery, RouteRegistry, RouteInfo, RouteKind, Result};
+
+fn main() -> Result<()> {
+    // Discover routes from content directory
+    let discovery = RouteDiscovery::new("content");
+    let registry = discovery.discover()?;
+    
+    // Query routes
+    if let Some(route) = registry.get("/about/") {
+        println!("Found route: {:?}", route);
+        println!("Content file: {:?}", route.content_file);
+        println!("Output file: {:?}", route.output_file);
+    }
+    
+    // Iterate over all pages
+    for route in registry.pages() {
+        println!("Page: {}", route.path);
+    }
+    
+    // Check route existence
+    if registry.contains("/blog/") {
+        println!("Blog section exists");
+    }
+    
+    // Count routes
+    println!("Total routes: {}", registry.len());
+    println!("Pages: {}", registry.pages().count());
+    println!("Sections: {}", registry.sections().count());
     
     Ok(())
 }
