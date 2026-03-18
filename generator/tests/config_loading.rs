@@ -1,8 +1,8 @@
 //! Integration tests for configuration loading.
 
-use generator::config::SiteConfig;
-use generator::error::{ConfigError, GeneratorError};
 use std::path::PathBuf;
+use yew_ssg_lib::config::SiteConfig;
+use yew_ssg_lib::error::{ConfigError, GeneratorError};
 
 #[test]
 fn test_load_minimal_site_config() {

@@ -397,43 +397,51 @@ mod tests {
         let mut registry = RouteRegistry::new();
 
         registry
-            .register(RouteInfo::new(
-                "/".to_string(),
-                PathBuf::from("_index.md"),
-                PathBuf::from("index.html"),
-                RouteKind::Section,
+            .register(
+                RouteInfo::new(
+                    "/".to_string(),
+                    PathBuf::from("_index.md"),
+                    PathBuf::from("index.html"),
+                    RouteKind::Section,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         registry
-            .register(RouteInfo::new(
-                "/about/".to_string(),
-                PathBuf::from("about.md"),
-                PathBuf::from("about/index.html"),
-                RouteKind::Page,
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         registry
-            .register(RouteInfo::new(
-                "/blog/".to_string(),
-                PathBuf::from("blog/_index.md"),
-                PathBuf::from("blog/index.html"),
-                RouteKind::Section,
+            .register(
+                RouteInfo::new(
+                    "/blog/".to_string(),
+                    PathBuf::from("blog/_index.md"),
+                    PathBuf::from("blog/index.html"),
+                    RouteKind::Section,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         registry
-            .register(RouteInfo::new(
-                "/blog/first-post/".to_string(),
-                PathBuf::from("blog/first-post.md"),
-                PathBuf::from("blog/first-post/index.html"),
-                RouteKind::Page,
+            .register(
+                RouteInfo::new(
+                    "/blog/first-post/".to_string(),
+                    PathBuf::from("blog/first-post.md"),
+                    PathBuf::from("blog/first-post/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         assert_eq!(registry.len(), 4);
@@ -446,23 +454,27 @@ mod tests {
         let mut registry = RouteRegistry::new();
 
         registry
-            .register(RouteInfo::new(
-                "/about/".to_string(),
-                PathBuf::from("about.md"),
-                PathBuf::from("about/index.html"),
-                RouteKind::Page,
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         registry
-            .register(RouteInfo::new(
-                "/blog/".to_string(),
-                PathBuf::from("blog/_index.md"),
-                PathBuf::from("blog/index.html"),
-                RouteKind::Section,
+            .register(
+                RouteInfo::new(
+                    "/blog/".to_string(),
+                    PathBuf::from("blog/_index.md"),
+                    PathBuf::from("blog/index.html"),
+                    RouteKind::Section,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         let paths: Vec<&str> = registry.iter().map(|r| r.path.as_str()).collect();
@@ -476,23 +488,27 @@ mod tests {
         let mut registry = RouteRegistry::new();
 
         registry
-            .register(RouteInfo::new(
-                "/".to_string(),
-                PathBuf::from("_index.md"),
-                PathBuf::from("index.html"),
-                RouteKind::Section,
+            .register(
+                RouteInfo::new(
+                    "/".to_string(),
+                    PathBuf::from("_index.md"),
+                    PathBuf::from("index.html"),
+                    RouteKind::Section,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         registry
-            .register(RouteInfo::new(
-                "/about/".to_string(),
-                PathBuf::from("about.md"),
-                PathBuf::from("about/index.html"),
-                RouteKind::Page,
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap())
             .unwrap();
 
         let manifest = registry.generate_rust_manifest();

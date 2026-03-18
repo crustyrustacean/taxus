@@ -1,10 +1,10 @@
 //! Integration tests for site initialization.
 
-use generator::init::{derive_site_name, is_directory_empty, InitOptions, InitScaffolder};
-use generator::error::InitError;
-use generator::TemplateRenderer;
 use std::path::PathBuf;
 use tempfile::TempDir;
+use yew_ssg_lib::TemplateRenderer;
+use yew_ssg_lib::error::InitError;
+use yew_ssg_lib::init::{InitOptions, InitScaffolder, derive_site_name, is_directory_empty};
 
 #[test]
 fn test_init_empty_directory() {
@@ -28,7 +28,7 @@ fn test_init_creates_valid_config() {
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
     // Verify the config can be loaded
-    let config = generator::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
+    let config = yew_ssg_lib::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
     assert_eq!(config.site.name, "My Site");
     assert_eq!(config.site.base_url, "https://my-site.example.com");
 }
@@ -42,7 +42,8 @@ fn test_init_creates_valid_content() {
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
     // Verify the index page can be loaded
-    let page = generator::content::Page::from_file(temp_dir.path().join("content/_index.md")).unwrap();
+    let page =
+        yew_ssg_lib::content::Page::from_file(temp_dir.path().join("content/_index.md")).unwrap();
     assert_eq!(page.frontmatter.title, "Home");
 }
 
@@ -55,7 +56,8 @@ fn test_init_creates_valid_templates() {
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
     // Verify templates can be loaded
-    let renderer = generator::templates::TeraRenderer::from_dir(temp_dir.path().join("templates")).unwrap();
+    let renderer =
+        yew_ssg_lib::templates::TeraRenderer::from_dir(temp_dir.path().join("templates")).unwrap();
     assert!(renderer.has_template("base.html"));
     assert!(renderer.has_template("page.html"));
     assert!(renderer.has_template("section.html"));
@@ -69,7 +71,7 @@ fn test_init_with_custom_name_and_url() {
 
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
-    let config = generator::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
+    let config = yew_ssg_lib::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
     assert_eq!(config.site.name, "Custom Name");
     assert_eq!(config.site.base_url, "https://custom.example.org");
 }
@@ -77,10 +79,14 @@ fn test_init_with_custom_name_and_url() {
 #[test]
 fn test_init_does_not_overwrite_existing_files() {
     let temp_dir = TempDir::new().unwrap();
-    
+
     // Create an existing config
     let config_path = temp_dir.path().join("site.toml");
-    std::fs::write(&config_path, "[site]\nname = \"Existing\"\nbase_url = \"https://existing.com\"").unwrap();
+    std::fs::write(
+        &config_path,
+        "[site]\nname = \"Existing\"\nbase_url = \"https://existing.com\"",
+    )
+    .unwrap();
 
     let options = InitOptions::new("New Site", "https://new.example.com");
     let scaffolder = InitScaffolder::new(options);
@@ -123,8 +129,14 @@ fn test_is_directory_empty_with_nonexistent() {
 
 #[test]
 fn test_derive_site_name() {
-    assert_eq!(derive_site_name(PathBuf::from("my-site").as_path()), "my-site");
-    assert_eq!(derive_site_name(PathBuf::from("/path/to/my-site").as_path()), "my-site");
+    assert_eq!(
+        derive_site_name(PathBuf::from("my-site").as_path()),
+        "my-site"
+    );
+    assert_eq!(
+        derive_site_name(PathBuf::from("/path/to/my-site").as_path()),
+        "my-site"
+    );
     assert_eq!(derive_site_name(PathBuf::from(".").as_path()), "My Site");
 }
 
@@ -136,15 +148,24 @@ fn test_init_options_validation() {
 
     // Empty name
     let empty_name = InitOptions::new("", "https://example.com");
-    assert!(matches!(empty_name.validate(), Err(InitError::InvalidName(_))));
+    assert!(matches!(
+        empty_name.validate(),
+        Err(InitError::InvalidName(_))
+    ));
 
     // Empty base URL
     let empty_url = InitOptions::new("Test", "");
-    assert!(matches!(empty_url.validate(), Err(InitError::InvalidBaseUrl(_))));
+    assert!(matches!(
+        empty_url.validate(),
+        Err(InitError::InvalidBaseUrl(_))
+    ));
 
     // Invalid URL scheme
     let invalid_scheme = InitOptions::new("Test", "ftp://example.com");
-    assert!(matches!(invalid_scheme.validate(), Err(InitError::InvalidBaseUrl(_))));
+    assert!(matches!(
+        invalid_scheme.validate(),
+        Err(InitError::InvalidBaseUrl(_))
+    ));
 }
 
 #[test]

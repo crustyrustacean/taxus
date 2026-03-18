@@ -1,5 +1,5 @@
 [package]
-name = "generator"
+name = "yew-ssg"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,11 +9,11 @@ readme.workspace = true
 repository.workspace = true
 
 [lib]
-name = "generator"
+name = "yew_ssg_lib"
 path = "src/lib.rs"
 
 [[bin]]
-name = "generator"
+name = "yew-ssg"
 path = "src/bin/main.rs"
 
 [dependencies]

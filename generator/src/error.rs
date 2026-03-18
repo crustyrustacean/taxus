@@ -58,10 +58,7 @@ pub enum TemplateError {
 
     /// Invalid template syntax
     #[error("Invalid template syntax in {template}: {message}")]
-    Syntax {
-        template: String,
-        message: String,
-    },
+    Syntax { template: String, message: String },
 
     /// I/O error reading template
     #[error("I/O error reading template {path}: {source}")]
@@ -105,10 +102,7 @@ pub enum ContentError {
 
     /// Missing required field in frontmatter
     #[error("Missing required field '{field}' in {path}")]
-    MissingField {
-        field: &'static str,
-        path: PathBuf,
-    },
+    MissingField { field: &'static str, path: PathBuf },
 
     /// Invalid content path
     #[error("Invalid content path: {0}")]

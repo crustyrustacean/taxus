@@ -93,11 +93,9 @@ impl ContentSource for FilesystemContentSource {
         {
             let path = entry.path();
             if path.extension().is_some_and(|ext| ext == "md") {
-                let relative = path
-                    .strip_prefix(&self.root)
-                    .map_err(|_| {
-                        GeneratorError::from(ContentError::InvalidPath(path.display().to_string()))
-                    })?;
+                let relative = path.strip_prefix(&self.root).map_err(|_| {
+                    GeneratorError::from(ContentError::InvalidPath(path.display().to_string()))
+                })?;
                 files.push(relative.to_path_buf());
             }
         }

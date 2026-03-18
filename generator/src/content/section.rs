@@ -43,11 +43,10 @@ impl Section {
         let index_path = dir.join("_index.md");
 
         let frontmatter = if index_path.exists() {
-            let content =
-                std::fs::read_to_string(&index_path).map_err(|e| ContentError::Io {
-                    path: index_path.clone(),
-                    source: e,
-                })?;
+            let content = std::fs::read_to_string(&index_path).map_err(|e| ContentError::Io {
+                path: index_path.clone(),
+                source: e,
+            })?;
 
             // Parse frontmatter from _index.md
             Self::parse_frontmatter(&content, &index_path)?
@@ -90,10 +89,7 @@ impl Section {
 
     /// Convert directory path to URL path.
     fn dir_to_path(dir: &Path) -> String {
-        let name = dir
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
+        let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
         format!("/{}/", name)
     }
@@ -137,14 +133,8 @@ mod tests {
 
     #[test]
     fn test_dir_to_path() {
-        assert_eq!(
-            Section::dir_to_path(Path::new("content/blog")),
-            "/blog/"
-        );
-        assert_eq!(
-            Section::dir_to_path(Path::new("content/news")),
-            "/news/"
-        );
+        assert_eq!(Section::dir_to_path(Path::new("content/blog")), "/blog/");
+        assert_eq!(Section::dir_to_path(Path::new("content/news")), "/news/");
     }
 
     #[test]
@@ -175,11 +165,7 @@ mod tests {
             "new.md",
         )
         .unwrap();
-        let page3 = Page::from_str(
-            "+++\ntitle = \"No Date\"\n+++\nContent",
-            "nodate.md",
-        )
-        .unwrap();
+        let page3 = Page::from_str("+++\ntitle = \"No Date\"\n+++\nContent", "nodate.md").unwrap();
 
         section.add_page(page1);
         section.add_page(page2);

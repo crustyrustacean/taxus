@@ -266,7 +266,7 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
 name = "client"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "common",
 ]
@@ -285,7 +285,7 @@ checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
 name = "common"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "yew",
 ]
@@ -489,26 +489,6 @@ dependencies = [
  "memchr",
  "pin-project-lite",
  "slab",
-]
-
-[[package]]
-name = "generator"
-version = "0.1.10"
-dependencies = [
- "chrono",
- "clap",
- "common",
- "grass",
- "pulldown-cmark",
- "serde",
- "serde_json",
- "tempfile",
- "tera",
- "thiserror 2.0.18",
- "tokio",
- "toml",
- "walkdir",
- "yew",
 ]
 
 [[package]]
@@ -2248,6 +2228,26 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "yew-ssg"
+version = "0.1.11"
+dependencies = [
+ "chrono",
+ "clap",
+ "common",
+ "grass",
+ "pulldown-cmark",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tera",
+ "thiserror 2.0.18",
+ "tokio",
+ "toml",
+ "walkdir",
+ "yew",
 ]
 
 [[package]]

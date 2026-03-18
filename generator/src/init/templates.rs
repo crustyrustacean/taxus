@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn test_site_toml_generation() {
         let content = DefaultTemplates::site_toml("My Site", "https://example.com");
-        
+
         assert!(content.contains("name = \"My Site\""));
         assert!(content.contains("base_url = \"https://example.com\""));
         assert!(content.contains("[site]"));
@@ -274,7 +274,7 @@ mod tests {
     #[test]
     fn test_index_md_generation() {
         let content = DefaultTemplates::index_md("Test Site");
-        
+
         assert!(content.contains("+++"));
         assert!(content.contains("title = \"Home\""));
         assert!(content.contains("Test Site"));

@@ -109,15 +109,18 @@ pub fn render_pages(
         let context = TemplateContext::new(site_context.clone()).with_page(page_context);
 
         // Render the template
-        let content = templates
-            .render(template_name, &context)
-            .map_err(|e| BuildError::PageRenderFailed {
+        let content = templates.render(template_name, &context).map_err(|e| {
+            BuildError::PageRenderFailed {
                 path: processed_page.route.path.clone(),
                 source: e,
-            })?;
+            }
+        })?;
 
         if verbose {
-            println!("  Rendered: {} -> {}", processed_page.route.path, template_name);
+            println!(
+                "  Rendered: {} -> {}",
+                processed_page.route.path, template_name
+            );
         }
 
         rendered.push(RenderedPage {

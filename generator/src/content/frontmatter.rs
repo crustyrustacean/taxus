@@ -57,11 +57,7 @@ mod optional_date {
         let opt = Option::<toml::value::Datetime>::deserialize(deserializer)?;
         Ok(opt.and_then(|dt| {
             dt.date.and_then(|d| {
-                NaiveDate::from_ymd_opt(
-                    i32::from(d.year),
-                    u32::from(d.month),
-                    u32::from(d.day),
-                )
+                NaiveDate::from_ymd_opt(i32::from(d.year), u32::from(d.month), u32::from(d.day))
             })
         }))
     }

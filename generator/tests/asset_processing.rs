@@ -1,10 +1,10 @@
 //! Integration tests for asset processing.
 
-use generator::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
-use generator::error::AssetError;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
+use yew_ssg_lib::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+use yew_ssg_lib::error::AssetError;
 
 // =============================================================================
 // SCSS Processor Tests
@@ -12,9 +12,8 @@ use tempfile::TempDir;
 
 #[test]
 fn test_scss_processor_basic() {
-    let processor = ScssProcessor::with_include_paths(vec![PathBuf::from(
-        "tests/fixtures/asset_site/styles",
-    )]);
+    let processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("main.css");
@@ -39,9 +38,8 @@ fn test_scss_processor_basic() {
 
 #[test]
 fn test_scss_processor_with_imports() {
-    let processor = ScssProcessor::with_include_paths(vec![PathBuf::from(
-        "tests/fixtures/asset_site/styles",
-    )]);
+    let processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("main.css");
@@ -59,9 +57,8 @@ fn test_scss_processor_with_imports() {
 
 #[test]
 fn test_scss_processor_output_path() {
-    let processor = ScssProcessor::with_include_paths(vec![PathBuf::from(
-        "tests/fixtures/asset_site/styles",
-    )]);
+    let processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let temp_dir = TempDir::new().unwrap();
     // Pass a path with .scss extension - should be changed to .css
@@ -78,10 +75,9 @@ fn test_scss_processor_output_path() {
 
 #[test]
 fn test_scss_processor_minified() {
-    let processor = ScssProcessor::with_include_paths(vec![PathBuf::from(
-        "tests/fixtures/asset_site/styles",
-    )])
-    .with_minify(true);
+    let processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")])
+            .with_minify(true);
     let src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("main.css");
@@ -219,9 +215,8 @@ fn test_combined_asset_processing() {
     let output_dir = temp_dir.path().join("dist");
 
     // Process SCSS
-    let scss_processor = ScssProcessor::with_include_paths(vec![PathBuf::from(
-        "tests/fixtures/asset_site/styles",
-    )]);
+    let scss_processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let scss_src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let scss_dest = output_dir.join("styles/main.css");
     let scss_report = scss_processor.process(&scss_src, &scss_dest).unwrap();
@@ -248,9 +243,8 @@ fn test_asset_report_aggregation() {
     let temp_dir = TempDir::new().unwrap();
 
     // Process SCSS
-    let scss_processor = ScssProcessor::with_include_paths(vec![PathBuf::from(
-        "tests/fixtures/asset_site/styles",
-    )]);
+    let scss_processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let scss_src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let scss_dest = temp_dir.path().join("main.css");
     let scss_report = scss_processor.process(&scss_src, &scss_dest).unwrap();

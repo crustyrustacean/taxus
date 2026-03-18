@@ -39,7 +39,10 @@ pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 pub use build::{BuildReport, SiteBuilder};
 pub use config::{BuildConfig, SiteConfig, SiteMeta};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
-pub use error::{AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError, TemplateError};
+pub use error::{
+    AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError,
+    TemplateError,
+};
 pub use init::{DefaultTemplates, InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{

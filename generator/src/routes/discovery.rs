@@ -187,7 +187,10 @@ fn convert_path(path: &str) -> (String, PathBuf, RouteKind) {
     let discovery = RouteDiscovery::new("content");
     let relative = PathBuf::from(path);
 
-    let route = discovery.create_route_from_file(&relative).unwrap().unwrap();
+    let route = discovery
+        .create_route_from_file(&relative)
+        .unwrap()
+        .unwrap();
     (route.path, route.output_file, route.kind)
 }
 

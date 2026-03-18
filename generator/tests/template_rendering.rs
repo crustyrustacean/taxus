@@ -1,11 +1,11 @@
 //! Integration tests for template rendering.
 
-use generator::error::TemplateError;
-use generator::templates::{
-    PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
-};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use yew_ssg_lib::error::TemplateError;
+use yew_ssg_lib::templates::{
+    PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
+};
 
 fn create_test_site_context() -> SiteContext {
     SiteContext {
@@ -78,7 +78,8 @@ fn test_render_page_template() {
         )
         .unwrap();
 
-    let ctx = TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
+    let ctx =
+        TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
 
     let result = renderer.render("page.html", &ctx);
     assert!(result.is_ok());
@@ -151,7 +152,8 @@ fn test_template_inheritance() {
         )
         .unwrap();
 
-    let ctx = TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
+    let ctx =
+        TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
 
     let result = renderer.render("page.html", &ctx);
     assert!(result.is_ok());
@@ -192,10 +194,7 @@ fn test_template_with_extra_variables() {
         .unwrap();
 
     let mut extra = HashMap::new();
-    extra.insert(
-        "custom_var".to_string(),
-        serde_json::json!("Custom Value"),
-    );
+    extra.insert("custom_var".to_string(), serde_json::json!("Custom Value"));
 
     let ctx = TemplateContext::new(create_test_site_context()).with_extra(extra);
 
@@ -216,7 +215,8 @@ fn test_load_templates_missing_directory() {
 fn test_render_with_fixture_templates() {
     let renderer = TeraRenderer::from_dir("tests/fixtures/template_site/templates").unwrap();
 
-    let ctx = TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
+    let ctx =
+        TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
 
     // Test page template
     let result = renderer.render("page.html", &ctx);
@@ -259,7 +259,8 @@ fn test_render_with_draft_page() {
         .unwrap();
 
     // Test non-draft page
-    let ctx = TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
+    let ctx =
+        TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
     let result = renderer.render("draft.html", &ctx).unwrap();
     assert!(!result.contains("Draft"));
     assert!(result.contains("Test Page"));
@@ -277,10 +278,14 @@ fn test_render_with_date() {
     let mut renderer = TeraRenderer::new().unwrap();
 
     renderer
-        .register_template("date.html", r#"<time datetime="{{ page.date }}">{{ page.date }}</time>"#)
+        .register_template(
+            "date.html",
+            r#"<time datetime="{{ page.date }}">{{ page.date }}</time>"#,
+        )
         .unwrap();
 
-    let ctx = TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
+    let ctx =
+        TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
     let result = renderer.render("date.html", &ctx).unwrap();
 
     assert!(result.contains("2024-01-15"));
@@ -294,7 +299,8 @@ fn test_render_with_load_templates_method() {
     assert!(!renderer.has_template("base.html"));
 
     // Load templates
-    let result = renderer.load_templates(PathBuf::from("tests/fixtures/template_site/templates").as_path());
+    let result =
+        renderer.load_templates(PathBuf::from("tests/fixtures/template_site/templates").as_path());
     assert!(result.is_ok());
 
     // Now templates should be available
@@ -319,7 +325,8 @@ fn test_render_with_optional_fields() {
         .unwrap();
 
     // Page with all optional fields
-    let ctx = TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
+    let ctx =
+        TemplateContext::new(create_test_site_context()).with_page(create_test_page_context());
     let html = renderer.render("optional.html", &ctx).unwrap();
     assert!(html.contains("A test page"));
     assert!(html.contains("2024-01-15"));

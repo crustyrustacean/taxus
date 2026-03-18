@@ -1,8 +1,8 @@
 //! Integration tests for content loading.
 
-use generator::content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
-use generator::error::{ContentError, GeneratorError};
 use std::path::PathBuf;
+use yew_ssg_lib::content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+use yew_ssg_lib::error::{ContentError, GeneratorError};
 
 #[test]
 fn test_load_page_from_file() {
@@ -37,7 +37,10 @@ fn test_load_page_not_found() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(matches!(err, GeneratorError::Content(ContentError::Io { .. })));
+    assert!(matches!(
+        err,
+        GeneratorError::Content(ContentError::Io { .. })
+    ));
 }
 
 #[test]
@@ -91,8 +94,7 @@ fn test_section_from_dir() {
 
 #[test]
 fn test_page_draft_status() {
-    let draft =
-        Page::from_file("tests/fixtures/content_site/content/blog/draft-post.md").unwrap();
+    let draft = Page::from_file("tests/fixtures/content_site/content/blog/draft-post.md").unwrap();
     let published =
         Page::from_file("tests/fixtures/content_site/content/blog/first-post.md").unwrap();
 

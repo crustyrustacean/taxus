@@ -4,9 +4,9 @@
 //! It uses the generator library to build static sites from Markdown content.
 
 use clap::{Parser, Subcommand};
-use generator::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilder};
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
+use yew_ssg_lib::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilder};
 
 /// A Yew-based static site generator
 #[derive(Parser)]
@@ -126,7 +126,7 @@ struct BuildArgs {
     clean: bool,
 }
 
-fn run_build(args: &BuildArgs) -> Result<BuildReport, generator::error::GeneratorError> {
+fn run_build(args: &BuildArgs) -> Result<BuildReport, yew_ssg_lib::error::GeneratorError> {
     // Clean if requested
     if args.clean {
         if args.verbose {
@@ -152,15 +152,18 @@ struct InitArgs {
     force: bool,
 }
 
-fn run_init(args: &InitArgs) -> Result<InitReport, generator::error::GeneratorError> {
-    use generator::init::{derive_site_name, is_directory_empty};
+fn run_init(args: &InitArgs) -> Result<InitReport, yew_ssg_lib::error::GeneratorError> {
+    use yew_ssg_lib::init::{derive_site_name, is_directory_empty};
 
     // Check if directory is empty
     if !args.force {
         let is_empty = is_directory_empty(&args.path)?;
         if !is_empty {
             // Prompt user for confirmation
-            print!("Directory '{}' is not empty. Continue? (y/N): ", args.path.display());
+            print!(
+                "Directory '{}' is not empty. Continue? (y/N): ",
+                args.path.display()
+            );
             io::stdout().flush().ok();
 
             let stdin = io::stdin();
@@ -168,19 +171,25 @@ fn run_init(args: &InitArgs) -> Result<InitReport, generator::error::GeneratorEr
             if stdin.lock().read_line(&mut input).is_ok() {
                 let trimmed = input.trim().to_lowercase();
                 if trimmed != "y" && trimmed != "yes" {
-                    return Err(generator::error::InitError::Cancelled.into());
+                    return Err(yew_ssg_lib::error::InitError::Cancelled.into());
                 }
             } else {
-                return Err(generator::error::InitError::Cancelled.into());
+                return Err(yew_ssg_lib::error::InitError::Cancelled.into());
             }
         }
     }
 
     // Derive site name from path if not provided
-    let name = args.name.clone().unwrap_or_else(|| derive_site_name(&args.path));
+    let name = args
+        .name
+        .clone()
+        .unwrap_or_else(|| derive_site_name(&args.path));
 
     // Use default base URL if not provided
-    let base_url = args.base_url.clone().unwrap_or_else(|| "https://example.com".to_string());
+    let base_url = args
+        .base_url
+        .clone()
+        .unwrap_or_else(|| "https://example.com".to_string());
 
     // Create options and scaffolder
     let options = InitOptions::new(&name, &base_url).with_force(args.force);

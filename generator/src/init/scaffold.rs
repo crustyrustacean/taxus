@@ -50,12 +50,7 @@ impl InitScaffolder {
 
     /// Create the directory structure.
     fn create_directories(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        let directories = [
-            "content",
-            "templates",
-            "static",
-            "styles",
-        ];
+        let directories = ["content", "templates", "static", "styles"];
 
         for dir in &directories {
             let dir_path = path.join(dir);
@@ -94,7 +89,7 @@ impl InitScaffolder {
     /// Create the site.toml configuration file.
     fn create_site_config(&self, path: &Path, report: &mut InitReport) -> Result<()> {
         let config_path = path.join("site.toml");
-        
+
         if config_path.exists() {
             return Ok(()); // Don't overwrite existing config
         }
@@ -111,8 +106,7 @@ static_dir = "static"
 styles_dir = "styles"
 templates_dir = "templates"
 "#,
-            self.options.name,
-            self.options.base_url
+            self.options.name, self.options.base_url
         );
 
         std::fs::write(&config_path, content).map_err(|e| InitError::FileWrite {
@@ -127,7 +121,7 @@ templates_dir = "templates"
     /// Create the content/_index.md file.
     fn create_index_content(&self, path: &Path, report: &mut InitReport) -> Result<()> {
         let index_path = path.join("content/_index.md");
-        
+
         if index_path.exists() {
             return Ok(()); // Don't overwrite existing content
         }
@@ -149,8 +143,7 @@ This is your new static site. Start editing this file to add your content.
 3. Customize templates in `templates/`
 4. Run `yew-ssg build` to generate your site
 "#,
-            self.options.name,
-            self.options.name
+            self.options.name, self.options.name
         );
 
         std::fs::write(&index_path, content).map_err(|e| InitError::FileWrite {
@@ -268,7 +261,7 @@ This is your new static site. Start editing this file to add your content.
     /// Create the main.scss stylesheet.
     fn create_stylesheet(&self, path: &Path, report: &mut InitReport) -> Result<()> {
         let styles_path = path.join("styles/main.scss");
-        
+
         if styles_path.exists() {
             return Ok(()); // Don't overwrite existing styles
         }
@@ -379,7 +372,7 @@ footer {
     /// Create the static/.gitkeep file.
     fn create_gitkeep(&self, path: &Path, report: &mut InitReport) -> Result<()> {
         let gitkeep_path = path.join("static/.gitkeep");
-        
+
         if gitkeep_path.exists() {
             return Ok(());
         }
@@ -415,9 +408,9 @@ mod tests {
     fn test_scaffold_creates_directories() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         let report = scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         assert!(temp_dir.path().join("content").exists());
         assert!(temp_dir.path().join("templates").exists());
         assert!(temp_dir.path().join("static").exists());
@@ -429,12 +422,12 @@ mod tests {
     fn test_scaffold_creates_site_config() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         let config_path = temp_dir.path().join("site.toml");
         assert!(config_path.exists());
-        
+
         let content = std::fs::read_to_string(config_path).unwrap();
         assert!(content.contains("Test Site"));
         assert!(content.contains("https://test.example.com"));
@@ -444,12 +437,12 @@ mod tests {
     fn test_scaffold_creates_index_content() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         let index_path = temp_dir.path().join("content/_index.md");
         assert!(index_path.exists());
-        
+
         let content = std::fs::read_to_string(index_path).unwrap();
         assert!(content.contains("+++"));
         assert!(content.contains("title = \"Home\""));
@@ -459,9 +452,9 @@ mod tests {
     fn test_scaffold_creates_templates() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         assert!(temp_dir.path().join("templates/base.html").exists());
         assert!(temp_dir.path().join("templates/page.html").exists());
         assert!(temp_dir.path().join("templates/section.html").exists());
@@ -471,12 +464,12 @@ mod tests {
     fn test_scaffold_creates_stylesheet() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         let styles_path = temp_dir.path().join("styles/main.scss");
         assert!(styles_path.exists());
-        
+
         let content = std::fs::read_to_string(styles_path).unwrap();
         assert!(content.contains("box-sizing"));
     }
@@ -485,9 +478,9 @@ mod tests {
     fn test_scaffold_creates_gitkeep() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         assert!(temp_dir.path().join("static/.gitkeep").exists());
     }
 
@@ -495,9 +488,9 @@ mod tests {
     fn test_scaffold_report_counts() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         let report = scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         // 4 directories + 7 files (site.toml, _index.md, base.html, page.html, section.html, main.scss, .gitkeep)
         assert_eq!(report.directories_created, 4);
         assert_eq!(report.files_created, 7);
@@ -507,13 +500,13 @@ mod tests {
     fn test_scaffold_does_not_overwrite_config() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
-        
+
         // Create an existing config
         let config_path = temp_dir.path().join("site.toml");
         std::fs::write(&config_path, "existing content").unwrap();
-        
+
         scaffolder.scaffold(temp_dir.path()).unwrap();
-        
+
         let content = std::fs::read_to_string(config_path).unwrap();
         assert_eq!(content, "existing content");
     }
@@ -523,20 +516,23 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let invalid_options = InitOptions::new("", "https://test.example.com");
         let scaffolder = InitScaffolder::new(invalid_options);
-        
+
         let result = scaffolder.scaffold(temp_dir.path());
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), GeneratorError::Init(InitError::InvalidName(_))));
+        assert!(matches!(
+            result.unwrap_err(),
+            GeneratorError::Init(InitError::InvalidName(_))
+        ));
     }
 
     #[test]
     fn test_scaffold_creates_base_directory() {
         let temp_dir = TempDir::new().unwrap();
         let new_site_path = temp_dir.path().join("new-site");
-        
+
         let scaffolder = InitScaffolder::new(test_options());
         let report = scaffolder.scaffold(&new_site_path).unwrap();
-        
+
         assert!(new_site_path.exists());
         assert_eq!(report.path, new_site_path);
     }

@@ -2,9 +2,9 @@
 //!
 //! These tests verify the route discovery functionality using test fixtures.
 
-use generator::routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
-use generator::content::FilesystemContentSource;
 use std::path::PathBuf;
+use yew_ssg_lib::content::FilesystemContentSource;
+use yew_ssg_lib::routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 
 /// Test discovering routes from the content_site fixture.
 #[test]
@@ -62,7 +62,10 @@ fn test_discover_content_site_nested_routes() {
     let post = registry.get("/blog/first-post/").unwrap();
     assert!(post.is_page());
     assert_eq!(post.content_file, PathBuf::from("blog/first-post.md"));
-    assert_eq!(post.output_file, PathBuf::from("blog/first-post/index.html"));
+    assert_eq!(
+        post.output_file,
+        PathBuf::from("blog/first-post/index.html")
+    );
 }
 
 /// Test counting pages and sections.
@@ -174,54 +177,66 @@ fn test_registry_duplicate_rejection() {
 #[test]
 fn test_route_info_validation() {
     // Valid paths
-    assert!(RouteInfo::new(
-        "/".to_string(),
-        PathBuf::from("_index.md"),
-        PathBuf::from("index.html"),
-        RouteKind::Section,
-    )
-    .is_ok());
+    assert!(
+        RouteInfo::new(
+            "/".to_string(),
+            PathBuf::from("_index.md"),
+            PathBuf::from("index.html"),
+            RouteKind::Section,
+        )
+        .is_ok()
+    );
 
-    assert!(RouteInfo::new(
-        "/about/".to_string(),
-        PathBuf::from("about.md"),
-        PathBuf::from("about/index.html"),
-        RouteKind::Page,
-    )
-    .is_ok());
+    assert!(
+        RouteInfo::new(
+            "/about/".to_string(),
+            PathBuf::from("about.md"),
+            PathBuf::from("about/index.html"),
+            RouteKind::Page,
+        )
+        .is_ok()
+    );
 
-    assert!(RouteInfo::new(
-        "/blog/first-post/".to_string(),
-        PathBuf::from("blog/first-post.md"),
-        PathBuf::from("blog/first-post/index.html"),
-        RouteKind::Page,
-    )
-    .is_ok());
+    assert!(
+        RouteInfo::new(
+            "/blog/first-post/".to_string(),
+            PathBuf::from("blog/first-post.md"),
+            PathBuf::from("blog/first-post/index.html"),
+            RouteKind::Page,
+        )
+        .is_ok()
+    );
 
     // Invalid paths
-    assert!(RouteInfo::new(
-        "about/".to_string(),
-        PathBuf::from("about.md"),
-        PathBuf::from("about/index.html"),
-        RouteKind::Page,
-    )
-    .is_err());
+    assert!(
+        RouteInfo::new(
+            "about/".to_string(),
+            PathBuf::from("about.md"),
+            PathBuf::from("about/index.html"),
+            RouteKind::Page,
+        )
+        .is_err()
+    );
 
-    assert!(RouteInfo::new(
-        "/about".to_string(),
-        PathBuf::from("about.md"),
-        PathBuf::from("about/index.html"),
-        RouteKind::Page,
-    )
-    .is_err());
+    assert!(
+        RouteInfo::new(
+            "/about".to_string(),
+            PathBuf::from("about.md"),
+            PathBuf::from("about/index.html"),
+            RouteKind::Page,
+        )
+        .is_err()
+    );
 
-    assert!(RouteInfo::new(
-        "".to_string(),
-        PathBuf::from("about.md"),
-        PathBuf::from("about/index.html"),
-        RouteKind::Page,
-    )
-    .is_err());
+    assert!(
+        RouteInfo::new(
+            "".to_string(),
+            PathBuf::from("about.md"),
+            PathBuf::from("about/index.html"),
+            RouteKind::Page,
+        )
+        .is_err()
+    );
 }
 
 /// Test route kind helper methods.
@@ -278,23 +293,27 @@ fn test_generate_rust_manifest() {
     let mut registry = RouteRegistry::new();
 
     registry
-        .register(RouteInfo::new(
-            "/".to_string(),
-            PathBuf::from("_index.md"),
-            PathBuf::from("index.html"),
-            RouteKind::Section,
+        .register(
+            RouteInfo::new(
+                "/".to_string(),
+                PathBuf::from("_index.md"),
+                PathBuf::from("index.html"),
+                RouteKind::Section,
+            )
+            .unwrap(),
         )
-        .unwrap())
         .unwrap();
 
     registry
-        .register(RouteInfo::new(
-            "/about/".to_string(),
-            PathBuf::from("about.md"),
-            PathBuf::from("about/index.html"),
-            RouteKind::Page,
+        .register(
+            RouteInfo::new(
+                "/about/".to_string(),
+                PathBuf::from("about.md"),
+                PathBuf::from("about/index.html"),
+                RouteKind::Page,
+            )
+            .unwrap(),
         )
-        .unwrap())
         .unwrap();
 
     let manifest = registry.generate_rust_manifest();

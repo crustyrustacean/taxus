@@ -2,11 +2,11 @@
 //!
 //! This module provides the main [`SiteBuilder`] type for building static sites.
 
+use crate::build::pipeline;
+use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
 use crate::error::{BuildError, Result};
 use crate::templates::SiteContext;
-use crate::build::pipeline;
-use crate::build::report::BuildReport;
 use std::path::Path;
 use std::time::Instant;
 
@@ -102,7 +102,10 @@ impl SiteBuilder {
 
         if self.verbose {
             println!("Building site: {}", self.config.site.name);
-            println!("Content directory: {}", self.config.build.content_dir.display());
+            println!(
+                "Content directory: {}",
+                self.config.build.content_dir.display()
+            );
             println!("Output directory: {}", output_dir.display());
         }
 
@@ -127,7 +130,10 @@ impl SiteBuilder {
         let templates = pipeline::load_templates(&self.config)?;
 
         if self.verbose {
-            println!("  Templates loaded from {}", self.config.build.templates_dir.display());
+            println!(
+                "  Templates loaded from {}",
+                self.config.build.templates_dir.display()
+            );
         }
 
         // Stage 3: Process content
@@ -280,7 +286,7 @@ mod tests {
             .dry_run(true)
             .verbose(true)
             .include_drafts(true);
-        
+
         assert!(builder.dry_run);
         assert!(builder.verbose);
         assert!(builder.include_drafts);

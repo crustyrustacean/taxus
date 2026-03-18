@@ -136,10 +136,11 @@ impl TeraRenderer {
         }
 
         let glob = dir.join("**/*.html");
-        let tera = Tera::new(glob.to_string_lossy().as_ref()).map_err(|e| TemplateError::Syntax {
-            template: dir.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let tera =
+            Tera::new(glob.to_string_lossy().as_ref()).map_err(|e| TemplateError::Syntax {
+                template: dir.display().to_string(),
+                message: e.to_string(),
+            })?;
 
         Ok(Self { tera })
     }
@@ -207,10 +208,11 @@ impl TemplateRenderer for TeraRenderer {
 
         let glob = dir.join("**/*.html");
         // Create a new Tera instance with the glob pattern
-        let new_tera = Tera::new(glob.to_string_lossy().as_ref()).map_err(|e| TemplateError::Syntax {
-            template: dir.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let new_tera =
+            Tera::new(glob.to_string_lossy().as_ref()).map_err(|e| TemplateError::Syntax {
+                template: dir.display().to_string(),
+                message: e.to_string(),
+            })?;
         self.tera = new_tera;
         Ok(())
     }
@@ -383,10 +385,7 @@ mod tests {
         let result = renderer.load_templates(Path::new("nonexistent_dir"));
 
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            TemplateError::DirNotFound(_)
-        ));
+        assert!(matches!(result.unwrap_err(), TemplateError::DirNotFound(_)));
     }
 
     #[test]

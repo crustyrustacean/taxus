@@ -128,13 +128,13 @@ impl StaticCopier {
             }
 
             // Calculate relative path and destination
-            let relative = path.strip_prefix(src_dir).map_err(|_| {
-                AssetError::CopyFailed {
+            let relative = path
+                .strip_prefix(src_dir)
+                .map_err(|_| AssetError::CopyFailed {
                     src: path.to_path_buf(),
                     dest: dest_dir.to_path_buf(),
                     reason: "Failed to calculate relative path".to_string(),
-                }
-            })?;
+                })?;
 
             let dest_path = dest_dir.join(relative);
 
@@ -197,7 +197,8 @@ mod tests {
 
     #[test]
     fn test_static_copier_with_exclusions() {
-        let copier = StaticCopier::with_exclusions(vec!["*.scss".to_string(), "*.sass".to_string()]);
+        let copier =
+            StaticCopier::with_exclusions(vec!["*.scss".to_string(), "*.sass".to_string()]);
         assert_eq!(copier.exclude_patterns.len(), 2);
     }
 

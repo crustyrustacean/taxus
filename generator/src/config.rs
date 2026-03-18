@@ -148,10 +148,7 @@ impl SiteConfig {
     /// Returns an error if required fields are missing or invalid.
     pub fn validate(&self) -> Result<()> {
         if self.site.name.is_empty() {
-            return Err(ConfigError::MissingField {
-                field: "site.name",
-            }
-            .into());
+            return Err(ConfigError::MissingField { field: "site.name" }.into());
         }
 
         if self.site.base_url.is_empty() {
@@ -235,10 +232,7 @@ output_dir = "public"
 
         assert_eq!(config.site.name, "Test Site");
         assert_eq!(config.site.base_url, "https://test.example.com");
-        assert_eq!(
-            config.site.description,
-            Some("A test site".to_string())
-        );
+        assert_eq!(config.site.description, Some("A test site".to_string()));
         assert_eq!(config.site.author, Some("Test Author".to_string()));
         assert_eq!(config.build.content_dir, PathBuf::from("pages"));
         assert_eq!(config.build.output_dir, PathBuf::from("public"));

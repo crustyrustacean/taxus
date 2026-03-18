@@ -53,17 +53,21 @@ impl InitOptions {
     /// Validate the options.
     pub fn validate(&self) -> std::result::Result<(), InitError> {
         if self.name.trim().is_empty() {
-            return Err(InitError::InvalidName("Site name cannot be empty".to_string()));
+            return Err(InitError::InvalidName(
+                "Site name cannot be empty".to_string(),
+            ));
         }
 
         if self.base_url.trim().is_empty() {
-            return Err(InitError::InvalidBaseUrl("Base URL cannot be empty".to_string()));
+            return Err(InitError::InvalidBaseUrl(
+                "Base URL cannot be empty".to_string(),
+            ));
         }
 
         // Basic URL validation - must start with http:// or https://
         if !self.base_url.starts_with("http://") && !self.base_url.starts_with("https://") {
             return Err(InitError::InvalidBaseUrl(
-                "Base URL must start with http:// or https://".to_string()
+                "Base URL must start with http:// or https://".to_string(),
             ));
         }
 
