@@ -239,6 +239,7 @@ mod tests {
                 styles_dir: PathBuf::from("tests/fixtures/content_site/styles"),
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
             },
+            base_dir: PathBuf::new(),
         }
     }
 

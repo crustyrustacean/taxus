@@ -15,6 +15,9 @@ pub struct SiteConfig {
     /// Build configuration
     #[serde(default)]
     pub build: BuildConfig,
+    /// Base directory containing site.toml (not serialized)
+    #[serde(skip)]
+    pub base_dir: PathBuf,
 }
 
 /// Site metadata from the [site] section.
@@ -82,6 +85,30 @@ impl Default for BuildConfig {
     }
 }
 
+impl BuildConfig {
+    /// Resolve all relative paths to be absolute paths based on the base directory.
+    ///
+    /// This ensures that paths work correctly regardless of the current working directory.
+    pub fn resolve_paths(&mut self, base_dir: &Path) {
+        self.content_dir = Self::resolve_path(&self.content_dir, base_dir);
+        self.output_dir = Self::resolve_path(&self.output_dir, base_dir);
+        self.static_dir = Self::resolve_path(&self.static_dir, base_dir);
+        self.styles_dir = Self::resolve_path(&self.styles_dir, base_dir);
+        self.templates_dir = Self::resolve_path(&self.templates_dir, base_dir);
+    }
+
+    /// Resolve a single path relative to the base directory.
+    ///
+    /// Absolute paths are preserved as-is.
+    fn resolve_path(path: &Path, base_dir: &Path) -> PathBuf {
+        if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            base_dir.join(path)
+        }
+    }
+}
+
 impl SiteConfig {
     /// Load configuration from a site.toml file.
     ///
@@ -101,12 +128,25 @@ impl SiteConfig {
             return Err(ConfigError::NotFound(path.to_path_buf()).into());
         }
 
+        // Get the directory containing the config file as the base directory
+        let base_dir = path
+            .parent()
+            .ok_or_else(|| ConfigError::Invalid(format!(
+                "Cannot determine parent directory of config file: {}",
+                path.display()
+            )))?
+            .to_path_buf();
+
         let content = std::fs::read_to_string(path).map_err(|e| GeneratorError::Io {
             path: path.to_path_buf(),
             source: e,
         })?;
 
-        let config: Self = toml::from_str(&content).map_err(ConfigError::from)?;
+        let mut config: Self = toml::from_str(&content).map_err(ConfigError::from)?;
+
+        // Resolve all relative paths to be absolute based on the config file location
+        config.build.resolve_paths(&base_dir);
+        config.base_dir = base_dir;
 
         Ok(config)
     }
@@ -140,6 +180,7 @@ impl SiteConfig {
                 author: None,
             },
             build: BuildConfig::default(),
+            base_dir: PathBuf::new(),
         }
     }
 

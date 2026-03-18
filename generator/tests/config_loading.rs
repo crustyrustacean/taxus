@@ -1,6 +1,5 @@
 //! Integration tests for configuration loading.
 
-use std::path::PathBuf;
 use yew_ssg_lib::config::SiteConfig;
 use yew_ssg_lib::error::{ConfigError, GeneratorError};
 
@@ -16,9 +15,11 @@ fn test_load_minimal_site_config() {
     assert!(config.site.description.is_none());
     assert!(config.site.author.is_none());
 
-    // Check defaults are applied
-    assert_eq!(config.build.content_dir, PathBuf::from("content"));
-    assert_eq!(config.build.output_dir, PathBuf::from("dist"));
+    // Check defaults are applied and paths are resolved relative to config file location
+    assert!(config.build.content_dir.ends_with("content"));
+    assert!(config.build.content_dir.starts_with("tests/fixtures/minimal_site"));
+    assert!(config.build.output_dir.ends_with("dist"));
+    assert!(config.build.output_dir.starts_with("tests/fixtures/minimal_site"));
 }
 
 #[test]
@@ -36,8 +37,11 @@ fn test_load_full_site_config() {
     );
     assert_eq!(config.site.author, Some("Test Author".to_string()));
 
-    assert_eq!(config.build.content_dir, PathBuf::from("content"));
-    assert_eq!(config.build.output_dir, PathBuf::from("dist"));
+    // Paths are resolved relative to the config file location
+    assert!(config.build.content_dir.ends_with("content"));
+    assert!(config.build.content_dir.starts_with("tests/fixtures/full_site"));
+    assert!(config.build.output_dir.ends_with("dist"));
+    assert!(config.build.output_dir.starts_with("tests/fixtures/full_site"));
 }
 
 #[test]

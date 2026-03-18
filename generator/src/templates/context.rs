@@ -24,8 +24,21 @@ pub struct TemplateContext {
     /// Site-wide configuration
     pub site: SiteContext,
 
+    /// Current date/time information
+    pub now: NowContext,
+
     /// Custom variables from frontmatter extra field
     pub extra: HashMap<String, JsonValue>,
+}
+
+/// Current date/time context for templates.
+///
+/// Provides the current year and other date information for use in templates,
+/// such as copyright notices.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NowContext {
+    /// Current year (e.g., 2024)
+    pub year: i32,
 }
 
 /// Page-specific context for templates.
@@ -110,10 +123,14 @@ impl TemplateContext {
     /// assert_eq!(ctx.site.name, "My Site");
     /// ```
     pub fn new(site: SiteContext) -> Self {
+        use chrono::{Datelike, Utc};
         Self {
             page: None,
             section: None,
             site,
+            now: NowContext {
+                year: Utc::now().year(),
+            },
             extra: HashMap::new(),
         }
     }

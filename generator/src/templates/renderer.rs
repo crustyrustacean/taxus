@@ -135,12 +135,39 @@ impl TeraRenderer {
             return Err(TemplateError::DirNotFound(dir.to_path_buf()));
         }
 
-        let glob = dir.join("**/*.html");
-        let tera =
-            Tera::new(glob.to_string_lossy().as_ref()).map_err(|e| TemplateError::Syntax {
-                template: dir.display().to_string(),
-                message: e.to_string(),
-            })?;
+        use std::fs;
+        use walkdir::WalkDir;
+
+        // Create a new empty Tera instance
+        let mut tera = Tera::default();
+
+        // Walk the templates directory and load each template
+        for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+
+            // Only process .html files
+            if path.extension().map_or(false, |ext| ext == "html") {
+                // Get the relative path from the templates directory
+                let relative = path.strip_prefix(dir).map_err(|_| TemplateError::DirNotFound(
+                    dir.to_path_buf()
+                ))?;
+
+                // Use forward slashes for template names (Tera convention)
+                let name = relative.to_string_lossy().replace('\\', "/");
+
+                // Read the template content
+                let content = fs::read_to_string(path).map_err(|e| TemplateError::Syntax {
+                    template: name.clone(),
+                    message: e.to_string(),
+                })?;
+
+                // Register the template with the relative name
+                tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
+                    template: name.clone(),
+                    message: e.to_string(),
+                })?;
+            }
+        }
 
         Ok(Self { tera })
     }
@@ -161,6 +188,7 @@ impl TeraRenderer {
         }
 
         ctx.insert("site", &context.site);
+        ctx.insert("now", &context.now);
         ctx.insert("extra", &context.extra);
 
         ctx
@@ -180,7 +208,7 @@ impl TemplateRenderer for TeraRenderer {
         self.tera.render(template, &tera_ctx).map_err(|e| {
             // Check if the error message indicates template not found
             let err_msg = e.to_string();
-            if err_msg.contains("not found") || err_msg.contains("Failed to render") {
+            if err_msg.contains("not found") {
                 TemplateError::NotFound(template.to_string())
             } else {
                 TemplateError::Render(err_msg)
@@ -206,14 +234,41 @@ impl TemplateRenderer for TeraRenderer {
             return Err(TemplateError::DirNotFound(dir.to_path_buf()));
         }
 
-        let glob = dir.join("**/*.html");
-        // Create a new Tera instance with the glob pattern
-        let new_tera =
-            Tera::new(glob.to_string_lossy().as_ref()).map_err(|e| TemplateError::Syntax {
-                template: dir.display().to_string(),
-                message: e.to_string(),
-            })?;
-        self.tera = new_tera;
+        use std::fs;
+        use walkdir::WalkDir;
+
+        // Create a new empty Tera instance
+        let mut tera = Tera::default();
+
+        // Walk the templates directory and load each template
+        for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+
+            // Only process .html files
+            if path.extension().map_or(false, |ext| ext == "html") {
+                // Get the relative path from the templates directory
+                let relative = path.strip_prefix(dir).map_err(|_| TemplateError::DirNotFound(
+                    dir.to_path_buf()
+                ))?;
+
+                // Use forward slashes for template names (Tera convention)
+                let name = relative.to_string_lossy().replace('\\', "/");
+
+                // Read the template content
+                let content = fs::read_to_string(path).map_err(|e| TemplateError::Syntax {
+                    template: name.clone(),
+                    message: e.to_string(),
+                })?;
+
+                // Register the template with the relative name
+                tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
+                    template: name.clone(),
+                    message: e.to_string(),
+                })?;
+            }
+        }
+
+        self.tera = tera;
         Ok(())
     }
 }
