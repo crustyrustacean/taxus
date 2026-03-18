@@ -25,7 +25,7 @@ impl DefaultTemplates {
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p>&copy; {{ "now" | date(format="%Y") }} {{ site.name }}</p>
+        <p>&copy; {{ now.year }} {{ site.name }}</p>
     </footer>
 </body>
 </html>

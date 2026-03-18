@@ -114,15 +114,9 @@ impl ScssProcessor {
     }
 }
 
-impl AssetProcessor for ScssProcessor {
-    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError> {
-        let mut report = AssetReport::new();
-
-        // Check if source exists
-        if !src.exists() {
-            return Err(AssetError::NotFound(src.to_path_buf()));
-        }
-
+impl ScssProcessor {
+    /// Process a single SCSS file.
+    fn process_file(&self, src: &Path, dest: &Path, report: &mut AssetReport) -> Result<(), AssetError> {
         // Read source file
         let content = fs::read_to_string(src).map_err(|e| AssetError::Io {
             path: src.to_path_buf(),
@@ -150,6 +144,56 @@ impl AssetProcessor for ScssProcessor {
         })?;
 
         report.add_processed();
+        Ok(())
+    }
+
+    /// Process a directory of SCSS files recursively.
+    fn process_directory(&self, src_dir: &Path, dest_dir: &Path, report: &mut AssetReport) -> Result<(), AssetError> {
+        use walkdir::WalkDir;
+
+        for entry in WalkDir::new(src_dir).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+
+            // Skip directories and non-SCSS files
+            if !path.is_file() || !self.handles(path) {
+                continue;
+            }
+
+            // Calculate relative path and destination
+            let relative = path
+                .strip_prefix(src_dir)
+                .map_err(|_| AssetError::NotFound(src_dir.to_path_buf()))?;
+
+            let dest_path = dest_dir.join(relative);
+
+            // Process the file
+            match self.process_file(path, &dest_path, report) {
+                Ok(()) => {}
+                Err(e) => report.add_error(e),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl AssetProcessor for ScssProcessor {
+    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError> {
+        let mut report = AssetReport::new();
+
+        // Check if source exists
+        if !src.exists() {
+            return Err(AssetError::NotFound(src.to_path_buf()));
+        }
+
+        if src.is_dir() {
+            // Process directory recursively
+            self.process_directory(src, dest, &mut report)?;
+        } else {
+            // Process single file
+            self.process_file(src, dest, &mut report)?;
+        }
+
         Ok(report)
     }
 
