@@ -84,6 +84,10 @@ pub struct InitReport {
     pub directories_created: usize,
     /// Number of files created
     pub files_created: usize,
+    /// List of directories that were created
+    pub created_dirs: Vec<PathBuf>,
+    /// List of files that were created
+    pub created_files: Vec<PathBuf>,
 }
 
 impl InitReport {
@@ -93,20 +97,37 @@ impl InitReport {
             path,
             directories_created: 0,
             files_created: 0,
+            created_dirs: Vec::new(),
+            created_files: Vec::new(),
         }
     }
 
     /// Print a summary of the initialization.
     pub fn print_summary(&self) {
-        println!("✓ Site initialized successfully at {}", self.path.display());
-        println!("  Directories created: {}", self.directories_created);
-        println!("  Files created: {}", self.files_created);
-        println!();
+        println!("\n✓ Site initialized at {}/\n", self.path.display());
+
+        if !self.created_dirs.is_empty() {
+            println!("  Directories");
+            for dir in &self.created_dirs {
+                println!("    {}/", dir.display());
+            }
+            println!();
+        }
+
+        if !self.created_files.is_empty() {
+            println!("  Files");
+            for file in &self.created_files {
+                println!("    {}", file.display());
+            }
+            println!();
+        }
+
         println!("Next steps:");
-        println!("  1. Edit site.toml to configure your site");
-        println!("  2. Add content to the content/ directory");
-        println!("  3. Customize templates in templates/");
-        println!("  4. Run 'yew-ssg build' to build your site");
+        println!("  cd {}", self.path.display());
+        println!("  Edit site.toml to set your site name and base URL");
+        println!("  Add content to the content/ directory");
+        println!("  Customize templates in templates/");
+        println!("  Run: yew-ssg build --verbose");
     }
 }
 
@@ -217,6 +238,8 @@ mod tests {
         assert_eq!(report.path, PathBuf::from("my-site"));
         assert_eq!(report.directories_created, 0);
         assert_eq!(report.files_created, 0);
+        assert!(report.created_dirs.is_empty());
+        assert!(report.created_files.is_empty());
     }
 
     #[test]

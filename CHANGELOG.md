@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.17] - 2026-03-19
+
+### Added
+
+#### CLI Improvements
+
+- **`clean` Subcommand**: New standalone subcommand to remove the output directory
+  - `yew-ssg clean`: Delete generated files from the output directory
+  - `yew-ssg clean --dir PATH`: Clean a site in a different directory
+  - Previously, cleaning required `yew-ssg build --clean` which also triggered a build
+
+- **`routes` Subcommand**: New diagnostic command to inspect discovered routes
+  - `yew-ssg routes`: List all routes that would be generated from the content directory
+  - Displays a sorted table of URL path → source file → output file
+  - Prints counts of total routes, pages, and sections
+  - Useful for debugging route discovery without running a full build
+
+- **`--quiet` / `-q` Flag on `build`**: Suppress all output except errors
+  - Mutually exclusive with `--verbose`
+  - Build summary is not shown; only errors are printed to stderr
+
+- **`--output` / `-o PATH` Flag on `build`**: Override the output directory at runtime
+  - Avoids editing `site.toml` just to preview output in a temporary location
+  - Works with all other flags: `yew-ssg build --output /tmp/preview --dry-run`
+
+- **Richer Help Text**: All subcommands and arguments now have expanded descriptions
+  - Root command includes a "Quick start" block
+  - Each subcommand has a `long_about` with a description and usage examples
+  - Every argument explains _what_ it is and _when_ to use it
+
+- **Actionable Error Messages**: Errors now include a contextual `Hint:` line
+  - `Config::NotFound` → suggests `yew-ssg init` or `--dir`
+  - `Build::NoContent` → suggests adding `.md` files to `content/`
+  - `Template::NotFound` / `Template::DirNotFound` → suggests checking `templates/`
+  - `Init::Cancelled` → silent (intentional user action)
+
+#### InitReport Enhancements
+
+- **`created_dirs: Vec<PathBuf>`**: Tracks every directory created during `init`
+- **`created_files: Vec<PathBuf>`**: Tracks every file created during `init`
+- **`print_summary()`**: Now enumerates each created directory and file by path
+  - Opens with `✓ Site initialized at <path>/`
+  - Shows `cd <path>` as the first next step
+
+### Changed
+
+- **`BuildReport::print_summary()`** ([`generator/src/build/report.rs`](generator/src/build/report.rs)):
+  - Header now includes build status (`✓ Build complete` / `⚠ Build completed with warnings`) and duration
+  - All stat labels use a fixed-width column for consistent alignment
+  - Warnings shown in a separate section below the separator
+
+- **`generator/src/bin/main.rs`**: Refactored `run_build` to load config first so `--output` can be applied before cleaning
+
+- **`generator/src/init/scaffold.rs`**: All file/directory creation helpers now push to `InitReport.created_dirs` and `InitReport.created_files`
+
 ## [0.1.7] - 2026-03-17
 
 ### Added

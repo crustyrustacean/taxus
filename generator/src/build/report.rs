@@ -56,29 +56,33 @@ impl BuildReport {
 
     /// Print a summary of the build to stdout.
     pub fn print_summary(&self) {
-        println!("\n Build Summary");
+        let status = if self.has_warnings() {
+            format!("⚠  Build completed with warnings  ({:.2}s)", self.duration.as_secs_f64())
+        } else {
+            format!("✓  Build complete  ({:.2}s)", self.duration.as_secs_f64())
+        };
+
+        println!("\n{status}");
         println!("─────────────────────────────────");
-        println!("  Pages rendered:  {}", self.pages_rendered);
-        println!("  Sections rendered: {}", self.sections_rendered);
+        println!("  {:<16} {}", "Pages", self.pages_rendered);
+        println!("  {:<16} {}", "Sections", self.sections_rendered);
         if self.drafts_skipped > 0 {
-            println!("  Drafts skipped:  {}", self.drafts_skipped);
+            println!("  {:<16} {}", "Drafts skipped", self.drafts_skipped);
         }
-        println!("  Assets processed: {}", self.assets.files_processed);
-        println!("  Total files:      {}", self.total_files());
-        println!("  Duration:         {:.2}s", self.duration.as_secs_f64());
-        println!("  Output:           {}", self.output_dir.display());
+        println!("  {:<16} {}", "Assets", self.assets.files_processed);
+        println!("  {:<16} {}", "Total files", self.total_files());
+        println!("  {:<16} {}", "Output", self.output_dir.display());
+        println!("─────────────────────────────────");
 
         if self.has_warnings() {
-            println!("\n Warnings:");
+            println!("\n  Warnings:");
             for warning in &self.warnings {
-                println!("  ⚠ {warning}");
+                println!("    ⚠  {warning}");
             }
             for error in &self.assets.errors {
-                println!("  ⚠ {error}");
+                println!("    ⚠  {error}");
             }
         }
-
-        println!("─────────────────────────────────");
     }
 }
 

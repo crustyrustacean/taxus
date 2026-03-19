@@ -575,6 +575,8 @@ pub struct InitReport {
     pub path: PathBuf,
     pub directories_created: usize,
     pub files_created: usize,
+    pub created_dirs: Vec<PathBuf>,   // paths of directories created
+    pub created_files: Vec<PathBuf>,  // paths of files created
 }
 ```
 
@@ -920,6 +922,105 @@ fn process_assets() -> Result<()> {
     Ok(())
 }
 ```
+
+## CLI Reference
+
+The `yew-ssg` binary provides four subcommands.
+
+### `yew-ssg build`
+
+Build the static site from content and templates.
+
+```
+yew-ssg build [OPTIONS]
+
+Options:
+  -d, --dir <PATH>       Root directory (must contain site.toml) [default: .]
+  -v, --verbose          Print detailed progress for each build stage
+  -q, --quiet            Suppress all output except errors
+      --include-drafts   Include pages marked draft = true
+      --dry-run          Simulate without writing files
+      --clean            Remove output directory before building
+  -o, --output <PATH>    Override the output directory from site.toml
+  -h, --help             Print help
+```
+
+### `yew-ssg clean`
+
+Remove all generated files from the output directory.
+
+```
+yew-ssg clean [OPTIONS]
+
+Options:
+  -d, --dir <PATH>   Root directory (must contain site.toml) [default: .]
+  -h, --help         Print help
+```
+
+### `yew-ssg init`
+
+Initialize a new site with a default directory structure.
+
+```
+yew-ssg init [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]   Directory to initialize [default: .]
+
+Options:
+  -n, --name <NAME>       Site name used in templates and site.toml
+  -u, --base-url <URL>    Base URL (must start with http:// or https://)
+  -f, --force             Initialize even if directory is not empty
+  -h, --help              Print help
+```
+
+Files created by `init`:
+
+| Path | Description |
+|------|-------------|
+| `site.toml` | Site configuration |
+| `content/_index.md` | Home page content |
+| `templates/base.html` | Base HTML layout |
+| `templates/page.html` | Single-page template |
+| `templates/section.html` | Section/listing template |
+| `styles/main.scss` | Starter stylesheet |
+| `static/scripts.js` | Placeholder scripts |
+| `static/favicon.png` | Placeholder favicon |
+
+### `yew-ssg routes`
+
+List all routes discovered from the content directory without building.
+
+```
+yew-ssg routes [OPTIONS]
+
+Options:
+  -d, --dir <PATH>   Root directory (must contain site.toml) [default: .]
+  -h, --help         Print help
+```
+
+Example output:
+
+```
+Routes for "My Site"
+─────────────────────────────────────────────────────
+  [section]  /             _index.md              index.html
+  [page]     /about/       about.md               about/index.html
+  [section]  /blog/        blog/_index.md         blog/index.html
+  [page]     /blog/hello/  blog/hello-world.md    blog/hello/index.html
+─────────────────────────────────────────────────────
+  Total: 4 routes (2 pages, 2 sections)
+```
+
+### Error Hints
+
+When a command fails, the CLI prints an actionable hint alongside the error:
+
+| Error | Hint |
+|-------|------|
+| `site.toml` not found | Run `yew-ssg init` or use `--dir` |
+| No content found | Add `.md` files to `content/`, start with `content/_index.md` |
+| Template not found | Check that `templates/` contains `base.html` and `page.html` |
 
 ## Feature Flags
 

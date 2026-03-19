@@ -12,7 +12,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Template System**: Flexible Tera-based templates with inheritance and custom context
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
 - **Build System**: Unified build pipeline with `SiteBuilder` for orchestrating all stages
-- **CLI Interface**: Command-line interface with clap for flexible build options
+- **CLI Interface**: Command-line interface with clap — `build`, `clean`, `init`, and `routes` subcommands with rich help text and actionable error messages
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
 - **Reusable Library**: The generator is available as a library for programmatic use
@@ -54,7 +54,7 @@ yew-ssg/
 
 ### Initialize a New Site
 
-Create a new site with the default structure:
+Create a new site with the default directory structure:
 
 ```bash
 # Initialize in the current directory
@@ -74,17 +74,18 @@ This creates the following structure:
 
 ```
 my-site/
-├── site.toml           # Site configuration
+├── site.toml               # Site configuration
 ├── content/
-│   └── _index.md       # Home page
+│   └── _index.md           # Home page
 ├── templates/
-│   ├── base.html       # Base template
-│   ├── page.html      # Page template
-│   └── section.html    # Section template
+│   ├── base.html           # Base HTML layout
+│   ├── page.html           # Single-page template
+│   └── section.html        # Section/listing template
 ├── static/
-│   └── .gitkeep        # Empty directory placeholder
+│   ├── scripts.js          # Placeholder scripts file
+│   └── favicon.png         # Placeholder favicon
 └── styles/
-    └── main.scss       # Basic stylesheet
+    └── main.scss           # Starter stylesheet
 ```
 
 ### Build the Static Site
@@ -95,6 +96,9 @@ cargo run -- build
 
 # Build with verbose output
 cargo run -- build --verbose
+
+# Build silently (errors only)
+cargo run -- build --quiet
 
 # Build including draft pages
 cargo run -- build --include-drafts
@@ -107,6 +111,43 @@ cargo run -- build --clean
 
 # Build from a different directory
 cargo run -- build --dir /path/to/site
+
+# Override the output directory
+cargo run -- build --output /tmp/preview
+```
+
+### Clean the Output Directory
+
+Remove all generated files without rebuilding:
+
+```bash
+cargo run -- clean
+
+# Clean a site in a different directory
+cargo run -- clean --dir /path/to/site
+```
+
+### Inspect Discovered Routes
+
+List all routes that would be generated from the content directory,
+without running a full build. Useful for debugging:
+
+```bash
+cargo run -- routes
+
+# Routes for a site in a different directory
+cargo run -- routes --dir /path/to/site
+```
+
+Example output:
+
+```
+Routes for "My Site"
+─────────────────────────────────────────────────────
+  [section]  /          →  _index.md             →  index.html
+  [page]     /about/    →  about.md              →  about/index.html
+─────────────────────────────────────────────────────
+  Total: 2 routes (1 page, 1 section)
 ```
 
 ### Development

@@ -4,7 +4,7 @@ default-members = ["generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.16"
+version = "0.1.17"
 edition = "2024"
 authors = ["Jeff Mitchell"]
 description = "A Rust workspace for a Yew based static site generator"

@@ -60,6 +60,7 @@ impl InitScaffolder {
                     source: e,
                 })?;
                 report.directories_created += 1;
+                report.created_dirs.push(dir_path);
             }
         }
 
@@ -115,6 +116,7 @@ templates_dir = "templates"
         })?;
 
         report.files_created += 1;
+        report.created_files.push(config_path);
         Ok(())
     }
 
@@ -152,6 +154,7 @@ This is your new static site. Start editing this file to add your content.
         })?;
 
         report.files_created += 1;
+        report.created_files.push(index_path);
         Ok(())
     }
 
@@ -191,6 +194,7 @@ This is your new static site. Start editing this file to add your content.
                 source: e,
             })?;
             report.files_created += 1;
+            report.created_files.push(base_path);
         }
 
         // Create page.html
@@ -215,6 +219,7 @@ This is your new static site. Start editing this file to add your content.
                 source: e,
             })?;
             report.files_created += 1;
+            report.created_files.push(page_path);
         }
 
         // Create section.html
@@ -255,6 +260,7 @@ This is your new static site. Start editing this file to add your content.
                 source: e,
             })?;
             report.files_created += 1;
+            report.created_files.push(section_path);
         }
 
         Ok(())
@@ -368,6 +374,7 @@ footer {
         })?;
 
         report.files_created += 1;
+        report.created_files.push(styles_path);
         Ok(())
     }
 
@@ -384,6 +391,7 @@ console.log('Site loaded');
                 source: e,
             })?;
             report.files_created += 1;
+            report.created_files.push(scripts_path);
         }
 
         // Create favicon.png (a minimal 16x16 PNG)
@@ -406,6 +414,7 @@ console.log('Site loaded');
                 source: e,
             })?;
             report.files_created += 1;
+            report.created_files.push(favicon_path);
         }
 
         Ok(())
