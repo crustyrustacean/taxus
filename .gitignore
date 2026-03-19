@@ -6,6 +6,7 @@
 # LLM settings
 
 # LLM Plans and Context
+.brainstorming/
 .context/
 .plans/
 
