@@ -50,6 +50,7 @@ common/
 ```
 
 This crate defines:
+
 - The `Route` enum for navigation
 - Reusable page components
 - Layout and styling shared between SSR and client
@@ -71,6 +72,7 @@ generator/
 ```
 
 The generator crate provides:
+
 - **Library**: Reusable SSG functionality with configuration and error handling
 - **Binary**: CLI tool that pre-renders pages
 
@@ -115,16 +117,18 @@ SCSS stylesheets that are compiled to CSS:
 
 ```
 styles/
-└── styles.scss          # Main stylesheet
+└── main.scss            # Main stylesheet
 ```
 
 ## Templates
 
-HTML templates used for rendering:
+HTML templates used for rendering (Tera template engine):
 
 ```
 templates/
-└── index.txt            # Base template
+├── base.html            # Base template with common structure
+├── page.html            # Single page template
+└── section.html         # Section/list template
 ```
 
 ## Output
@@ -137,6 +141,7 @@ dist/
 ├── about/               # About page directory
 │   └── index.html
 ├── css/                 # Compiled CSS
-│   └── styles.css
-└── favicon.png          # Copied static files
+│   └── main.css
+└── static/              # Copied static files
+    └── favicon.png
 ```

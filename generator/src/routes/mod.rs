@@ -14,7 +14,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use generator::routes::{RouteDiscovery, RouteRegistry, RouteInfo, RouteKind};
+//! use yew_ssg_lib::routes::{RouteDiscovery, RouteRegistry, RouteInfo, RouteKind};
 //!
 //! // Discover routes from content directory
 //! let discovery = RouteDiscovery::new("content");
@@ -36,7 +36,7 @@
 //! if registry.contains("/blog/") {
 //!     println!("Blog section exists");
 //! }
-//! # Ok::<(), generator::error::GeneratorError>(())
+//! # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
 //! ```
 
 mod discovery;

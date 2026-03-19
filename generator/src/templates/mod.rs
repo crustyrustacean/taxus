@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use generator::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext, PageContext};
+//! use yew_ssg_lib::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext, PageContext};
 //!
 //! // Create a renderer and load templates
 //! let mut renderer = TeraRenderer::from_dir("templates")?;
@@ -41,7 +41,7 @@
 //!
 //! // Render a template
 //! let html = renderer.render("page.html", &ctx)?;
-//! # Ok::<(), generator::error::TemplateError>(())
+//! # Ok::<(), yew_ssg_lib::error::TemplateError>(())
 //! ```
 
 mod context;

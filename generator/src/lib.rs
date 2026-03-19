@@ -10,8 +10,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use generator::config::SiteConfig;
-//! use generator::content::Page;
+//! use yew_ssg_lib::config::SiteConfig;
+//! use yew_ssg_lib::content::Page;
 //!
 //! // Load configuration
 //! let config = SiteConfig::from_dir(".")?;
@@ -21,7 +21,7 @@
 //!
 //! println!("Building site: {}", config.site.name);
 //! println!("Page title: {}", page.frontmatter.title);
-//! # Ok::<(), generator::error::GeneratorError>(())
+//! # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
 //! ```
 
 // Module declarations

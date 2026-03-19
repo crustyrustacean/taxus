@@ -17,7 +17,7 @@ use tera::{Context, Tera};
 /// # Example
 ///
 /// ```no_run
-/// use generator::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext};
+/// use yew_ssg_lib::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext};
 ///
 /// // Create a renderer
 /// let mut renderer = TeraRenderer::new()?;
@@ -27,7 +27,7 @@ use tera::{Context, Tera};
 ///
 /// // Check if template exists
 /// assert!(renderer.has_template("page.html"));
-/// # Ok::<(), generator::error::TemplateError>(())
+/// # Ok::<(), yew_ssg_lib::error::TemplateError>(())
 /// ```
 pub trait TemplateRenderer: Send + Sync {
     /// Render a template with the given context.
@@ -81,7 +81,7 @@ pub trait TemplateRenderer: Send + Sync {
 /// # Example
 ///
 /// ```no_run
-/// use generator::templates::{TeraRenderer, TemplateRenderer, TemplateContext, SiteContext, PageContext};
+/// use yew_ssg_lib::templates::{TeraRenderer, TemplateRenderer, TemplateContext, SiteContext, PageContext};
 ///
 /// // Load templates from directory
 /// let renderer = TeraRenderer::from_dir("templates")?;
@@ -89,7 +89,7 @@ pub trait TemplateRenderer: Send + Sync {
 /// // Or create empty and register templates manually
 /// let mut renderer = TeraRenderer::new()?;
 /// renderer.register_template("page.html", "<h1>{{ page.title }}</h1>")?;
-/// # Ok::<(), generator::error::TemplateError>(())
+/// # Ok::<(), yew_ssg_lib::error::TemplateError>(())
 /// ```
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -102,7 +102,7 @@ impl TeraRenderer {
     /// # Example
     ///
     /// ```
-    /// use generator::templates::TeraRenderer;
+    /// use yew_ssg_lib::templates::TeraRenderer;
     ///
     /// let renderer = TeraRenderer::new();
     /// assert!(renderer.is_ok());
@@ -124,7 +124,7 @@ impl TeraRenderer {
     /// # Example
     ///
     /// ```no_run
-    /// use generator::templates::TeraRenderer;
+    /// use yew_ssg_lib::templates::TeraRenderer;
     ///
     /// let renderer = TeraRenderer::from_dir("templates");
     /// // Templates are loaded from templates/**/*.html
@@ -141,12 +141,15 @@ impl TeraRenderer {
         // Create a new empty Tera instance
         let mut tera = Tera::default();
 
-        // Walk the templates directory and load each template
+        // Collect all templates first (name -> content)
+        let mut templates: Vec<(String, String)> = Vec::new();
+
+        // Walk the templates directory and collect each template
         for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
 
             // Only process .html files
-            if path.extension().map_or(false, |ext| ext == "html") {
+            if path.extension().is_some_and(|ext| ext == "html") {
                 // Get the relative path from the templates directory
                 let relative = path.strip_prefix(dir).map_err(|_| TemplateError::DirNotFound(
                     dir.to_path_buf()
@@ -161,12 +164,32 @@ impl TeraRenderer {
                     message: e.to_string(),
                 })?;
 
-                // Register the template with the relative name
-                tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
-                    template: name.clone(),
-                    message: e.to_string(),
-                })?;
+                templates.push((name, content));
             }
+        }
+
+        // Sort templates so that base templates are registered before their children.
+        // Templates with no {% extends %} come first, then templates that extend them, etc.
+        // We use a simple heuristic: templates without "extends" in their content come first.
+        // This works because base templates don't extend anything, while child templates do.
+        templates.sort_by(|a, b| {
+            let a_extends = a.1.contains("{% extends");
+            let b_extends = b.1.contains("{% extends");
+            
+            // Templates without extends come first
+            match (a_extends, b_extends) {
+                (false, true) => std::cmp::Ordering::Less,
+                (true, false) => std::cmp::Ordering::Greater,
+                _ => std::cmp::Ordering::Equal,
+            }
+        });
+
+        // Register templates in sorted order
+        for (name, content) in templates {
+            tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
+                template: name.clone(),
+                message: e.to_string(),
+            })?;
         }
 
         Ok(Self { tera })
@@ -240,12 +263,15 @@ impl TemplateRenderer for TeraRenderer {
         // Create a new empty Tera instance
         let mut tera = Tera::default();
 
-        // Walk the templates directory and load each template
+        // Collect all templates first (name -> content)
+        let mut templates: Vec<(String, String)> = Vec::new();
+
+        // Walk the templates directory and collect each template
         for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
 
             // Only process .html files
-            if path.extension().map_or(false, |ext| ext == "html") {
+            if path.extension().is_some_and(|ext| ext == "html") {
                 // Get the relative path from the templates directory
                 let relative = path.strip_prefix(dir).map_err(|_| TemplateError::DirNotFound(
                     dir.to_path_buf()
@@ -260,12 +286,32 @@ impl TemplateRenderer for TeraRenderer {
                     message: e.to_string(),
                 })?;
 
-                // Register the template with the relative name
-                tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
-                    template: name.clone(),
-                    message: e.to_string(),
-                })?;
+                templates.push((name, content));
             }
+        }
+
+        // Sort templates so that base templates are registered before their children.
+        // Templates with no {% extends %} come first, then templates that extend them, etc.
+        // We use a simple heuristic: templates without "extends" in their content come first.
+        // This works because base templates don't extend anything, while child templates do.
+        templates.sort_by(|a, b| {
+            let a_extends = a.1.contains("{% extends");
+            let b_extends = b.1.contains("{% extends");
+            
+            // Templates without extends come first
+            match (a_extends, b_extends) {
+                (false, true) => std::cmp::Ordering::Less,
+                (true, false) => std::cmp::Ordering::Greater,
+                _ => std::cmp::Ordering::Equal,
+            }
+        });
+
+        // Register templates in sorted order
+        for (name, content) in templates {
+            tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
+                template: name.clone(),
+                message: e.to_string(),
+            })?;
         }
 
         self.tera = tera;

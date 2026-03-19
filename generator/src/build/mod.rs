@@ -13,7 +13,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use generator::build::SiteBuilder;
+//! use yew_ssg_lib::build::SiteBuilder;
 //! use std::path::Path;
 //!
 //! // Build from a directory containing site.toml
@@ -22,7 +22,7 @@
 //!     .build()?;
 //!
 //! report.print_summary();
-//! # Ok::<(), generator::error::GeneratorError>(())
+//! # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
 //! ```
 
 mod builder;

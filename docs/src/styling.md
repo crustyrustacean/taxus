@@ -8,7 +8,7 @@ SCSS files are stored in the `styles/` directory:
 
 ```
 styles/
-└── styles.scss
+└── main.scss
 ```
 
 ## SCSS Compilation
@@ -21,7 +21,7 @@ The generator compiles SCSS to CSS during the build process:
 
 ## Example Stylesheet
 
-`styles/styles.scss`:
+`styles/main.scss`:
 
 ```scss
 // Main stylesheet
@@ -33,42 +33,45 @@ $background: #fff;
 
 // Base styles
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.6;
-    color: $text-color;
-    background: $background;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  color: $text-color;
+  background: $background;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 
 // Headings
-h1, h2, h3 {
-    margin-top: 1.5em;
-    color: darken($text-color, 10%);
+h1,
+h2,
+h3 {
+  margin-top: 1.5em;
+  color: darken($text-color, 10%);
 }
 
 // Links
 a {
-    color: $primary-color;
-    text-decoration: none;
-    
-    &:hover {
-        text-decoration: underline;
-    }
+  color: $primary-color;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 // Code blocks
 pre {
-    background: #f4f4f4;
-    padding: 1rem;
-    border-radius: 4px;
-    overflow-x: auto;
+  background: #f4f4f4;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
 }
 
 code {
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 0.9em;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 0.9em;
 }
 ```
 
@@ -81,8 +84,8 @@ $primary: #0066cc;
 $spacing: 1rem;
 
 .button {
-    background: $primary;
-    padding: $spacing;
+  background: $primary;
+  padding: $spacing;
 }
 ```
 
@@ -90,17 +93,17 @@ $spacing: 1rem;
 
 ```scss
 nav {
-    ul {
-        list-style: none;
-    }
-    
-    li {
-        display: inline-block;
-    }
-    
-    a {
-        color: $primary;
-    }
+  ul {
+    list-style: none;
+  }
+
+  li {
+    display: inline-block;
+  }
+
+  a {
+    color: $primary;
+  }
 }
 ```
 
@@ -110,7 +113,7 @@ Split styles into multiple files:
 
 ```
 styles/
-├── styles.scss      # Main file
+├── main.scss        # Main file
 ├── _variables.scss  # Variables
 ├── _base.scss       # Base styles
 ├── _nav.scss        # Navigation
@@ -120,23 +123,23 @@ styles/
 Import in main file:
 
 ```scss
-@use 'variables';
-@use 'base';
-@use 'nav';
-@use 'footer';
+@use "variables";
+@use "base";
+@use "nav";
+@use "footer";
 ```
 
 ### Mixins
 
 ```scss
 @mixin flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .container {
-    @include flex-center;
+  @include flex-center;
 }
 ```
 
@@ -147,7 +150,7 @@ Compiled CSS is written to:
 ```
 dist/
 └── css/
-    └── styles.css
+    └── main.css
 ```
 
 ## Linking Styles
@@ -155,7 +158,7 @@ dist/
 Include the stylesheet in your template:
 
 ```html
-<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/main.css" />
 ```
 
 ## Development
@@ -167,7 +170,7 @@ For development, you can use the `sass` CLI for live compilation:
 npm install -g sass
 
 # Watch for changes
-sass --watch styles/styles.scss dist/css/styles.css
+sass --watch styles/main.scss dist/css/main.css
 ```
 
 ## Future Enhancements

@@ -13,7 +13,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use generator::content::{Page, ContentSource, FilesystemContentSource};
+//! use yew_ssg_lib::content::{Page, ContentSource, FilesystemContentSource};
 //! use std::path::PathBuf;
 //!
 //! // Load a page from a file
@@ -26,7 +26,7 @@
 //! for file in files {
 //!     println!("Found: {}", file.display());
 //! }
-//! # Ok::<(), generator::error::GeneratorError>(())
+//! # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
 //! ```
 
 mod frontmatter;

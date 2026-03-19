@@ -115,11 +115,11 @@ impl SiteConfig {
     /// # Example
     ///
     /// ```no_run
-    /// use generator::config::SiteConfig;
+    /// use yew_ssg_lib::config::SiteConfig;
     ///
     /// let config = SiteConfig::from_file("site.toml")?;
     /// println!("Site name: {}", config.site.name);
-    /// # Ok::<(), generator::error::GeneratorError>(())
+    /// # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
     /// ```
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
@@ -158,10 +158,10 @@ impl SiteConfig {
     /// # Example
     ///
     /// ```no_run
-    /// use generator::config::SiteConfig;
+    /// use yew_ssg_lib::config::SiteConfig;
     ///
     /// let config = SiteConfig::from_dir("./mysite")?;
-    /// # Ok::<(), generator::error::GeneratorError>(())
+    /// # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
     /// ```
     pub fn from_dir<P: AsRef<Path>>(dir: P) -> Result<Self> {
         let config_path = dir.as_ref().join("site.toml");

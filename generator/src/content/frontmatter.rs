@@ -69,7 +69,7 @@ impl Frontmatter {
     /// # Example
     ///
     /// ```
-    /// use generator::content::Frontmatter;
+    /// use yew_ssg_lib::content::Frontmatter;
     ///
     /// let fm = Frontmatter::from_str(r#"
     /// title = "My Page"

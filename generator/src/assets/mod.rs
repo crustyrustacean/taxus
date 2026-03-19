@@ -12,7 +12,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use generator::assets::{AssetProcessor, ScssProcessor, StaticCopier};
+//! use yew_ssg_lib::assets::{AssetProcessor, ScssProcessor, StaticCopier};
 //! use std::path::Path;
 //!
 //! // Process SCSS files

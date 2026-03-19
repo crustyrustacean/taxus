@@ -110,7 +110,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use generator::templates::{TemplateContext, SiteContext};
+    /// use yew_ssg_lib::templates::{TemplateContext, SiteContext};
     ///
     /// let site = SiteContext {
     ///     name: "My Site".to_string(),
@@ -140,7 +140,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use generator::templates::{TemplateContext, SiteContext, PageContext};
+    /// use yew_ssg_lib::templates::{TemplateContext, SiteContext, PageContext};
     ///
     /// let site = SiteContext {
     ///     name: "Test".to_string(),
@@ -171,7 +171,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use generator::templates::{TemplateContext, SiteContext, SectionContext};
+    /// use yew_ssg_lib::templates::{TemplateContext, SiteContext, SectionContext};
     ///
     /// let site = SiteContext {
     ///     name: "Test".to_string(),
@@ -198,7 +198,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use generator::templates::{TemplateContext, SiteContext};
+    /// use yew_ssg_lib::templates::{TemplateContext, SiteContext};
     /// use std::collections::HashMap;
     /// use serde_json::json;
     ///

@@ -161,13 +161,13 @@ This is your new static site. Start editing this file to add your content.
         let base_path = path.join("templates/base.html");
         if !base_path.exists() {
             let content = r#"<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ site.name }}{% endblock %}</title>
-    <link rel="stylesheet" href="/css/styles.css">
-</head>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}{{ site.name }}{% endblock %}</title>
+        <link rel="stylesheet" href="/css/main.css">
+    </head>
 <body>
     <header>
         <h1>{{ site.name }}</h1>
@@ -179,7 +179,7 @@ This is your new static site. Start editing this file to add your content.
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p>&copy; {{ "now" | date(format="%Y") }} {{ site.name }}</p>
+        <p>&copy; {{ now.year }} {{ site.name }}</p>
     </footer>
 </body>
 </html>

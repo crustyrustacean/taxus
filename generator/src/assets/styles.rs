@@ -16,8 +16,8 @@ use std::path::Path;
 /// # Example
 ///
 /// ```no_run
-/// use generator::assets::ScssProcessor;
-/// use generator::assets::AssetProcessor;
+/// use yew_ssg_lib::assets::ScssProcessor;
+/// use yew_ssg_lib::assets::AssetProcessor;
 /// use std::path::Path;
 ///
 /// let processor = ScssProcessor::new()

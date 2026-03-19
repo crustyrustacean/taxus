@@ -32,12 +32,12 @@ impl Page {
     /// # Example
     ///
     /// ```no_run
-    /// use generator::content::Page;
+    /// use yew_ssg_lib::content::Page;
     ///
     /// let page = Page::from_file("content/about.md")?;
     /// println!("Title: {}", page.frontmatter.title);
     /// println!("Path: {}", page.path);
-    /// # Ok::<(), generator::error::GeneratorError>(())
+    /// # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
     /// ```
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
@@ -60,7 +60,7 @@ impl Page {
     /// # Example
     ///
     /// ```
-    /// use generator::content::Page;
+    /// use yew_ssg_lib::content::Page;
     ///
     /// let content = r#"+++
     /// title = "Test Page"
@@ -72,7 +72,7 @@ impl Page {
     /// let page = Page::from_str(content, "test.md")?;
     /// assert_eq!(page.frontmatter.title, "Test Page");
     /// assert_eq!(page.path, "/test/");
-    /// # Ok::<(), generator::error::GeneratorError>(())
+    /// # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
     /// ```
     pub fn from_str(content: &str, source: &str) -> Result<Self> {
         let (frontmatter, raw_content) = Self::parse_frontmatter(content, source)?;

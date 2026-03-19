@@ -18,8 +18,8 @@ use walkdir::WalkDir;
 /// # Example
 ///
 /// ```no_run
-/// use generator::assets::StaticCopier;
-/// use generator::assets::AssetProcessor;
+/// use yew_ssg_lib::assets::StaticCopier;
+/// use yew_ssg_lib::assets::AssetProcessor;
 /// use std::path::Path;
 ///
 /// let copier = StaticCopier::with_exclusions(vec!["*.scss".to_string()]);

@@ -32,11 +32,11 @@ impl Section {
     /// # Example
     ///
     /// ```no_run
-    /// use generator::content::Section;
+    /// use yew_ssg_lib::content::Section;
     ///
     /// let section = Section::from_dir("content/blog")?;
     /// println!("Section path: {}", section.path);
-    /// # Ok::<(), generator::error::GeneratorError>(())
+    /// # Ok::<(), yew_ssg_lib::error::GeneratorError>(())
     /// ```
     pub fn from_dir<P: AsRef<Path>>(dir: P) -> Result<Self> {
         let dir = dir.as_ref();
