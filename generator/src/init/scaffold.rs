@@ -80,8 +80,8 @@ impl InitScaffolder {
         // Create styles/main.scss
         self.create_stylesheet(path, report)?;
 
-        // Create static/.gitkeep
-        self.create_gitkeep(path, report)?;
+        // Create static files
+        self.create_static_files(path, report)?;
 
         Ok(())
     }
@@ -166,6 +166,7 @@ This is your new static site. Start editing this file to add your content.
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{% block title %}{{ site.name }}{% endblock %}</title>
+        <link rel="icon" type="image/png" href="/static/favicon.png">
         <link rel="stylesheet" href="/css/main.css">
     </head>
 <body>
@@ -181,6 +182,7 @@ This is your new static site. Start editing this file to add your content.
     <footer>
         <p>&copy; {{ now.year }} {{ site.name }}</p>
     </footer>
+    <script src="/static/scripts.js"></script>
 </body>
 </html>
 "#;
@@ -369,20 +371,43 @@ footer {
         Ok(())
     }
 
-    /// Create the static/.gitkeep file.
-    fn create_gitkeep(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        let gitkeep_path = path.join("static/.gitkeep");
-
-        if gitkeep_path.exists() {
-            return Ok(());
+    /// Create the static files (scripts.js and favicon.png).
+    fn create_static_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+        // Create scripts.js
+        let scripts_path = path.join("static/scripts.js");
+        if !scripts_path.exists() {
+            let content = r#"// Site scripts
+console.log('Site loaded');
+"#;
+            std::fs::write(&scripts_path, content).map_err(|e| InitError::FileWrite {
+                path: scripts_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
         }
 
-        std::fs::write(&gitkeep_path, "").map_err(|e| InitError::FileWrite {
-            path: gitkeep_path.clone(),
-            source: e,
-        })?;
+        // Create favicon.png (a minimal 16x16 PNG)
+        let favicon_path = path.join("static/favicon.png");
+        if !favicon_path.exists() {
+            // Minimal valid PNG: 1x1 transparent pixel
+            let favicon_bytes: &[u8] = &[
+                0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+                0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1 dimensions
+                0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, // 8-bit RGBA
+                0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, // IDAT chunk
+                0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+                0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, // compressed data
+                0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, // IEND chunk
+                0x42, 0x60, 0x82,
+            ];
+            std::fs::write(&favicon_path, favicon_bytes).map_err(|e| InitError::FileWrite {
+                path: favicon_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+        }
 
-        report.files_created += 1;
         Ok(())
     }
 }
@@ -475,13 +500,14 @@ mod tests {
     }
 
     #[test]
-    fn test_scaffold_creates_gitkeep() {
+    fn test_scaffold_creates_static_files() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
 
         scaffolder.scaffold(temp_dir.path()).unwrap();
 
-        assert!(temp_dir.path().join("static/.gitkeep").exists());
+        assert!(temp_dir.path().join("static/scripts.js").exists());
+        assert!(temp_dir.path().join("static/favicon.png").exists());
     }
 
     #[test]
@@ -491,9 +517,9 @@ mod tests {
 
         let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
-        // 4 directories + 7 files (site.toml, _index.md, base.html, page.html, section.html, main.scss, .gitkeep)
+        // 4 directories + 8 files (site.toml, _index.md, base.html, page.html, section.html, main.scss, scripts.js, favicon.png)
         assert_eq!(report.directories_created, 4);
-        assert_eq!(report.files_created, 7);
+        assert_eq!(report.files_created, 8);
     }
 
     #[test]

@@ -15,7 +15,7 @@ fn test_init_empty_directory() {
     let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
     assert_eq!(report.directories_created, 4);
-    assert_eq!(report.files_created, 7);
+    assert_eq!(report.files_created, 8);
     assert!(temp_dir.path().join("site.toml").exists());
 }
 
