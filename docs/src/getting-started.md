@@ -45,7 +45,7 @@ cargo run -- build
 ```
 
 This will:
-1. Read Markdown content from `content/pages/`
+1. Read Markdown content from `content/`
 2. Process SCSS styles from `styles/`
 3. Generate HTML files in the `dist/` directory
 
