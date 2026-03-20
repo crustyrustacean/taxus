@@ -6,91 +6,163 @@ This guide will help you get up and running with Yew SSG quickly.
 
 Before you begin, ensure you have the following installed:
 
-- **Rust** (edition 2024) - [Install Rust](https://www.rust-lang.org/tools/install)
-- **trunk** - WebAssembly bundler for Rust - [Install trunk](https://trunkrs.dev/)
-- **A SCSS compiler** (optional, for styling) - e.g., `sass`
+- **Rust** (edition 2024) — [Install Rust](https://www.rust-lang.org/tools/install)
+- **trunk** — WebAssembly bundler for Rust — [Install trunk](https://trunkrs.dev/)
 
 ## Quick Start
 
-### Option A: Initialize a New Site
-
-Create a new site from scratch:
+### Step 1 — Initialize a New Site
 
 ```bash
 # Clone the repository
 git clone https://github.com/crustyrustacean/yew-ssg.git
 cd yew-ssg
 
-# Initialize a new site
+# Create a new site
 cargo run -- init my-site --name "My Site" --base-url "https://example.com"
-
-# Navigate to the new site
-cd my-site
-
-# Build the site
-cargo run -- build
 ```
 
-### Option B: Use the Example Site
+This creates the following structure in `my-site/`:
 
-Build the existing example site:
-
-```bash
-# Clone the repository
-git clone https://github.com/crustyrustacean/yew-ssg.git
-cd yew-ssg
-
-# Build the static site
-cargo run -- build
+```
+my-site/
+├── site.toml               # Site configuration
+├── content/
+│   └── _index.md           # Home page (Markdown + TOML frontmatter)
+├── templates/
+│   ├── base.html           # HTML shell with WASM loader script
+│   ├── page.html           # Single-page template (includes Counter island example)
+│   └── section.html        # Section/listing template
+├── static/
+│   ├── scripts.js          # General interactivity (vanilla JS)
+│   └── favicon.png         # Placeholder favicon
+└── styles/
+    └── main.scss           # Starter stylesheet
 ```
 
-This will:
-1. Read Markdown content from `content/`
-2. Process SCSS styles from `styles/`
-3. Generate HTML files in the `dist/` directory
-
-### View the Generated Site
-
-You can serve the generated files using any static file server:
+### Step 2 — Build the Static Site
 
 ```bash
+cargo run -- build --dir my-site --verbose
+```
+
+This runs the 6-stage pipeline:
+1. Discovers routes from `content/`
+2. Loads Tera templates from `templates/`
+3. Parses Markdown + frontmatter
+4. Renders each page with Tera (including `island()` calls → Yew SSR)
+5. Compiles SCSS → CSS, copies static files
+6. Writes HTML to `my-site/dist/`
+
+### Step 3 — Build the WASM Client
+
+The interactive Yew components need a compiled WASM bundle:
+
+```bash
+cd client && trunk build --release --dist ../my-site/dist/wasm
+```
+
+Trunk writes `client.js` and `client_bg.wasm` into `my-site/dist/wasm/`.
+
+> **Important**: The `--dist` path must match the site's own `dist/` directory.
+> The `Trunk.toml` default (`../dist/wasm`) is for the workspace-level `dist/`.
+
+### Step 4 — Serve and View
+
+```bash
+# Using miniserve
+cd my-site && miniserve dist
+
 # Using Python
-python -m http.server 8000 -d dist
+python -m http.server 8000 -d my-site/dist
 
-# Using Node.js (npx)
-npx serve dist
-
-# Or simply open dist/index.html in your browser
+# Using npx
+npx serve my-site/dist
 ```
 
-## Development Mode
+Open `http://localhost:8080` (or the port your server uses).
 
-For development with hot-reloading of the client-side WebAssembly application:
+You should see:
+- The home page rendered immediately from SSR HTML
+- A Counter showing "3" with a "+" button
+- After WASM loads (~1s), the button becomes interactive and increments on click
 
-```bash
-cd client && trunk serve
-```
-
-This will:
-- Compile the client to WebAssembly
-- Start a development server with hot-reload
-- Open your browser at `http://localhost:8080`
-
-## Project Commands
+## Build Commands Reference
 
 | Command | Description |
 |---------|-------------|
 | `cargo run -- init [path]` | Initialize a new site |
-| `cargo run -- build` | Build the static site |
-| `cargo run -- build --verbose` | Build with verbose output |
-| `cargo run -- build --include-drafts` | Build including drafts |
+| `cargo run -- init --name "Name" --base-url "https://..."` | Init with custom options |
+| `cargo run -- build --dir PATH` | Build a site |
+| `cargo run -- build --verbose` | Build with progress output |
+| `cargo run -- build --quiet` | Build silently (errors only) |
+| `cargo run -- build --include-drafts` | Include draft pages |
+| `cargo run -- build --dry-run` | Validate without writing files |
+| `cargo run -- build --output PATH` | Override output directory |
+| `cargo run -- clean --dir PATH` | Delete generated files |
+| `cargo run -- routes --dir PATH` | Inspect discovered routes |
+| `cd client && trunk build --release --dist ../SITE/dist/wasm` | Build WASM client |
 | `cargo test` | Run all tests |
 | `cargo doc` | Generate API documentation |
-| `cd client && trunk serve` | Start development server |
-| `cd client && trunk build` | Build client for production |
+
+## Adding an Island Component
+
+To add a new interactive Yew component:
+
+### 1. Write the component in `common`
+
+```rust
+// common/src/components/my_widget.rs
+use serde::{Deserialize, Serialize};
+use yew::prelude::*;
+
+#[derive(Properties, PartialEq, Clone, Serialize, Deserialize)]
+pub struct MyWidgetProps {
+    pub label: String,
+}
+
+#[function_component(MyWidget)]
+pub fn my_widget(props: &MyWidgetProps) -> Html {
+    html! { <div class="widget">{ &props.label }</div> }
+}
+```
+
+### 2. Register SSR in the generator
+
+In `generator/src/templates/renderer.rs`, add a match arm to the `island()` function closure:
+
+```rust
+"MyWidget" => {
+    use common::components::my_widget::{MyWidget, MyWidgetProps};
+    use crate::build::pipeline::render_island_generic;
+    let label = args.get("label")
+        .and_then(Value::as_str)
+        .unwrap_or("").to_string();
+    render_island_generic::<MyWidget>(MyWidgetProps { label }, "MyWidget")
+}
+```
+
+### 3. Register hydration in the client
+
+In `client/src/main.rs`, add a match arm to `hydrate_island()`:
+
+```rust
+"MyWidget" => {
+    let props: MyWidgetProps = serde_json::from_str(props_json)
+        .unwrap_or(MyWidgetProps { label: String::new() });
+    yew::Renderer::<MyWidget>::with_root_and_props(el.into(), props).hydrate();
+}
+```
+
+### 4. Use it in a template
+
+```html
+{{ island(component="MyWidget", label="Hello from Yew!") | safe }}
+```
 
 ## Next Steps
 
-- Learn about the [Project Structure](./project-structure.md)
-- Configure your site with [Configuration](./configuration.md)
-- Explore the [Generator Library](./generator/README.md)
+- Learn about [Configuration](./configuration.md)
+- Understand the [Content system](./content.md)
+- Explore [Templates](./templates.md)
+- Read the [API Reference](./api-reference.md)

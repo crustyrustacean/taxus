@@ -116,7 +116,12 @@ impl ScssProcessor {
 
 impl ScssProcessor {
     /// Process a single SCSS file.
-    fn process_file(&self, src: &Path, dest: &Path, report: &mut AssetReport) -> Result<(), AssetError> {
+    fn process_file(
+        &self,
+        src: &Path,
+        dest: &Path,
+        report: &mut AssetReport,
+    ) -> Result<(), AssetError> {
         // Read source file
         let content = fs::read_to_string(src).map_err(|e| AssetError::Io {
             path: src.to_path_buf(),
@@ -148,7 +153,12 @@ impl ScssProcessor {
     }
 
     /// Process a directory of SCSS files recursively.
-    fn process_directory(&self, src_dir: &Path, dest_dir: &Path, report: &mut AssetReport) -> Result<(), AssetError> {
+    fn process_directory(
+        &self,
+        src_dir: &Path,
+        dest_dir: &Path,
+        report: &mut AssetReport,
+    ) -> Result<(), AssetError> {
         use walkdir::WalkDir;
 
         for entry in WalkDir::new(src_dir).into_iter().filter_map(|e| e.ok()) {

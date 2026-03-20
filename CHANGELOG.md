@@ -5,6 +5,90 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2026-03-20
+
+### Added
+
+#### Islands Architecture — Yew SSR + WASM Hydration
+
+- **Counter Island Component** (`common/src/components/counter.rs`):
+  - Yew `#[function_component(Counter)]` with `CounterProps { initial: i32 }`
+  - Props derive `Serialize + Deserialize` for JSON round-trip (SSR → static HTML → hydration)
+  - Renders `<div class="counter"><span>N</span><button>+</button></div>`
+  - Increments count on click via `use_state`
+
+- **`render_island_counter()` in `generator/src/build/pipeline.rs`**:
+  - Renders the `Counter` component server-side at build time using `yew::ServerRenderer`
+  - Creates a self-contained `tokio::runtime::Builder::new_current_thread()` runtime per call
+    (avoids requiring an ambient tokio context from the synchronous `fn main()`)
+  - Serializes `CounterProps` to JSON and wraps the SSR output in the hydration mount point:
+    `<div data-island="Counter" data-props='{"initial":N}'>...SSR HTML...</div>`
+
+- **`island()` Tera Custom Function** in `generator/src/templates/renderer.rs`:
+  - Registered on the `TeraRenderer` during `from_dir()` construction
+  - Callable in any Tera template: `{{ island(component="Counter", initial=3) | safe }}`
+  - Dispatches to the appropriate `render_island_*` function by component name string
+  - Unknown component names emit `<!-- unknown island: NAME -->` safely
+
+- **`page.html` Default Template** (via `generator/src/init/scaffold.rs`):
+  - Now includes `{{ island(component="Counter", initial=3) | safe }}` to demonstrate
+    the islands pattern in every newly scaffolded site
+
+- **`base.html` Default Template** (via `generator/src/init/scaffold.rs`):
+  - Loads the WASM hydration bundle using the correct ES module pattern:
+    ```html
+    <script type="module">
+        import init, * as bindings from '/wasm/client.js';
+        const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
+        window.wasmBindings = bindings;
+    </script>
+    ```
+  - Note: `wasm-bindgen` output is an ES module; a plain `<script src>` tag causes
+    `Unexpected token 'export'` — `type="module"` is required
+
+- **WASM Hydration Client** (`client/src/main.rs`):
+  - Implemented `#[wasm_bindgen(start)]` entry point `hydrate_islands()`
+  - Uses `#![no_main]` to suppress the implicit Rust binary entry symbol (prevents
+    `entry symbol 'main' declared multiple times` error at compile time)
+  - On startup: `document.querySelectorAll("[data-island]")` → deserialize `data-props`
+    JSON → `yew::Renderer::<C>::with_root_and_props(el, props).hydrate()`
+  - Added `hydrate_island()` dispatcher matching component name strings to Yew types
+
+- **`client/index.html`**: New Trunk entry point (required by Trunk 0.21)
+  - Contains `<link data-trunk rel="rust" data-wasm-opt="z" data-bin="client" />`
+
+- **`client/Trunk.toml`**: Trunk build configuration
+  - `dist = "../dist/wasm"` — writes WASM assets into a dedicated subdirectory,
+    preventing Trunk's shell `index.html` from overwriting SSG-generated pages
+  - `public_url = "/wasm/"` — ES module paths resolve to `/wasm/client.js`
+  - `filehash = false` — disables content hashing for predictable filenames
+    (`client.js`, `client_bg.wasm`) that match the hardcoded template references
+
+### Changed
+
+- **`common/src/components/mod.rs`**: Now only exports `counter` module
+  (old placeholder components `home`, `about`, `layout`, `page` removed as they
+  were unused and not hooked into the generator pipeline)
+
+- **`common/Cargo.toml`**: Added `serde = { workspace = true }` dependency
+  (required for `CounterProps` serialization)
+
+- **`client/Cargo.toml`**: Added dependencies for WASM client:
+  - `yew = { version = "0.23", features = ["hydration"] }`
+  - `serde_json = "1.0"`
+  - `wasm-bindgen = "0.2"`
+  - `web-sys` with features: `Document`, `Window`, `HtmlElement`, `DomStringMap`,
+    `NodeList`, `Element`
+
+### Removed
+
+- **`generator/src/init/templates.rs`** (`DefaultTemplates` struct):
+  - Deleted as dead code — `InitScaffolder` in `scaffold.rs` never called it;
+    it maintained its own duplicate template strings
+  - All functional test coverage now lives in `scaffold.rs` unit tests and
+    `generator/tests/init_scaffolding.rs` integration tests (no coverage lost)
+  - `pub use init::DefaultTemplates` removed from `generator/src/lib.rs`
+
 ## [0.1.17] - 2026-03-19
 
 ### Added
@@ -59,6 +143,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`generator/src/bin/main.rs`**: Refactored `run_build` to load config first so `--output` can be applied before cleaning
 
 - **`generator/src/init/scaffold.rs`**: All file/directory creation helpers now push to `InitReport.created_dirs` and `InitReport.created_files`
+
+## [0.1.16] - 2026-03-19
+
+### Changed
+
+- **Documentation and project cleanup**
+  - Removed placeholder `content/pages/home.md` and `content/pages/about.md` (superseded by the `init` scaffolding workflow)
+  - Removed `styles/styles.scss` (workspace-root stylesheet replaced by per-site `styles/main.scss`)
+  - Updated `docs/src/getting-started.md` to reflect current build workflow
+  - Removed `plans/cli-improvements.md` after the plan was implemented in 0.1.17
+
+## [0.1.15] - 2026-03-19
+
+### Added
+
+- **GitHub Actions CI/CD** — restored and corrected workflow files
+  - `.github/workflows/doc.yml`: Deploy mdBook documentation
+  - `.github/workflows/security.yml`: `cargo audit` dependency security scan
+  - Fixed typo in directory name from earlier attempt (`.github/worflows/` → `.github/workflows/`)
+  - Added `target/` to `.gitignore`
+
+## [0.1.14] - 2026-03-18
+
+### Fixed
+
+- **Static file scaffolding** (`generator/src/init/scaffold.rs`):
+  - `create_static_files()` now generates both `static/scripts.js` and an embedded minimal `static/favicon.png` (1×1 transparent PNG bytes, no external dependencies)
+  - Previously these files were not created during `yew-ssg init`, leaving the base template with a broken favicon and missing scripts reference
+  - Integration test `test_scaffold_creates_static_files` added to cover both files
+
+- **Removed workspace-level static assets**:
+  - `static/favicon.png` and `static/scripts.js` deleted from the workspace root
+  - These files were leftover from the pre-scaffolding era; they are now generated per-site by `yew-ssg init`
+
+## [0.1.13] - 2026-03-18
+
+### Fixed
+
+- **Template loading precedence** (`generator/src/templates/renderer.rs`):
+  - Base templates (those without `{% extends %}`) are now sorted and registered before child templates
+  - Previously, Tera could fail to find a parent template if a child was registered first
+  - Fix: collect all `.html` files, sort by whether they contain `{% extends %}`, then `add_raw_template` in order
+
+- **Static asset path in build pipeline** (`generator/src/assets/static_files.rs`):
+  - Static files are now correctly copied with proper source/destination path handling
+  - Previously, files could end up with incorrect relative paths in `dist/static/`
+
+- **Year in `NowContext`** (`generator/src/templates/context.rs`):
+  - `NowContext` struct added with `year: i32` field populated via `chrono::Utc::now().year()`
+  - `{{ now.year }}` is now available in all Tera templates (used in `base.html` copyright footer)
+
+- **Documentation test fixes** — all `///` doc examples updated to compile against the current library API
+
+### Changed
+
+- **`TeraRenderer::from_dir()`**: Switched from `Tera::new("glob")` to manual `WalkDir` + `add_raw_template` approach for more reliable cross-platform template discovery
+
+## [0.1.12] - 2026-03-18
+
+### Fixed
+
+- **`base.html` template year field** (`generator/src/init/templates.rs`):
+  - `{{ year }}` corrected to `{{ now.year }}` to match the `NowContext` variable name
+
+- **SCSS processor include paths** (`generator/src/assets/styles.rs`):
+  - `ScssProcessor::with_include_paths()` now correctly propagates paths to `grass::Options`
+  - Processing now walks the styles directory and compiles all top-level `.scss` files (those not starting with `_`)
+
+## [0.1.11] - 2026-03-18
+
+### Added
+
+- **GitHub Actions CI/CD** (initial attempt)
+  - `.github/worflows/general.yml`: Build + test on push
+  - `.github/worflows/security.yml`: `cargo audit`
+  - `.github/worflows/docs.yml`: mdBook documentation deployment
+  - Note: directory misspelling (`worflows`) caused workflows not to trigger; corrected in 0.1.15
+
+- **`.gitignore` updates**: Added `test-site/` to prevent scaffolded test sites from being committed
+
+## [0.1.8] through ## [0.1.10]
+
+> These versions covered the integration of the init command with the full build pipeline — verifying the end-to-end flow from `yew-ssg init` through `yew-ssg build` to a working static site. Bug fixes were iterative; see individual commits `355fad7`, `666e650`, `5e93e5b` in the git history.
 
 ## [0.1.7] - 2026-03-17
 

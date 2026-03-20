@@ -6,6 +6,7 @@
 
 use crate::error::TemplateError;
 use crate::templates::context::TemplateContext;
+use std::collections::HashMap;
 use std::path::Path;
 use tera::{Context, Tera};
 
@@ -145,15 +146,19 @@ impl TeraRenderer {
         let mut templates: Vec<(String, String)> = Vec::new();
 
         // Walk the templates directory and collect each template
-        for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(dir)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path();
 
             // Only process .html files
             if path.extension().is_some_and(|ext| ext == "html") {
                 // Get the relative path from the templates directory
-                let relative = path.strip_prefix(dir).map_err(|_| TemplateError::DirNotFound(
-                    dir.to_path_buf()
-                ))?;
+                let relative = path
+                    .strip_prefix(dir)
+                    .map_err(|_| TemplateError::DirNotFound(dir.to_path_buf()))?;
 
                 // Use forward slashes for template names (Tera convention)
                 let name = relative.to_string_lossy().replace('\\', "/");
@@ -175,7 +180,7 @@ impl TeraRenderer {
         templates.sort_by(|a, b| {
             let a_extends = a.1.contains("{% extends");
             let b_extends = b.1.contains("{% extends");
-            
+
             // Templates without extends come first
             match (a_extends, b_extends) {
                 (false, true) => std::cmp::Ordering::Less,
@@ -186,11 +191,32 @@ impl TeraRenderer {
 
         // Register templates in sorted order
         for (name, content) in templates {
-            tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
-                template: name.clone(),
-                message: e.to_string(),
-            })?;
+            tera.add_raw_template(&name, &content)
+                .map_err(|e| TemplateError::Syntax {
+                    template: name.clone(),
+                    message: e.to_string(),
+                })?;
         }
+
+        tera.register_function("island", |args: &HashMap<String, tera::Value>| {
+            use tera::Value;
+
+            let component = args.get("component").and_then(Value::as_str).unwrap_or("");
+
+            let html = match component {
+                "Counter" => {
+                    use crate::build::pipeline::render_island_counter;
+                    use common::components::counter::CounterProps;
+
+                    let initial = args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
+
+                    render_island_counter(CounterProps { initial })
+                }
+                other => format!("<!-- unknown island: {other} -->"),
+            };
+
+            Ok(Value::String(html))
+        });
 
         Ok(Self { tera })
     }
@@ -267,15 +293,19 @@ impl TemplateRenderer for TeraRenderer {
         let mut templates: Vec<(String, String)> = Vec::new();
 
         // Walk the templates directory and collect each template
-        for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(dir)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path();
 
             // Only process .html files
             if path.extension().is_some_and(|ext| ext == "html") {
                 // Get the relative path from the templates directory
-                let relative = path.strip_prefix(dir).map_err(|_| TemplateError::DirNotFound(
-                    dir.to_path_buf()
-                ))?;
+                let relative = path
+                    .strip_prefix(dir)
+                    .map_err(|_| TemplateError::DirNotFound(dir.to_path_buf()))?;
 
                 // Use forward slashes for template names (Tera convention)
                 let name = relative.to_string_lossy().replace('\\', "/");
@@ -297,7 +327,7 @@ impl TemplateRenderer for TeraRenderer {
         templates.sort_by(|a, b| {
             let a_extends = a.1.contains("{% extends");
             let b_extends = b.1.contains("{% extends");
-            
+
             // Templates without extends come first
             match (a_extends, b_extends) {
                 (false, true) => std::cmp::Ordering::Less,
@@ -308,10 +338,11 @@ impl TemplateRenderer for TeraRenderer {
 
         // Register templates in sorted order
         for (name, content) in templates {
-            tera.add_raw_template(&name, &content).map_err(|e| TemplateError::Syntax {
-                template: name.clone(),
-                message: e.to_string(),
-            })?;
+            tera.add_raw_template(&name, &content)
+                .map_err(|e| TemplateError::Syntax {
+                    template: name.clone(),
+                    message: e.to_string(),
+                })?;
         }
 
         self.tera = tera;

@@ -4,56 +4,68 @@ Welcome to the **Yew Static Site Generator (SSG)** documentation. This is a Rust
 
 ## What is Yew SSG?
 
-Yew SSG is a static site generator that combines the best of both worlds:
+Yew SSG combines a Tera-based static site generator with the Yew WebAssembly framework using the **Islands Architecture**:
 
-- **Server-Side Rendering (SSR)**: Pre-rendered HTML pages for optimal performance and SEO
-- **Client-Side Hydration**: Interactive WebAssembly components for rich user experiences
-- **Markdown Content**: Write content in Markdown files for easy content management
-- **SCSS Styling**: Modern styling with SCSS support
+- **Tera templates** render the static "sea" of HTML — page layout, content, navigation
+- **Yew components** are the "islands" — pre-rendered server-side at build time, then hydrated by WASM in the browser for interactivity
+- **Markdown content** with TOML frontmatter drives the content system
+- **SCSS** compiles to CSS for modern styling
 
 ## Key Features
 
-### Static Site Generation
+### Islands Architecture
 
-Generate static HTML files at build time, ensuring:
+Generate static HTML that includes pre-rendered Yew components. When the WASM bundle loads in the browser, those components are hydrated in-place without re-rendering the page:
 
-- Fast page loads
-- SEO optimization
-- No JavaScript required for initial render
-- Easy deployment to any static host
+```html
+<!-- Generated at build time: -->
+<div data-island="Counter" data-props='{"initial":3}'>
+  <div class="counter"><span>3</span><button>+</button></div>
+</div>
+```
 
-### Yew Components
+The page is immediately visible with no JavaScript required. Interactivity layer loads asynchronously.
 
-Build reusable UI components using Yew's functional component API:
+### Two-Tier Interactivity
 
-```rust
-#[component]
-fn MyComponent(props: &MyProps) -> Html {
-    html! {
-        <div class="my-component">
-            <h1>{ &props.title }</h1>
-            <p>{ &props.content }</p>
-        </div>
-    }
-}
+| Tier | Technology | Use for |
+|---|---|---|
+| General | `static/scripts.js` (vanilla JS) | Menus, toggles, analytics, lightweight DOM work |
+| Performance | Yew WASM island | Heavy computation, complex reactive state, data-intensive UI |
+
+### Tera Templates with Island Support
+
+Embed Yew components directly in Tera templates using the `island()` function:
+
+```html
+{% block content %}
+  {{ page.content | safe }}
+  {{ island(component="Counter", initial=3) | safe }}
+{% endblock %}
 ```
 
 ### Multi-Crate Workspace
 
 The project is organized as a multi-crate workspace:
 
-- **client**: WebAssembly client application
-- **common**: Shared components and utilities
-- **generator**: Static site generator library and binary
+- **`common`**: Yew components shared between the generator (SSR) and the WASM client (hydration)
+- **`generator`**: Static site generator library (`yew_ssg_lib`) and CLI binary (`yew-ssg`)
+- **`client`**: WASM hydration bootstrap — finds island mount points on page load and attaches Yew renderers
+
+### Static Content System
+
+- Markdown files with TOML frontmatter (`+++...+++`)
+- Automatic route discovery: `_index.md` → section, other `.md` → page
+- Draft support, date-based sorting, custom template selection per page
 
 ## Who is this for?
 
 Yew SSG is ideal for:
 
 - **Rust developers** who want to build websites without leaving their favorite language
-- **Performance enthusiasts** who want fast, optimized static sites
-- **SEO-conscious developers** who need pre-rendered content
-- **Component lovers** who prefer component-based architecture
+- **Performance enthusiasts** who want fast, optimized static sites with selective WASM interactivity
+- **SEO-conscious developers** who need pre-rendered content with no JavaScript dependency for initial render
+- **Component lovers** who prefer the Yew component model for interactive UI pieces
 
 ## License
 

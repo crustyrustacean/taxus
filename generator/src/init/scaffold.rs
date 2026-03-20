@@ -185,7 +185,16 @@ This is your new static site. Start editing this file to add your content.
     <footer>
         <p>&copy; {{ now.year }} {{ site.name }}</p>
     </footer>
+    <!-- General interactivity via plain JavaScript -->
     <script src="/static/scripts.js"></script>
+    <!-- WASM hydration client compiled by Trunk.
+         client.js is a wasm-bindgen ES module; it must be loaded via
+         `import init` inside a type="module" script, not via a plain src= tag. -->
+    <script type="module">
+        import init, * as bindings from '/wasm/client.js';
+        const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
+        window.wasmBindings = bindings;
+    </script>
 </body>
 </html>
 "#;
@@ -212,6 +221,8 @@ This is your new static site. Start editing this file to add your content.
     {% endif %}
     {{ page.content | safe }}
 </article>
+{# Place a Counter island on the page #}
+{{ island(component="Counter", initial=3) | safe }}
 {% endblock %}
 "#;
             std::fs::write(&page_path, content).map_err(|e| InitError::FileWrite {
@@ -404,8 +415,8 @@ console.log('Site loaded');
                 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1 dimensions
                 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, // 8-bit RGBA
                 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, // IDAT chunk
-                0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-                0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, // compressed data
+                0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D,
+                0xB4, 0x00, // compressed data
                 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, // IEND chunk
                 0x42, 0x60, 0x82,
             ];

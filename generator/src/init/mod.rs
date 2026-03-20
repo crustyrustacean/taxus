@@ -4,14 +4,12 @@
 //! with a default directory structure and configuration files.
 
 mod scaffold;
-mod templates;
 
 use std::path::{Path, PathBuf};
 
 use crate::error::{GeneratorError, InitError, Result};
 
 pub use scaffold::InitScaffolder;
-pub use templates::DefaultTemplates;
 
 /// Options for initializing a new site.
 #[derive(Debug, Clone)]

@@ -4,7 +4,7 @@ default-members = ["generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.18"
+version = "0.1.19"
 edition = "2024"
 authors = ["Jeff Mitchell"]
 description = "A Rust workspace for a Yew based static site generator"
@@ -19,7 +19,7 @@ serde = { version = "1.0.228", features = [ "derive" ] }
 [profile.release]
 lto = true         
 codegen-units = 1   
-strip = true        
+strip = false      
 panic = "abort"     
 
 [profile.dev]

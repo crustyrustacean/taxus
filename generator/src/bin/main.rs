@@ -208,17 +208,15 @@ fn main() {
                 }
             }
         }
-        Commands::Clean { dir } => {
-            match run_clean(&dir) {
-                Ok(()) => {
-                    println!("✓ Output directory cleaned.");
-                }
-                Err(e) => {
-                    render_error(&e);
-                    std::process::exit(1);
-                }
+        Commands::Clean { dir } => match run_clean(&dir) {
+            Ok(()) => {
+                println!("✓ Output directory cleaned.");
             }
-        }
+            Err(e) => {
+                render_error(&e);
+                std::process::exit(1);
+            }
+        },
         Commands::Init {
             path,
             name,
@@ -240,15 +238,13 @@ fn main() {
                 }
             }
         }
-        Commands::Routes { dir } => {
-            match run_routes(&dir) {
-                Ok(()) => {}
-                Err(e) => {
-                    render_error(&e);
-                    std::process::exit(1);
-                }
+        Commands::Routes { dir } => match run_routes(&dir) {
+            Ok(()) => {}
+            Err(e) => {
+                render_error(&e);
+                std::process::exit(1);
             }
-        }
+        },
     }
 }
 
@@ -379,7 +375,11 @@ fn run_routes(dir: &PathBuf) -> Result<(), GeneratorError> {
     routes.sort_by(|a, b| a.path.cmp(&b.path));
 
     for route in &routes {
-        let kind = if route.is_section() { "section" } else { "page" };
+        let kind = if route.is_section() {
+            "section"
+        } else {
+            "page"
+        };
         println!(
             "  [{kind:<7}]  {:<28}  {:<30}  {}",
             route.path,
@@ -416,9 +416,9 @@ fn render_error(e: &GeneratorError) {
         GeneratorError::Config(ConfigError::NotFound(_)) => Some(
             "Run 'yew-ssg init' to create a new site, or use --dir to point to your site directory.",
         ),
-        GeneratorError::Build(BuildError::NoContent) => Some(
-            "Add .md files to your content/ directory. Start with content/_index.md.",
-        ),
+        GeneratorError::Build(BuildError::NoContent) => {
+            Some("Add .md files to your content/ directory. Start with content/_index.md.")
+        }
         GeneratorError::Template(TemplateError::NotFound(_)) => Some(
             "Check that your templates/ directory exists and contains base.html and page.html.",
         ),

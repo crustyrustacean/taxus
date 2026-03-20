@@ -26,7 +26,7 @@
 //! ```
 
 mod builder;
-mod pipeline;
+pub mod pipeline;
 mod report;
 
 pub use builder::SiteBuilder;

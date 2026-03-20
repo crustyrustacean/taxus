@@ -43,7 +43,7 @@ pub use error::{
     AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError,
     TemplateError,
 };
-pub use init::{DefaultTemplates, InitOptions, InitReport, InitScaffolder};
+pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{
     PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,

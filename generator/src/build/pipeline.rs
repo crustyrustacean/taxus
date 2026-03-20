@@ -8,9 +8,11 @@ use crate::content::Page;
 use crate::error::{BuildError, GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::{PageContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer};
+use common::components::counter::{Counter, CounterProps};
 use pulldown_cmark::{Parser, html::push_html};
 use std::fs;
 use std::path::Path;
+use yew::ServerRenderer;
 
 /// Processed page ready for rendering.
 #[derive(Debug, Clone)]
@@ -215,6 +217,28 @@ fn markdown_to_html(markdown: &str) -> String {
     let mut output = String::new();
     push_html(&mut output, parser);
     output
+}
+
+/// SSR a Yew island component and wrap it in the hydration mount div.
+pub fn render_island_counter(props: CounterProps) -> String {
+    // Serialize props to JSON for the data attribute
+    let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
+
+    // Build a self-contained single-threaded runtime for this SSR call.
+    // We cannot use Handle::current() because the generator's main() is synchronous
+    // and has no ambient tokio runtime running. Builder::new_current_thread() creates
+    // a temporary runtime that exists only for the duration of block_on.
+    let ssr_html = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .expect("Failed to build tokio runtime for island SSR")
+        .block_on(async {
+            ServerRenderer::<Counter>::with_props(move || props)
+                .render()
+                .await
+        });
+
+    // Emit the mount point wrapper around the SSR output
+    format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)
 }
 
 #[cfg(test)]

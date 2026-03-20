@@ -1,0 +1,38 @@
+# Trunk configuration for the Yew SSG client WASM bundle.
+#
+# The WASM bundle must be placed inside the site's dist/wasm/ directory alongside
+# the HTML pages produced by `yew-ssg build`.
+#
+# Build workflow for a site in <site-dir>/:
+#
+#   # 1. Build static pages
+#   yew-ssg build --dir <site-dir>
+#
+#   # 2. Build WASM client into the same dist/
+#   cd client && trunk build --release --dist ../<site-dir>/dist/wasm
+#
+# For the workspace-level dist/ (development):
+#   cd client && trunk build --release
+#
+# For development with auto-reload against a running static server:
+#   cd client && trunk serve
+
+[build]
+# Default dist target is the workspace-level dist/wasm.
+# Override with --dist ../<site>/dist/wasm when building for a specific site.
+dist = "../dist/wasm"
+
+# Serve from /wasm/ so that absolute paths in the JS glue resolve correctly.
+# Templates reference the loader as <script src="/wasm/client.js" defer>.
+public_url = "/wasm/"
+
+# Disable content hashing so output files are always named client.js / client_bg.wasm,
+# matching the hardcoded <script src="/wasm/client.js"> in base.html templates.
+filehash = false
+
+[serve]
+# Dev server port (used by `trunk serve` only)
+port = 8080
+
+# Enable auto-reload on file changes during development
+open = false

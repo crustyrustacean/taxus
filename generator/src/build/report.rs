@@ -57,7 +57,10 @@ impl BuildReport {
     /// Print a summary of the build to stdout.
     pub fn print_summary(&self) {
         let status = if self.has_warnings() {
-            format!("⚠  Build completed with warnings  ({:.2}s)", self.duration.as_secs_f64())
+            format!(
+                "⚠  Build completed with warnings  ({:.2}s)",
+                self.duration.as_secs_f64()
+            )
         } else {
             format!("✓  Build complete  ({:.2}s)", self.duration.as_secs_f64())
         };

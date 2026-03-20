@@ -5,11 +5,12 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 ## Features
 
 - **Static Site Generation**: Pre-rendered HTML pages for optimal performance and SEO
-- **Yew Components**: Reusable UI components built with Yew's functional component API
+- **Islands Architecture**: Interactive Yew WASM components embedded within Tera-rendered static pages — server-side pre-rendered at build time, hydrated in the browser
+- **Yew Components**: Reusable UI components built with Yew's functional component API, shared between the SSG and the WASM client
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Content System**: Pages, sections, and draft support with date-based sorting
 - **Route System**: Automatic route discovery from content directory structure
-- **Template System**: Flexible Tera-based templates with inheritance and custom context
+- **Template System**: Flexible Tera-based templates with inheritance and custom context; `{{ island(component="...", ...) | safe }}` function for embedding islands
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
 - **Build System**: Unified build pipeline with `SiteBuilder` for orchestrating all stages
 - **CLI Interface**: Command-line interface with clap — `build`, `clean`, `init`, and `routes` subcommands with rich help text and actionable error messages
@@ -21,27 +22,28 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 
 ```
 yew-ssg/
-├── client/           # Client-side WebAssembly application
-├── common/           # Shared components and code
+├── client/                 # WASM hydration client (built by Trunk)
+│   ├── src/main.rs         # Island hydration bootstrap (#[wasm_bindgen(start)])
+│   ├── index.html          # Trunk entry point
+│   └── Trunk.toml          # Trunk build configuration
+├── common/                 # Shared Yew components (generator SSR + WASM client)
 │   └── src/
-│       └── components/  # Reusable page components
-├── generator/        # Static site generator
+│       └── components/
+│           └── counter.rs  # Example island component (serializable props)
+├── generator/              # Static site generator
 │   ├── src/
-│   │   ├── lib.rs    # Library entry point
-│   │   ├── config.rs # Configuration types
-│   │   ├── error.rs  # Error handling
-│   │   ├── assets/   # Asset processing (ScssProcessor, StaticCopier)
-│   │   ├── build/    # Build system (SiteBuilder, BuildReport, pipeline)
-│   │   ├── content/  # Content parsing (Page, Section, Frontmatter)
-│   │   ├── routes/   # Route discovery (RouteDiscovery, RouteRegistry)
-│   │   ├── templates/ # Template rendering (TeraRenderer, Context types)
-│   │   └── bin/      # CLI binary
-│   └── tests/        # Integration tests
-├── content/          # Markdown content files
-│   └── pages/        # Page content in Markdown
-├── static/           # Static assets (images, scripts)
-├── styles/           # SCSS stylesheets
-└── templates/        # HTML templates
+│   │   ├── lib.rs          # Library entry point and public API re-exports
+│   │   ├── config.rs       # SiteConfig, SiteMeta, BuildConfig
+│   │   ├── error.rs        # GeneratorError + domain sub-errors
+│   │   ├── assets/         # ScssProcessor, StaticCopier
+│   │   ├── build/          # SiteBuilder, pipeline stages, BuildReport
+│   │   ├── content/        # Page, Section, Frontmatter, ContentSource
+│   │   ├── routes/         # RouteDiscovery, RouteRegistry, RouteInfo
+│   │   ├── templates/      # TemplateRenderer trait, TeraRenderer, TemplateContext
+│   │   ├── init/           # InitScaffolder, InitOptions, InitReport
+│   │   └── bin/main.rs     # CLI binary (build, clean, init, routes subcommands)
+│   └── tests/              # Integration tests + fixture sites
+└── docs/                   # mdBook documentation
 ```
 
 ## Prerequisites
@@ -150,9 +152,25 @@ Routes for "My Site"
   Total: 2 routes (1 page, 1 section)
 ```
 
+### Build the WASM Client
+
+After building the static site, compile the Yew WASM hydration bundle with Trunk:
+
+```bash
+# Compile and write into the site's dist/wasm/ directory
+cd client && trunk build --release --dist ../my-site/dist/wasm
+```
+
+Then serve the complete output:
+
+```bash
+cd my-site && miniserve dist
+# or: python -m http.server 8000 -d dist
+```
+
 ### Development
 
-For development with hot-reloading of the client:
+For development with Trunk's dev server:
 
 ```bash
 cd client && trunk serve
@@ -160,11 +178,91 @@ cd client && trunk serve
 
 ## Workspace Crates
 
-- **client**: The WebAssembly client application built with Yew
-- **common**: Shared components and utilities used by both client and generator
-- **generator**: A library and binary for static site generation
-  - `generator` (library): Reusable SSG library with configuration, error handling, content parsing, and build system
-  - `generator` (binary): CLI tool with clap for building sites
+- **client**: WASM hydration client — finds island mount points in the DOM, deserializes their props, calls `yew::Renderer::hydrate()` on each
+- **common**: Shared Yew components — compiled into both the `generator` binary (for SSR) and the `client` WASM bundle (for hydration)
+- **generator**: Static site generator library and binary
+  - Library (`yew_ssg_lib`): Configuration, content parsing, route discovery, Tera rendering, asset processing, init scaffolding
+  - Binary (`yew-ssg`): CLI with `build`, `clean`, `init`, and `routes` subcommands
+
+## Islands Architecture
+
+Yew SSG implements the **Islands Architecture**: Tera renders the static "sea" of HTML; Yew components are pre-rendered server-side into "islands" and then hydrated by the WASM client in the browser.
+
+### How It Works
+
+```
+BUILD TIME (generator)                BROWSER
+─────────────────────                 ───────
+1. Tera renders page shell            4. HTML is immediately visible (no JS needed)
+2. island() function calls Yew SSR    5. WASM loads asynchronously
+3. SSR HTML + props JSON emitted      6. Yew hydrates mount points → interactive
+```
+
+### Embedding an Island in a Template
+
+Use the `island()` Tera function in any `.html` template:
+
+```html
+{% block content %}
+  {{ page.content | safe }}
+
+  {{ island(component="Counter", initial=5) | safe }}
+{% endblock %}
+```
+
+The generator renders the component server-side at build time. The output in the static HTML looks like:
+
+```html
+<div data-island="Counter" data-props='{"initial":5}'>
+  <!-- Pre-rendered by Yew SSR: -->
+  <div class="counter"><span>5</span><button>+</button></div>
+</div>
+```
+
+### Writing an Island Component
+
+Island components live in `common/src/components/`. Their props must be serializable:
+
+```rust
+// common/src/components/counter.rs
+use serde::{Deserialize, Serialize};
+use yew::prelude::*;
+
+#[derive(Properties, PartialEq, Clone, Serialize, Deserialize)]
+pub struct CounterProps {
+    #[prop_or_default]
+    pub initial: i32,
+}
+
+#[function_component(Counter)]
+pub fn counter(props: &CounterProps) -> Html {
+    let count = use_state(|| props.initial);
+    let on_click = {
+        let count = count.clone();
+        Callback::from(move |_| count.set(*count + 1))
+    };
+    html! {
+        <div class="counter">
+            <span>{ *count }</span>
+            <button onclick={on_click}>{ "+" }</button>
+        </div>
+    }
+}
+```
+
+### Registering a New Island
+
+Two registries must be updated in sync:
+
+1. **Generator SSR registry** — in `generator/src/templates/renderer.rs`, add a match arm to the `island()` Tera function
+2. **Client hydration registry** — in `client/src/main.rs`, add a match arm to `hydrate_island()`
+
+### Two-Tier Interactivity
+
+| Tier | Technology | When to use |
+|---|---|---|
+| 1 — General | `static/scripts.js` | DOM manipulation, toggles, analytics, lightweight events |
+| 2 — Performance | Yew WASM island | Heavy computation, complex reactive state, data-intensive UI |
 
 ## Generator Library
 

@@ -131,10 +131,12 @@ impl SiteConfig {
         // Get the directory containing the config file as the base directory
         let base_dir = path
             .parent()
-            .ok_or_else(|| ConfigError::Invalid(format!(
-                "Cannot determine parent directory of config file: {}",
-                path.display()
-            )))?
+            .ok_or_else(|| {
+                ConfigError::Invalid(format!(
+                    "Cannot determine parent directory of config file: {}",
+                    path.display()
+                ))
+            })?
             .to_path_buf();
 
         let content = std::fs::read_to_string(path).map_err(|e| GeneratorError::Io {
