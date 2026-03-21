@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.20] - 2026-03-21
+
+### Added
+
+#### Init Command Islands Flag
+
+- **`--islands` flag for `init` command**: Scaffold sites with or without Yew/WASM hydration support
+  - `yew-ssg init my-site`: Creates a plain SSG site (no WASM hydration script in templates)
+  - `yew-ssg init my-site --islands`: Creates a site with islands support (includes WASM hydration script)
+  - `InitOptions` struct now has `islands: bool` field with `with_islands()` builder method
+  - `InitScaffolder` conditionally includes WASM hydration script in `base.html` based on flag
+
+### Fixed
+
+#### Clippy Warnings Resolved
+
+- **`should_implement_trait`** in `generator/src/content/frontmatter.rs`:
+  - Changed custom `from_str` method to implement `std::str::FromStr` trait
+
+- **`result_large_err`** in `generator/src/bin/main.rs`:
+  - Added `#[allow(clippy::result_large_err)]` to `run_build`, `run_clean`, `run_init`, `run_routes`
+
+- **`ptr_arg`** in `generator/src/bin/main.rs`:
+  - Changed `&PathBuf` parameters to `&Path` for idiomatic Rust
+
+- **`field_reassign_with_default`** in `generator/src/build/report.rs`:
+  - Fixed struct initialization to use `..Default::default()` syntax
+
+- **`items_after_test_module`** in `generator/src/content/mod.rs`:
+  - Moved `MockContentSource` definition before the test module
+
 ## [0.1.18] - 2026-03-20
 
 ### Added

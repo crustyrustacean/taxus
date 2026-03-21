@@ -18,8 +18,11 @@ Before you begin, ensure you have the following installed:
 git clone https://github.com/crustyrustacean/yew-ssg.git
 cd yew-ssg
 
-# Create a new site
+# Create a new site (plain SSG, no islands)
 cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+
+# Or create a site with islands support (includes WASM hydration script)
+cargo run -- init my-site --name "My Site" --base-url "https://example.com" --islands
 ```
 
 This creates the following structure in `my-site/`:
@@ -93,6 +96,7 @@ You should see:
 |---------|-------------|
 | `cargo run -- init [path]` | Initialize a new site |
 | `cargo run -- init --name "Name" --base-url "https://..."` | Init with custom options |
+| `cargo run -- init --islands` | Init with islands support (includes WASM hydration script) |
 | `cargo run -- build --dir PATH` | Build a site |
 | `cargo run -- build --verbose` | Build with progress output |
 | `cargo run -- build --quiet` | Build silently (errors only) |

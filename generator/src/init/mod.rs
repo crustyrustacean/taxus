@@ -20,6 +20,8 @@ pub struct InitOptions {
     pub base_url: String,
     /// Force initialization even if directory is not empty
     pub force: bool,
+    /// Include islands support (Yew/WASM hydration)
+    pub islands: bool,
 }
 
 impl Default for InitOptions {
@@ -28,6 +30,7 @@ impl Default for InitOptions {
             name: "My Site".to_string(),
             base_url: "https://example.com".to_string(),
             force: false,
+            islands: false,
         }
     }
 }
@@ -39,12 +42,19 @@ impl InitOptions {
             name: name.into(),
             base_url: base_url.into(),
             force: false,
+            islands: false,
         }
     }
 
     /// Set the force flag.
     pub fn with_force(mut self, force: bool) -> Self {
         self.force = force;
+        self
+    }
+
+    /// Set the islands flag.
+    pub fn with_islands(mut self, islands: bool) -> Self {
+        self.islands = islands;
         self
     }
 

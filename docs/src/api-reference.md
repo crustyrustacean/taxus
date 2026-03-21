@@ -540,6 +540,7 @@ pub struct InitOptions {
     pub name: String,
     pub base_url: String,
     pub force: bool,
+    pub islands: bool,
 }
 ```
 
@@ -549,6 +550,7 @@ pub struct InitOptions {
 |--------|-------------|
 | `new(name: impl Into<String>, base_url: impl Into<String>) -> Self` | Create new options |
 | `with_force(self, force: bool) -> Self` | Set force flag |
+| `with_islands(self, islands: bool) -> Self` | Set islands flag (includes WASM hydration script in templates) |
 | `validate(&self) -> std::result::Result<(), InitError>` | Validate options |
 
 #### `InitScaffolder`
@@ -971,6 +973,7 @@ Options:
   -n, --name <NAME>       Site name used in templates and site.toml
   -u, --base-url <URL>    Base URL (must start with http:// or https://)
   -f, --force             Initialize even if directory is not empty
+  -i, --islands           Include WASM hydration script in templates for islands support
   -h, --help              Print help
 ```
 

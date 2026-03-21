@@ -5,7 +5,7 @@
 
 use clap::{Parser, Subcommand};
 use std::io::{self, BufRead, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use yew_ssg_lib::error::{BuildError, ConfigError, GeneratorError, InitError, TemplateError};
 use yew_ssg_lib::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilder};
 
@@ -154,6 +154,13 @@ enum Commands {
         /// overwritten.
         #[arg(short, long)]
         force: bool,
+
+        /// Initialize with islands support (Yew/WASM hydration).
+        ///
+        /// When set, the generated templates will include WASM hydration
+        /// script tags for interactive Yew components.
+        #[arg(long)]
+        islands: bool,
     },
 
     /// List all routes that would be discovered from the content directory.
@@ -222,12 +229,14 @@ fn main() {
             name,
             base_url,
             force,
+            islands,
         } => {
             match run_init(&InitArgs {
                 path,
                 name,
                 base_url,
                 force,
+                islands,
             }) {
                 Ok(report) => {
                     report.print_summary();
@@ -261,6 +270,7 @@ struct BuildArgs {
     output: Option<PathBuf>,
 }
 
+#[allow(clippy::result_large_err)]
 fn run_build(args: &BuildArgs) -> Result<BuildReport, GeneratorError> {
     // Load config so we can apply the --output override before building
     let mut config = yew_ssg_lib::SiteConfig::from_dir(&args.dir)?;
@@ -290,7 +300,8 @@ fn run_build(args: &BuildArgs) -> Result<BuildReport, GeneratorError> {
 // Clean
 // ---------------------------------------------------------------------------
 
-fn run_clean(dir: &PathBuf) -> Result<(), GeneratorError> {
+#[allow(clippy::result_large_err)]
+fn run_clean(dir: &Path) -> Result<(), GeneratorError> {
     SiteBuilder::from_dir(dir)?.clean()
 }
 
@@ -303,8 +314,10 @@ struct InitArgs {
     name: Option<String>,
     base_url: Option<String>,
     force: bool,
+    islands: bool,
 }
 
+#[allow(clippy::result_large_err)]
 fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
     use yew_ssg_lib::init::{derive_site_name, is_directory_empty};
 
@@ -345,7 +358,9 @@ fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
         .unwrap_or_else(|| "https://example.com".to_string());
 
     // Create options and scaffolder
-    let options = InitOptions::new(&name, &base_url).with_force(args.force);
+    let options = InitOptions::new(&name, &base_url)
+        .with_force(args.force)
+        .with_islands(args.islands);
     let scaffolder = InitScaffolder::new(options);
 
     // Scaffold the site
@@ -358,7 +373,8 @@ fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
 // Routes
 // ---------------------------------------------------------------------------
 
-fn run_routes(dir: &PathBuf) -> Result<(), GeneratorError> {
+#[allow(clippy::result_large_err)]
+fn run_routes(dir: &Path) -> Result<(), GeneratorError> {
     use yew_ssg_lib::{RouteDiscovery, SiteConfig};
 
     let config = SiteConfig::from_dir(dir)?;

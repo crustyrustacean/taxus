@@ -17,18 +17,29 @@
 #
 # All recipe site arguments default to "." (current directory).
 
+# set Powershell for Windows
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
 # ─── Full build ───────────────────────────────────────────────────────────────
 
-# Build static pages + WASM client for the given site directory
+# Plain SSG build — no Yew/WASM dependency, island() calls produce empty output
 build site=".":
     just pages {{site}}
+
+# Islands build — Yew SSR + WASM client (requires --features islands)
+build-islands site=".":
+    just pages-islands {{site}}
     just wasm {{site}}
 
 # ─── Individual stages ────────────────────────────────────────────────────────
 
-# Build static HTML pages from content + templates (6-stage SSG pipeline)
+# Build static HTML pages (plain SSG, no islands)
 pages site=".":
     cargo run -- build --dir {{site}} --verbose
+
+# Build static HTML pages with Yew SSR islands enabled
+pages-islands site=".":
+    cargo run --features islands -- build --dir {{site}} --verbose
 
 # Compile the Yew WASM hydration client and write into <site>/dist/wasm/
 wasm site=".":
@@ -40,9 +51,13 @@ wasm site=".":
 serve site=".": (build site)
     miniserve {{site}}/dist --port 8080 --index index.html
 
-# Scaffold a new site
+# Scaffold a new site (plain SSG, no islands)
 init site="my-site" name="My Site" url="https://example.com":
     cargo run -- init {{site}} --name "{{name}}" --base-url "{{url}}"
+
+# Scaffold a new site with islands support (Yew/WASM)
+init-islands site="my-site" name="My Site" url="https://example.com":
+    cargo run -- init {{site}} --name "{{name}}" --base-url "{{url}}" --islands
 
 # Remove the generated dist/ directory for the site
 clean site=".":
@@ -66,8 +81,13 @@ check:
 doc:
     cargo doc --open
 
-# Build in release mode (optimized binary + WASM)
+# Release build — plain SSG (no islands, smallest binary)
 release site=".":
     cargo build --release
-    cd client && trunk build --release --dist ../{{site}}/dist/wasm
     target/release/yew-ssg build --dir {{site}} --verbose
+
+# Release build — islands mode (Yew SSR + WASM client)
+release-islands site=".":
+    cargo build --release --features islands
+    target/release/yew-ssg build --features islands --dir {{site}} --verbose
+    just wasm {{site}}

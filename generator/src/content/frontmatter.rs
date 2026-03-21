@@ -3,6 +3,8 @@
 //! Frontmatter is TOML metadata at the beginning of a Markdown file,
 //! delimited by `+++` markers.
 
+use std::str::FromStr;
+
 use chrono::NaiveDate;
 use serde::Deserialize;
 
@@ -63,12 +65,15 @@ mod optional_date {
     }
 }
 
-impl Frontmatter {
+impl FromStr for Frontmatter {
+    type Err = toml::de::Error;
+
     /// Parse frontmatter from a TOML string.
     ///
     /// # Example
     ///
     /// ```
+    /// use std::str::FromStr;
     /// use yew_ssg_lib::content::Frontmatter;
     ///
     /// let fm = Frontmatter::from_str(r#"
@@ -79,10 +84,12 @@ impl Frontmatter {
     /// assert_eq!(fm.title, "My Page");
     /// # Ok::<(), toml::de::Error>(())
     /// ```
-    pub fn from_str(s: &str) -> Result<Self, toml::de::Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         toml::from_str(s)
     }
+}
 
+impl Frontmatter {
     /// Get the template name, defaulting to "page.html".
     pub fn template(&self) -> &str {
         self.template.as_deref().unwrap_or("page.html")

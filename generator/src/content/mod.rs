@@ -104,24 +104,6 @@ impl ContentSource for FilesystemContentSource {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_filesystem_content_source_new() {
-        let source = FilesystemContentSource::new("content");
-        assert_eq!(source.root, PathBuf::from("content"));
-    }
-
-    #[test]
-    fn test_filesystem_content_source_exists() {
-        let source = FilesystemContentSource::new("tests/fixtures/content_site/content");
-        assert!(source.exists(&PathBuf::from("_index.md")));
-        assert!(!source.exists(&PathBuf::from("nonexistent.md")));
-    }
-}
-
 /// Mock content source for testing.
 #[cfg(test)]
 pub struct MockContentSource {
@@ -164,5 +146,23 @@ impl ContentSource for MockContentSource {
 
     fn list(&self) -> Result<Vec<PathBuf>> {
         Ok(self.content.keys().cloned().collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_filesystem_content_source_new() {
+        let source = FilesystemContentSource::new("content");
+        assert_eq!(source.root, PathBuf::from("content"));
+    }
+
+    #[test]
+    fn test_filesystem_content_source_exists() {
+        let source = FilesystemContentSource::new("tests/fixtures/content_site/content");
+        assert!(source.exists(&PathBuf::from("_index.md")));
+        assert!(!source.exists(&PathBuf::from("nonexistent.md")));
     }
 }

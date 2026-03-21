@@ -46,6 +46,31 @@ yew-ssg/
 └── docs/                   # mdBook documentation
 ```
 
+## Feature Flags
+
+The generator supports a Cargo feature flag to control whether Yew SSR island support is compiled in:
+
+| Feature | Default | Description |
+|---|---|---|
+| `islands` | off | Enables Yew SSR + `tokio` + `common` crate compilation; activates `island()` Tera function |
+
+Without the `islands` feature, the generator is a plain Tera + Markdown SSG. The `island()` Tera function is still recognized in templates but produces empty output — no Yew or WASM dependency is included.
+
+```bash
+# Plain SSG — no Yew, fastest compile, smallest binary
+cargo run -- build --dir my-site
+
+# Islands SSG — Yew SSR pre-renders components at build time
+cargo run --features islands -- build --dir my-site
+```
+
+Using `just`:
+
+```bash
+just build my-site           # plain SSG
+just build-islands my-site   # SSG + WASM islands
+```
+
 ## Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install) (edition 2024)
@@ -67,6 +92,9 @@ cargo run -- init my-site
 
 # Initialize with custom options
 cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+
+# Initialize with islands support (includes WASM hydration script in templates)
+cargo run -- init my-site --islands
 
 # Force initialization in a non-empty directory
 cargo run -- init my-site --force

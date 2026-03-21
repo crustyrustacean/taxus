@@ -2,6 +2,7 @@
 
 use crate::error::{ContentError, Result};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use super::{Frontmatter, Page};
 

@@ -8,10 +8,14 @@ use crate::content::Page;
 use crate::error::{BuildError, GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::{PageContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer};
-use common::components::counter::{Counter, CounterProps};
 use pulldown_cmark::{Parser, html::push_html};
 use std::fs;
 use std::path::Path;
+
+// Island-specific imports — only compiled when the `islands` feature is enabled.
+#[cfg(feature = "islands")]
+use common::components::counter::{Counter, CounterProps};
+#[cfg(feature = "islands")]
 use yew::ServerRenderer;
 
 /// Processed page ready for rendering.
@@ -220,6 +224,9 @@ fn markdown_to_html(markdown: &str) -> String {
 }
 
 /// SSR a Yew island component and wrap it in the hydration mount div.
+///
+/// Only compiled when the `islands` feature is enabled.
+#[cfg(feature = "islands")]
 pub fn render_island_counter(props: CounterProps) -> String {
     // Serialize props to JSON for the data attribute
     let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());

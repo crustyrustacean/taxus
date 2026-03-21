@@ -163,30 +163,9 @@ This is your new static site. Start editing this file to add your content.
         // Create base.html
         let base_path = path.join("templates/base.html");
         if !base_path.exists() {
-            let content = r#"<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}{{ site.name }}{% endblock %}</title>
-        <link rel="icon" type="image/png" href="/static/favicon.png">
-        <link rel="stylesheet" href="/css/main.css">
-    </head>
-<body>
-    <header>
-        <h1>{{ site.name }}</h1>
-        <nav>
-            <a href="/">Home</a>
-        </nav>
-    </header>
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-    <footer>
-        <p>&copy; {{ now.year }} {{ site.name }}</p>
-    </footer>
-    <!-- General interactivity via plain JavaScript -->
-    <script src="/static/scripts.js"></script>
+            // Conditionally include WASM hydration script based on islands flag
+            let wasm_script = if self.options.islands {
+                r#"
     <!-- WASM hydration client compiled by Trunk.
          client.js is a wasm-bindgen ES module; it must be loaded via
          `import init` inside a type="module" script, not via a plain src= tag. -->
@@ -195,9 +174,41 @@ This is your new static site. Start editing this file to add your content.
         const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
         window.wasmBindings = bindings;
     </script>
+"#
+            } else {
+                ""
+            };
+
+            let content = format!(
+                r#"<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{% block title %}}{{{{ site.name }}}}{{% endblock %}}</title>
+        <link rel="icon" type="image/png" href="/static/favicon.png">
+        <link rel="stylesheet" href="/css/main.css">
+    </head>
+<body>
+    <header>
+        <h1>{{{{ site.name }}}}</h1>
+        <nav>
+            <a href="/">Home</a>
+        </nav>
+    </header>
+    <main>
+        {{% block content %}}{{% endblock %}}
+    </main>
+    <footer>
+        <p>&copy; {{{{ now.year }}}} {{{{ site.name }}}}</p>
+    </footer>
+    <!-- General interactivity via plain JavaScript -->
+    <script src="/static/scripts.js"></script>{}
 </body>
 </html>
-"#;
+"#,
+                wasm_script
+            );
             std::fs::write(&base_path, content).map_err(|e| InitError::FileWrite {
                 path: base_path.clone(),
                 source: e,

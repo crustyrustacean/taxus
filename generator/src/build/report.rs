@@ -118,10 +118,15 @@ mod tests {
 
     #[test]
     fn test_build_report_total_files() {
-        let mut report = BuildReport::default();
-        report.pages_rendered = 5;
-        report.sections_rendered = 2;
-        report.assets.files_processed = 10;
+        let report = BuildReport {
+            pages_rendered: 5,
+            sections_rendered: 2,
+            assets: crate::assets::AssetReport {
+                files_processed: 10,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         assert_eq!(report.total_files(), 17);
     }
 
