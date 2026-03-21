@@ -7,6 +7,7 @@ use crate::assets::{AssetProcessor, AssetReport};
 use crate::error::AssetError;
 use std::fs;
 use std::path::Path;
+use tracing::{debug, debug_span, info, instrument};
 use walkdir::WalkDir;
 
 /// Static file copier for assets that need no processing.
@@ -113,6 +114,8 @@ impl StaticCopier {
         dest_dir: &Path,
         report: &mut AssetReport,
     ) -> Result<(), AssetError> {
+        debug!(src = %src_dir.display(), dest = %dest_dir.display(), "Processing directory");
+
         for entry in WalkDir::new(src_dir).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
 
@@ -123,6 +126,7 @@ impl StaticCopier {
 
             // Check exclusion
             if self.is_excluded(path) {
+                debug!(path = %path.display(), "Skipping excluded file");
                 report.add_skipped();
                 continue;
             }
@@ -140,7 +144,10 @@ impl StaticCopier {
 
             // Copy the file
             match self.copy_file(path, &dest_path) {
-                Ok(()) => report.add_processed(),
+                Ok(()) => {
+                    debug!(src = %path.display(), dest = %dest_path.display(), "Copied file");
+                    report.add_processed();
+                }
                 Err(e) => report.add_error(e),
             }
         }
@@ -150,7 +157,12 @@ impl StaticCopier {
 }
 
 impl AssetProcessor for StaticCopier {
+    #[instrument(skip(self), fields(processor = "static"))]
     fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError> {
+        let span =
+            debug_span!("static_asset_processing", src = %src.display(), dest = %dest.display());
+        let _enter = span.enter();
+
         let mut report = AssetReport::new();
 
         // Check if source exists
@@ -170,6 +182,13 @@ impl AssetProcessor for StaticCopier {
                 report.add_processed();
             }
         }
+
+        info!(
+            processed = report.files_processed,
+            skipped = report.files_skipped,
+            errors = report.errors.len(),
+            "Static asset processing complete"
+        );
 
         Ok(report)
     }

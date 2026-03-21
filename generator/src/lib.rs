@@ -33,6 +33,7 @@ pub mod error;
 pub mod init;
 pub mod routes;
 pub mod templates;
+pub mod tracing;
 
 // Re-exports for convenience
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};

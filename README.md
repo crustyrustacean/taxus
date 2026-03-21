@@ -14,6 +14,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
 - **Build System**: Unified build pipeline with `SiteBuilder` for orchestrating all stages
 - **CLI Interface**: Command-line interface with clap — `build`, `clean`, `init`, and `routes` subcommands with rich help text and actionable error messages
+- **Structured Logging**: Integrated `tracing` crate for structured, filterable logs with `--verbose` and `--quiet` CLI flags
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
 - **Reusable Library**: The generator is available as a library for programmatic use
@@ -130,6 +131,9 @@ cargo run -- build --verbose
 # Build silently (errors only)
 cargo run -- build --quiet
 
+# Build with debug logging via RUST_LOG
+RUST_LOG=debug cargo run -- build
+
 # Build including draft pages
 cargo run -- build --include-drafts
 
@@ -156,6 +160,32 @@ cargo run -- clean
 # Clean a site in a different directory
 cargo run -- clean --dir /path/to/site
 ```
+
+### Logging and Diagnostics
+
+The generator uses structured logging via the `tracing` crate. Control log output with CLI flags or the `RUST_LOG` environment variable:
+
+```bash
+# Default: info level (shows build progress and summary)
+cargo run -- build
+
+# Verbose: debug level (detailed stage-by-stage output)
+cargo run -- build --verbose
+
+# Quiet: error level (only errors are shown)
+cargo run -- build --quiet
+
+# Custom: use RUST_LOG for fine-grained control
+RUST_LOG=yew_ssg_lib=trace cargo run -- build
+RUST_LOG=debug cargo run -- build  # all crates at debug level
+```
+
+Log levels:
+- `error`: Build failures only
+- `warn`: Warnings (e.g., missing optional files)
+- `info`: Build progress and summary (default)
+- `debug`: Detailed stage information
+- `trace`: Very verbose internal diagnostics
 
 ### Inspect Discovered Routes
 

@@ -9,6 +9,26 @@ use std::path::{Path, PathBuf};
 use yew_ssg_lib::error::{BuildError, ConfigError, GeneratorError, InitError, TemplateError};
 use yew_ssg_lib::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilder};
 
+/// Initialize tracing based on CLI flags.
+///
+/// Maps `--verbose` to debug level and `--quiet` to error level.
+/// Respects `RUST_LOG` environment variable if set.
+fn init_tracing(verbose: bool, quiet: bool) {
+    let level = if quiet {
+        "error"
+    } else if verbose {
+        "debug"
+    } else {
+        // Respect RUST_LOG if set, otherwise use info
+        if std::env::var("RUST_LOG").is_ok() {
+            return; // init() will use RUST_LOG
+        }
+        "info"
+    };
+
+    yew_ssg_lib::tracing::init_with_level(level);
+}
+
 /// A Yew-based static site generator.
 ///
 /// yew-ssg turns Markdown content and Tera templates into a fully static website.
@@ -181,6 +201,16 @@ enum Commands {
 
 fn main() {
     let cli = Cli::parse();
+
+    // Initialize tracing based on command and flags
+    match &cli.command {
+        Commands::Build { verbose, quiet, .. } => {
+            init_tracing(*verbose, *quiet);
+        }
+        _ => {
+            yew_ssg_lib::tracing::init();
+        }
+    }
 
     match cli.command {
         Commands::Build {
@@ -426,6 +456,10 @@ fn run_routes(dir: &Path) -> Result<(), GeneratorError> {
 
 /// Print a user-friendly error message with a contextual hint.
 fn render_error(e: &GeneratorError) {
+    // Log structured error for debugging/monitoring
+    tracing::error!(error = %e, error_type = std::any::type_name_of_val(e), "Build failed");
+
+    // Print user-friendly error message
     eprintln!("\n✗ Error: {e}");
 
     let hint: Option<&str> = match e {
@@ -449,6 +483,7 @@ fn render_error(e: &GeneratorError) {
     };
 
     if let Some(hint) = hint {
+        tracing::warn!(hint = hint, "Suggestion");
         eprintln!("  Hint: {hint}");
     }
 

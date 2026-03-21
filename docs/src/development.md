@@ -166,15 +166,53 @@ fn test_load_config() {
 
 ### Logging
 
+The generator uses the `tracing` crate for structured logging. Control log output with CLI flags or the `RUST_LOG` environment variable:
+
+```bash
+# Default: info level
+cargo run -- build
+
+# Verbose: debug level
+cargo run -- build --verbose
+
+# Quiet: errors only
+cargo run -- build --quiet
+
+# Custom via RUST_LOG
+RUST_LOG=debug cargo run -- build
+RUST_LOG=yew_ssg_lib=trace cargo run -- build
+```
+
 Add logging to your code:
 
 ```rust
-// Future: Add tracing support
-use tracing::{info, debug};
+use tracing::{info, debug, warn, error};
 
 fn build_site() {
     info!("Building site");
     debug!("Processing content");
+    
+    // Structured logging with fields
+    info!(pages = 5, sections = 2, "Build complete");
+    
+    // Warnings and errors
+    warn!(file = "missing.md", "File not found");
+    error!(error = %e, "Build failed");
+}
+```
+
+For spans (structured context):
+
+```rust
+use tracing::{info, debug_span};
+
+#[tracing::instrument(skip(content))]
+fn process_page(path: &str, content: &str) {
+    let span = debug_span!("page_processing", path = %path);
+    let _enter = span.enter();
+    
+    info!("Processing page");
+    // ...
 }
 ```
 

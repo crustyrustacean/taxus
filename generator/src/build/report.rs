@@ -5,6 +5,7 @@
 use crate::assets::AssetReport;
 use std::path::PathBuf;
 use std::time::Duration;
+use tracing::{info, warn};
 
 /// Report of a completed build.
 #[derive(Debug, Clone)]
@@ -57,6 +58,26 @@ impl BuildReport {
     /// Print a summary of the build to stdout.
     pub fn print_summary(&self) {
         let status = if self.has_warnings() {
+            "completed_with_warnings"
+        } else {
+            "complete"
+        };
+
+        // Emit structured log
+        info!(
+            status = status,
+            pages = self.pages_rendered,
+            sections = self.sections_rendered,
+            drafts_skipped = self.drafts_skipped,
+            assets = self.assets.files_processed,
+            duration_ms = self.duration.as_millis() as u64,
+            output_dir = %self.output_dir.display(),
+            "Build {}",
+            if self.has_warnings() { "completed with warnings" } else { "complete" }
+        );
+
+        // Human-readable output
+        let status_msg = if self.has_warnings() {
             format!(
                 "⚠  Build completed with warnings  ({:.2}s)",
                 self.duration.as_secs_f64()
@@ -65,7 +86,7 @@ impl BuildReport {
             format!("✓  Build complete  ({:.2}s)", self.duration.as_secs_f64())
         };
 
-        println!("\n{status}");
+        println!("\n{status_msg}");
         println!("─────────────────────────────────");
         println!("  {:<16} {}", "Pages", self.pages_rendered);
         println!("  {:<16} {}", "Sections", self.sections_rendered);
@@ -80,9 +101,11 @@ impl BuildReport {
         if self.has_warnings() {
             println!("\n  Warnings:");
             for warning in &self.warnings {
+                warn!(warning = %warning, "Build warning");
                 println!("    ⚠  {warning}");
             }
             for error in &self.assets.errors {
+                warn!(error = %error, "Asset error");
                 println!("    ⚠  {error}");
             }
         }

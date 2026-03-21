@@ -6,6 +6,7 @@
 mod scaffold;
 
 use std::path::{Path, PathBuf};
+use tracing::info;
 
 use crate::error::{GeneratorError, InitError, Result};
 
@@ -112,6 +113,15 @@ impl InitReport {
 
     /// Print a summary of the initialization.
     pub fn print_summary(&self) {
+        // Emit structured log
+        info!(
+            path = %self.path.display(),
+            directories = self.directories_created,
+            files = self.files_created,
+            "Site initialized"
+        );
+
+        // Human-readable output
         println!("\n✓ Site initialized at {}/\n", self.path.display());
 
         if !self.created_dirs.is_empty() {

@@ -36,6 +36,8 @@ tera = "1.20"
 thiserror = "2.0"
 toml = "1.0.6"
 walkdir = "2.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # ── Islands feature dependencies (compiled only with --features islands) ──────
 common = { path = "../common", optional = true }

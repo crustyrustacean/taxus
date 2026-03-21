@@ -7,6 +7,7 @@ use crate::content::ContentSource;
 use crate::error::RouteError;
 use crate::routes::{RouteInfo, RouteKind, RouteRegistry};
 use std::path::{Path, PathBuf};
+use tracing::{debug, debug_span, info, instrument};
 use walkdir::WalkDir;
 
 /// Discovers routes from content directory structure.
@@ -33,7 +34,11 @@ impl RouteDiscovery {
     /// Returns an error if:
     /// - The content directory cannot be read
     /// - A duplicate route is detected
+    #[instrument(skip(self), fields(content_dir = %self.content_dir.display()))]
     pub fn discover(&self) -> Result<RouteRegistry, RouteError> {
+        let span = debug_span!("route_discovery", content_dir = %self.content_dir.display());
+        let _enter = span.enter();
+
         let mut registry = RouteRegistry::new();
 
         // Check if content directory exists
@@ -43,6 +48,8 @@ impl RouteDiscovery {
                 self.content_dir.display()
             )));
         }
+
+        debug!("Starting route discovery");
 
         // Walk the content directory
         for entry in WalkDir::new(&self.content_dir)
@@ -58,11 +65,14 @@ impl RouteDiscovery {
                 if let Ok(relative) = path.strip_prefix(&self.content_dir) {
                     // Convert file path to route
                     if let Some(route) = self.create_route_from_file(relative)? {
+                        debug!(path = %route.path, kind = ?route.kind, "Discovered route");
                         registry.register(route)?;
                     }
                 }
             }
         }
+
+        info!(route_count = registry.len(), "Route discovery complete");
 
         Ok(registry)
     }
@@ -70,10 +80,15 @@ impl RouteDiscovery {
     /// Discover routes using a ContentSource trait object.
     ///
     /// This is useful for testing with mock content sources.
+    #[instrument(skip(self, source), fields(content_dir = %self.content_dir.display()))]
     pub fn discover_from_source<S: ContentSource>(
         &self,
         source: &S,
     ) -> Result<RouteRegistry, RouteError> {
+        let span =
+            debug_span!("route_discovery_from_source", content_dir = %self.content_dir.display());
+        let _enter = span.enter();
+
         let mut registry = RouteRegistry::new();
 
         // List all content files from the source
@@ -81,12 +96,17 @@ impl RouteDiscovery {
             .list()
             .map_err(|e| RouteError::DiscoveryFailed(e.to_string()))?;
 
+        debug!(file_count = files.len(), "Processing content files");
+
         for relative in files {
             // Convert file path to route
             if let Some(route) = self.create_route_from_file(&relative)? {
+                debug!(path = %route.path, kind = ?route.kind, "Discovered route");
                 registry.register(route)?;
             }
         }
+
+        info!(route_count = registry.len(), "Route discovery complete");
 
         Ok(registry)
     }

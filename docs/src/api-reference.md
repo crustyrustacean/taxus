@@ -4,6 +4,48 @@ This page documents the public API of the generator library.
 
 ## Modules
 
+### `tracing`
+
+Structured logging initialization for the generator.
+
+#### Functions
+
+| Function | Description |
+|----------|-------------|
+| `init()` | Initialize tracing with `RUST_LOG` environment variable |
+| `init_with_level(level: &str)` | Initialize tracing with a specific log level |
+
+#### Usage
+
+```rust
+use yew_ssg_lib::tracing;
+
+// Initialize with RUST_LOG environment variable
+tracing::init();
+
+// Initialize with a specific level
+tracing::init_with_level("debug");
+```
+
+#### Log Levels
+
+| Level | Description |
+|-------|-------------|
+| `error` | Build failures only |
+| `warn` | Warnings and errors |
+| `info` | Build progress (default) |
+| `debug` | Detailed stage information |
+| `trace` | Verbose internal diagnostics |
+
+#### Environment Variable
+
+Control logging via `RUST_LOG`:
+
+```bash
+RUST_LOG=debug cargo run -- build
+RUST_LOG=yew_ssg_lib=trace cargo run -- build
+```
+
 ### `config`
 
 Configuration types for loading and representing site configuration.

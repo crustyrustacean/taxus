@@ -9,6 +9,7 @@ use crate::error::{BuildError, Result};
 use crate::templates::SiteContext;
 use std::path::Path;
 use std::time::Instant;
+use tracing::{debug, info, info_span};
 
 /// Builder for generating static sites.
 ///
@@ -97,49 +98,45 @@ impl SiteBuilder {
     ///
     /// Returns an error if any stage of the build fails.
     pub fn build(self) -> Result<BuildReport> {
+        let span = info_span!("build", site = %self.config.site.name);
+        let _enter = span.enter();
+
         let start = Instant::now();
         let output_dir = self.config.build.output_dir.clone();
 
-        if self.verbose {
-            println!("Building site: {}", self.config.site.name);
-            println!(
-                "Content directory: {}",
-                self.config.build.content_dir.display()
-            );
-            println!("Output directory: {}", output_dir.display());
-        }
+        info!(
+            site = %self.config.site.name,
+            content_dir = %self.config.build.content_dir.display(),
+            output_dir = %output_dir.display(),
+            "Building site"
+        );
 
         // Stage 1: Discover routes
-        if self.verbose {
-            println!("\n[1/6] Discovering routes...");
-        }
+        let _routes_span = info_span!("discover_routes").entered();
+        info!("[1/6] Discovering routes...");
         let registry = pipeline::discover_routes(&self.config)?;
 
         if registry.is_empty() {
             return Err(BuildError::NoContent.into());
         }
 
-        if self.verbose {
-            println!("  Found {} routes", registry.len());
-        }
+        debug!("Found {} routes", registry.len());
+        drop(_routes_span);
 
         // Stage 2: Load templates
-        if self.verbose {
-            println!("\n[2/6] Loading templates...");
-        }
+        let _templates_span = info_span!("load_templates").entered();
+        info!("[2/6] Loading templates...");
         let templates = pipeline::load_templates(&self.config)?;
 
-        if self.verbose {
-            println!(
-                "  Templates loaded from {}",
-                self.config.build.templates_dir.display()
-            );
-        }
+        debug!(
+            templates_dir = %self.config.build.templates_dir.display(),
+            "Templates loaded"
+        );
+        drop(_templates_span);
 
         // Stage 3: Process content
-        if self.verbose {
-            println!("\n[3/6] Processing content...");
-        }
+        let _content_span = info_span!("process_content").entered();
+        info!("[3/6] Processing content...");
         let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
 
         if processed.is_empty() {
@@ -154,17 +151,16 @@ impl SiteBuilder {
             total_routes - processed.len()
         };
 
-        if self.verbose {
-            println!("  Processed {} pages", processed.len());
-            if drafts_skipped > 0 {
-                println!("  Skipped {} drafts", drafts_skipped);
-            }
-        }
+        debug!(
+            pages = processed.len(),
+            drafts_skipped = drafts_skipped,
+            "Content processed"
+        );
+        drop(_content_span);
 
         // Stage 4: Render pages
-        if self.verbose {
-            println!("\n[4/6] Rendering pages...");
-        }
+        let _render_span = info_span!("render_pages").entered();
+        info!("[4/6] Rendering pages...");
         let site_context = SiteContext {
             name: self.config.site.name.clone(),
             base_url: self.config.site.base_url.clone(),
@@ -173,22 +169,21 @@ impl SiteBuilder {
         };
 
         let rendered = pipeline::render_pages(&processed, &templates, &site_context, self.verbose)?;
+        drop(_render_span);
 
         // Stage 5: Process assets
-        if self.verbose {
-            println!("\n[5/6] Processing assets...");
-        }
+        let _assets_span = info_span!("process_assets").entered();
+        info!("[5/6] Processing assets...");
         let assets = pipeline::process_assets(&self.config, &output_dir)?;
 
-        if self.verbose {
-            println!("  Processed {} asset files", assets.files_processed);
-        }
+        debug!(files_processed = assets.files_processed, "Assets processed");
+        drop(_assets_span);
 
         // Stage 6: Write output
-        if self.verbose {
-            println!("\n[6/6] Writing output...");
-        }
+        let _write_span = info_span!("write_output").entered();
+        info!("[6/6] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
+        drop(_write_span);
 
         // Build the report
         let mut report = BuildReport::new(output_dir);
@@ -198,9 +193,12 @@ impl SiteBuilder {
         report.assets = assets;
         report.duration = start.elapsed();
 
-        if self.verbose {
-            println!("\nBuild completed in {:.2}s", report.duration.as_secs_f64());
-        }
+        info!(
+            duration_ms = report.duration.as_millis() as u64,
+            pages = report.pages_rendered,
+            sections = report.sections_rendered,
+            "Build completed"
+        );
 
         Ok(report)
     }

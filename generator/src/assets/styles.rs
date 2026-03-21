@@ -7,6 +7,7 @@ use crate::assets::{AssetProcessor, AssetReport};
 use crate::error::AssetError;
 use std::fs;
 use std::path::Path;
+use tracing::{debug, debug_span, info, instrument};
 
 /// SCSS/SASS processor for compiling stylesheets.
 ///
@@ -122,6 +123,8 @@ impl ScssProcessor {
         dest: &Path,
         report: &mut AssetReport,
     ) -> Result<(), AssetError> {
+        debug!(src = %src.display(), dest = %dest.display(), "Processing SCSS file");
+
         // Read source file
         let content = fs::read_to_string(src).map_err(|e| AssetError::Io {
             path: src.to_path_buf(),
@@ -148,6 +151,7 @@ impl ScssProcessor {
             source: e,
         })?;
 
+        debug!(output = %output_path.display(), "SCSS compiled successfully");
         report.add_processed();
         Ok(())
     }
@@ -160,6 +164,8 @@ impl ScssProcessor {
         report: &mut AssetReport,
     ) -> Result<(), AssetError> {
         use walkdir::WalkDir;
+
+        debug!(src = %src_dir.display(), dest = %dest_dir.display(), "Processing SCSS directory");
 
         for entry in WalkDir::new(src_dir).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
@@ -188,7 +194,12 @@ impl ScssProcessor {
 }
 
 impl AssetProcessor for ScssProcessor {
+    #[instrument(skip(self), fields(processor = "scss"))]
     fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError> {
+        let span =
+            debug_span!("scss_asset_processing", src = %src.display(), dest = %dest.display());
+        let _enter = span.enter();
+
         let mut report = AssetReport::new();
 
         // Check if source exists
@@ -203,6 +214,13 @@ impl AssetProcessor for ScssProcessor {
             // Process single file
             self.process_file(src, dest, &mut report)?;
         }
+
+        info!(
+            processed = report.files_processed,
+            errors = report.errors.len(),
+            minified = self.minify,
+            "SCSS processing complete"
+        );
 
         Ok(report)
     }

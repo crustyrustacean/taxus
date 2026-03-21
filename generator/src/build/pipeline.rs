@@ -11,6 +11,7 @@ use crate::templates::{PageContext, SiteContext, TemplateContext, TemplateRender
 use pulldown_cmark::{Parser, html::push_html};
 use std::fs;
 use std::path::Path;
+use tracing::{debug, debug_span, info};
 
 // Island-specific imports — only compiled when the `islands` feature is enabled.
 #[cfg(feature = "islands")]
@@ -94,12 +95,21 @@ pub fn render_pages(
     processed: &[ProcessedPage],
     templates: &TeraRenderer,
     site_context: &SiteContext,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<Vec<RenderedPage>> {
+    let span = debug_span!("render_pages", pages = processed.len());
+    let _enter = span.enter();
+
     let mut rendered = Vec::new();
 
     for processed_page in processed {
         let template_name = processed_page.page.template();
+
+        debug!(
+            path = %processed_page.route.path,
+            template = %template_name,
+            "Rendering page"
+        );
 
         // Build the template context
         let page_context = PageContext {
@@ -122,19 +132,13 @@ pub fn render_pages(
             }
         })?;
 
-        if verbose {
-            println!(
-                "  Rendered: {} -> {}",
-                processed_page.route.path, template_name
-            );
-        }
-
         rendered.push(RenderedPage {
             route: processed_page.route.clone(),
             content,
         });
     }
 
+    info!("Rendered {} pages", rendered.len());
     Ok(rendered)
 }
 
@@ -170,12 +174,10 @@ pub fn write_output(
     rendered: &[RenderedPage],
     output_dir: &Path,
     dry_run: bool,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     if dry_run {
-        if verbose {
-            println!("  Dry run - skipping file writes");
-        }
+        debug!("Dry run - skipping file writes");
         return Ok(());
     }
 
@@ -196,11 +198,14 @@ pub fn write_output(
             source: e,
         })?;
 
-        if verbose {
-            println!("  Written: {}", output_path.display());
-        }
+        debug!(
+            path = %output_path.display(),
+            route = %rendered_page.route.path,
+            "Written output file"
+        );
     }
 
+    info!("Wrote {} files", rendered.len());
     Ok(())
 }
 

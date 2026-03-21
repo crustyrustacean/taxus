@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.21] - 2026-03-21
+
+### Added
+
+#### Structured Logging with Tracing
+
+- **`tracing` crate integration**: Replaced `println!`/`eprintln!` with structured logging
+  - Added `tracing = "0.1"` and `tracing-subscriber = { version = "0.3", features = ["env-filter"] }` dependencies
+  - Created `generator/src/tracing.rs` module with `init()` and `init_with_level()` functions
+  - Supports `RUST_LOG` environment variable for runtime log level configuration
+
+- **CLI log level flags**:
+  - `--verbose` / `-v`: Enables debug level logging for detailed output
+  - `--quiet` / `-q`: Suppresses all but error messages
+  - Default: Info level logging
+
+- **Instrumented modules** with `#[instrument]` attributes and structured spans:
+  - `generator/src/build/builder.rs`: Build stage logging (discover_routes, load_templates, process_content, render_pages, process_assets, write_output)
+  - `generator/src/build/pipeline.rs`: Page rendering with `debug_span!`
+  - `generator/src/build/report.rs`: Build summary and warnings
+  - `generator/src/init/mod.rs`: Site initialization logging
+  - `generator/src/routes/discovery.rs`: Route discovery with content directory context
+  - `generator/src/assets/static_files.rs`: Static file copying operations
+  - `generator/src/assets/styles.rs`: SCSS compilation operations
+
+- **Structured error logging**:
+  - `render_error()` now emits `tracing::error!` with structured fields
+  - Includes error type, error message, and contextual hints
+
 ## [0.1.20] - 2026-03-21
 
 ### Added
