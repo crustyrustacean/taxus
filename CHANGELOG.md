@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.29] - 2026-03-22
+
+### Added
+
+#### Page Permalinks
+
+- **`page.permalink` Field**: Pre-computed absolute URL in template context
+  - Combines `site.base_url` and `page.path` with proper slash handling
+  - No double slashes or missing slashes (e.g., `https://example.com/about/`)
+  - Available in all templates via `{{ page.permalink }}`
+  - Useful for canonical tags: `<link rel="canonical" href="{{ page.permalink }}" />`
+  - Useful for Open Graph meta tags: `<meta property="og:url" content="{{ page.permalink }}" />`
+
+- **`compute_permalink` Function**: Public helper for URL construction
+  - Handles edge cases: trailing slashes on base_url, leading slashes on path
+  - Exported from `yew_ssg_lib::templates` module
+
+### Changed
+
+- **Feed Generation**: Now uses `compute_permalink` for consistent URL building
+- **Sitemap Generation**: Now uses `compute_permalink` for consistent URL building
+- **Documentation**: Updated templates.md and api-reference.md with permalink field
+
 ## [0.1.28] - 2026-03-22
 
 ### Added

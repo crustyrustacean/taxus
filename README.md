@@ -486,6 +486,7 @@ fn main() -> Result<()> {
         title: "Hello World".to_string(),
         description: None,
         path: "/hello/".to_string(),
+        permalink: "https://example.com/hello/".to_string(),
         content: "<p>Welcome!</p>".to_string(),
         raw_content: "Welcome!".to_string(),
         date: None,

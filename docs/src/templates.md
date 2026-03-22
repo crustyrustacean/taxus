@@ -35,6 +35,13 @@ The base template defines the common HTML structure:
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}{{ site.name }}{% endblock %}</title>
+
+    <!-- Canonical URL and Open Graph meta tags -->
+    {% if page.permalink %}
+    <link rel="canonical" href="{{ page.permalink }}" />
+    <meta property="og:url" content="{{ page.permalink }}" />
+    {% endif %}
+
     <link rel="stylesheet" href="/css/main.css" />
     <link rel="icon" href="/static/favicon.png" />
   </head>
@@ -120,15 +127,16 @@ Section templates render lists of pages:
 
 ### Page Context
 
-| Variable           | Type    | Description                 |
-| ------------------ | ------- | --------------------------- |
-| `page.title`       | String  | Page title from frontmatter |
-| `page.description` | String? | Optional page description   |
-| `page.path`        | String  | URL path (e.g., "/about/")  |
-| `page.content`     | String  | Rendered HTML content       |
-| `page.raw_content` | String  | Raw markdown content        |
-| `page.date`        | String? | Publication date (ISO 8601) |
-| `page.draft`       | Boolean | Whether page is a draft     |
+| Variable           | Type    | Description                                       |
+| ------------------ | ------- | ------------------------------------------------- |
+| `page.title`       | String  | Page title from frontmatter                       |
+| `page.description` | String? | Optional page description                         |
+| `page.path`        | String  | URL path (e.g., "/about/")                        |
+| `page.permalink`   | String  | Absolute URL (e.g., "https://example.com/about/") |
+| `page.content`     | String  | Rendered HTML content                             |
+| `page.raw_content` | String  | Raw markdown content                              |
+| `page.date`        | String? | Publication date (ISO 8601)                       |
+| `page.draft`       | Boolean | Whether page is a draft                           |
 
 ### Section Context
 
@@ -258,10 +266,17 @@ fn main() -> Result<()> {
         title: "Hello".to_string(),
         description: None,
         path: "/hello/".to_string(),
+        permalink: "https://example.com/hello/".to_string(),
         content: "<p>World</p>".to_string(),
         raw_content: "World".to_string(),
         date: None,
         draft: false,
+        summary: String::new(),
+        word_count: 1,
+        reading_time: 1,
+        tags: vec![],
+        categories: vec![],
+        series: None,
     };
 
     let ctx = TemplateContext::new(site).with_page(page);

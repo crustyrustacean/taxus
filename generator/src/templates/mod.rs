@@ -32,6 +32,7 @@
 //!     title: "Hello".to_string(),
 //!     description: None,
 //!     path: "/hello/".to_string(),
+//!     permalink: "https://example.com/hello/".to_string(),
 //!     content: "<p>World</p>".to_string(),
 //!     raw_content: "World".to_string(),
 //!     date: None,
@@ -55,6 +56,6 @@ mod renderer;
 
 pub use context::{
     PageContext, PaginationContext, SectionContext, SiteContext, TaxonomyListContext,
-    TaxonomyTermContext, TemplateContext,
+    TaxonomyTermContext, TemplateContext, compute_permalink,
 };
 pub use renderer::{TemplateRenderer, TeraRenderer};

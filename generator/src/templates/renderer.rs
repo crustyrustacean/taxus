@@ -384,6 +384,7 @@ mod tests {
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
             path: "/test/".to_string(),
+            permalink: "https://example.com/test/".to_string(),
             content: "<p>Hello World</p>".to_string(),
             raw_content: "Hello World".to_string(),
             date: Some("2024-01-15".to_string()),

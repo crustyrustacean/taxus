@@ -56,6 +56,10 @@ pub struct PageContext {
     /// Page URL path (e.g., "/about/")
     pub path: String,
 
+    /// Pre-computed absolute URL combining base_url and path
+    /// (e.g., "https://example.com/about/")
+    pub permalink: String,
+
     /// Rendered HTML content
     pub content: String,
 
@@ -88,6 +92,35 @@ pub struct PageContext {
     /// Series name for the page
     #[serde(default)]
     pub series: Option<String>,
+}
+
+/// Compute a permalink by joining base_url and path with proper slash handling.
+///
+/// Ensures there are no double slashes or missing slashes between the base URL
+/// and the path. The result is always a properly formed absolute URL.
+///
+/// # Examples
+///
+/// ```
+/// use yew_ssg_lib::templates::compute_permalink;
+///
+/// // base_url without trailing slash, path with leading slash
+/// assert_eq!(compute_permalink("https://example.com", "/about/"), "https://example.com/about/");
+///
+/// // base_url with trailing slash, path with leading slash
+/// assert_eq!(compute_permalink("https://example.com/", "/about/"), "https://example.com/about/");
+///
+/// // Root path
+/// assert_eq!(compute_permalink("https://example.com", "/"), "https://example.com/");
+/// ```
+pub fn compute_permalink(base_url: &str, path: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    let path = path.trim_start_matches('/');
+    if path.is_empty() {
+        format!("{}/", base)
+    } else {
+        format!("{}/{}", base, path)
+    }
 }
 
 /// Section-specific context for templates.
@@ -300,6 +333,7 @@ impl TemplateContext {
     ///     title: "Test Page".to_string(),
     ///     description: None,
     ///     path: "/test/".to_string(),
+    ///     permalink: "https://example.com/test/".to_string(),
     ///     content: String::new(),
     ///     raw_content: String::new(),
     ///     date: None,
@@ -394,6 +428,7 @@ mod tests {
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
             path: "/test/".to_string(),
+            permalink: "https://example.com/test/".to_string(),
             content: "<p>Content</p>".to_string(),
             raw_content: "Content".to_string(),
             date: Some("2024-01-15".to_string()),
@@ -529,6 +564,7 @@ mod tests {
             "title": "Test",
             "description": "A test",
             "path": "/test/",
+            "permalink": "https://example.com/test/",
             "content": "<p>Hello</p>",
             "raw_content": "Hello",
             "date": "2024-01-15",
@@ -541,9 +577,67 @@ mod tests {
         let page: PageContext = serde_json::from_str(json).unwrap();
         assert_eq!(page.title, "Test");
         assert_eq!(page.path, "/test/");
+        assert_eq!(page.permalink, "https://example.com/test/");
         assert!(!page.draft);
         assert_eq!(page.summary, "Test summary");
         assert_eq!(page.word_count, 5);
         assert_eq!(page.reading_time, 1);
+    }
+
+    #[test]
+    fn test_compute_permalink_slash_handling() {
+        // base_url without trailing slash, path with leading slash
+        assert_eq!(
+            compute_permalink("https://example.com", "/about/"),
+            "https://example.com/about/"
+        );
+
+        // base_url with trailing slash, path with leading slash
+        assert_eq!(
+            compute_permalink("https://example.com/", "/about/"),
+            "https://example.com/about/"
+        );
+
+        // base_url without trailing slash, path without leading slash
+        assert_eq!(
+            compute_permalink("https://example.com", "about/"),
+            "https://example.com/about/"
+        );
+
+        // base_url with trailing slash, path without leading slash
+        assert_eq!(
+            compute_permalink("https://example.com/", "about/"),
+            "https://example.com/about/"
+        );
+
+        // Root path
+        assert_eq!(
+            compute_permalink("https://example.com", "/"),
+            "https://example.com/"
+        );
+
+        // Root path with trailing slash on base_url
+        assert_eq!(
+            compute_permalink("https://example.com/", "/"),
+            "https://example.com/"
+        );
+
+        // Path without trailing slash (should still work)
+        assert_eq!(
+            compute_permalink("https://example.com", "/about"),
+            "https://example.com/about"
+        );
+
+        // Complex path
+        assert_eq!(
+            compute_permalink("https://example.com", "/blog/2024/my-post/"),
+            "https://example.com/blog/2024/my-post/"
+        );
+
+        // Double trailing slash on base_url (should be normalized)
+        assert_eq!(
+            compute_permalink("https://example.com//", "/about/"),
+            "https://example.com/about/"
+        );
     }
 }

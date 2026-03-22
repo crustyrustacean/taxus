@@ -143,7 +143,8 @@ pub struct FeedEntry {
 impl FeedEntry {
     /// Create a feed entry from a page.
     pub fn from_page(page: &Page, base_url: &str) -> Self {
-        let url = format!("{}{}", base_url.trim_end_matches('/'), page.path);
+        use crate::templates::compute_permalink;
+        let url = compute_permalink(base_url, &page.path);
 
         // Use summary if available, otherwise generate from content
         let summary = page.frontmatter.summary.clone().unwrap_or_else(|| {

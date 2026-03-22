@@ -9,7 +9,7 @@ use crate::error::{BuildError, GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::{
     PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
-    TemplateRenderer, TeraRenderer,
+    TemplateRenderer, TeraRenderer, compute_permalink,
 };
 use pulldown_cmark::{Parser, html::push_html};
 use std::fs;
@@ -126,10 +126,12 @@ pub fn render_pages(
         );
 
         // Build the template context
+        let permalink = compute_permalink(&site_context.base_url, &url_path);
         let page_context = PageContext {
             title: processed_page.page.frontmatter.title.clone(),
             description: processed_page.page.frontmatter.description.clone(),
             path: url_path.clone(),
+            permalink,
             content: processed_page.html_content.clone(),
             raw_content: processed_page.page.raw_content.clone(),
             date: processed_page.page.frontmatter.date.map(|d| d.to_string()),
@@ -304,10 +306,12 @@ pub fn render_taxonomy_pages(
                             proc_page.route.path.clone()
                         };
 
+                        let permalink = compute_permalink(&site_context.base_url, &url_path);
                         let page_context = PageContext {
                             title: proc_page.page.frontmatter.title.clone(),
                             description: proc_page.page.frontmatter.description.clone(),
                             path: url_path,
+                            permalink,
                             content: proc_page.html_content.clone(),
                             raw_content: proc_page.page.raw_content.clone(),
                             date: proc_page.page.frontmatter.date.map(|d| d.to_string()),
@@ -777,8 +781,8 @@ pub fn generate_sitemap(
             processed_page.route.path.clone()
         };
 
-        // Build full URL
-        let loc = format!("{}{}", base_url, url_path);
+        // Build full URL using compute_permalink for proper slash handling
+        let loc = compute_permalink(base_url, &url_path);
 
         // Get lastmod from page date
         let lastmod = processed_page
