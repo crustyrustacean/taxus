@@ -56,7 +56,6 @@ pub struct Frontmatter {
     // ========================================
     // Phase 3: Pagination Fields
     // ========================================
-
     /// Sort order for section pages
     #[serde(default)]
     pub sort_by: SortBy,
@@ -520,7 +519,10 @@ template = "custom.html"
         .unwrap();
 
         assert_eq!(fm.date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
-        assert_eq!(fm.updated, Some(NaiveDate::from_ymd_opt(2024, 2, 20).unwrap()));
+        assert_eq!(
+            fm.updated,
+            Some(NaiveDate::from_ymd_opt(2024, 2, 20).unwrap())
+        );
     }
 
     #[test]
@@ -544,7 +546,10 @@ template = "custom.html"
 
         assert_eq!(fm.sort_by, SortBy::Title);
         assert_eq!(fm.paginate_by, 5);
-        assert_eq!(fm.paginate_template, Some("blog-paginated.html".to_string()));
+        assert_eq!(
+            fm.paginate_template,
+            Some("blog-paginated.html".to_string())
+        );
         assert_eq!(fm.weight, 10);
     }
 

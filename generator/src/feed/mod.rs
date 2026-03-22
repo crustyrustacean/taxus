@@ -146,32 +146,34 @@ impl FeedEntry {
         let url = format!("{}{}", base_url.trim_end_matches('/'), page.path);
 
         // Use summary if available, otherwise generate from content
-        let summary = page.frontmatter.summary.clone()
-            .unwrap_or_else(|| {
-                // Generate a summary from the first 200 characters of content
-                let text = page.raw_content
-                    .chars()
-                    .take(200)
-                    .collect::<String>();
-                if text.len() < page.raw_content.len() {
-                    format!("{}...", text)
-                } else {
-                    text
-                }
-            });
+        let summary = page.frontmatter.summary.clone().unwrap_or_else(|| {
+            // Generate a summary from the first 200 characters of content
+            let text = page.raw_content.chars().take(200).collect::<String>();
+            if text.len() < page.raw_content.len() {
+                format!("{}...", text)
+            } else {
+                text
+            }
+        });
 
         // Convert date to DateTime<Utc>
-        let date = page.frontmatter.date
-            .map(|d| d.and_hms_opt(0, 0, 0).unwrap_or_else(|| {
-                chrono::NaiveDateTime::new(d, chrono::NaiveTime::MIN)
-            }))
+        let date = page
+            .frontmatter
+            .date
+            .map(|d| {
+                d.and_hms_opt(0, 0, 0)
+                    .unwrap_or_else(|| chrono::NaiveDateTime::new(d, chrono::NaiveTime::MIN))
+            })
             .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc))
             .unwrap_or_else(Utc::now);
 
-        let updated = page.frontmatter.updated
-            .map(|d| d.and_hms_opt(0, 0, 0).unwrap_or_else(|| {
-                chrono::NaiveDateTime::new(d, chrono::NaiveTime::MIN)
-            }))
+        let updated = page
+            .frontmatter
+            .updated
+            .map(|d| {
+                d.and_hms_opt(0, 0, 0)
+                    .unwrap_or_else(|| chrono::NaiveDateTime::new(d, chrono::NaiveTime::MIN))
+            })
             .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc));
 
         Self {

@@ -7,7 +7,10 @@ use crate::config::SiteConfig;
 use crate::content::{Page, TaxonomyKind, TaxonomyMap};
 use crate::error::{BuildError, GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
-use crate::templates::{PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext, TemplateRenderer, TeraRenderer};
+use crate::templates::{
+    PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
+    TemplateRenderer, TeraRenderer,
+};
 use pulldown_cmark::{Parser, html::push_html};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -162,12 +165,10 @@ pub fn render_pages(
             processed_page.route.content_file.clone(),
             output_file,
             processed_page.route.kind,
-        ).map_err(|e| BuildError::from(e))?;
+        )
+        .map_err(BuildError::from)?;
 
-        rendered.push(RenderedPage {
-            route,
-            content,
-        });
+        rendered.push(RenderedPage { route, content });
     }
 
     info!("Rendered {} pages", rendered.len());
@@ -214,13 +215,17 @@ pub fn render_taxonomy_pages(
         .collect();
 
     // Process each taxonomy kind
-    for kind in [TaxonomyKind::Tag, TaxonomyKind::Category, TaxonomyKind::Series] {
+    for kind in [
+        TaxonomyKind::Tag,
+        TaxonomyKind::Category,
+        TaxonomyKind::Series,
+    ] {
         let terms: Vec<_> = match kind {
             TaxonomyKind::Tag => taxonomy_map.tags(),
             TaxonomyKind::Category => taxonomy_map.categories(),
             TaxonomyKind::Series => taxonomy_map.series(),
         };
-        
+
         if terms.is_empty() {
             continue;
         }
@@ -249,16 +254,17 @@ pub fn render_taxonomy_pages(
         };
 
         let template_name = format!("{}.html", kind.path_prefix());
-        
+
         // Only render if template exists
         if templates.has_template(&template_name) {
             let context = TemplateContext::new(site_context.clone());
             let context = context.with_extra(
-                vec![
-                    ("taxonomy".to_string(), serde_json::to_value(&list_context).unwrap()),
-                ]
+                vec![(
+                    "taxonomy".to_string(),
+                    serde_json::to_value(&list_context).unwrap(),
+                )]
                 .into_iter()
-                .collect()
+                .collect(),
             );
 
             let content = templates.render(&template_name, &context).map_err(|e| {
@@ -324,11 +330,12 @@ pub fn render_taxonomy_pages(
 
                 let context = TemplateContext::new(site_context.clone());
                 let context = context.with_extra(
-                    vec![
-                        ("taxonomy".to_string(), serde_json::to_value(&term_context).unwrap()),
-                    ]
+                    vec![(
+                        "taxonomy".to_string(),
+                        serde_json::to_value(&term_context).unwrap(),
+                    )]
                     .into_iter()
-                    .collect()
+                    .collect(),
                 );
 
                 let content = templates.render(&template_name, &context).map_err(|e| {
@@ -338,8 +345,8 @@ pub fn render_taxonomy_pages(
                     }
                 })?;
 
-                let output_file = PathBuf::from(&term_path.trim_start_matches('/'))
-                    .join("index.html");
+                let output_file =
+                    PathBuf::from(&term_path.trim_start_matches('/')).join("index.html");
 
                 rendered.push(RenderedTaxonomy {
                     path: term_path,
@@ -439,14 +446,14 @@ pub fn generate_feeds(
     config: &SiteConfig,
 ) -> Result<Vec<GeneratedFeed>> {
     use crate::feed::{FeedConfig as FeedGenConfig, FeedGenerator};
-    
+
     let mut feeds = Vec::new();
-    
+
     // Skip if both feeds are disabled
     if !config.feed.rss_enabled && !config.feed.atom_enabled {
         return Ok(feeds);
     }
-    
+
     // Collect pages for feed generation
     let pages: Vec<crate::content::Page> = processed
         .iter()
@@ -467,75 +474,87 @@ pub fn generate_feeds(
             page
         })
         .collect();
-    
+
     // Build feed generator config
     let feed_gen_config = FeedGenConfig {
-        title: config.feed.title.clone().unwrap_or_else(|| config.site.name.clone()),
+        title: config
+            .feed
+            .title
+            .clone()
+            .unwrap_or_else(|| config.site.name.clone()),
         base_url: config.site.base_url.clone(),
         description: config.site.description.clone().unwrap_or_default(),
         author: config.site.author.clone(),
-        limit: if config.feed.limit > 0 { config.feed.limit } else { 20 },
+        limit: if config.feed.limit > 0 {
+            config.feed.limit
+        } else {
+            20
+        },
         full_content: config.feed.full_content,
         ..Default::default()
     };
-    
+
     let generator = FeedGenerator::new(feed_gen_config);
-    
+
     // Generate RSS feed if enabled
     if config.feed.rss_enabled {
         let rss_content = generator.generate_rss(&pages)?;
-        let filename = config.feed.rss_path.clone().unwrap_or_else(|| generator.rss_filename());
+        let filename = config
+            .feed
+            .rss_path
+            .clone()
+            .unwrap_or_else(|| generator.rss_filename());
         feeds.push(GeneratedFeed {
             filename,
             content: rss_content,
         });
         info!("Generated RSS feed");
     }
-    
+
     // Generate Atom feed if enabled
     if config.feed.atom_enabled {
         let atom_content = generator.generate_atom(&pages)?;
-        let filename = config.feed.atom_path.clone().unwrap_or_else(|| generator.atom_filename());
+        let filename = config
+            .feed
+            .atom_path
+            .clone()
+            .unwrap_or_else(|| generator.atom_filename());
         feeds.push(GeneratedFeed {
             filename,
             content: atom_content,
         });
         info!("Generated Atom feed");
     }
-    
+
     Ok(feeds)
 }
 
 /// Write feed files to output directory.
-pub fn write_feeds(
-    feeds: &[GeneratedFeed],
-    output_dir: &Path,
-    dry_run: bool,
-) -> Result<()> {
+pub fn write_feeds(feeds: &[GeneratedFeed], output_dir: &Path, dry_run: bool) -> Result<()> {
     if dry_run {
         debug!("Dry run - skipping feed writes");
         return Ok(());
     }
-    
+
     for feed in feeds {
         let output_path = output_dir.join(&feed.filename);
-        
+
         // Write the feed file
         fs::write(&output_path, &feed.content).map_err(|e| BuildError::Io {
             path: output_path.clone(),
             source: e,
         })?;
-        
+
         debug!(
             path = %output_path.display(),
             "Written feed file"
         );
     }
-    
+
     if !feeds.is_empty() {
         info!("Wrote {} feed files", feeds.len());
     }
-    
+
     Ok(())
 }
 
@@ -634,11 +653,7 @@ impl AliasPage {
 }
 
 /// Write alias redirect pages.
-pub fn write_aliases(
-    aliases: &[AliasPage],
-    output_dir: &Path,
-    dry_run: bool,
-) -> Result<()> {
+pub fn write_aliases(aliases: &[AliasPage], output_dir: &Path, dry_run: bool) -> Result<()> {
     if dry_run {
         debug!("Dry run - skipping alias file writes");
         return Ok(());
@@ -758,7 +773,7 @@ mod tests {
     #[test]
     fn test_render_pages_with_custom_slug() {
         use crate::routes::{RouteInfo, RouteKind};
-        
+
         // Create a page with custom slug
         let content = r#"
 +++
@@ -768,47 +783,52 @@ slug = "custom-url"
 This is the content.
 "#;
         let page = Page::from_str(content.trim_start(), "original-filename.md").unwrap();
-        
+
         // Create a processed page
         let route = RouteInfo::new(
             "/original-filename/".to_string(),
             std::path::PathBuf::from("original-filename.md"),
             std::path::PathBuf::from("original-filename/index.html"),
             RouteKind::Page,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let processed = ProcessedPage {
             route,
             page,
             html_content: "<p>This is the content.</p>".to_string(),
         };
-        
+
         // Create a minimal template renderer
-        let templates = TeraRenderer::from_dir(
-            std::path::Path::new("tests/fixtures/template_site/templates")
-        ).unwrap();
-        
+        let templates = TeraRenderer::from_dir(std::path::Path::new(
+            "tests/fixtures/template_site/templates",
+        ))
+        .unwrap();
+
         let site_context = SiteContext {
             name: "Test Site".to_string(),
             base_url: "https://example.com".to_string(),
             description: None,
             author: None,
         };
-        
+
         // Render the page
         let rendered = render_pages(&[processed], &templates, &site_context, false).unwrap();
-        
+
         assert_eq!(rendered.len(), 1);
         // The URL path should use the custom slug
         assert_eq!(rendered[0].route.path, "/custom-url/");
         // The output file should use the custom slug
-        assert_eq!(rendered[0].route.output_file, std::path::PathBuf::from("custom-url/index.html"));
+        assert_eq!(
+            rendered[0].route.output_file,
+            std::path::PathBuf::from("custom-url/index.html")
+        );
     }
 
     #[test]
     fn test_render_pages_without_custom_slug() {
         use crate::routes::{RouteInfo, RouteKind};
-        
+
         // Create a page without custom slug
         let content = r#"
 +++
@@ -817,41 +837,46 @@ title = "Test Post"
 This is the content.
 "#;
         let page = Page::from_str(content.trim_start(), "my-post.md").unwrap();
-        
+
         // Create a processed page
         let route = RouteInfo::new(
             "/my-post/".to_string(),
             std::path::PathBuf::from("my-post.md"),
             std::path::PathBuf::from("my-post/index.html"),
             RouteKind::Page,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let processed = ProcessedPage {
             route,
             page,
             html_content: "<p>This is the content.</p>".to_string(),
         };
-        
+
         // Create a minimal template renderer
-        let templates = TeraRenderer::from_dir(
-            std::path::Path::new("tests/fixtures/template_site/templates")
-        ).unwrap();
-        
+        let templates = TeraRenderer::from_dir(std::path::Path::new(
+            "tests/fixtures/template_site/templates",
+        ))
+        .unwrap();
+
         let site_context = SiteContext {
             name: "Test Site".to_string(),
             base_url: "https://example.com".to_string(),
             description: None,
             author: None,
         };
-        
+
         // Render the page
         let rendered = render_pages(&[processed], &templates, &site_context, false).unwrap();
-        
+
         assert_eq!(rendered.len(), 1);
         // The URL path should use the original route path
         assert_eq!(rendered[0].route.path, "/my-post/");
         // The output file should use the original path
-        assert_eq!(rendered[0].route.output_file, std::path::PathBuf::from("my-post/index.html"));
+        assert_eq!(
+            rendered[0].route.output_file,
+            std::path::PathBuf::from("my-post/index.html")
+        );
     }
 
     #[test]
@@ -874,7 +899,7 @@ This is the content.
     fn test_alias_page_to_html() {
         let alias = AliasPage::new("/old-url/".to_string(), "/new-url/".to_string());
         let html = alias.to_html();
-        
+
         // Check that the HTML contains the redirect elements
         assert!(html.contains(r#"http-equiv="refresh""#));
         assert!(html.contains("0;url=/new-url/"));
@@ -898,7 +923,7 @@ This is the content.
     #[test]
     fn test_build_taxonomy_map() {
         use crate::routes::{RouteInfo, RouteKind};
-        
+
         // Create pages with taxonomies
         let content1 = r#"
 +++
@@ -916,24 +941,26 @@ series = "Learning Rust"
 +++
 Content 2
 "#;
-        
+
         let page1 = Page::from_str(content1.trim_start(), "post-1.md").unwrap();
         let page2 = Page::from_str(content2.trim_start(), "post-2.md").unwrap();
-        
+
         let route1 = RouteInfo::new(
             "/post-1/".to_string(),
             std::path::PathBuf::from("post-1.md"),
             std::path::PathBuf::from("post-1/index.html"),
             RouteKind::Page,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let route2 = RouteInfo::new(
             "/post-2/".to_string(),
             std::path::PathBuf::from("post-2.md"),
             std::path::PathBuf::from("post-2/index.html"),
             RouteKind::Page,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let processed = vec![
             ProcessedPage {
                 route: route1,
@@ -946,17 +973,17 @@ Content 2
                 html_content: "<p>Content 2</p>".to_string(),
             },
         ];
-        
+
         let taxonomy_map = build_taxonomy_map(&processed);
-        
+
         // Check tags
         assert_eq!(taxonomy_map.tags().len(), 2);
         let rust_tag = taxonomy_map.get_tag("rust").unwrap();
         assert_eq!(rust_tag.page_count, 2);
-        
+
         // Check categories
         assert_eq!(taxonomy_map.categories().len(), 1);
-        
+
         // Check series
         assert_eq!(taxonomy_map.series().len(), 1);
     }
@@ -964,7 +991,7 @@ Content 2
     #[test]
     fn test_render_taxonomy_pages_no_templates() {
         use crate::routes::{RouteInfo, RouteKind};
-        
+
         // Create a page with taxonomies
         let content = r#"
 +++
@@ -974,36 +1001,39 @@ tags = ["rust", "web"]
 Content
 "#;
         let page = Page::from_str(content.trim_start(), "post-1.md").unwrap();
-        
+
         let route = RouteInfo::new(
             "/post-1/".to_string(),
             std::path::PathBuf::from("post-1.md"),
             std::path::PathBuf::from("post-1/index.html"),
             RouteKind::Page,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let processed = vec![ProcessedPage {
             route,
             page,
             html_content: "<p>Content</p>".to_string(),
         }];
-        
+
         let taxonomy_map = build_taxonomy_map(&processed);
-        
+
         // Use templates that don't have taxonomy templates
-        let templates = TeraRenderer::from_dir(
-            std::path::Path::new("tests/fixtures/template_site/templates")
-        ).unwrap();
-        
+        let templates = TeraRenderer::from_dir(std::path::Path::new(
+            "tests/fixtures/template_site/templates",
+        ))
+        .unwrap();
+
         let site_context = SiteContext {
             name: "Test Site".to_string(),
             base_url: "https://example.com".to_string(),
             description: None,
             author: None,
         };
-        
+
         // Should return empty vec since no taxonomy templates exist
-        let rendered = render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context).unwrap();
+        let rendered =
+            render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context).unwrap();
         assert!(rendered.is_empty());
     }
 
@@ -1014,7 +1044,7 @@ Content
             output_file: PathBuf::from("tags/rust/index.html"),
             content: "<html>Test</html>".to_string(),
         }];
-        
+
         // Dry run should not write anything
         let result = write_taxonomy_pages(&taxonomy_pages, Path::new("/nonexistent/path"), true);
         assert!(result.is_ok());

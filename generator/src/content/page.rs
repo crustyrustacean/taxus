@@ -174,12 +174,7 @@ impl Page {
         }
 
         // 3. Use first paragraph as fallback
-        let first_paragraph = self
-            .raw_content
-            .split("\n\n")
-            .next()
-            .unwrap_or("")
-            .trim();
+        let first_paragraph = self.raw_content.split("\n\n").next().unwrap_or("").trim();
 
         Self::strip_markdown(first_paragraph)
     }
@@ -189,9 +184,7 @@ impl Page {
     /// Strips markdown formatting and counts words (whitespace-separated tokens).
     pub fn word_count(&self) -> usize {
         let stripped = Self::strip_markdown(&self.raw_content);
-        stripped
-            .split_whitespace()
-            .count()
+        stripped.split_whitespace().count()
     }
 
     /// Calculate estimated reading time in minutes.
@@ -204,7 +197,7 @@ impl Page {
         if words == 0 {
             return 0;
         }
-        (words + WORDS_PER_MINUTE - 1) / WORDS_PER_MINUTE // Ceiling division
+        words.div_ceil(WORDS_PER_MINUTE) // Ceiling division
     }
 
     /// Get the effective slug for this page.
@@ -259,7 +252,7 @@ impl Page {
     /// Strip markdown formatting from text using simple string manipulation.
     fn strip_markdown(text: &str) -> String {
         let mut result = text.to_string();
-        
+
         // Remove headers (## Header -> Header)
         let mut new_result = String::new();
         for line in result.lines() {
@@ -309,13 +302,13 @@ impl Page {
         let mut chars = text.chars().peekable();
         let start_chars: Vec<char> = start.chars().collect();
         let end_chars: Vec<char> = end.chars().collect();
-        
+
         while let Some(c) = chars.next() {
             // Check if we're at the start delimiter
             if c == start_chars[0] {
                 let mut matched = true;
                 let mut temp: Vec<char> = vec![c];
-                
+
                 for expected in &start_chars[1..] {
                     if let Some(&next) = chars.peek() {
                         if next == *expected {
@@ -329,17 +322,17 @@ impl Page {
                         break;
                     }
                 }
-                
+
                 if matched && start_chars.len() > 1 {
                     // Look for end delimiter
                     let mut content = String::new();
                     let mut found_end = false;
-                    
+
                     while let Some(&next) = chars.peek() {
                         if next == end_chars[0] {
                             let mut end_match = true;
                             let mut end_temp: Vec<char> = vec![];
-                            
+
                             for expected in &end_chars {
                                 if let Some(&n) = chars.peek() {
                                     if n == *expected {
@@ -353,7 +346,7 @@ impl Page {
                                     break;
                                 }
                             }
-                            
+
                             if end_match {
                                 found_end = true;
                                 break;
@@ -364,7 +357,7 @@ impl Page {
                             content.push(chars.next().unwrap());
                         }
                     }
-                    
+
                     if found_end {
                         result.push_str(&content);
                         continue;
@@ -377,7 +370,7 @@ impl Page {
                     // Single char delimiter, look for closing
                     let mut content = String::new();
                     let mut found_end = false;
-                    
+
                     while let Some(&next) = chars.peek() {
                         if next == end_chars[0] {
                             chars.next(); // consume end delimiter
@@ -387,7 +380,7 @@ impl Page {
                             content.push(chars.next().unwrap());
                         }
                     }
-                    
+
                     if found_end {
                         result.push_str(&content);
                         continue;
@@ -403,7 +396,7 @@ impl Page {
             }
             result.push(c);
         }
-        
+
         result
     }
 
@@ -412,7 +405,7 @@ impl Page {
         let mut result = String::new();
         let chars: Vec<char> = text.chars().collect();
         let mut i = 0;
-        
+
         while i < chars.len() {
             if chars[i] == '[' {
                 // Find the closing bracket
@@ -420,7 +413,7 @@ impl Page {
                 while j < chars.len() && chars[j] != ']' {
                     j += 1;
                 }
-                
+
                 if j < chars.len() && chars[j] == ']' {
                     // Check if followed by (url)
                     if j + 1 < chars.len() && chars[j + 1] == '(' {
@@ -429,7 +422,7 @@ impl Page {
                         while k < chars.len() && chars[k] != ')' {
                             k += 1;
                         }
-                        
+
                         if k < chars.len() {
                             // Extract the link text
                             let link_text: String = chars[i + 1..j].iter().collect();
@@ -443,7 +436,7 @@ impl Page {
             result.push(chars[i]);
             i += 1;
         }
-        
+
         result
     }
 
@@ -452,7 +445,7 @@ impl Page {
         let mut result = String::new();
         let chars: Vec<char> = text.chars().collect();
         let mut i = 0;
-        
+
         while i < chars.len() {
             // Check for image syntax ![
             if chars[i] == '!' && i + 1 < chars.len() && chars[i + 1] == '[' {
@@ -461,7 +454,7 @@ impl Page {
                 while j < chars.len() && chars[j] != ']' {
                     j += 1;
                 }
-                
+
                 if j < chars.len() && chars[j] == ']' {
                     // Check if followed by (url)
                     if j + 1 < chars.len() && chars[j + 1] == '(' {
@@ -470,7 +463,7 @@ impl Page {
                         while k < chars.len() && chars[k] != ')' {
                             k += 1;
                         }
-                        
+
                         if k < chars.len() {
                             // Skip the entire image syntax
                             i = k + 1;
@@ -482,7 +475,7 @@ impl Page {
             result.push(chars[i]);
             i += 1;
         }
-        
+
         result
     }
 }
@@ -752,10 +745,7 @@ This is a short article with just a few words.
     fn test_reading_time_multiple_minutes() {
         // Create content with ~400 words (should be 2 minutes)
         let words: Vec<&str> = (0..400).map(|_| "word").collect();
-        let content = format!(
-            "+++\ntitle = \"Test\"\n+++\n{}",
-            words.join(" ")
-        );
+        let content = format!("+++\ntitle = \"Test\"\n+++\n{}", words.join(" "));
         let page = Page::from_str(&content, "test.md").unwrap();
         assert_eq!(page.reading_time(), 2);
     }

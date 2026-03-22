@@ -5,7 +5,7 @@
 
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info};
@@ -32,7 +32,7 @@ pub enum ChangeType {
 
 impl ChangeType {
     /// Determine the change type from a file path.
-    pub fn from_path(path: &PathBuf) -> Self {
+    pub fn from_path(path: &Path) -> Self {
         let path_str = path.to_string_lossy();
 
         // Check for config file first (exact match)
@@ -80,7 +80,7 @@ impl WatchEvent {
         // Determine the change type from the first path
         let change_type = paths
             .first()
-            .map(|p| ChangeType::from_path(p))
+            .map(|p| ChangeType::from_path(p.as_path()))
             .unwrap_or(ChangeType::Unknown);
 
         Self { change_type, paths }
@@ -90,10 +90,7 @@ impl WatchEvent {
     pub fn should_rebuild(&self) -> bool {
         matches!(
             self.change_type,
-            ChangeType::Content
-                | ChangeType::Template
-                | ChangeType::Style
-                | ChangeType::Config
+            ChangeType::Content | ChangeType::Template | ChangeType::Style | ChangeType::Config
         )
     }
 }
@@ -121,9 +118,7 @@ impl FileWatcher {
                         // Skip non-modification events
                         if !matches!(
                             event.kind,
-                            EventKind::Create(_)
-                                | EventKind::Modify(_)
-                                | EventKind::Remove(_)
+                            EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
                         ) {
                             return;
                         }
@@ -134,7 +129,9 @@ impl FileWatcher {
                             .iter()
                             .filter(|p| {
                                 let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                                !name.starts_with('.') && !name.ends_with('~') && !name.ends_with(".swp")
+                                !name.starts_with('.')
+                                    && !name.ends_with('~')
+                                    && !name.ends_with(".swp")
                             })
                             .cloned()
                             .collect();
@@ -143,10 +140,7 @@ impl FileWatcher {
                             return;
                         }
 
-                        let watch_event = WatchEvent::from_notify_event(&Event {
-                            paths,
-                            ..event
-                        });
+                        let watch_event = WatchEvent::from_notify_event(&Event { paths, ..event });
 
                         // Only send if it should trigger a rebuild
                         if watch_event.should_rebuild() {
@@ -293,11 +287,14 @@ mod tests {
 
     #[test]
     fn test_watch_event_should_rebuild() {
-        let content_event = WatchEvent::new(ChangeType::Content, vec![PathBuf::from("content/a.md")]);
+        let content_event =
+            WatchEvent::new(ChangeType::Content, vec![PathBuf::from("content/a.md")]);
         assert!(content_event.should_rebuild());
 
-        let template_event =
-            WatchEvent::new(ChangeType::Template, vec![PathBuf::from("templates/a.html")]);
+        let template_event = WatchEvent::new(
+            ChangeType::Template,
+            vec![PathBuf::from("templates/a.html")],
+        );
         assert!(template_event.should_rebuild());
 
         let style_event = WatchEvent::new(ChangeType::Style, vec![PathBuf::from("styles/a.scss")]);

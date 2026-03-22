@@ -87,10 +87,7 @@ fn generate_item_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> {
         String::new()
     };
 
-    let guid = format!(
-        "    <guid isPermaLink=\"true\">{}</guid>\n",
-        entry.url
-    );
+    let guid = format!("    <guid isPermaLink=\"true\">{}</guid>\n", entry.url);
 
     Ok(format!(
         r#"    <item>
@@ -134,7 +131,10 @@ mod tests {
     fn create_test_entry(title: &str) -> FeedEntry {
         FeedEntry {
             title: title.to_string(),
-            url: format!("https://example.com/{}/", title.to_lowercase().replace(' ', "-")),
+            url: format!(
+                "https://example.com/{}/",
+                title.to_lowercase().replace(' ', "-")
+            ),
             summary: format!("Summary for {}", title),
             content: Some(format!("<p>Content for {}</p>", title)),
             date: Utc::now(),

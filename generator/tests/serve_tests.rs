@@ -5,8 +5,8 @@
 
 use std::path::PathBuf;
 use yew_ssg_lib::serve::{
-    inject_live_reload_script, ChangeType, DevServerConfig, ReloadEvent, WatchEvent,
-    WebSocketMessage,
+    ChangeType, DevServerConfig, ReloadEvent, WatchEvent, WebSocketMessage,
+    inject_live_reload_script,
 };
 
 // =============================================================================
@@ -14,8 +14,8 @@ use yew_ssg_lib::serve::{
 // =============================================================================
 
 mod error_tests {
-    use yew_ssg_lib::serve::ServeError;
     use std::path::PathBuf;
+    use yew_ssg_lib::serve::ServeError;
 
     #[test]
     fn test_port_in_use_error_display() {

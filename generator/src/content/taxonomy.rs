@@ -138,7 +138,9 @@ impl TaxonomyMap {
         };
 
         let slug = slugify(name);
-        let term = map.entry(slug.clone()).or_insert_with(|| TaxonomyTerm::new(kind, name));
+        let term = map
+            .entry(slug.clone())
+            .or_insert_with(|| TaxonomyTerm::new(kind, name));
         term.add_page(page_path);
     }
 
@@ -193,12 +195,11 @@ impl TaxonomyMap {
 fn slugify(name: &str) -> String {
     let slug: String = name
         .to_lowercase()
-        .replace(' ', "-")
-        .replace('_', "-")
+        .replace([' ', '_'], "-")
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '-')
         .collect();
-    
+
     // Collapse consecutive dashes into one
     let mut result = String::new();
     let mut prev_dash = false;
@@ -213,7 +214,7 @@ fn slugify(name: &str) -> String {
             prev_dash = false;
         }
     }
-    
+
     // Trim leading and trailing dashes
     result.trim_matches('-').to_string()
 }

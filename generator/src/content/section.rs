@@ -4,8 +4,8 @@ use crate::error::{ContentError, Result};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use super::pagination::{PaginatedSlice, PaginationInfo, Paginator};
 use super::{Frontmatter, Page, SortBy};
-use super::pagination::{Paginator, PaginationInfo, PaginatedSlice};
 
 /// A section containing multiple pages (e.g., a blog).
 ///
@@ -138,9 +138,8 @@ impl Section {
 
     /// Sort pages by title (alphabetically).
     pub fn sort_by_title(&mut self) {
-        self.pages.sort_by(|a, b| {
-            a.frontmatter.title.cmp(&b.frontmatter.title)
-        });
+        self.pages
+            .sort_by(|a, b| a.frontmatter.title.cmp(&b.frontmatter.title));
     }
 
     /// Check if pagination is enabled for this section.
@@ -174,7 +173,13 @@ impl Section {
                 // No pagination - return single slice with all pages
                 vec![PaginatedSlice {
                     pages: self.pages.clone(),
-                    pagination: PaginationInfo::new(1, 1, self.pages.len(), self.pages.len(), &self.path),
+                    pagination: PaginationInfo::new(
+                        1,
+                        1,
+                        self.pages.len(),
+                        self.pages.len(),
+                        &self.path,
+                    ),
                 }]
             }
         }
@@ -187,7 +192,8 @@ impl Section {
 
     /// Get the template for paginated pages.
     pub fn paginate_template(&self) -> &str {
-        self.frontmatter.paginate_template
+        self.frontmatter
+            .paginate_template
             .as_deref()
             .unwrap_or_else(|| self.template())
     }

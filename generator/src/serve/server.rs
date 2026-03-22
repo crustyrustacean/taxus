@@ -5,18 +5,18 @@
 
 use std::future::Future;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 
 use axum::{
+    Router,
     extract::{
-        ws::{Message, WebSocket, WebSocketUpgrade},
         State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
     },
     response::{IntoResponse, Response},
     routing::get,
-    Router,
 };
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::broadcast;
@@ -101,7 +101,8 @@ impl DevServer {
     /// Build the Axum router.
     fn build_router(&self, state: Arc<ServerState>) -> Router {
         // Static file service with HTML injection for live reload
-        let static_service = HtmlInjectService::new(state.output_dir.clone(), state.reload_tx.clone());
+        let static_service =
+            HtmlInjectService::new(state.output_dir.clone(), state.reload_tx.clone());
 
         Router::new()
             // WebSocket endpoint for live reload
@@ -144,9 +145,12 @@ impl DevServer {
 
         let app = self.build_router(state);
 
-        let listener = tokio::net::TcpListener::bind(addr)
-            .await
-            .map_err(|_| ServeError::PortInUse { port: self.config.port })?;
+        let listener =
+            tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(|_| ServeError::PortInUse {
+                    port: self.config.port,
+                })?;
 
         info!("Development server listening on http://{}", addr);
         info!("Press Ctrl+C to stop");
@@ -158,7 +162,7 @@ impl DevServer {
         let site_dir = self.config.site_dir.clone();
         let include_drafts = self.config.include_drafts;
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
-        
+
         let watcher_handle = tokio::spawn(async move {
             loop {
                 tokio::select! {
@@ -172,7 +176,7 @@ impl DevServer {
                         match result {
                             Some(event) => {
                                 info!("Change detected: {:?}", event.change_type);
-                                
+
                                 // Trigger rebuild
                                 match Self::do_rebuild(&site_dir, include_drafts) {
                                     Ok(_) => {
@@ -228,7 +232,7 @@ impl DevServer {
     }
 
     /// Internal rebuild implementation.
-    fn do_rebuild(site_dir: &PathBuf, include_drafts: bool) -> Result<(), String> {
+    fn do_rebuild(site_dir: &Path, include_drafts: bool) -> Result<(), String> {
         SiteBuilder::from_dir(site_dir)
             .map_err(|e| e.to_string())?
             .include_drafts(include_drafts)
@@ -250,7 +254,7 @@ impl DevServer {
 }
 
 /// Custom service that serves static files and injects live reload script into HTML.
-/// 
+///
 /// This service wraps `ServeDir` and intercepts HTML responses to inject the
 /// live reload WebSocket script before the closing `</body>` tag.
 #[derive(Clone)]
@@ -261,7 +265,10 @@ struct HtmlInjectService {
 
 impl HtmlInjectService {
     fn new(output_dir: PathBuf, reload_tx: broadcast::Sender<WebSocketMessage>) -> Self {
-        Self { output_dir, reload_tx }
+        Self {
+            output_dir,
+            reload_tx,
+        }
     }
 }
 
@@ -271,42 +278,50 @@ where
 {
     type Response = axum::response::Response;
     type Error = std::convert::Infallible;
-    type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future = std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>,
+    >;
 
-    fn poll_ready(&mut self, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &mut self,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         std::task::Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, req: axum::http::Request<B>) -> Self::Future {
         let output_dir = self.output_dir.clone();
         let _reload_tx = self.reload_tx.clone();
-        
+
         Box::pin(async move {
             // Get the path from the URI
             let path = req.uri().path();
-            
+
             // Normalize the path - remove leading slash
             let relative_path = path.trim_start_matches('/');
-            
+
             // Handle root path
             let file_path = if relative_path.is_empty() || relative_path == "/" {
                 output_dir.join("index.html")
             } else {
                 output_dir.join(relative_path)
             };
-            
+
             // Check if it's an HTML file request
-            let is_html_request = file_path.extension().map_or(true, |ext| ext == "html");
-            
+            let is_html_request = file_path.extension().is_none_or(|ext| ext == "html");
+
             // Try to read the file
             if is_html_request {
                 // Try the path as-is first, then try with .html extension
-                let paths_to_try = if file_path.extension().map_or(false, |ext| ext == "html") {
+                let paths_to_try = if file_path.extension().is_some_and(|ext| ext == "html") {
                     vec![file_path.clone()]
                 } else {
-                    vec![file_path.with_extension("html"), file_path.join("index.html")]
+                    vec![
+                        file_path.with_extension("html"),
+                        file_path.join("index.html"),
+                    ]
                 };
-                
+
                 for try_path in paths_to_try {
                     if let Ok(content) = tokio::fs::read_to_string(&try_path).await {
                         // Check if it's HTML content
@@ -317,7 +332,7 @@ where
                     }
                 }
             }
-            
+
             // Fall back to serving the file directly with proper content type
             match tokio::fs::read(&file_path).await {
                 Ok(content) => {
@@ -337,13 +352,13 @@ where
                         Some("eot") => "application/vnd.ms-fontobject",
                         _ => "application/octet-stream",
                     };
-                    
+
                     let response = axum::response::Response::builder()
                         .status(axum::http::StatusCode::OK)
                         .header(axum::http::header::CONTENT_TYPE, content_type)
                         .body(axum::body::Body::from(content))
                         .unwrap();
-                    
+
                     Ok(response)
                 }
                 Err(_) => {
@@ -352,7 +367,7 @@ where
                         .status(axum::http::StatusCode::NOT_FOUND)
                         .body(axum::body::Body::from("Not Found"))
                         .unwrap();
-                    
+
                     Ok(response)
                 }
             }
@@ -361,7 +376,7 @@ where
 }
 
 /// Handle favicon.ico requests.
-/// 
+///
 /// Browsers often request /favicon.ico directly. This handler looks for
 /// favicon files in the static directory and serves them.
 async fn favicon_handler(State(state): State<Arc<ServerState>>) -> Response {
@@ -370,15 +385,15 @@ async fn favicon_handler(State(state): State<Arc<ServerState>>) -> Response {
         state.output_dir.join("static").join("favicon.ico"),
         state.output_dir.join("static").join("favicon.png"),
     ];
-    
+
     for favicon_path in &favicon_paths {
         if let Ok(content) = tokio::fs::read(favicon_path).await {
-            let content_type = if favicon_path.extension().map_or(false, |ext| ext == "png") {
+            let content_type = if favicon_path.extension().is_some_and(|ext| ext == "png") {
                 "image/png"
             } else {
                 "image/x-icon"
             };
-            
+
             return axum::response::Response::builder()
                 .status(axum::http::StatusCode::OK)
                 .header(axum::http::header::CONTENT_TYPE, content_type)
@@ -387,7 +402,7 @@ async fn favicon_handler(State(state): State<Arc<ServerState>>) -> Response {
                 .unwrap();
         }
     }
-    
+
     // No favicon found - return 404
     axum::response::Response::builder()
         .status(axum::http::StatusCode::NOT_FOUND)
@@ -435,12 +450,12 @@ async fn handle_websocket(socket: WebSocket, state: Arc<ServerState>) {
     // Spawn a task to send reload events
     let send_task = async move {
         while let Ok(msg) = reload_rx.recv().await {
-                if let Ok(json) = serde_json::to_string(&msg) {
-                    if ws_tx.send(Message::Text(json.into())).await.is_err() {
-                        break;
-                    }
-                }
+            if let Ok(json) = serde_json::to_string(&msg)
+                && ws_tx.send(Message::Text(json.into())).await.is_err()
+            {
+                break;
             }
+        }
     };
 
     // Run both tasks
@@ -464,7 +479,7 @@ fn shutdown_signal() -> Pin<Box<dyn Future<Output = ()> + Send>> {
 
         #[cfg(unix)]
         let terminate = async {
-            use tokio::signal::unix::{signal, SignalKind};
+            use tokio::signal::unix::{SignalKind, signal};
             signal(SignalKind::terminate())
                 .expect("Failed to install signal handler")
                 .recv()
@@ -532,7 +547,7 @@ mod tests {
             server: "test".to_string(),
         };
         assert!(state.reload_tx.send(msg).is_ok());
-        
+
         // Verify the receiver gets the message
         let received = rx.try_recv();
         assert!(received.is_ok());

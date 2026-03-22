@@ -141,7 +141,7 @@ impl Paginator {
         if self.pages.is_empty() {
             return 1;
         }
-        (self.pages.len() + self.per_page - 1) / self.per_page
+        self.pages.len().div_ceil(self.per_page)
     }
 
     /// Get the total number of items.
@@ -309,7 +309,9 @@ mod tests {
 
     #[test]
     fn test_paginator_total_pages() {
-        let pages: Vec<Page> = (0..25).map(|i| create_test_page(&format!("Page {}", i))).collect();
+        let pages: Vec<Page> = (0..25)
+            .map(|i| create_test_page(&format!("Page {}", i)))
+            .collect();
 
         let paginator = Paginator::new(pages, 10, "/blog");
         assert_eq!(paginator.total_pages(), 3);
@@ -317,7 +319,9 @@ mod tests {
         let paginator = Paginator::new(vec![], 10, "/blog");
         assert_eq!(paginator.total_pages(), 1);
 
-        let pages2: Vec<Page> = (0..25).map(|i| create_test_page(&format!("Page {}", i))).collect();
+        let pages2: Vec<Page> = (0..25)
+            .map(|i| create_test_page(&format!("Page {}", i)))
+            .collect();
         let paginator = Paginator::new(pages2, 0, "/blog");
         assert_eq!(paginator.total_pages(), 1);
     }
@@ -352,7 +356,9 @@ mod tests {
 
     #[test]
     fn test_paginator_page_urls() {
-        let pages: Vec<Page> = (0..25).map(|i| create_test_page(&format!("Page {}", i))).collect();
+        let pages: Vec<Page> = (0..25)
+            .map(|i| create_test_page(&format!("Page {}", i)))
+            .collect();
 
         let paginator = Paginator::new(pages, 10, "/blog");
         let urls = paginator.page_urls();

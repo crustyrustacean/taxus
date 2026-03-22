@@ -98,9 +98,7 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
 /// The HTML with the live reload script injected.
 pub fn inject_live_reload_script(html: &str) -> String {
     // Find the closing body tag (case-insensitive)
-    let body_close = html
-        .rfind("</body>")
-        .or_else(|| html.rfind("</BODY>"));
+    let body_close = html.rfind("</body>").or_else(|| html.rfind("</BODY>"));
 
     match body_close {
         Some(pos) => {

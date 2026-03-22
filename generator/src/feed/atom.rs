@@ -63,7 +63,8 @@ pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<
 /// Generate XML for a single Atom entry.
 fn generate_entry_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> {
     let published = entry.date.to_rfc3339();
-    let updated = entry.updated
+    let updated = entry
+        .updated
         .map(|d| d.to_rfc3339())
         .unwrap_or_else(|| published.clone());
 
@@ -166,7 +167,10 @@ mod tests {
     fn create_test_entry(title: &str) -> FeedEntry {
         FeedEntry {
             title: title.to_string(),
-            url: format!("https://example.com/{}/", title.to_lowercase().replace(' ', "-")),
+            url: format!(
+                "https://example.com/{}/",
+                title.to_lowercase().replace(' ', "-")
+            ),
             summary: format!("Summary for {}", title),
             content: Some(format!("<p>Content for {}</p>", title)),
             date: Utc::now(),

@@ -177,8 +177,12 @@ impl SiteBuilder {
         let _taxonomy_span = info_span!("render_taxonomy").entered();
         info!("[5/8] Building taxonomy pages...");
         let taxonomy_map = pipeline::build_taxonomy_map(&processed);
-        let taxonomy_pages = pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
-        debug!(taxonomy_pages = taxonomy_pages.len(), "Taxonomy pages rendered");
+        let taxonomy_pages =
+            pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
+        debug!(
+            taxonomy_pages = taxonomy_pages.len(),
+            "Taxonomy pages rendered"
+        );
         drop(_taxonomy_span);
 
         // Stage 6: Generate feeds
@@ -200,17 +204,17 @@ impl SiteBuilder {
         let _write_span = info_span!("write_output").entered();
         info!("[8/8] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
-        
+
         // Write taxonomy pages
         if !taxonomy_pages.is_empty() {
             pipeline::write_taxonomy_pages(&taxonomy_pages, &output_dir, self.dry_run)?;
         }
-        
+
         // Write feeds
         if !feeds.is_empty() {
             pipeline::write_feeds(&feeds, &output_dir, self.dry_run)?;
         }
-        
+
         // Collect and write aliases
         let aliases: Vec<AliasPage> = processed
             .iter()
@@ -220,23 +224,26 @@ impl SiteBuilder {
                 } else {
                     p.route.path.clone()
                 };
-                
+
                 if p.page.aliases().is_empty() {
                     None
                 } else {
-                    Some(p.page.aliases().iter().map(move |alias| {
-                        AliasPage::new(alias.clone(), target_path.clone())
-                    }))
+                    Some(
+                        p.page
+                            .aliases()
+                            .iter()
+                            .map(move |alias| AliasPage::new(alias.clone(), target_path.clone())),
+                    )
                 }
             })
             .flatten()
             .collect();
-        
+
         if !aliases.is_empty() {
             pipeline::write_aliases(&aliases, &output_dir, self.dry_run)?;
             debug!(alias_count = aliases.len(), "Written alias redirects");
         }
-        
+
         drop(_write_span);
 
         // Build the report
