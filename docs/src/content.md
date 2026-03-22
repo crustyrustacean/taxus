@@ -477,11 +477,197 @@ fn main() -> Result<()> {
 }
 ```
 
+## Pagination
+
+Yew SSG supports pagination for sections with large collections of pages. This is useful for blogs with many posts.
+
+### Enabling Pagination
+
+Add pagination settings to a section's `_index.md` frontmatter:
+
+```markdown
++++
+title = "Blog"
+sort_by = "date"
+paginate_by = 10
+paginate_template = "blog.html"
++++
+
+# Blog
+
+Welcome to my blog!
+```
+
+### Pagination Configuration
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `sort_by` | string | `"none"` | Sort order: `"date"`, `"weight"`, or `"none"` |
+| `paginate_by` | integer | `None` | Number of pages per paginated slice |
+| `paginate_template` | string | `None` | Template for paginated pages (defaults to section template) |
+
+### Sorting Options
+
+- **`"date"`**: Sort by publication date (newest first)
+- **`"weight"`**: Sort by weight field in page frontmatter (lowest first)
+- **`"none"`**: No sorting (filesystem order)
+
+### Weight-Based Sorting
+
+Add a `weight` field to page frontmatter for custom ordering:
+
+```markdown
++++
+title = "Getting Started"
+weight = 1
++++
+```
+
+```markdown
++++
+title = "Advanced Topics"
+weight = 2
++++
+```
+
+### Pagination URLs
+
+When pagination is enabled, the section generates multiple pages:
+
+- `/blog/` - First page (page 1)
+- `/blog/page/2/` - Second page
+- `/blog/page/3/` - Third page
+- And so on...
+
+### Pagination in Templates
+
+Access pagination information in your section template:
+
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ section.title }}</h1>
+
+{% if section.pagination %}
+<div class="pagination-info">
+  Page {{ section.pagination.current_page }} of {{ section.pagination.total_pages }}
+  ({{ section.pagination.total_items }} items)
+</div>
+{% endif %}
+
+<ul class="post-list">
+{% for page in section.pages %}
+  <li>
+    <a href="{{ page.path }}">{{ page.title }}</a>
+    <span class="date">{{ page.date }}</span>
+  </li>
+{% endfor %}
+</ul>
+
+{% if section.pagination %}
+<nav class="pagination">
+  {% if section.pagination.prev_url %}
+  <a href="{{ section.pagination.prev_url }}" class="prev">← Previous</a>
+  {% endif %}
+  
+  <span class="page-numbers">
+    Page {{ section.pagination.current_page }} of {{ section.pagination.total_pages }}
+  </span>
+  
+  {% if section.pagination.next_url %}
+  <a href="{{ section.pagination.next_url }}" class="next">Next →</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}
+```
+
+### Pagination Context Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `current_page` | integer | Current page number (1-indexed) |
+| `total_pages` | integer | Total number of pages |
+| `total_items` | integer | Total number of items across all pages |
+| `items_per_page` | integer | Items per page |
+| `prev_url` | string | URL to previous page (None on first page) |
+| `next_url` | string | URL to next page (None on last page) |
+| `first_url` | string | URL to first page |
+| `last_url` | string | URL to last page |
+
+## RSS/Atom Feeds
+
+Yew SSG can automatically generate RSS and Atom feeds for your content.
+
+### Enabling Feeds
+
+Add feed configuration to your `site.toml`:
+
+```toml
+[site]
+name = "My Blog"
+base_url = "https://example.com"
+
+[feed]
+enabled = true
+format = "rss"  # or "atom" or "both"
+path = "feed.xml"  # RSS feed path
+atom_path = "atom.xml"  # Atom feed path
+```
+
+### Feed Configuration
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Enable feed generation |
+| `format` | string | `"rss"` | Feed format: `"rss"`, `"atom"`, or `"both"` |
+| `path` | string | `"feed.xml"` | RSS feed output path |
+| `atom_path` | string | `"atom.xml"` | Atom feed output path |
+
+### Feed Entries
+
+Feeds are generated from section pages. To include pages in feeds:
+
+1. Add a `date` field to page frontmatter
+2. Optionally add an `updated` field for Atom feeds
+3. The feed will include the most recent pages
+
+```markdown
++++
+title = "My Blog Post"
+date = 2024-01-15
+description = "A brief description for the feed"
++++
+
+# My Blog Post
+
+Content here...
+```
+
+### Feed URLs
+
+After generation, feeds are available at:
+
+- RSS: `https://example.com/feed.xml`
+- Atom: `https://example.com/atom.xml`
+
+### Feed Entry Fields
+
+Each feed entry includes:
+
+| Field | Source |
+|-------|--------|
+| Title | Page `title` |
+| Description | Page `description` or auto-extracted summary |
+| URL | Full page URL (base_url + path) |
+| Published | Page `date` field |
+| Updated | Page `updated` field (Atom only) |
+
 ## Future Enhancements
 
 Planned features for content handling:
 
-- **Pagination**: Split large collections
 - **Related content**: Suggest related pages
 - **Content relationships**: Parent/child pages
 - **Multilingual support**: Translated content

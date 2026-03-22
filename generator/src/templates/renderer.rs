@@ -402,6 +402,7 @@ mod tests {
             title: "Blog".to_string(),
             path: "/blog/".to_string(),
             pages: vec![create_test_page_context()],
+            pagination: None,
         }
     }
 

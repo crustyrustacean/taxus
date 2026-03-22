@@ -30,6 +30,7 @@ pub mod build;
 pub mod config;
 pub mod content;
 pub mod error;
+pub mod feed;
 pub mod init;
 pub mod routes;
 pub mod serve;
@@ -42,9 +43,10 @@ pub use build::{BuildReport, SiteBuilder};
 pub use config::{BuildConfig, SiteConfig, SiteMeta};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
 pub use error::{
-    AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError,
+    AssetError, BuildError, ContentError, FeedError, GeneratorError, InitError, Result, RouteError,
     TemplateError,
 };
+pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
 pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{

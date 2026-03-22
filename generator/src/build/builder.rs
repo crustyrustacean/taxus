@@ -92,8 +92,9 @@ impl SiteBuilder {
     /// 3. Process content files
     /// 4. Render pages with templates
     /// 5. Build and render taxonomy pages
-    /// 6. Process assets (SCSS, static files)
-    /// 7. Write output files
+    /// 6. Generate feeds (RSS/Atom)
+    /// 7. Process assets (SCSS, static files)
+    /// 8. Write output files
     ///
     /// # Errors
     ///
@@ -114,7 +115,7 @@ impl SiteBuilder {
 
         // Stage 1: Discover routes
         let _routes_span = info_span!("discover_routes").entered();
-        info!("[1/7] Discovering routes...");
+        info!("[1/8] Discovering routes...");
         let registry = pipeline::discover_routes(&self.config)?;
 
         if registry.is_empty() {
@@ -126,7 +127,7 @@ impl SiteBuilder {
 
         // Stage 2: Load templates
         let _templates_span = info_span!("load_templates").entered();
-        info!("[2/7] Loading templates...");
+        info!("[2/8] Loading templates...");
         let templates = pipeline::load_templates(&self.config)?;
 
         debug!(
@@ -137,7 +138,7 @@ impl SiteBuilder {
 
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
-        info!("[3/7] Processing content...");
+        info!("[3/8] Processing content...");
         let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
 
         if processed.is_empty() {
@@ -161,7 +162,7 @@ impl SiteBuilder {
 
         // Stage 4: Render pages
         let _render_span = info_span!("render_pages").entered();
-        info!("[4/7] Rendering pages...");
+        info!("[4/8] Rendering pages...");
         let site_context = SiteContext {
             name: self.config.site.name.clone(),
             base_url: self.config.site.base_url.clone(),
@@ -174,28 +175,40 @@ impl SiteBuilder {
 
         // Stage 5: Build and render taxonomy pages
         let _taxonomy_span = info_span!("render_taxonomy").entered();
-        info!("[5/7] Building taxonomy pages...");
+        info!("[5/8] Building taxonomy pages...");
         let taxonomy_map = pipeline::build_taxonomy_map(&processed);
         let taxonomy_pages = pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
         debug!(taxonomy_pages = taxonomy_pages.len(), "Taxonomy pages rendered");
         drop(_taxonomy_span);
 
-        // Stage 6: Process assets
+        // Stage 6: Generate feeds
+        let _feeds_span = info_span!("generate_feeds").entered();
+        info!("[6/8] Generating feeds...");
+        let feeds = pipeline::generate_feeds(&processed, &self.config)?;
+        debug!(feeds = feeds.len(), "Feeds generated");
+        drop(_feeds_span);
+
+        // Stage 7: Process assets
         let _assets_span = info_span!("process_assets").entered();
-        info!("[6/7] Processing assets...");
+        info!("[7/8] Processing assets...");
         let assets = pipeline::process_assets(&self.config, &output_dir)?;
 
         debug!(files_processed = assets.files_processed, "Assets processed");
         drop(_assets_span);
 
-        // Stage 7: Write output
+        // Stage 8: Write output
         let _write_span = info_span!("write_output").entered();
-        info!("[7/7] Writing output...");
+        info!("[8/8] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
         
         // Write taxonomy pages
         if !taxonomy_pages.is_empty() {
             pipeline::write_taxonomy_pages(&taxonomy_pages, &output_dir, self.dry_run)?;
+        }
+        
+        // Write feeds
+        if !feeds.is_empty() {
+            pipeline::write_feeds(&feeds, &output_dir, self.dry_run)?;
         }
         
         // Collect and write aliases
@@ -278,6 +291,7 @@ mod tests {
                 styles_dir: PathBuf::from("tests/fixtures/content_site/styles"),
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
             },
+            feed: crate::config::FeedConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

@@ -52,6 +52,44 @@ pub struct Frontmatter {
 
     /// Custom extra metadata
     pub extra: Option<toml::Value>,
+
+    // ========================================
+    // Phase 3: Pagination Fields
+    // ========================================
+
+    /// Sort order for section pages
+    #[serde(default)]
+    pub sort_by: SortBy,
+
+    /// Number of items per page (0 = no pagination)
+    #[serde(default)]
+    pub paginate_by: usize,
+
+    /// Template for paginated pages
+    pub paginate_template: Option<String>,
+
+    /// Weight for manual ordering (lower = first)
+    #[serde(default)]
+    pub weight: i32,
+
+    /// Last updated date
+    #[serde(default, with = "optional_date")]
+    pub updated: Option<NaiveDate>,
+}
+
+/// Sort order for pages within a section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SortBy {
+    /// Sort by date (newest first)
+    #[default]
+    Date,
+    /// Sort by title (alphabetically)
+    Title,
+    /// Sort by weight (lowest first)
+    Weight,
+    /// No sorting (preserve filesystem order)
+    None,
 }
 
 /// Custom serialization module for optional NaiveDate with TOML datetime support.
@@ -389,5 +427,163 @@ template = "custom.html"
 
         assert_eq!(fm.slug, Some("my-custom-slug".to_string()));
         assert_eq!(fm.aliases, vec!["/old-path/", "/legacy-url/"]);
+    }
+
+    // ============================================
+    // Phase 3: Pagination Tests
+    // ============================================
+
+    #[test]
+    fn test_parse_frontmatter_with_sort_by() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Blog Section"
+            sort_by = "weight"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "Blog Section");
+        assert_eq!(fm.sort_by, SortBy::Weight);
+    }
+
+    #[test]
+    fn test_sort_by_defaults_to_date() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert_eq!(fm.sort_by, SortBy::Date);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_paginate_by() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Blog Section"
+            paginate_by = 10
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "Blog Section");
+        assert_eq!(fm.paginate_by, 10);
+    }
+
+    #[test]
+    fn test_paginate_by_defaults_to_zero() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert_eq!(fm.paginate_by, 0);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_paginate_template() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Blog Section"
+            paginate_by = 10
+            paginate_template = "blog-page.html"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.paginate_by, 10);
+        assert_eq!(fm.paginate_template, Some("blog-page.html".to_string()));
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_weight() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Page"
+            weight = 5
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "My Page");
+        assert_eq!(fm.weight, 5);
+    }
+
+    #[test]
+    fn test_weight_defaults_to_zero() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert_eq!(fm.weight, 0);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_updated_date() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Page"
+            date = 2024-01-15
+            updated = 2024-02-20
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+        assert_eq!(fm.updated, Some(NaiveDate::from_ymd_opt(2024, 2, 20).unwrap()));
+    }
+
+    #[test]
+    fn test_updated_defaults_to_none() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.updated.is_none());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_all_pagination_fields() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Blog"
+            sort_by = "title"
+            paginate_by = 5
+            paginate_template = "blog-paginated.html"
+            weight = 10
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.sort_by, SortBy::Title);
+        assert_eq!(fm.paginate_by, 5);
+        assert_eq!(fm.paginate_template, Some("blog-paginated.html".to_string()));
+        assert_eq!(fm.weight, 10);
+    }
+
+    #[test]
+    fn test_sort_by_all_variants() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Test"
+            sort_by = "date"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(fm.sort_by, SortBy::Date);
+
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Test"
+            sort_by = "title"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(fm.sort_by, SortBy::Title);
+
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Test"
+            sort_by = "weight"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(fm.sort_by, SortBy::Weight);
+
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Test"
+            sort_by = "none"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(fm.sort_by, SortBy::None);
     }
 }

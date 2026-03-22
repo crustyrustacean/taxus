@@ -8,6 +8,8 @@
   - [Error Handling](./generator/error-handling.md)
   - [Configuration Types](./generator/configuration.md)
 - [Content](./content.md)
+  - [Pagination](./content.md#pagination)
+  - [RSS/Atom Feeds](./content.md#rssatom-feeds)
 - [Templates](./templates.md)
 - [Styling](./styling.md)
 - [Development Server](./serve.md)

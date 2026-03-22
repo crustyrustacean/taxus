@@ -10,6 +10,8 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Content System**: Pages, sections, and draft support with date-based sorting
 - **Blog Features**: Summary/excerpt extraction, reading time, word count, and custom slugs
+- **Pagination**: Split large content collections across multiple pages with configurable sorting
+- **RSS/Atom Feeds**: Automatic feed generation for content syndication
 - **Taxonomies**: Tags, categories, and series for content organization with automatic taxonomy pages
 - **Route System**: Automatic route discovery from content directory structure
 - **Template System**: Flexible Tera-based templates with inheritance and custom context; `{{ island(component="...", ...) | safe }}` function for embedding islands
@@ -634,6 +636,70 @@ tags = ["rust", "web"]
 
 Your markdown content here.
 ```
+
+### Pagination
+
+Enable pagination in a section's `_index.md`:
+
+```markdown
++++
+title = "Blog"
+sort_by = "date"
+paginate_by = 10
+paginate_template = "section.html"
++++
+```
+
+Pagination fields:
+- `sort_by`: Sort order (`date`, `weight`, or `title`)
+- `paginate_by`: Items per page
+- `paginate_template`: Template for pagination pages (optional)
+
+In templates, access pagination via `section.pagination`:
+
+```html
+{% if section.pagination %}
+<nav class="pagination">
+  {% if section.pagination.prev %}
+  <a href="{{ section.pagination.prev }}">← Previous</a>
+  {% endif %}
+  <span>Page {{ section.pagination.current }} of {{ section.pagination.total }}</span>
+  {% if section.pagination.next %}
+  <a href="{{ section.pagination.next }}">Next →</a>
+  {% endif %}
+</nav>
+{% endif %}
+```
+
+Pagination URLs:
+- First page: `/blog/`
+- Subsequent pages: `/blog/page/2/`, `/blog/page/3/`, etc.
+
+### RSS/Atom Feeds
+
+Configure feeds in `site.toml`:
+
+```toml
+[feed]
+rss_enabled = true
+atom_enabled = true
+limit = 20
+full_content = false
+title = "My Site Feed"
+rss_path = "rss.xml"
+atom_path = "atom.xml"
+```
+
+Feed configuration:
+- `rss_enabled`: Generate RSS 2.0 feed (default: true)
+- `atom_enabled`: Generate Atom feed (default: true)
+- `limit`: Maximum entries in feed (default: 20)
+- `full_content`: Include full content vs summary (default: false)
+- `title`: Custom feed title (defaults to site name)
+- `rss_path`: RSS feed path (default: `rss.xml`)
+- `atom_path`: Atom feed path (default: `atom.xml`)
+
+Feeds are automatically generated during build and placed in the output directory.
 
 ## Documentation
 

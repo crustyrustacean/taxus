@@ -31,11 +31,13 @@
 
 mod frontmatter;
 mod page;
+mod pagination;
 mod section;
 mod taxonomy;
 
-pub use frontmatter::Frontmatter;
+pub use frontmatter::{Frontmatter, SortBy};
 pub use page::Page;
+pub use pagination::{Paginator, PaginationInfo, PaginatedSlice, PaginationConfig};
 pub use section::Section;
 pub use taxonomy::{TaxonomyKind, TaxonomyMap, TaxonomyTerm};
 

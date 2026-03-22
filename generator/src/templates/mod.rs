@@ -53,5 +53,5 @@
 mod context;
 mod renderer;
 
-pub use context::{PageContext, SectionContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext};
+pub use context::{PageContext, PaginationContext, SectionContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext};
 pub use renderer::{TemplateRenderer, TeraRenderer};

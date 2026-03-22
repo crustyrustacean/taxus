@@ -100,6 +100,50 @@ use generator::SiteConfig;
 let config = SiteConfig::from_dir("./mysite")?;
 ```
 
+### `[feed]` Section
+
+RSS/Atom feed configuration for content syndication.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Enable feed generation |
+| `format` | string | `"rss"` | Feed format: `"rss"`, `"atom"`, or `"both"` |
+| `path` | string | `"feed.xml"` | RSS feed output path (relative to output directory) |
+| `atom_path` | string | `"atom.xml"` | Atom feed output path (relative to output directory) |
+
+Example:
+
+```toml
+[feed]
+enabled = true
+format = "both"
+path = "rss.xml"
+atom_path = "atom.xml"
+```
+
+### Full Configuration Example
+
+```toml
+[site]
+name = "My Site"
+base_url = "https://example.com"
+description = "A description of my site"
+author = "Your Name"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+
+[feed]
+enabled = true
+format = "both"
+path = "feed.xml"
+atom_path = "atom.xml"
+```
+
 ## Validation
 
 Configuration is validated when loaded. The following checks are performed:

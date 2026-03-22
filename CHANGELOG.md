@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.24] - 2026-03-22
+
+### Added
+
+#### Pagination
+
+- **Section Pagination**: Split large content collections across multiple pages
+  - `sort_by` field in frontmatter: Sort by `date`, `weight`, or `title` (default: `date`)
+  - `paginate_by` field: Number of items per page (e.g., `paginate_by = 10`)
+  - `paginate_template` field: Custom template for pagination pages
+  - `weight` field: Weight value for weight-based sorting
+  - `updated` field: Update date for feed entries
+
+- **Pagination Types**:
+  - `PaginationConfig`: Configuration for pagination behavior
+  - `SortBy` enum: Date, Weight, Title variants with serde support
+  - `PaginationInfo`: Metadata for a paginated page (current, total, prev/next URLs)
+  - `PaginatedSlice`: A single page's worth of content with metadata
+  - `Paginator`: Core type that splits pages into slices and generates URLs
+
+- **Pagination URLs**: Clean URL structure for paginated pages
+  - First page: `/blog/`
+  - Subsequent pages: `/blog/page/2/`, `/blog/page/3/`, etc.
+  - Previous/next navigation URLs included in context
+
+- **Template Context**: `PaginationContext` available in section templates
+  - `current`: Current page number
+  - `total`: Total number of pages
+  - `per_page`: Items per page
+  - `total_items`: Total items across all pages
+  - `prev`: URL to previous page (if any)
+  - `next`: URL to next page (if any)
+  - `first`: URL to first page
+  - `last`: URL to last page
+
+#### RSS/Atom Feeds
+
+- **Feed Generation**: Automatic RSS 2.0 and Atom feed generation
+  - RSS 2.0 feed at `/rss.xml`
+  - Atom feed at `/atom.xml`
+  - Configurable feed paths and titles
+  - Optional full content or summary-only feeds
+
+- **Feed Configuration** (`site.toml`):
+  - `feed.rss_enabled`: Enable/disable RSS feed (default: true)
+  - `feed.atom_enabled`: Enable/disable Atom feed (default: true)
+  - `feed.limit`: Maximum number of entries (default: 20)
+  - `feed.full_content`: Include full content vs summary (default: false)
+  - `feed.title`: Custom feed title (defaults to site name)
+  - `feed.rss_path`: RSS feed path (default: `rss.xml`)
+  - `feed.atom_path`: Atom feed path (default: `atom.xml`)
+
+- **Feed Types**:
+  - `FeedConfig`: Configuration for feed generation
+  - `FeedEntry`: Single feed entry with title, url, summary, content, dates, author, tags
+  - `FeedGenerator`: Main type with `generate_rss()` and `generate_atom()` methods
+
+- **Feed Format Support**:
+  - RSS 2.0 with RFC 2822 date formatting
+  - Atom with RFC 3339 date formatting
+  - XML escaping for special characters
+  - Category/tag support in feed entries
+
+### Changed
+
+- **Build Pipeline**: Added Stage 6 for feed generation (now 8 stages total)
+- **SectionContext**: Added `pagination: Option<PaginationContext>` field
+- **Frontmatter**: Added `sort_by`, `paginate_by`, `paginate_template`, `weight`, `updated` fields
+
 ## [0.1.23] - 2026-03-22
 
 ### Added

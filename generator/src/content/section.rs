@@ -4,7 +4,8 @@ use crate::error::{ContentError, Result};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use super::{Frontmatter, Page};
+use super::{Frontmatter, Page, SortBy};
+use super::pagination::{Paginator, PaginationInfo, PaginatedSlice};
 
 /// A section containing multiple pages (e.g., a blog).
 ///
@@ -112,9 +113,83 @@ impl Section {
         });
     }
 
+    /// Sort pages according to the section's `sort_by` frontmatter setting.
+    ///
+    /// Defaults to sorting by date (newest first) if not specified.
+    pub fn sort_pages(&mut self) {
+        match self.frontmatter.sort_by {
+            SortBy::Date => self.sort_by_date(),
+            SortBy::Weight => self.sort_by_weight(),
+            SortBy::Title => self.sort_by_title(),
+            SortBy::None => {} // Preserve original order
+        }
+    }
+
+    /// Sort pages by weight (lowest first).
+    ///
+    /// Pages without weight are placed at the end.
+    pub fn sort_by_weight(&mut self) {
+        self.pages.sort_by(|a, b| {
+            let a_weight = a.frontmatter.weight;
+            let b_weight = b.frontmatter.weight;
+            a_weight.cmp(&b_weight)
+        });
+    }
+
+    /// Sort pages by title (alphabetically).
+    pub fn sort_by_title(&mut self) {
+        self.pages.sort_by(|a, b| {
+            a.frontmatter.title.cmp(&b.frontmatter.title)
+        });
+    }
+
+    /// Check if pagination is enabled for this section.
+    pub fn is_paginated(&self) -> bool {
+        self.frontmatter.paginate_by > 0
+    }
+
+    /// Paginate this section's pages.
+    ///
+    /// Returns `None` if pagination is not configured for this section.
+    /// Returns `Some(Paginator)` if `paginate_by` is set in frontmatter.
+    pub fn paginate(&self) -> Option<Paginator> {
+        if !self.is_paginated() {
+            return None;
+        }
+        Some(Paginator::new(
+            self.pages.clone(),
+            self.frontmatter.paginate_by,
+            &self.path,
+        ))
+    }
+
+    /// Get all paginated slices for this section.
+    ///
+    /// Returns a single slice with all pages if pagination is not configured.
+    /// Returns multiple slices if pagination is configured.
+    pub fn paginated_slices(&self) -> Vec<PaginatedSlice> {
+        match self.paginate() {
+            Some(paginator) => paginator.iter().collect(),
+            None => {
+                // No pagination - return single slice with all pages
+                vec![PaginatedSlice {
+                    pages: self.pages.clone(),
+                    pagination: PaginationInfo::new(1, 1, self.pages.len(), self.pages.len(), &self.path),
+                }]
+            }
+        }
+    }
+
     /// Get the template name for this section.
     pub fn template(&self) -> &str {
         self.frontmatter.template()
+    }
+
+    /// Get the template for paginated pages.
+    pub fn paginate_template(&self) -> &str {
+        self.frontmatter.paginate_template
+            .as_deref()
+            .unwrap_or_else(|| self.template())
     }
 }
 

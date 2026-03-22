@@ -15,6 +15,9 @@ pub struct SiteConfig {
     /// Build configuration
     #[serde(default)]
     pub build: BuildConfig,
+    /// Feed configuration
+    #[serde(default)]
+    pub feed: FeedConfig,
     /// Base directory containing site.toml (not serialized)
     #[serde(skip)]
     pub base_dir: PathBuf,
@@ -81,6 +84,61 @@ impl Default for BuildConfig {
             static_dir: default_static_dir(),
             styles_dir: default_styles_dir(),
             templates_dir: default_templates_dir(),
+        }
+    }
+}
+
+/// Feed configuration from the [feed] section.
+#[derive(Debug, Clone, Deserialize)]
+pub struct FeedConfig {
+    /// Enable RSS feed generation
+    #[serde(default = "default_rss_enabled")]
+    pub rss_enabled: bool,
+
+    /// Enable Atom feed generation
+    #[serde(default = "default_atom_enabled")]
+    pub atom_enabled: bool,
+
+    /// Number of entries to include in feeds (0 = all)
+    #[serde(default)]
+    pub limit: usize,
+
+    /// Include full content in feeds (vs summaries)
+    #[serde(default = "default_full_content")]
+    pub full_content: bool,
+
+    /// Custom feed title (defaults to site name)
+    pub title: Option<String>,
+
+    /// Custom feed path (defaults to "feed.xml" for RSS, "atom.xml" for Atom)
+    pub rss_path: Option<String>,
+
+    /// Custom Atom feed path
+    pub atom_path: Option<String>,
+}
+
+fn default_rss_enabled() -> bool {
+    true
+}
+
+fn default_atom_enabled() -> bool {
+    false
+}
+
+fn default_full_content() -> bool {
+    false
+}
+
+impl Default for FeedConfig {
+    fn default() -> Self {
+        Self {
+            rss_enabled: default_rss_enabled(),
+            atom_enabled: default_atom_enabled(),
+            limit: 0,
+            full_content: default_full_content(),
+            title: None,
+            rss_path: None,
+            atom_path: None,
         }
     }
 }
@@ -172,7 +230,7 @@ impl SiteConfig {
 
     /// Create a new configuration with the given name and base URL.
     ///
-    /// Uses default build configuration.
+    /// Uses default build and feed configuration.
     pub fn new(name: impl Into<String>, base_url: impl Into<String>) -> Self {
         Self {
             site: SiteMeta {
@@ -182,6 +240,7 @@ impl SiteConfig {
                 author: None,
             },
             build: BuildConfig::default(),
+            feed: FeedConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

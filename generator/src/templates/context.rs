@@ -105,6 +105,94 @@ pub struct SectionContext {
 
     /// Pages in this section
     pub pages: Vec<PageContext>,
+
+    /// Pagination information (if this is a paginated section)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pagination: Option<PaginationContext>,
+}
+
+/// Pagination context for templates.
+///
+/// Contains all pagination information needed to render navigation
+/// and display the current page's position in the paginated sequence.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginationContext {
+    /// Current page number (1-indexed)
+    pub current: usize,
+
+    /// Total number of pages
+    pub total: usize,
+
+    /// Number of items per page
+    pub per_page: usize,
+
+    /// Total number of items across all pages
+    pub total_items: usize,
+
+    /// URL path to previous page (None if on first page)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prev: Option<String>,
+
+    /// URL path to next page (None if on last page)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next: Option<String>,
+
+    /// URL path to first page
+    pub first: String,
+
+    /// URL path to last page
+    pub last: String,
+}
+
+impl PaginationContext {
+    /// Check if this is the first page.
+    pub fn is_first(&self) -> bool {
+        self.current == 1
+    }
+
+    /// Check if this is the last page.
+    pub fn is_last(&self) -> bool {
+        self.current >= self.total
+    }
+
+    /// Get page numbers for pagination navigation.
+    ///
+    /// Returns a list of page numbers to display in pagination UI,
+    /// with gaps represented by None values.
+    pub fn page_range(&self) -> Vec<Option<usize>> {
+        if self.total <= 7 {
+            // Show all pages if 7 or fewer
+            (1..=self.total).map(Some).collect()
+        } else {
+            let mut pages = Vec::new();
+
+            // Always show first page
+            pages.push(Some(1));
+
+            if self.current > 3 {
+                pages.push(None); // Gap indicator
+            }
+
+            // Show pages around current
+            let start = std::cmp::max(2, self.current.saturating_sub(1));
+            let end = std::cmp::min(self.total - 1, self.current + 1);
+
+            for i in start..=end {
+                pages.push(Some(i));
+            }
+
+            if self.current < self.total - 2 {
+                pages.push(None); // Gap indicator
+            }
+
+            // Always show last page
+            if self.total > 1 {
+                pages.push(Some(self.total));
+            }
+
+            pages
+        }
+    }
 }
 
 /// Site-wide context for templates.
@@ -249,6 +337,7 @@ impl TemplateContext {
     ///     title: "Blog".to_string(),
     ///     path: "/blog/".to_string(),
     ///     pages: vec![],
+    ///     pagination: None,
     /// };
     ///
     /// let ctx = TemplateContext::new(site).with_section(section);
@@ -323,6 +412,7 @@ mod tests {
             title: "Blog".to_string(),
             path: "/blog/".to_string(),
             pages: vec![create_test_page()],
+            pagination: None,
         }
     }
 

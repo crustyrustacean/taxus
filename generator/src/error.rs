@@ -42,6 +42,10 @@ pub enum GeneratorError {
     #[error("Serve error: {0}")]
     Serve(#[from] ServeError),
 
+    /// Feed-related errors
+    #[error("Feed error: {0}")]
+    Feed(#[from] FeedError),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -269,6 +273,30 @@ pub enum InitError {
     /// Invalid base URL
     #[error("Invalid base URL: {0}")]
     InvalidBaseUrl(String),
+}
+
+/// Feed-related errors.
+#[derive(Debug, thiserror::Error)]
+pub enum FeedError {
+    /// Feed generation failed
+    #[error("Feed generation failed: {0}")]
+    GenerationFailed(String),
+
+    /// Invalid feed configuration
+    #[error("Invalid feed configuration: {0}")]
+    InvalidConfig(String),
+
+    /// Missing required field
+    #[error("Missing required field '{field}' in feed configuration")]
+    MissingField { field: &'static str },
+
+    /// I/O error writing feed
+    #[error("I/O error writing feed to {path}: {source}")]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
 }
 
 /// Result alias for generator operations.

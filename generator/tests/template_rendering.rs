@@ -70,6 +70,7 @@ fn create_test_section_context() -> SectionContext {
                 series: Some("Learning Rust".to_string()),
             },
         ],
+        pagination: None,
     }
 }
 
