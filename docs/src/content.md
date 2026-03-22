@@ -54,6 +54,12 @@ Your markdown content here.
 | `date` | date | No | `None` | Publication date (YYYY-MM-DD) |
 | `template` | string | No | `"page.html"` | Template override |
 | `draft` | bool | No | `false` | Draft status |
+| `summary` | string | No | `None` | Custom summary/excerpt (overrides automatic extraction) |
+| `slug` | string | No | `None` | Custom URL slug (overrides filename-based path) |
+| `tags` | array | No | `[]` | Tags for the page (e.g., `["rust", "web"]`) |
+| `categories` | array | No | `[]` | Categories for the page (e.g., `["tutorial"]`) |
+| `series` | string | No | `None` | Series the page belongs to (e.g., `"Learning Rust"`) |
+| `aliases` | array | No | `[]` | Old URLs that should redirect to this page |
 | `extra` | table | No | `None` | Custom metadata |
 
 *Title is recommended but not required by the library.
@@ -287,6 +293,132 @@ Content files are mapped to URL paths:
 | `content/blog/_index.md` | `/blog/` |
 | `content/blog/my-post.md` | `/blog/my-post/` |
 
+### Custom Slugs
+
+You can override the default URL path generation using the `slug` frontmatter field:
+
+```markdown
++++
+title = "My First Post"
+slug = "hello-world"
++++
+
+# My First Post
+```
+
+This creates the URL `/blog/hello-world/` instead of `/blog/my-first-post/`.
+
+## Blog Features
+
+### Summary and Excerpt
+
+Yew SSG automatically extracts a summary/excerpt for each page. You can control this in three ways:
+
+1. **Automatic extraction**: The first paragraph of content is used as the summary
+2. **Manual marker**: Use `<!-- more -->` to mark where the summary ends
+3. **Frontmatter override**: Set a custom summary in frontmatter
+
+```markdown
++++
+title = "My Post"
+summary = "A custom summary for SEO and previews"
++++
+
+This is the first paragraph that would normally be used as the summary.
+
+<!-- more -->
+
+The rest of the content appears after the summary...
+```
+
+In templates, access the summary via:
+
+```html
+<div class="excerpt">{{ page.summary }}</div>
+```
+
+### Reading Time and Word Count
+
+Each page automatically calculates reading time and word count:
+
+- **Word count**: Total words in the content
+- **Reading time**: Estimated minutes to read (assuming 200 words/minute)
+
+Access these in templates:
+
+```html
+<span class="reading-time">{{ page.reading_time }} min read</span>
+<span class="word-count">{{ page.word_count }} words</span>
+```
+
+## Taxonomies
+
+Yew SSG supports three types of taxonomies for content organization:
+
+### Tags
+
+Tags are multiple keywords associated with a page:
+
+```markdown
++++
+title = "Introduction to Rust"
+tags = ["rust", "programming", "tutorial"]
++++
+```
+
+### Categories
+
+Categories are broader classifications (also multiple):
+
+```markdown
++++
+title = "My Tutorial"
+categories = ["tutorial", "beginner"]
++++
+```
+
+### Series
+
+Series groups related posts in a sequence (single value):
+
+```markdown
++++
+title = "Part 1: Getting Started"
+series = "Learning Rust"
++++
+```
+
+### Taxonomy Pages
+
+Yew SSG automatically generates taxonomy listing pages:
+
+- `/tags/` - Lists all tags
+- `/tags/rust/` - Lists all pages with the "rust" tag
+- `/categories/` - Lists all categories
+- `/categories/tutorial/` - Lists all pages in the "tutorial" category
+- `/series/` - Lists all series
+- `/series/learning-rust/` - Lists all pages in the "Learning Rust" series
+
+### Taxonomy Templates
+
+Create custom templates for taxonomy pages:
+
+**`templates/tag.html`**:
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Posts tagged "{{ term }}"</h1>
+<ul>
+{% for page in pages %}
+  <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
+```
+
+Similar templates: `category.html`, `series.html`, `tags.html`, `categories.html`, `series.html`.
+
 ## Using the Content API
 
 ### Loading a Page
@@ -349,7 +481,6 @@ fn main() -> Result<()> {
 
 Planned features for content handling:
 
-- **Taxonomies**: Tags and categories
 - **Pagination**: Split large collections
 - **Related content**: Suggest related pages
 - **Content relationships**: Parent/child pages

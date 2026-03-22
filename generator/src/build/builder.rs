@@ -2,7 +2,7 @@
 //!
 //! This module provides the main [`SiteBuilder`] type for building static sites.
 
-use crate::build::pipeline;
+use crate::build::pipeline::{self, AliasPage};
 use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
 use crate::error::{BuildError, Result};
@@ -91,8 +91,9 @@ impl SiteBuilder {
     /// 2. Load templates
     /// 3. Process content files
     /// 4. Render pages with templates
-    /// 5. Process assets (SCSS, static files)
-    /// 6. Write output files
+    /// 5. Build and render taxonomy pages
+    /// 6. Process assets (SCSS, static files)
+    /// 7. Write output files
     ///
     /// # Errors
     ///
@@ -113,7 +114,7 @@ impl SiteBuilder {
 
         // Stage 1: Discover routes
         let _routes_span = info_span!("discover_routes").entered();
-        info!("[1/6] Discovering routes...");
+        info!("[1/7] Discovering routes...");
         let registry = pipeline::discover_routes(&self.config)?;
 
         if registry.is_empty() {
@@ -125,7 +126,7 @@ impl SiteBuilder {
 
         // Stage 2: Load templates
         let _templates_span = info_span!("load_templates").entered();
-        info!("[2/6] Loading templates...");
+        info!("[2/7] Loading templates...");
         let templates = pipeline::load_templates(&self.config)?;
 
         debug!(
@@ -136,7 +137,7 @@ impl SiteBuilder {
 
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
-        info!("[3/6] Processing content...");
+        info!("[3/7] Processing content...");
         let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
 
         if processed.is_empty() {
@@ -160,7 +161,7 @@ impl SiteBuilder {
 
         // Stage 4: Render pages
         let _render_span = info_span!("render_pages").entered();
-        info!("[4/6] Rendering pages...");
+        info!("[4/7] Rendering pages...");
         let site_context = SiteContext {
             name: self.config.site.name.clone(),
             base_url: self.config.site.base_url.clone(),
@@ -171,18 +172,58 @@ impl SiteBuilder {
         let rendered = pipeline::render_pages(&processed, &templates, &site_context, self.verbose)?;
         drop(_render_span);
 
-        // Stage 5: Process assets
+        // Stage 5: Build and render taxonomy pages
+        let _taxonomy_span = info_span!("render_taxonomy").entered();
+        info!("[5/7] Building taxonomy pages...");
+        let taxonomy_map = pipeline::build_taxonomy_map(&processed);
+        let taxonomy_pages = pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
+        debug!(taxonomy_pages = taxonomy_pages.len(), "Taxonomy pages rendered");
+        drop(_taxonomy_span);
+
+        // Stage 6: Process assets
         let _assets_span = info_span!("process_assets").entered();
-        info!("[5/6] Processing assets...");
+        info!("[6/7] Processing assets...");
         let assets = pipeline::process_assets(&self.config, &output_dir)?;
 
         debug!(files_processed = assets.files_processed, "Assets processed");
         drop(_assets_span);
 
-        // Stage 6: Write output
+        // Stage 7: Write output
         let _write_span = info_span!("write_output").entered();
-        info!("[6/6] Writing output...");
+        info!("[7/7] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
+        
+        // Write taxonomy pages
+        if !taxonomy_pages.is_empty() {
+            pipeline::write_taxonomy_pages(&taxonomy_pages, &output_dir, self.dry_run)?;
+        }
+        
+        // Collect and write aliases
+        let aliases: Vec<AliasPage> = processed
+            .iter()
+            .filter_map(|p| {
+                let target_path = if p.page.frontmatter.slug.is_some() {
+                    p.page.url_path()
+                } else {
+                    p.route.path.clone()
+                };
+                
+                if p.page.aliases().is_empty() {
+                    None
+                } else {
+                    Some(p.page.aliases().iter().map(move |alias| {
+                        AliasPage::new(alias.clone(), target_path.clone())
+                    }))
+                }
+            })
+            .flatten()
+            .collect();
+        
+        if !aliases.is_empty() {
+            pipeline::write_aliases(&aliases, &output_dir, self.dry_run)?;
+            debug!(alias_count = aliases.len(), "Written alias redirects");
+        }
+        
         drop(_write_span);
 
         // Build the report

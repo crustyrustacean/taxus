@@ -25,6 +25,12 @@ fn create_test_page_context() -> PageContext {
         raw_content: "This is test content.".to_string(),
         date: Some("2024-01-15".to_string()),
         draft: false,
+        summary: "A test page summary".to_string(),
+        word_count: 4,
+        reading_time: 1,
+        tags: vec!["rust".to_string()],
+        categories: vec!["programming".to_string()],
+        series: None,
     }
 }
 
@@ -41,6 +47,12 @@ fn create_test_section_context() -> SectionContext {
                 raw_content: "First post content".to_string(),
                 date: Some("2024-01-10".to_string()),
                 draft: false,
+                summary: "First post summary".to_string(),
+                word_count: 3,
+                reading_time: 1,
+                tags: vec!["rust".to_string(), "tutorial".to_string()],
+                categories: vec!["programming".to_string()],
+                series: Some("Learning Rust".to_string()),
             },
             PageContext {
                 title: "Second Post".to_string(),
@@ -50,6 +62,12 @@ fn create_test_section_context() -> SectionContext {
                 raw_content: "Second post content".to_string(),
                 date: Some("2024-01-20".to_string()),
                 draft: false,
+                summary: "Second post summary".to_string(),
+                word_count: 3,
+                reading_time: 1,
+                tags: vec!["rust".to_string(), "advanced".to_string()],
+                categories: vec!["programming".to_string()],
+                series: Some("Learning Rust".to_string()),
             },
         ],
     }
@@ -340,6 +358,12 @@ fn test_render_with_optional_fields() {
         raw_content: String::new(),
         date: None,
         draft: false,
+        summary: String::new(),
+        word_count: 0,
+        reading_time: 0,
+        tags: vec![],
+        categories: vec![],
+        series: None,
     };
     let ctx = TemplateContext::new(create_test_site_context()).with_page(minimal_page);
     let html = renderer.render("optional.html", &ctx).unwrap();

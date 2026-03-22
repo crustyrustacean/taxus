@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.23] - 2026-03-22
+
+### Added
+
+#### Blog Post Enhancements
+
+- **Summary/Excerpt Support**: Automatic and manual summary extraction for blog posts
+  - `summary` field in frontmatter for explicit summaries
+  - Automatic extraction from first paragraph
+  - `<!-- more -->` marker support for manual summary breaks
+  - Frontmatter summary takes precedence over automatic extraction
+  - Markdown formatting stripped from summaries
+
+- **Reading Time and Word Count**: Content metrics for blog posts
+  - `word_count` field: Counts words in content (200 words per minute baseline)
+  - `reading_time` field: Estimated reading time in minutes
+  - Available in templates via `page.word_count` and `page.reading_time`
+
+- **Slug Customization**: Custom URL paths for content
+  - `slug` field in frontmatter for custom URL paths
+  - Example: `slug = "my-custom-url"` produces `/my-custom-url/` instead of `/original-filename/`
+  - Works with aliases for URL migration
+
+#### Taxonomies
+
+- **Tags, Categories, and Series**: Content organization system
+  - `tags`: Multiple tags per page (e.g., `tags = ["rust", "web", "tutorial"]`)
+  - `categories`: Multiple categories per page (e.g., `categories = ["programming", "tutorials"]`)
+  - `series`: Single series assignment (e.g., `series = "Learning Rust"`)
+  - All taxonomy fields are optional and default to empty/none
+
+- **Taxonomy Data Structures**:
+  - `TaxonomyKind` enum: Tag, Category, Series variants
+  - `TaxonomyTerm` struct: Term name, slug, page count, associated pages
+  - `TaxonomyMap` struct: Aggregates all taxonomies from processed pages
+  - Automatic slugification of taxonomy terms for URL-friendly paths
+
+- **Taxonomy Page Rendering**:
+  - `build_taxonomy_map()`: Aggregates taxonomies from all pages
+  - `render_taxonomy_pages()`: Renders taxonomy list and term pages
+  - `write_taxonomy_pages()`: Writes taxonomy pages to output
+  - Template contexts: `TaxonomyTermContext` and `TaxonomyListContext`
+  - Taxonomy pages only rendered if corresponding templates exist
+
+### Changed
+
+- **PageContext**: Added `tags`, `categories`, `series`, `summary`, `word_count`, `reading_time` fields
+- **Frontmatter**: Added `summary`, `slug`, `tags`, `categories`, `series` fields
+- **Build Pipeline**: Added Stage 5 for taxonomy page rendering (now 7 stages total)
+
 ## [0.1.22] - 2026-03-22
 
 ### Added

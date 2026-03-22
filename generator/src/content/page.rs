@@ -154,6 +154,337 @@ impl Page {
     pub fn is_draft(&self) -> bool {
         self.frontmatter.draft
     }
+
+    /// Extract summary from content.
+    ///
+    /// Priority:
+    /// 1. Use frontmatter.summary if set
+    /// 2. Split at `<!-- more -->` marker
+    /// 3. Use first paragraph as fallback
+    pub fn summary(&self) -> String {
+        // 1. Use frontmatter summary if set
+        if let Some(ref summary) = self.frontmatter.summary {
+            return summary.clone();
+        }
+
+        // 2. Check for <!-- more --> marker
+        if let Some(pos) = self.raw_content.find("<!-- more -->") {
+            let summary = self.raw_content[..pos].trim();
+            return Self::strip_markdown(summary);
+        }
+
+        // 3. Use first paragraph as fallback
+        let first_paragraph = self
+            .raw_content
+            .split("\n\n")
+            .next()
+            .unwrap_or("")
+            .trim();
+
+        Self::strip_markdown(first_paragraph)
+    }
+
+    /// Calculate word count from the raw content.
+    ///
+    /// Strips markdown formatting and counts words (whitespace-separated tokens).
+    pub fn word_count(&self) -> usize {
+        let stripped = Self::strip_markdown(&self.raw_content);
+        stripped
+            .split_whitespace()
+            .count()
+    }
+
+    /// Calculate estimated reading time in minutes.
+    ///
+    /// Uses 200 words per minute as the average reading speed.
+    /// Returns at least 1 minute for any content.
+    pub fn reading_time(&self) -> usize {
+        const WORDS_PER_MINUTE: usize = 200;
+        let words = self.word_count();
+        if words == 0 {
+            return 0;
+        }
+        (words + WORDS_PER_MINUTE - 1) / WORDS_PER_MINUTE // Ceiling division
+    }
+
+    /// Get the effective slug for this page.
+    ///
+    /// Returns the custom slug from frontmatter if set, otherwise derives
+    /// from the source filename.
+    pub fn slug(&self) -> &str {
+        if let Some(ref slug) = self.frontmatter.slug {
+            slug
+        } else {
+            // Derive from source filename
+            Path::new(&self.source)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("index")
+        }
+    }
+
+    /// Get the URL path for this page, respecting custom slug.
+    ///
+    /// If a custom slug is set in frontmatter, uses that instead of the
+    /// filename-based path.
+    pub fn url_path(&self) -> String {
+        let slug = self.slug();
+        if slug == "_index" {
+            "/".to_string()
+        } else {
+            format!("/{}/", slug)
+        }
+    }
+
+    /// Get aliases (alternative URLs) for this page.
+    pub fn aliases(&self) -> &[String] {
+        &self.frontmatter.aliases
+    }
+
+    /// Get tags for this page.
+    pub fn tags(&self) -> &[String] {
+        &self.frontmatter.tags
+    }
+
+    /// Get categories for this page.
+    pub fn categories(&self) -> &[String] {
+        &self.frontmatter.categories
+    }
+
+    /// Get series for this page, if any.
+    pub fn series(&self) -> Option<&str> {
+        self.frontmatter.series.as_deref()
+    }
+
+    /// Strip markdown formatting from text using simple string manipulation.
+    fn strip_markdown(text: &str) -> String {
+        let mut result = text.to_string();
+        
+        // Remove headers (## Header -> Header)
+        let mut new_result = String::new();
+        for line in result.lines() {
+            let trimmed = line.trim_start();
+            if let Some(rest) = trimmed.strip_prefix("# ") {
+                new_result.push_str(rest);
+            } else if let Some(rest) = trimmed.strip_prefix("## ") {
+                new_result.push_str(rest);
+            } else if let Some(rest) = trimmed.strip_prefix("### ") {
+                new_result.push_str(rest);
+            } else if let Some(rest) = trimmed.strip_prefix("#### ") {
+                new_result.push_str(rest);
+            } else if let Some(rest) = trimmed.strip_prefix("##### ") {
+                new_result.push_str(rest);
+            } else if let Some(rest) = trimmed.strip_prefix("###### ") {
+                new_result.push_str(rest);
+            } else {
+                new_result.push_str(line);
+            }
+            new_result.push('\n');
+        }
+        result = new_result.trim().to_string();
+
+        // Remove bold (**text** or __text__)
+        result = Self::remove_delimiters(&result, "**", "**");
+        result = Self::remove_delimiters(&result, "__", "__");
+
+        // Remove italic (*text* or _text_)
+        result = Self::remove_delimiters(&result, "*", "*");
+        result = Self::remove_delimiters(&result, "_", "_");
+
+        // Remove inline code (`code`)
+        result = Self::remove_delimiters(&result, "`", "`");
+
+        // Remove links [text](url) -> text
+        result = Self::remove_links(&result);
+
+        // Remove images ![alt](url) -> empty
+        result = Self::remove_images(&result);
+
+        result.trim().to_string()
+    }
+
+    /// Remove paired delimiters from text (e.g., **bold**, *italic*).
+    fn remove_delimiters(text: &str, start: &str, end: &str) -> String {
+        let mut result = String::new();
+        let mut chars = text.chars().peekable();
+        let start_chars: Vec<char> = start.chars().collect();
+        let end_chars: Vec<char> = end.chars().collect();
+        
+        while let Some(c) = chars.next() {
+            // Check if we're at the start delimiter
+            if c == start_chars[0] {
+                let mut matched = true;
+                let mut temp: Vec<char> = vec![c];
+                
+                for expected in &start_chars[1..] {
+                    if let Some(&next) = chars.peek() {
+                        if next == *expected {
+                            temp.push(chars.next().unwrap());
+                        } else {
+                            matched = false;
+                            break;
+                        }
+                    } else {
+                        matched = false;
+                        break;
+                    }
+                }
+                
+                if matched && start_chars.len() > 1 {
+                    // Look for end delimiter
+                    let mut content = String::new();
+                    let mut found_end = false;
+                    
+                    while let Some(&next) = chars.peek() {
+                        if next == end_chars[0] {
+                            let mut end_match = true;
+                            let mut end_temp: Vec<char> = vec![];
+                            
+                            for expected in &end_chars {
+                                if let Some(&n) = chars.peek() {
+                                    if n == *expected {
+                                        end_temp.push(chars.next().unwrap());
+                                    } else {
+                                        end_match = false;
+                                        break;
+                                    }
+                                } else {
+                                    end_match = false;
+                                    break;
+                                }
+                            }
+                            
+                            if end_match {
+                                found_end = true;
+                                break;
+                            } else {
+                                content.extend(end_temp);
+                            }
+                        } else {
+                            content.push(chars.next().unwrap());
+                        }
+                    }
+                    
+                    if found_end {
+                        result.push_str(&content);
+                        continue;
+                    } else {
+                        result.extend(temp);
+                        result.push_str(&content);
+                        continue;
+                    }
+                } else if matched {
+                    // Single char delimiter, look for closing
+                    let mut content = String::new();
+                    let mut found_end = false;
+                    
+                    while let Some(&next) = chars.peek() {
+                        if next == end_chars[0] {
+                            chars.next(); // consume end delimiter
+                            found_end = true;
+                            break;
+                        } else {
+                            content.push(chars.next().unwrap());
+                        }
+                    }
+                    
+                    if found_end {
+                        result.push_str(&content);
+                        continue;
+                    } else {
+                        result.push(c);
+                        result.push_str(&content);
+                        continue;
+                    }
+                } else {
+                    result.extend(temp);
+                    continue;
+                }
+            }
+            result.push(c);
+        }
+        
+        result
+    }
+
+    /// Remove markdown links [text](url) -> text.
+    fn remove_links(text: &str) -> String {
+        let mut result = String::new();
+        let chars: Vec<char> = text.chars().collect();
+        let mut i = 0;
+        
+        while i < chars.len() {
+            if chars[i] == '[' {
+                // Find the closing bracket
+                let mut j = i + 1;
+                while j < chars.len() && chars[j] != ']' {
+                    j += 1;
+                }
+                
+                if j < chars.len() && chars[j] == ']' {
+                    // Check if followed by (url)
+                    if j + 1 < chars.len() && chars[j + 1] == '(' {
+                        // Find closing paren
+                        let mut k = j + 2;
+                        while k < chars.len() && chars[k] != ')' {
+                            k += 1;
+                        }
+                        
+                        if k < chars.len() {
+                            // Extract the link text
+                            let link_text: String = chars[i + 1..j].iter().collect();
+                            result.push_str(&link_text);
+                            i = k + 1;
+                            continue;
+                        }
+                    }
+                }
+            }
+            result.push(chars[i]);
+            i += 1;
+        }
+        
+        result
+    }
+
+    /// Remove markdown images ![alt](url) -> empty.
+    fn remove_images(text: &str) -> String {
+        let mut result = String::new();
+        let chars: Vec<char> = text.chars().collect();
+        let mut i = 0;
+        
+        while i < chars.len() {
+            // Check for image syntax ![
+            if chars[i] == '!' && i + 1 < chars.len() && chars[i + 1] == '[' {
+                // Find the closing bracket
+                let mut j = i + 2;
+                while j < chars.len() && chars[j] != ']' {
+                    j += 1;
+                }
+                
+                if j < chars.len() && chars[j] == ']' {
+                    // Check if followed by (url)
+                    if j + 1 < chars.len() && chars[j + 1] == '(' {
+                        // Find closing paren
+                        let mut k = j + 2;
+                        while k < chars.len() && chars[k] != ')' {
+                            k += 1;
+                        }
+                        
+                        if k < chars.len() {
+                            // Skip the entire image syntax
+                            i = k + 1;
+                            continue;
+                        }
+                    }
+                }
+            }
+            result.push(chars[i]);
+            i += 1;
+        }
+        
+        result
+    }
 }
 
 #[cfg(test)]
@@ -257,5 +588,400 @@ This is content.
 
         assert_eq!(page.path, "/about/");
         assert_eq!(page.source, PathBuf::from("about.md"));
+    }
+
+    // ============================================
+    // Phase 1.1: Summary/Excerpt Support Tests
+    // ============================================
+
+    #[test]
+    fn test_summary_from_frontmatter() {
+        let content = r#"
++++
+title = "Test"
+summary = "Custom summary from frontmatter"
++++
+# Content here
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.summary(), "Custom summary from frontmatter");
+    }
+
+    #[test]
+    fn test_summary_from_more_marker() {
+        let content = r#"
++++
+title = "Test"
++++
+This is the intro paragraph.
+
+<!-- more -->
+
+This is the rest of the content.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.summary(), "This is the intro paragraph.");
+    }
+
+    #[test]
+    fn test_summary_from_first_paragraph() {
+        let content = r#"
++++
+title = "Test"
++++
+This is the first paragraph.
+
+This is the second paragraph.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.summary(), "This is the first paragraph.");
+    }
+
+    #[test]
+    fn test_summary_frontmatter_takes_precedence() {
+        let content = r#"
++++
+title = "Test"
+summary = "Frontmatter summary"
++++
+First paragraph.
+
+<!-- more -->
+
+Rest of content.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        // Frontmatter summary takes precedence
+        assert_eq!(page.summary(), "Frontmatter summary");
+    }
+
+    #[test]
+    fn test_summary_with_no_content() {
+        let content = r#"
++++
+title = "Test"
++++
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.summary(), "");
+    }
+
+    #[test]
+    fn test_summary_strips_markdown_formatting() {
+        let content = r#"
++++
+title = "Test"
++++
+This has **bold** and *italic* text.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        // Summary should strip markdown formatting
+        let summary = page.summary();
+        assert!(!summary.contains("**"));
+        assert!(!summary.contains("*"));
+    }
+
+    // ============================================
+    // Phase 1.2: Reading Time and Word Count Tests
+    // ============================================
+
+    #[test]
+    fn test_word_count_simple() {
+        let content = r#"
++++
+title = "Test"
++++
+This is a simple test with eight words.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.word_count(), 8);
+    }
+
+    #[test]
+    fn test_word_count_empty() {
+        let content = r#"
++++
+title = "Test"
++++
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.word_count(), 0);
+    }
+
+    #[test]
+    fn test_word_count_with_markdown() {
+        let content = r#"
++++
+title = "Test"
++++
+This has **bold** and *italic* and `code` text.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        // After stripping markdown: "This has bold and italic and code text."
+        // Word count should be 8
+        assert_eq!(page.word_count(), 8);
+    }
+
+    #[test]
+    fn test_word_count_with_links() {
+        let content = r#"
++++
+title = "Test"
++++
+Check out [this link](https://example.com) for more info.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        // After stripping: "Check out this link for more info."
+        // Word count should be 7
+        assert_eq!(page.word_count(), 7);
+    }
+
+    #[test]
+    fn test_reading_time_one_minute() {
+        let content = r#"
++++
+title = "Test"
++++
+This is a short article with just a few words.
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.reading_time(), 1);
+    }
+
+    #[test]
+    fn test_reading_time_multiple_minutes() {
+        // Create content with ~400 words (should be 2 minutes)
+        let words: Vec<&str> = (0..400).map(|_| "word").collect();
+        let content = format!(
+            "+++\ntitle = \"Test\"\n+++\n{}",
+            words.join(" ")
+        );
+        let page = Page::from_str(&content, "test.md").unwrap();
+        assert_eq!(page.reading_time(), 2);
+    }
+
+    #[test]
+    fn test_reading_time_empty() {
+        let content = r#"
++++
+title = "Test"
++++
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.reading_time(), 0);
+    }
+
+    // ============================================
+    // Phase 1.3: Slug Customization Tests
+    // ============================================
+
+    #[test]
+    fn test_slug_from_filename() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "my-blog-post.md").unwrap();
+        assert_eq!(page.slug(), "my-blog-post");
+    }
+
+    #[test]
+    fn test_slug_from_frontmatter() {
+        let content = r#"
++++
+title = "Test"
+slug = "custom-slug"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "my-blog-post.md").unwrap();
+        // Frontmatter slug takes precedence over filename
+        assert_eq!(page.slug(), "custom-slug");
+    }
+
+    #[test]
+    fn test_slug_index_file() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "_index.md").unwrap();
+        assert_eq!(page.slug(), "_index");
+    }
+
+    #[test]
+    fn test_url_path_regular_page() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "about.md").unwrap();
+        assert_eq!(page.url_path(), "/about/");
+    }
+
+    #[test]
+    fn test_url_path_with_custom_slug() {
+        let content = r#"
++++
+title = "Test"
+slug = "my-custom-url"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "original-filename.md").unwrap();
+        assert_eq!(page.url_path(), "/my-custom-url/");
+    }
+
+    #[test]
+    fn test_url_path_index_page() {
+        let content = r#"
++++
+title = "Home"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "_index.md").unwrap();
+        // _index pages should have root path
+        assert_eq!(page.url_path(), "/");
+    }
+
+    #[test]
+    fn test_aliases_empty() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert!(page.aliases().is_empty());
+    }
+
+    #[test]
+    fn test_aliases_from_frontmatter() {
+        let content = r#"
++++
+title = "Test"
+aliases = ["/old-url/", "/another-old-path/"]
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.aliases(), &["/old-url/", "/another-old-path/"]);
+    }
+
+    #[test]
+    fn test_slug_with_path_in_source() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "blog/my-post.md").unwrap();
+        // Should extract just the filename stem, not the full path
+        assert_eq!(page.slug(), "my-post");
+    }
+
+    // ============================================
+    // Phase 2.1: Taxonomies Tests
+    // ============================================
+
+    #[test]
+    fn test_tags_empty() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert!(page.tags().is_empty());
+    }
+
+    #[test]
+    fn test_tags_from_frontmatter() {
+        let content = r#"
++++
+title = "Test"
+tags = ["rust", "web", "tutorial"]
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.tags(), &["rust", "web", "tutorial"]);
+    }
+
+    #[test]
+    fn test_categories_empty() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert!(page.categories().is_empty());
+    }
+
+    #[test]
+    fn test_categories_from_frontmatter() {
+        let content = r#"
++++
+title = "Test"
+categories = ["Programming", "Web Development"]
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.categories(), &["Programming", "Web Development"]);
+    }
+
+    #[test]
+    fn test_series_none() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert!(page.series().is_none());
+    }
+
+    #[test]
+    fn test_series_from_frontmatter() {
+        let content = r#"
++++
+title = "Test"
+series = "Rust Web Development"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.series(), Some("Rust Web Development"));
+    }
+
+    #[test]
+    fn test_all_taxonomies_together() {
+        let content = r#"
++++
+title = "Complete Post"
+tags = ["rust", "yew"]
+categories = ["Tutorial"]
+series = "Yew SSG Guide"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "test.md").unwrap();
+        assert_eq!(page.tags(), &["rust", "yew"]);
+        assert_eq!(page.categories(), &["Tutorial"]);
+        assert_eq!(page.series(), Some("Yew SSG Guide"));
     }
 }

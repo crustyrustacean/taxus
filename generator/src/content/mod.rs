@@ -32,10 +32,12 @@
 mod frontmatter;
 mod page;
 mod section;
+mod taxonomy;
 
 pub use frontmatter::Frontmatter;
 pub use page::Page;
 pub use section::Section;
+pub use taxonomy::{TaxonomyKind, TaxonomyMap, TaxonomyTerm};
 
 use crate::error::{ContentError, GeneratorError, Result};
 use std::path::{Path, PathBuf};

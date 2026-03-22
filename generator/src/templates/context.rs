@@ -67,6 +67,27 @@ pub struct PageContext {
 
     /// Whether this is a draft
     pub draft: bool,
+
+    /// Summary/excerpt for the page
+    pub summary: String,
+
+    /// Word count for the page
+    pub word_count: usize,
+
+    /// Estimated reading time in minutes
+    pub reading_time: usize,
+
+    /// Tags for the page
+    #[serde(default)]
+    pub tags: Vec<String>,
+
+    /// Categories for the page
+    #[serde(default)]
+    pub categories: Vec<String>,
+
+    /// Series name for the page
+    #[serde(default)]
+    pub series: Option<String>,
 }
 
 /// Section-specific context for templates.
@@ -102,6 +123,45 @@ pub struct SiteContext {
 
     /// Site author
     pub author: Option<String>,
+}
+
+/// Context for a single taxonomy term (e.g., a tag or category).
+///
+/// Contains information about a specific taxonomy term and its associated pages.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaxonomyTermContext {
+    /// The taxonomy kind (tag, category, series)
+    pub kind: String,
+
+    /// The display name of the term
+    pub name: String,
+
+    /// URL-safe slug for the term
+    pub slug: String,
+
+    /// URL path for the term page (e.g., "/tags/rust/")
+    pub path: String,
+
+    /// Number of pages with this term
+    pub page_count: usize,
+
+    /// Pages associated with this term
+    pub pages: Vec<PageContext>,
+}
+
+/// Context for a taxonomy listing page (e.g., "/tags/").
+///
+/// Contains all terms for a specific taxonomy kind.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaxonomyListContext {
+    /// The taxonomy kind (tag, category, series)
+    pub kind: String,
+
+    /// URL path for the taxonomy list (e.g., "/tags/")
+    pub path: String,
+
+    /// All terms for this taxonomy
+    pub terms: Vec<TaxonomyTermContext>,
 }
 
 impl TemplateContext {
@@ -156,6 +216,12 @@ impl TemplateContext {
     ///     raw_content: String::new(),
     ///     date: None,
     ///     draft: false,
+    ///     summary: String::new(),
+    ///     word_count: 0,
+    ///     reading_time: 0,
+    ///     tags: vec![],
+    ///     categories: vec![],
+    ///     series: None,
     /// };
     ///
     /// let ctx = TemplateContext::new(site).with_page(page);
@@ -243,6 +309,12 @@ mod tests {
             raw_content: "Content".to_string(),
             date: Some("2024-01-15".to_string()),
             draft: false,
+            summary: "A test page summary".to_string(),
+            word_count: 1,
+            reading_time: 1,
+            tags: vec!["rust".to_string(), "tutorial".to_string()],
+            categories: vec!["programming".to_string()],
+            series: Some("Learning Rust".to_string()),
         }
     }
 
@@ -370,12 +442,18 @@ mod tests {
             "content": "<p>Hello</p>",
             "raw_content": "Hello",
             "date": "2024-01-15",
-            "draft": false
+            "draft": false,
+            "summary": "Test summary",
+            "word_count": 5,
+            "reading_time": 1
         }"#;
 
         let page: PageContext = serde_json::from_str(json).unwrap();
         assert_eq!(page.title, "Test");
         assert_eq!(page.path, "/test/");
         assert!(!page.draft);
+        assert_eq!(page.summary, "Test summary");
+        assert_eq!(page.word_count, 5);
+        assert_eq!(page.reading_time, 1);
     }
 }

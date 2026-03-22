@@ -9,6 +9,8 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Yew Components**: Reusable UI components built with Yew's functional component API, shared between the SSG and the WASM client
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Content System**: Pages, sections, and draft support with date-based sorting
+- **Blog Features**: Summary/excerpt extraction, reading time, word count, and custom slugs
+- **Taxonomies**: Tags, categories, and series for content organization with automatic taxonomy pages
 - **Route System**: Automatic route discovery from content directory structure
 - **Template System**: Flexible Tera-based templates with inheritance and custom context; `{{ island(component="...", ...) | safe }}` function for embedding islands
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
@@ -482,6 +484,12 @@ fn main() -> Result<()> {
         raw_content: "Welcome!".to_string(),
         date: None,
         draft: false,
+        summary: String::new(),
+        word_count: 1,
+        reading_time: 1,
+        tags: vec![],
+        categories: vec![],
+        series: None,
     };
     
     let ctx = TemplateContext::new(site).with_page(page);

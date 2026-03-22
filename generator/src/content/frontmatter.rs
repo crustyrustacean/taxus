@@ -29,6 +29,27 @@ pub struct Frontmatter {
     #[serde(default)]
     pub draft: bool,
 
+    /// Manual summary/excerpt override
+    pub summary: Option<String>,
+
+    /// Custom slug for URL path (overrides filename-based path)
+    pub slug: Option<String>,
+
+    /// Alternative URLs that should redirect to this page
+    #[serde(default)]
+    pub aliases: Vec<String>,
+
+    /// Tags for the page (taxonomy)
+    #[serde(default)]
+    pub tags: Vec<String>,
+
+    /// Categories for the page (taxonomy)
+    #[serde(default)]
+    pub categories: Vec<String>,
+
+    /// Series name for multi-part content
+    pub series: Option<String>,
+
     /// Custom extra metadata
     pub extra: Option<toml::Value>,
 }
@@ -187,5 +208,186 @@ template = "custom.html"
         assert!(fm.template.is_none());
         assert!(!fm.draft);
         assert!(fm.extra.is_none());
+    }
+
+    // ============================================
+    // Phase 1.1: Summary/Excerpt Support Tests
+    // ============================================
+
+    #[test]
+    fn test_parse_frontmatter_with_summary() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Test Page"
+            summary = "This is a custom summary for the page."
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "Test Page");
+        assert_eq!(
+            fm.summary,
+            Some("This is a custom summary for the page.".to_string())
+        );
+    }
+
+    #[test]
+    fn test_summary_defaults_to_none() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.summary.is_none());
+    }
+
+    #[test]
+    fn test_summary_with_multiline_text() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Test"
+            summary = "A longer summary that spans multiple words and provides context."
+            "#,
+        )
+        .unwrap();
+
+        assert!(fm.summary.is_some());
+        assert!(fm.summary.unwrap().contains("longer summary"));
+    }
+
+    // ============================================
+    // Phase 2.1: Taxonomies Tests
+    // ============================================
+
+    #[test]
+    fn test_parse_frontmatter_with_tags() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Blog Post"
+            tags = ["rust", "web", "tutorial"]
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "My Blog Post");
+        assert_eq!(fm.tags, vec!["rust", "web", "tutorial"]);
+    }
+
+    #[test]
+    fn test_tags_default_to_empty() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.tags.is_empty());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_categories() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Blog Post"
+            categories = ["Programming", "Web Development"]
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "My Blog Post");
+        assert_eq!(fm.categories, vec!["Programming", "Web Development"]);
+    }
+
+    #[test]
+    fn test_categories_default_to_empty() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.categories.is_empty());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_series() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Part 1: Getting Started"
+            series = "Rust Web Development"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "Part 1: Getting Started");
+        assert_eq!(fm.series, Some("Rust Web Development".to_string()));
+    }
+
+    #[test]
+    fn test_series_defaults_to_none() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.series.is_none());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_all_taxonomies() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "Complete Post"
+            tags = ["rust", "yew"]
+            categories = ["Tutorial"]
+            series = "Yew SSG Guide"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.tags, vec!["rust", "yew"]);
+        assert_eq!(fm.categories, vec!["Tutorial"]);
+        assert_eq!(fm.series, Some("Yew SSG Guide".to_string()));
+    }
+
+    // ============================================
+    // Phase 1.3: Slug Customization Tests
+    // ============================================
+
+    #[test]
+    fn test_parse_frontmatter_with_slug() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Blog Post"
+            slug = "custom-url-slug"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "My Blog Post");
+        assert_eq!(fm.slug, Some("custom-url-slug".to_string()));
+    }
+
+    #[test]
+    fn test_slug_defaults_to_none() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.slug.is_none());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_aliases() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Blog Post"
+            aliases = ["/old-url/", "/another-old-path/"]
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "My Blog Post");
+        assert_eq!(fm.aliases, vec!["/old-url/", "/another-old-path/"]);
+    }
+
+    #[test]
+    fn test_aliases_default_to_empty() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.aliases.is_empty());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_slug_and_aliases() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Blog Post"
+            slug = "my-custom-slug"
+            aliases = ["/old-path/", "/legacy-url/"]
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.slug, Some("my-custom-slug".to_string()));
+        assert_eq!(fm.aliases, vec!["/old-path/", "/legacy-url/"]);
     }
 }

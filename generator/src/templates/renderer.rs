@@ -388,6 +388,12 @@ mod tests {
             raw_content: "Hello World".to_string(),
             date: Some("2024-01-15".to_string()),
             draft: false,
+            summary: "A test page summary".to_string(),
+            word_count: 2,
+            reading_time: 1,
+            tags: vec![],
+            categories: vec![],
+            series: None,
         }
     }
 

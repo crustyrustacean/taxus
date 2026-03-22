@@ -36,6 +36,12 @@
 //!     raw_content: "World".to_string(),
 //!     date: None,
 //!     draft: false,
+//!     summary: String::new(),
+//!     word_count: 1,
+//!     reading_time: 1,
+//!     tags: vec![],
+//!     categories: vec![],
+//!     series: None,
 //! };
 //! let ctx = TemplateContext::new(site).with_page(page);
 //!
@@ -47,5 +53,5 @@
 mod context;
 mod renderer;
 
-pub use context::{PageContext, SectionContext, SiteContext, TemplateContext};
+pub use context::{PageContext, SectionContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext};
 pub use renderer::{TemplateRenderer, TeraRenderer};
