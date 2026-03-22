@@ -4,7 +4,7 @@
 
 use crate::error::RouteError;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// The type of route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -157,6 +157,15 @@ impl RouteRegistry {
     /// Iterate over all section routes.
     pub fn sections(&self) -> impl Iterator<Item = &RouteInfo> {
         self.routes.values().filter(|r| r.is_section())
+    }
+
+    /// Find a route by its content file path.
+    ///
+    /// The path should be relative to the content directory.
+    pub fn find_by_content_file(&self, content_file: &Path) -> Option<&RouteInfo> {
+        self.routes
+            .values()
+            .find(|r| r.content_file == content_file)
     }
 
     /// Generate Rust code for client routing (for future use).

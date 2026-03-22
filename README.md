@@ -10,6 +10,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Co-located Assets**: Images and other files in the content directory are automatically copied to the output, preserving relative paths
 - **Content System**: Pages, sections, and draft support with date-based sorting
+- **Internal Links**: Reference other pages by content file path with build-time validation (`@/about.md` syntax)
 - **Blog Features**: Summary/excerpt extraction, reading time, word count, and custom slugs
 - **Pagination**: Split large content collections across multiple pages with configurable sorting
 - **RSS/Atom Feeds**: Automatic feed generation for content syndication

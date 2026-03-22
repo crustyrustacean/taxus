@@ -374,7 +374,7 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
 name = "client"
-version = "0.1.27"
+version = "0.1.28"
 dependencies = [
  "common",
  "serde_json",
@@ -407,7 +407,7 @@ dependencies = [
 
 [[package]]
 name = "common"
-version = "0.1.27"
+version = "0.1.28"
 dependencies = [
  "serde",
  "yew",
@@ -3690,7 +3690,7 @@ dependencies = [
 
 [[package]]
 name = "yew-ssg"
-version = "0.1.27"
+version = "0.1.28"
 dependencies = [
  "axum",
  "axum-extra",

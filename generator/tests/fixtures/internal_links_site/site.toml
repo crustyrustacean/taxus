@@ -1,0 +1,8 @@
+[site]
+name = "Internal Links Test Site"
+base_url = "https://example.com"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+templates_dir = "templates"

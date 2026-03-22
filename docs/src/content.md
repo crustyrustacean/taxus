@@ -296,6 +296,53 @@ Yew SSG supports standard Markdown syntax:
 [Link text](https://example.com)
 ```
 
+### Internal Links
+
+Yew SSG supports internal links that reference other pages by their content file path. This provides build-time validation that the target exists.
+
+#### Syntax
+
+Use the `@/` prefix to create an internal link:
+
+```markdown
+See my [about page](@/about.md) for more details.
+Check out this [blog post](@/blog/first-post.md).
+```
+
+The `@/` prefix signals an internal link. The path is relative to the `content/` directory root.
+
+#### How It Works
+
+At build time, internal links are resolved to the page's actual URL path:
+
+| Markdown Link                 | Resolved HTML                         |
+| ----------------------------- | ------------------------------------- |
+| `[about page](@/about.md)`    | `<a href="/about/">about page</a>`    |
+| `[blog post](@/blog/post.md)` | `<a href="/blog/post/">blog post</a>` |
+| `[home](@/_index.md)`         | `<a href="/">home</a>`                |
+
+#### Build Validation
+
+If an internal link references a file that doesn't exist, the build fails with a clear error:
+
+```
+Broken internal link in 'blog/my-post.md': target '@/missing.md' not found
+```
+
+This catches broken links before they reach production.
+
+#### When to Use Internal Links
+
+- **Use internal links** (`@/path/to/file.md`) when linking to other pages within your site
+- **Use regular links** (`https://...`) for external URLs
+- **Use relative paths** (`./image.png`) for co-located assets like images
+
+Internal links are especially valuable for:
+
+- Blog posts linking to related posts
+- Navigation between documentation pages
+- Any cross-reference that should be validated at build time
+
 ### Images
 
 ```markdown

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.28] - 2026-03-22
+
+### Added
+
+#### Internal Links
+
+- **Internal Link Resolution**: Reference other pages by content file path with build-time validation
+  - `@/path/to/file.md` syntax in markdown links
+  - Links are resolved to actual URL paths at build time (e.g., `@/about.md` → `/about/`)
+  - Build fails with clear error if target doesn't exist
+  - Works with nested paths (e.g., `@/blog/first-post.md`)
+
+- **Error Handling**: New `BrokenInternalLink` error variant
+  - Clear error messages: `Broken internal link in 'blog/my-post.md': target '@/missing.md' not found`
+  - Helps catch broken links before they reach production
+
+- **Route Registry Helper**: New `find_by_content_file` method
+  - Looks up routes by their source content file path
+  - Used internally for internal link resolution
+
+### Changed
+
+- **Build Pipeline**: Internal link resolution happens in `process_content` before markdown-to-HTML conversion
+- **Documentation**: Added internal links section to content documentation
+
 ## [0.1.27] - 2026-03-22
 
 ### Added

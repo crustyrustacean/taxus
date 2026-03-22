@@ -237,6 +237,10 @@ pub enum BuildError {
         #[source]
         source: std::io::Error,
     },
+
+    /// Broken internal link
+    #[error("Broken internal link in '{file}': target '{target}' not found")]
+    BrokenInternalLink { file: String, target: String },
 }
 
 /// Init-related errors.

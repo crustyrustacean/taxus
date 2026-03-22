@@ -1,0 +1,11 @@
+{% extends "base.html" %} {% block title %}{{ section.title }} - {{ site.name
+}}{% endblock %} {% block content %}
+<section>
+  <h1>{{ section.title }}</h1>
+  <ul>
+    {% for page in section.pages %}
+    <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
