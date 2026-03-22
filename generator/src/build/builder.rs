@@ -90,11 +90,12 @@ impl SiteBuilder {
     /// 1. Discover routes from content directory
     /// 2. Load templates
     /// 3. Process content files
-    /// 4. Render pages with templates
-    /// 5. Build and render taxonomy pages
-    /// 6. Generate feeds (RSS/Atom)
-    /// 7. Process assets (SCSS, static files)
-    /// 8. Write output files
+    /// 4. Copy co-located assets
+    /// 5. Render pages with templates
+    /// 6. Build and render taxonomy pages
+    /// 7. Generate feeds (RSS/Atom)
+    /// 8. Process assets (SCSS, static files)
+    /// 9. Write output files
     ///
     /// # Errors
     ///
@@ -115,7 +116,7 @@ impl SiteBuilder {
 
         // Stage 1: Discover routes
         let _routes_span = info_span!("discover_routes").entered();
-        info!("[1/8] Discovering routes...");
+        info!("[1/9] Discovering routes...");
         let registry = pipeline::discover_routes(&self.config)?;
 
         if registry.is_empty() {
@@ -127,7 +128,7 @@ impl SiteBuilder {
 
         // Stage 2: Load templates
         let _templates_span = info_span!("load_templates").entered();
-        info!("[2/8] Loading templates...");
+        info!("[2/9] Loading templates...");
         let templates = pipeline::load_templates(&self.config)?;
 
         debug!(
@@ -138,7 +139,7 @@ impl SiteBuilder {
 
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
-        info!("[3/8] Processing content...");
+        info!("[3/9] Processing content...");
         let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
 
         if processed.is_empty() {
@@ -160,9 +161,24 @@ impl SiteBuilder {
         );
         drop(_content_span);
 
-        // Stage 4: Render pages
+        // Stage 4: Copy co-located assets
+        let _colocated_span = info_span!("copy_colocated_assets").entered();
+        info!("[4/9] Copying co-located assets...");
+        let colocated_assets = pipeline::copy_colocated_assets(
+            &self.config.build.content_dir,
+            &output_dir,
+            self.dry_run,
+        )?;
+
+        debug!(
+            files_copied = colocated_assets.files_processed,
+            "Co-located assets copied"
+        );
+        drop(_colocated_span);
+
+        // Stage 5: Render pages
         let _render_span = info_span!("render_pages").entered();
-        info!("[4/8] Rendering pages...");
+        info!("[5/9] Rendering pages...");
         let site_context = SiteContext {
             name: self.config.site.name.clone(),
             base_url: self.config.site.base_url.clone(),
@@ -173,9 +189,9 @@ impl SiteBuilder {
         let rendered = pipeline::render_pages(&processed, &templates, &site_context, self.verbose)?;
         drop(_render_span);
 
-        // Stage 5: Build and render taxonomy pages
+        // Stage 6: Build and render taxonomy pages
         let _taxonomy_span = info_span!("render_taxonomy").entered();
-        info!("[5/8] Building taxonomy pages...");
+        info!("[6/9] Building taxonomy pages...");
         let taxonomy_map = pipeline::build_taxonomy_map(&processed);
         let taxonomy_pages =
             pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
@@ -185,24 +201,27 @@ impl SiteBuilder {
         );
         drop(_taxonomy_span);
 
-        // Stage 6: Generate feeds
+        // Stage 7: Generate feeds
         let _feeds_span = info_span!("generate_feeds").entered();
-        info!("[6/8] Generating feeds...");
+        info!("[7/9] Generating feeds...");
         let feeds = pipeline::generate_feeds(&processed, &self.config)?;
         debug!(feeds = feeds.len(), "Feeds generated");
         drop(_feeds_span);
 
-        // Stage 7: Process assets
+        // Stage 8: Process assets
         let _assets_span = info_span!("process_assets").entered();
-        info!("[7/8] Processing assets...");
-        let assets = pipeline::process_assets(&self.config, &output_dir)?;
+        info!("[8/9] Processing assets...");
+        let mut assets = pipeline::process_assets(&self.config, &output_dir)?;
+
+        // Merge co-located assets report into main assets report
+        assets.merge(colocated_assets);
 
         debug!(files_processed = assets.files_processed, "Assets processed");
         drop(_assets_span);
 
-        // Stage 8: Write output
+        // Stage 9: Write output
         let _write_span = info_span!("write_output").entered();
-        info!("[8/8] Writing output...");
+        info!("[9/9] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
 
         // Write taxonomy pages

@@ -18,10 +18,57 @@ content/
 
 ### Special Files
 
-| File | Purpose |
-|------|---------|
+| File        | Purpose                                                                 |
+| ----------- | ----------------------------------------------------------------------- |
 | `_index.md` | Section index page (home page at root, section index in subdirectories) |
-| `*.md` | Regular pages |
+| `*.md`      | Regular pages                                                           |
+
+### Co-located Assets
+
+Non-Markdown files in the content directory are automatically copied to the output directory, preserving their relative paths. This allows you to keep images and other assets alongside the content that uses them.
+
+```
+content/
+├── blog/
+│   ├── first-post.md
+│   ├── photo.jpg          → dist/blog/photo.jpg
+│   └── diagrams/
+│       └── architecture.png  → dist/blog/diagrams/architecture.png
+└── about/
+    ├── about.md
+    └── headshot.png       → dist/about/headshot.png
+```
+
+**How it works:**
+
+- Markdown files (`.md`) are processed into HTML pages
+- All other files are copied as-is to the same relative path in the output directory
+- Directory structure is preserved
+- Parent directories are created automatically
+
+**Referencing co-located assets:**
+
+In your Markdown, reference assets using relative paths:
+
+```markdown
+![Photo](photo.jpg)
+![Diagram](diagrams/architecture.png)
+```
+
+Or use absolute paths from the site root:
+
+```markdown
+![Photo](/blog/photo.jpg)
+```
+
+**When to use co-located assets:**
+
+- Blog post images and diagrams
+- Page-specific downloads (PDFs, etc.)
+- Content-specific data files
+- Any asset that belongs to a specific piece of content
+
+For global assets (logos, favicons, shared images), use the `static/` directory instead.
 
 ## Frontmatter
 
@@ -47,22 +94,22 @@ Your markdown content here.
 
 ### Frontmatter Fields
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `title` | string | No* | `""` | Page title |
-| `description` | string | No | `None` | Page description for SEO |
-| `date` | date | No | `None` | Publication date (YYYY-MM-DD) |
-| `template` | string | No | `"page.html"` | Template override |
-| `draft` | bool | No | `false` | Draft status |
-| `summary` | string | No | `None` | Custom summary/excerpt (overrides automatic extraction) |
-| `slug` | string | No | `None` | Custom URL slug (overrides filename-based path) |
-| `tags` | array | No | `[]` | Tags for the page (e.g., `["rust", "web"]`) |
-| `categories` | array | No | `[]` | Categories for the page (e.g., `["tutorial"]`) |
-| `series` | string | No | `None` | Series the page belongs to (e.g., `"Learning Rust"`) |
-| `aliases` | array | No | `[]` | Old URLs that should redirect to this page |
-| `extra` | table | No | `None` | Custom metadata |
+| Field         | Type   | Required | Default       | Description                                             |
+| ------------- | ------ | -------- | ------------- | ------------------------------------------------------- |
+| `title`       | string | No\*     | `""`          | Page title                                              |
+| `description` | string | No       | `None`        | Page description for SEO                                |
+| `date`        | date   | No       | `None`        | Publication date (YYYY-MM-DD)                           |
+| `template`    | string | No       | `"page.html"` | Template override                                       |
+| `draft`       | bool   | No       | `false`       | Draft status                                            |
+| `summary`     | string | No       | `None`        | Custom summary/excerpt (overrides automatic extraction) |
+| `slug`        | string | No       | `None`        | Custom URL slug (overrides filename-based path)         |
+| `tags`        | array  | No       | `[]`          | Tags for the page (e.g., `["rust", "web"]`)             |
+| `categories`  | array  | No       | `[]`          | Categories for the page (e.g., `["tutorial"]`)          |
+| `series`      | string | No       | `None`        | Series the page belongs to (e.g., `"Learning Rust"`)    |
+| `aliases`     | array  | No       | `[]`          | Old URLs that should redirect to this page              |
+| `extra`       | table  | No       | `None`        | Custom metadata                                         |
 
-*Title is recommended but not required by the library.
+\*Title is recommended but not required by the library.
 
 ### Date Format
 
@@ -118,6 +165,7 @@ content/blog/
 ```
 
 Sections can:
+
 - Have their own frontmatter
 - Contain multiple pages
 - Be sorted by date
@@ -226,7 +274,9 @@ Yew SSG supports standard Markdown syntax:
 
 ```markdown
 # Heading 1
+
 ## Heading 2
+
 ### Heading 3
 ```
 
@@ -254,7 +304,7 @@ Yew SSG supports standard Markdown syntax:
 
 ### Code
 
-```markdown
+````markdown
 Inline `code` in text.
 
 ```rust
@@ -262,13 +312,15 @@ fn main() {
     println!("Hello, world!");
 }
 ```
-```
+````
+
+````
 
 ### Blockquotes
 
 ```markdown
 > This is a blockquote.
-```
+````
 
 ## Content Processing
 
@@ -286,11 +338,11 @@ The generator processes content files in the following order:
 
 Content files are mapped to URL paths:
 
-| Content File | URL Path |
-|--------------|----------|
-| `content/_index.md` | `/` |
-| `content/about.md` | `/about/` |
-| `content/blog/_index.md` | `/blog/` |
+| Content File              | URL Path         |
+| ------------------------- | ---------------- |
+| `content/_index.md`       | `/`              |
+| `content/about.md`        | `/about/`        |
+| `content/blog/_index.md`  | `/blog/`         |
 | `content/blog/my-post.md` | `/blog/my-post/` |
 
 ### Custom Slugs
@@ -404,15 +456,14 @@ Yew SSG automatically generates taxonomy listing pages:
 Create custom templates for taxonomy pages:
 
 **`templates/tag.html`**:
-```html
-{% extends "base.html" %}
 
-{% block content %}
+```html
+{% extends "base.html" %} {% block content %}
 <h1>Posts tagged "{{ term }}"</h1>
 <ul>
-{% for page in pages %}
+  {% for page in pages %}
   <li><a href="{{ page.path }}">{{ page.title }}</a></li>
-{% endfor %}
+  {% endfor %}
 </ul>
 {% endblock %}
 ```
@@ -428,11 +479,11 @@ use generator::{Page, Result};
 
 fn main() -> Result<()> {
     let page = Page::from_file("content/about.md")?;
-    
+
     println!("Title: {}", page.frontmatter.title);
     println!("Path: {}", page.path);
     println!("Is draft: {}", page.is_draft());
-    
+
     Ok(())
 }
 ```
@@ -444,19 +495,19 @@ use generator::{Section, Page, Result};
 
 fn main() -> Result<()> {
     let mut section = Section::from_dir("content/blog")?;
-    
+
     // Add pages to section
     let post = Page::from_file("content/blog/my-post.md")?;
     section.add_page(post);
-    
+
     // Sort by date (newest first)
     section.sort_by_date();
-    
+
     println!("Section: {}", section.frontmatter.title);
     for page in &section.pages {
         println!("  - {} ({:?})", page.frontmatter.title, page.frontmatter.date);
     }
-    
+
     Ok(())
 }
 ```
@@ -468,11 +519,11 @@ use generator::{ContentSource, FilesystemContentSource, Result};
 
 fn main() -> Result<()> {
     let source = FilesystemContentSource::new("content");
-    
+
     for file in source.list()? {
         println!("Found: {}", file.display());
     }
-    
+
     Ok(())
 }
 ```
@@ -500,11 +551,11 @@ Welcome to my blog!
 
 ### Pagination Configuration
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `sort_by` | string | `"none"` | Sort order: `"date"`, `"weight"`, or `"none"` |
-| `paginate_by` | integer | `None` | Number of pages per paginated slice |
-| `paginate_template` | string | `None` | Template for paginated pages (defaults to section template) |
+| Field               | Type    | Default  | Description                                                 |
+| ------------------- | ------- | -------- | ----------------------------------------------------------- |
+| `sort_by`           | string  | `"none"` | Sort order: `"date"`, `"weight"`, or `"none"`               |
+| `paginate_by`       | integer | `None`   | Number of pages per paginated slice                         |
+| `paginate_template` | string  | `None`   | Template for paginated pages (defaults to section template) |
 
 ### Sorting Options
 
@@ -544,25 +595,23 @@ When pagination is enabled, the section generates multiple pages:
 Access pagination information in your section template:
 
 ```html
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h1>{{ section.title }}</h1>
 
 {% if section.pagination %}
 <div class="pagination-info">
-  Page {{ section.pagination.current_page }} of {{ section.pagination.total_pages }}
-  ({{ section.pagination.total_items }} items)
+  Page {{ section.pagination.current_page }} of {{
+  section.pagination.total_pages }} ({{ section.pagination.total_items }} items)
 </div>
 {% endif %}
 
 <ul class="post-list">
-{% for page in section.pages %}
+  {% for page in section.pages %}
   <li>
     <a href="{{ page.path }}">{{ page.title }}</a>
     <span class="date">{{ page.date }}</span>
   </li>
-{% endfor %}
+  {% endfor %}
 </ul>
 
 {% if section.pagination %}
@@ -570,31 +619,31 @@ Access pagination information in your section template:
   {% if section.pagination.prev_url %}
   <a href="{{ section.pagination.prev_url }}" class="prev">← Previous</a>
   {% endif %}
-  
+
   <span class="page-numbers">
-    Page {{ section.pagination.current_page }} of {{ section.pagination.total_pages }}
+    Page {{ section.pagination.current_page }} of {{
+    section.pagination.total_pages }}
   </span>
-  
+
   {% if section.pagination.next_url %}
   <a href="{{ section.pagination.next_url }}" class="next">Next →</a>
   {% endif %}
 </nav>
-{% endif %}
-{% endblock %}
+{% endif %} {% endblock %}
 ```
 
 ### Pagination Context Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `current_page` | integer | Current page number (1-indexed) |
-| `total_pages` | integer | Total number of pages |
-| `total_items` | integer | Total number of items across all pages |
-| `items_per_page` | integer | Items per page |
-| `prev_url` | string | URL to previous page (None on first page) |
-| `next_url` | string | URL to next page (None on last page) |
-| `first_url` | string | URL to first page |
-| `last_url` | string | URL to last page |
+| Field            | Type    | Description                               |
+| ---------------- | ------- | ----------------------------------------- |
+| `current_page`   | integer | Current page number (1-indexed)           |
+| `total_pages`    | integer | Total number of pages                     |
+| `total_items`    | integer | Total number of items across all pages    |
+| `items_per_page` | integer | Items per page                            |
+| `prev_url`       | string  | URL to previous page (None on first page) |
+| `next_url`       | string  | URL to next page (None on last page)      |
+| `first_url`      | string  | URL to first page                         |
+| `last_url`       | string  | URL to last page                          |
 
 ## RSS/Atom Feeds
 
@@ -618,12 +667,12 @@ atom_path = "atom.xml"  # Atom feed path
 
 ### Feed Configuration
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `enabled` | bool | `true` | Enable feed generation |
-| `format` | string | `"rss"` | Feed format: `"rss"`, `"atom"`, or `"both"` |
-| `path` | string | `"feed.xml"` | RSS feed output path |
-| `atom_path` | string | `"atom.xml"` | Atom feed output path |
+| Field       | Type   | Default      | Description                                 |
+| ----------- | ------ | ------------ | ------------------------------------------- |
+| `enabled`   | bool   | `true`       | Enable feed generation                      |
+| `format`    | string | `"rss"`      | Feed format: `"rss"`, `"atom"`, or `"both"` |
+| `path`      | string | `"feed.xml"` | RSS feed output path                        |
+| `atom_path` | string | `"atom.xml"` | Atom feed output path                       |
 
 ### Feed Entries
 
@@ -656,13 +705,13 @@ After generation, feeds are available at:
 
 Each feed entry includes:
 
-| Field | Source |
-|-------|--------|
-| Title | Page `title` |
+| Field       | Source                                       |
+| ----------- | -------------------------------------------- |
+| Title       | Page `title`                                 |
 | Description | Page `description` or auto-extracted summary |
-| URL | Full page URL (base_url + path) |
-| Published | Page `date` field |
-| Updated | Page `updated` field (Atom only) |
+| URL         | Full page URL (base_url + path)              |
+| Published   | Page `date` field                            |
+| Updated     | Page `updated` field (Atom only)             |
 
 ## Future Enhancements
 

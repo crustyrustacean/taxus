@@ -431,6 +431,110 @@ pub fn process_assets(config: &SiteConfig, output_dir: &Path) -> Result<AssetRep
     Ok(report)
 }
 
+/// Copy co-located assets from content directory to output directory.
+///
+/// Walks the content directory and copies any non-.md files to the same
+/// relative path in the output directory. This allows assets like images
+/// to be co-located with their markdown files.
+///
+/// # Example
+///
+/// If content directory contains:
+/// - `content/blog/post.md` → processed as HTML
+/// - `content/blog/photo.jpg` → copied to `output/blog/photo.jpg`
+///
+/// # Arguments
+///
+/// * `content_dir` - Path to the content directory
+/// * `output_dir` - Path to the output directory
+/// * `dry_run` - If true, no files are written
+///
+/// # Returns
+///
+/// An `AssetReport` containing the number of files copied.
+pub fn copy_colocated_assets(
+    content_dir: &Path,
+    output_dir: &Path,
+    dry_run: bool,
+) -> Result<AssetReport> {
+    use walkdir::WalkDir;
+
+    let mut report = AssetReport::new();
+
+    // Skip if content directory doesn't exist
+    if !content_dir.exists() {
+        debug!(
+            content_dir = %content_dir.display(),
+            "Content directory does not exist, skipping co-located asset copy"
+        );
+        return Ok(report);
+    }
+
+    let span = debug_span!("copy_colocated_assets", content_dir = %content_dir.display());
+    let _enter = span.enter();
+
+    for entry in WalkDir::new(content_dir).into_iter().filter_map(|e| e.ok()) {
+        // Skip directories
+        if !entry.file_type().is_file() {
+            continue;
+        }
+
+        let path = entry.path();
+
+        // Skip markdown files (they become HTML pages)
+        if path.extension().map_or(false, |ext| ext == "md") {
+            continue;
+        }
+
+        // Calculate relative path from content directory
+        let relative = match path.strip_prefix(content_dir) {
+            Ok(rel) => rel,
+            Err(_) => continue, // Shouldn't happen, but skip if it does
+        };
+
+        // Construct destination path
+        let dest_path = output_dir.join(relative);
+
+        if dry_run {
+            debug!(
+                src = %path.display(),
+                dest = %dest_path.display(),
+                "Dry run - would copy co-located asset"
+            );
+            report.add_processed();
+            continue;
+        }
+
+        // Create parent directories
+        if let Some(parent) = dest_path.parent() {
+            fs::create_dir_all(parent).map_err(|e| BuildError::Io {
+                path: parent.to_path_buf(),
+                source: e,
+            })?;
+        }
+
+        // Copy the file
+        fs::copy(path, &dest_path).map_err(|e| BuildError::Io {
+            path: dest_path.clone(),
+            source: e,
+        })?;
+
+        debug!(
+            src = %path.display(),
+            dest = %dest_path.display(),
+            "Copied co-located asset"
+        );
+
+        report.add_processed();
+    }
+
+    if report.files_processed > 0 {
+        info!("Copied {} co-located assets", report.files_processed);
+    }
+
+    Ok(report)
+}
+
 /// Generated feed file.
 #[derive(Debug, Clone)]
 pub struct GeneratedFeed {
@@ -1048,5 +1152,156 @@ Content
         // Dry run should not write anything
         let result = write_taxonomy_pages(&taxonomy_pages, Path::new("/nonexistent/path"), true);
         assert!(result.is_ok());
+    }
+
+    // ============================================
+    // Co-located Asset Tests
+    // ============================================
+
+    #[test]
+    fn test_copy_colocated_assets_basic() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("content");
+        let output_dir = temp_dir.path().join("dist");
+
+        // Create content directory with mixed files
+        fs::create_dir_all(&content_dir).unwrap();
+        fs::write(content_dir.join("post.md"), "+++\ntitle = \"Test\"\n+++\nContent").unwrap();
+        fs::write(content_dir.join("photo.jpg"), "fake image data").unwrap();
+
+        // Copy co-located assets
+        let report = copy_colocated_assets(&content_dir, &output_dir, false).unwrap();
+
+        // Should have copied 1 file (the .jpg)
+        assert_eq!(report.files_processed, 1);
+
+        // Verify the file was copied
+        assert!(output_dir.join("photo.jpg").exists());
+
+        // Verify the .md was NOT copied
+        assert!(!output_dir.join("post.md").exists());
+    }
+
+    #[test]
+    fn test_copy_colocated_assets_nested() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("content");
+        let output_dir = temp_dir.path().join("dist");
+
+        // Create nested directory structure
+        fs::create_dir_all(content_dir.join("blog")).unwrap();
+        fs::create_dir_all(content_dir.join("about")).unwrap();
+
+        fs::write(
+            content_dir.join("blog/post.md"),
+            "+++\ntitle = \"Post\"\n+++\nContent",
+        )
+        .unwrap();
+        fs::write(content_dir.join("blog/photo.jpg"), "image data").unwrap();
+        fs::write(content_dir.join("about/headshot.png"), "png data").unwrap();
+
+        // Copy co-located assets
+        let report = copy_colocated_assets(&content_dir, &output_dir, false).unwrap();
+
+        // Should have copied 2 files
+        assert_eq!(report.files_processed, 2);
+
+        // Verify nested paths are preserved
+        assert!(output_dir.join("blog/photo.jpg").exists());
+        assert!(output_dir.join("about/headshot.png").exists());
+
+        // Verify .md was not copied
+        assert!(!output_dir.join("blog/post.md").exists());
+    }
+
+    #[test]
+    fn test_copy_colocated_assets_dry_run() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("content");
+        let output_dir = temp_dir.path().join("dist");
+
+        // Create content directory
+        fs::create_dir_all(&content_dir).unwrap();
+        fs::write(content_dir.join("image.png"), "png data").unwrap();
+
+        // Dry run - should not write files
+        let report = copy_colocated_assets(&content_dir, &output_dir, true).unwrap();
+
+        // Should report 1 file processed
+        assert_eq!(report.files_processed, 1);
+
+        // But file should NOT exist in output
+        assert!(!output_dir.join("image.png").exists());
+    }
+
+    #[test]
+    fn test_copy_colocated_assets_empty_dir() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("content");
+        let output_dir = temp_dir.path().join("dist");
+
+        // Create empty content directory
+        fs::create_dir_all(&content_dir).unwrap();
+
+        // Should succeed with 0 files
+        let report = copy_colocated_assets(&content_dir, &output_dir, false).unwrap();
+        assert_eq!(report.files_processed, 0);
+    }
+
+    #[test]
+    fn test_copy_colocated_assets_nonexistent_dir() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("nonexistent");
+        let output_dir = temp_dir.path().join("dist");
+
+        // Should succeed with 0 files when directory doesn't exist
+        let report = copy_colocated_assets(&content_dir, &output_dir, false).unwrap();
+        assert_eq!(report.files_processed, 0);
+    }
+
+    #[test]
+    fn test_copy_colocated_assets_various_extensions() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("content");
+        let output_dir = temp_dir.path().join("dist");
+
+        // Create content directory with various file types
+        fs::create_dir_all(&content_dir).unwrap();
+        fs::write(content_dir.join("image.jpg"), "jpg").unwrap();
+        fs::write(content_dir.join("image.png"), "png").unwrap();
+        fs::write(content_dir.join("image.gif"), "gif").unwrap();
+        fs::write(content_dir.join("doc.pdf"), "pdf").unwrap();
+        fs::write(content_dir.join("data.json"), "{}").unwrap();
+        fs::write(content_dir.join("style.css"), "body {}").unwrap();
+        fs::write(content_dir.join("page.md"), "+++\ntitle = \"Test\"\n+++\nContent").unwrap();
+
+        // Copy co-located assets
+        let report = copy_colocated_assets(&content_dir, &output_dir, false).unwrap();
+
+        // Should have copied 6 files (all except .md)
+        assert_eq!(report.files_processed, 6);
+
+        // Verify all non-.md files were copied
+        assert!(output_dir.join("image.jpg").exists());
+        assert!(output_dir.join("image.png").exists());
+        assert!(output_dir.join("image.gif").exists());
+        assert!(output_dir.join("doc.pdf").exists());
+        assert!(output_dir.join("data.json").exists());
+        assert!(output_dir.join("style.css").exists());
+
+        // Verify .md was not copied
+        assert!(!output_dir.join("page.md").exists());
     }
 }

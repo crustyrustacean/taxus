@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.26] - 2026-03-22
+
+### Added
+
+#### Co-located Assets
+
+- **Co-located Asset Copying**: Non-Markdown files in the content directory are automatically copied to the output directory
+  - Images, PDFs, and other assets can be placed alongside content
+  - Relative paths are preserved: `content/blog/photo.jpg` → `dist/blog/photo.jpg`
+  - Markdown files (`.md`) are skipped (they become HTML pages)
+  - Directory structure is preserved
+  - Parent directories are created automatically
+
+- **Build Pipeline Integration**: New Stage 4 for co-located asset copying
+  - Runs between content processing and page rendering
+  - Returns `AssetReport` for build report aggregation
+  - Respects `dry_run` mode
+
+### Changed
+
+- **Build Pipeline**: Added Stage 4 for co-located asset copying (now 9 stages total)
+- **Build Report**: Co-located assets are included in the asset report
+
 ## [0.1.24] - 2026-03-22
 
 ### Added
@@ -260,9 +283,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Loads the WASM hydration bundle using the correct ES module pattern:
     ```html
     <script type="module">
-        import init, * as bindings from '/wasm/client.js';
-        const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
-        window.wasmBindings = bindings;
+      import init, * as bindings from "/wasm/client.js";
+      const wasm = await init({ module_or_path: "/wasm/client_bg.wasm" });
+      window.wasmBindings = bindings;
     </script>
     ```
   - Note: `wasm-bindgen` output is an ES module; a plain `<script src>` tag causes
@@ -470,7 +493,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `new()`: Create scaffolder with options
   - `scaffold()`: Create directory structure and files
   - Creates: content/, templates/, static/, styles/ directories
-  - Generates: site.toml, _index.md, base.html, page.html, section.html, main.scss
+  - Generates: site.toml, \_index.md, base.html, page.html, section.html, main.scss
 
 - **InitReport Struct**: Statistics and results from initialization
   - `directories_created`: Count of directories created

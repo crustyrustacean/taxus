@@ -8,6 +8,7 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Islands Architecture**: Interactive Yew WASM components embedded within Tera-rendered static pages — server-side pre-rendered at build time, hydrated in the browser
 - **Yew Components**: Reusable UI components built with Yew's functional component API, shared between the SSG and the WASM client
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
+- **Co-located Assets**: Images and other files in the content directory are automatically copied to the output, preserving relative paths
 - **Content System**: Pages, sections, and draft support with date-based sorting
 - **Blog Features**: Summary/excerpt extraction, reading time, word count, and custom slugs
 - **Pagination**: Split large content collections across multiple pages with configurable sorting
@@ -57,9 +58,9 @@ yew-ssg/
 
 The generator supports a Cargo feature flag to control whether Yew SSR island support is compiled in:
 
-| Feature | Default | Description |
-|---|---|---|
-| `islands` | off | Enables Yew SSR + `tokio` + `common` crate compilation; activates `island()` Tera function |
+| Feature   | Default | Description                                                                                |
+| --------- | ------- | ------------------------------------------------------------------------------------------ |
+| `islands` | off     | Enables Yew SSR + `tokio` + `common` crate compilation; activates `island()` Tera function |
 
 Without the `islands` feature, the generator is a plain Tera + Markdown SSG. The `island()` Tera function is still recognized in templates but produces empty output — no Yew or WASM dependency is included.
 
@@ -189,12 +190,14 @@ cargo run -- serve --port 8080 --open --site-dir my-site
 ```
 
 The development server features:
+
 - **Hot Reloading**: Automatically rebuilds and refreshes the browser when content, templates, styles, or static files change
 - **WebSocket Live Reload**: Instant browser refresh via WebSocket connection
 - **Error Overlay**: Build errors are displayed directly in the browser
 - **Graceful Shutdown**: Press Ctrl+C to stop the server cleanly
 
 Short options are available:
+
 - `-p` for `--port`
 - `-s` for `--site-dir`
 - `-o` for `--open`
@@ -219,6 +222,7 @@ RUST_LOG=debug cargo run -- build  # all crates at debug level
 ```
 
 Log levels:
+
 - `error`: Build failures only
 - `warn`: Warnings (e.g., missing optional files)
 - `info`: Build progress and summary (default)
@@ -299,11 +303,8 @@ BUILD TIME (generator)                BROWSER
 Use the `island()` Tera function in any `.html` template:
 
 ```html
-{% block content %}
-  {{ page.content | safe }}
-
-  {{ island(component="Counter", initial=5) | safe }}
-{% endblock %}
+{% block content %} {{ page.content | safe }} {{ island(component="Counter",
+initial=5) | safe }} {% endblock %}
 ```
 
 The generator renders the component server-side at build time. The output in the static HTML looks like:
@@ -355,10 +356,10 @@ Two registries must be updated in sync:
 
 ### Two-Tier Interactivity
 
-| Tier | Technology | When to use |
-|---|---|---|
-| 1 — General | `static/scripts.js` | DOM manipulation, toggles, analytics, lightweight events |
-| 2 — Performance | Yew WASM island | Heavy computation, complex reactive state, data-intensive UI |
+| Tier            | Technology          | When to use                                                  |
+| --------------- | ------------------- | ------------------------------------------------------------ |
+| 1 — General     | `static/scripts.js` | DOM manipulation, toggles, analytics, lightweight events     |
+| 2 — Performance | Yew WASM island     | Heavy computation, complex reactive state, data-intensive UI |
 
 ## Generator Library
 
@@ -372,7 +373,7 @@ use generator::{SiteConfig, Result};
 fn main() -> Result<()> {
     // Load configuration from a directory
     let config = SiteConfig::from_dir(".")?;
-    
+
     println!("Building site: {}", config.site.name);
     Ok(())
 }
@@ -388,21 +389,21 @@ fn main() -> Result<()> {
     let page = Page::from_file("content/about.md")?;
     println!("Title: {}", page.frontmatter.title);
     println!("Is draft: {}", page.is_draft());
-    
+
     // Load a section (e.g., blog)
     let mut section = Section::from_dir("content/blog")?;
     section.sort_by_date();
-    
+
     for page in &section.pages {
         println!("Post: {}", page.frontmatter.title);
     }
-    
+
     // List all content files
     let source = FilesystemContentSource::new("content");
     for file in source.list()? {
         println!("Found: {}", file.display());
     }
-    
+
     Ok(())
 }
 ```
@@ -416,29 +417,29 @@ fn main() -> Result<()> {
     // Discover routes from content directory
     let discovery = RouteDiscovery::new("content");
     let registry = discovery.discover()?;
-    
+
     // Query routes
     if let Some(route) = registry.get("/about/") {
         println!("Found route: {:?}", route);
         println!("Content file: {:?}", route.content_file);
         println!("Output file: {:?}", route.output_file);
     }
-    
+
     // Iterate over all pages
     for route in registry.pages() {
         println!("Page: {}", route.path);
     }
-    
+
     // Check route existence
     if registry.contains("/blog/") {
         println!("Blog section exists");
     }
-    
+
     // Count routes
     println!("Total routes: {}", registry.len());
     println!("Pages: {}", registry.pages().count());
     println!("Sections: {}", registry.sections().count());
-    
+
     Ok(())
 }
 ```
@@ -455,7 +456,7 @@ use generator::{
 fn main() -> Result<()> {
     // Create a template renderer
     let mut renderer = TeraRenderer::new()?;
-    
+
     // Register templates
     renderer.register_template("base.html", r#"
         <html>
@@ -463,13 +464,13 @@ fn main() -> Result<()> {
             <body>{% block content %}{% endblock %}</body>
         </html>
     "#)?;
-    
+
     renderer.register_template("page.html", r#"
         {% extends "base.html" %}
         {% block title %}{{ page.title }}{% endblock %}
         {% block content %}{{ page.content | safe }}{% endblock %}
     "#)?;
-    
+
     // Create context
     let site = SiteContext {
         name: "My Site".to_string(),
@@ -477,7 +478,7 @@ fn main() -> Result<()> {
         description: None,
         author: None,
     };
-    
+
     let page = PageContext {
         title: "Hello World".to_string(),
         description: None,
@@ -493,13 +494,13 @@ fn main() -> Result<()> {
         categories: vec![],
         series: None,
     };
-    
+
     let ctx = TemplateContext::new(site).with_page(page);
-    
+
     // Render the template
     let html = renderer.render("page.html", &ctx)?;
     println!("{}", html);
-    
+
     Ok(())
 }
 ```
@@ -518,24 +519,24 @@ fn main() -> Result<()> {
     let scss_processor = ScssProcessor::with_include_paths(
         vec![Path::new("styles").to_path_buf()]
     ).with_minify(true);
-    
+
     let report = scss_processor.process(
         Path::new("styles/main.scss"),
         Path::new("dist/styles/main.css")
     )?;
     println!("Processed {} SCSS files", report.files_processed);
-    
+
     // Copy static files with exclusions
     let static_copier = StaticCopier::with_exclusions(
         vec!["*.scss".to_string()]
     );
-    
+
     let report = static_copier.process(
         Path::new("static"),
         Path::new("dist/static")
     )?;
     println!("Copied {} static files", report.files_processed);
-    
+
     Ok(())
 }
 ```
@@ -555,15 +556,15 @@ fn main() -> Result<()> {
         .include_drafts(false)
         .dry_run(false)
         .build()?;
-    
+
     // Print build summary
     report.print_summary();
-    
+
     println!("Pages rendered: {}", report.pages_rendered);
     println!("Sections rendered: {}", report.sections_rendered);
     println!("Total files: {}", report.total_files());
     println!("Duration: {:.2}s", report.duration.as_secs_f64());
-    
+
     Ok(())
 }
 ```
@@ -579,19 +580,19 @@ use std::path::Path;
 fn main() -> Result<()> {
     // Create options for the new site
     let options = InitOptions::new("My Site", "https://example.com");
-    
+
     // Create the scaffolder
     let scaffolder = InitScaffolder::new(options);
-    
+
     // Scaffold the site
     let report = scaffolder.scaffold(Path::new("my-site"))?;
-    
+
     // Print summary
     report.print_summary();
-    
+
     println!("Directories created: {}", report.directories_created);
     println!("Files created: {}", report.files_created);
-    
+
     Ok(())
 }
 ```
@@ -651,6 +652,7 @@ paginate_template = "section.html"
 ```
 
 Pagination fields:
+
 - `sort_by`: Sort order (`date`, `weight`, or `title`)
 - `paginate_by`: Items per page
 - `paginate_template`: Template for pagination pages (optional)
@@ -663,7 +665,10 @@ In templates, access pagination via `section.pagination`:
   {% if section.pagination.prev %}
   <a href="{{ section.pagination.prev }}">← Previous</a>
   {% endif %}
-  <span>Page {{ section.pagination.current }} of {{ section.pagination.total }}</span>
+  <span
+    >Page {{ section.pagination.current }} of {{ section.pagination.total
+    }}</span
+  >
   {% if section.pagination.next %}
   <a href="{{ section.pagination.next }}">Next →</a>
   {% endif %}
@@ -672,6 +677,7 @@ In templates, access pagination via `section.pagination`:
 ```
 
 Pagination URLs:
+
 - First page: `/blog/`
 - Subsequent pages: `/blog/page/2/`, `/blog/page/3/`, etc.
 
@@ -691,6 +697,7 @@ atom_path = "atom.xml"
 ```
 
 Feed configuration:
+
 - `rss_enabled`: Generate RSS 2.0 feed (default: true)
 - `atom_enabled`: Generate Atom feed (default: true)
 - `limit`: Maximum entries in feed (default: 20)
