@@ -19,10 +19,10 @@ path = "src/bin/main.rs"
 [features]
 # Enable Yew SSR island support.
 # When enabled: the `island()` Tera function renders Yew components server-side
-# and the `common` crate, `yew/ssr`, and `tokio` are compiled in.
+# and the `common` crate and `yew/ssr` are compiled in.
 # Without this feature the generator is a plain Tera + Markdown SSG with no
 # Yew/WASM dependency, and `island()` calls in templates produce empty output.
-islands = ["dep:common", "dep:yew", "dep:tokio"]
+islands = ["dep:common", "dep:yew"]
 
 [dependencies]
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
@@ -39,10 +39,24 @@ walkdir = "2.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# ── Async runtime (required for serve command and islands) ────────────────────
+tokio = { version = "1.50.0", features = ["full"] }
+
+# ── Dev server dependencies ───────────────────────────────────────────────────
+axum = { version = "0.8", features = ["ws"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "set-header"] }
+tokio-stream = "0.1"
+notify = "6.1"
+futures-util = "0.3"
+webbrowser = "1.0"
+
 # ── Islands feature dependencies (compiled only with --features islands) ──────
 common = { path = "../common", optional = true }
-tokio  = { version = "1.50.0", features = ["full"], optional = true }
-yew    = { version = "0.23.0", features = ["ssr"], optional = true }
+yew = { version = "0.23.0", features = ["ssr"], optional = true }
 
 [dev-dependencies]
 tempfile = "3.10"
+reqwest = { version = "0.11", features = ["json"] }
+tokio-tungstenite = "0.21"

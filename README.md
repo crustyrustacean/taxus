@@ -13,7 +13,8 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Template System**: Flexible Tera-based templates with inheritance and custom context; `{{ island(component="...", ...) | safe }}` function for embedding islands
 - **Asset Processing**: SCSS compilation and static file copying with exclusion patterns
 - **Build System**: Unified build pipeline with `SiteBuilder` for orchestrating all stages
-- **CLI Interface**: Command-line interface with clap — `build`, `clean`, `init`, and `routes` subcommands with rich help text and actionable error messages
+- **CLI Interface**: Command-line interface with clap — `build`, `clean`, `init`, `routes`, and `serve` subcommands with rich help text and actionable error messages
+- **Development Server**: Hot-reloading local server with WebSocket-based live reload and file watching
 - **Structured Logging**: Integrated `tracing` crate for structured, filterable logs with `--verbose` and `--quiet` CLI flags
 - **SCSS Styling**: Modern styling with SCSS support
 - **Multi-crate Workspace**: Organized code structure with separate crates for client, common, and generator
@@ -42,7 +43,8 @@ yew-ssg/
 │   │   ├── routes/         # RouteDiscovery, RouteRegistry, RouteInfo
 │   │   ├── templates/      # TemplateRenderer trait, TeraRenderer, TemplateContext
 │   │   ├── init/           # InitScaffolder, InitOptions, InitReport
-│   │   └── bin/main.rs     # CLI binary (build, clean, init, routes subcommands)
+│   │   ├── serve/          # DevServer, file watcher, WebSocket live reload
+│   │   └── bin/main.rs     # CLI binary (build, clean, init, routes, serve subcommands)
 │   └── tests/              # Integration tests + fixture sites
 └── docs/                   # mdBook documentation
 ```
@@ -161,6 +163,38 @@ cargo run -- clean
 cargo run -- clean --dir /path/to/site
 ```
 
+### Development Server
+
+Start a local development server with hot reloading:
+
+```bash
+# Start server on default port (3000)
+cargo run -- serve
+
+# Start with custom port
+cargo run -- serve --port 8080
+
+# Start and open browser automatically
+cargo run -- serve --open
+
+# Serve from a different directory
+cargo run -- serve --site-dir /path/to/site
+
+# Combined options
+cargo run -- serve --port 8080 --open --site-dir my-site
+```
+
+The development server features:
+- **Hot Reloading**: Automatically rebuilds and refreshes the browser when content, templates, styles, or static files change
+- **WebSocket Live Reload**: Instant browser refresh via WebSocket connection
+- **Error Overlay**: Build errors are displayed directly in the browser
+- **Graceful Shutdown**: Press Ctrl+C to stop the server cleanly
+
+Short options are available:
+- `-p` for `--port`
+- `-s` for `--site-dir`
+- `-o` for `--open`
+
 ### Logging and Diagnostics
 
 The generator uses structured logging via the `tracing` crate. Control log output with CLI flags or the `RUST_LOG` environment variable:
@@ -239,8 +273,8 @@ cd client && trunk serve
 - **client**: WASM hydration client — finds island mount points in the DOM, deserializes their props, calls `yew::Renderer::hydrate()` on each
 - **common**: Shared Yew components — compiled into both the `generator` binary (for SSR) and the `client` WASM bundle (for hydration)
 - **generator**: Static site generator library and binary
-  - Library (`yew_ssg_lib`): Configuration, content parsing, route discovery, Tera rendering, asset processing, init scaffolding
-  - Binary (`yew-ssg`): CLI with `build`, `clean`, `init`, and `routes` subcommands
+  - Library (`yew_ssg_lib`): Configuration, content parsing, route discovery, Tera rendering, asset processing, init scaffolding, dev server
+  - Binary (`yew-ssg`): CLI with `build`, `clean`, `init`, `routes`, and `serve` subcommands
 
 ## Islands Architecture
 

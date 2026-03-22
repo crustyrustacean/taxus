@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.22] - 2026-03-22
+
+### Added
+
+#### Development Server with Hot Reloading
+
+- **`serve` command**: New command for local development with live reload support
+  - `yew-ssg serve`: Starts a development server on port 3000
+  - `--port` / `-p`: Custom port selection
+  - `--site-dir`: Serve from a different directory
+  - `--open`: Automatically open browser on start
+  - WebSocket-based live reload with instant browser refresh on file changes
+
+- **File watching**: Automatic rebuild on content, template, style, config, and static file changes
+  - Uses `notify` 6.x for cross-platform file system watching
+  - 100ms debounce to batch rapid changes
+  - Change categorization (Content, Template, Style, Static, Config, Unknown)
+
+- **Browser integration**:
+  - Live reload script injected into HTML pages
+  - Error overlay displays build failures in the browser
+  - Graceful error recovery when issues are fixed
+
+- **Server features**:
+  - Built on `axum` 0.8 (hyper-based) with WebSocket support
+  - Custom `HtmlInjectService` for proper Content-Type handling
+  - Dedicated `/favicon.ico` route with caching headers
+  - Graceful shutdown via Ctrl+C
+
+- **Dependencies added**:
+  - `axum = "0.8"` with WebSocket support
+  - `axum-extra = "0.10"` with typed-header feature
+  - `tower = "0.5"` for service utilities
+  - `tower-http = "0.6"` for filesystem serving
+  - `tokio-stream = "0.1"` for async streams
+  - `notify = "6.1"` for file watching
+  - `futures-util = "0.3"` for async utilities
+  - `webbrowser = "1.0"` for cross-platform browser opening
+
+### Changed
+
+- **`init` command output**: Now recommends `yew-ssg serve --open` after scaffolding
+
 ## [0.1.21] - 2026-03-21
 
 ### Added

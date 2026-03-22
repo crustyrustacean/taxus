@@ -197,6 +197,39 @@ enum Commands {
         #[arg(short, long, default_value = ".", value_name = "PATH")]
         dir: PathBuf,
     },
+
+    /// Start a development server with live reload.
+    ///
+    /// Serves the output directory and watches for file changes. When content,
+    /// templates, styles, or configuration files change, the site is rebuilt
+    /// and connected browsers are automatically reloaded via WebSocket.
+    ///
+    /// Examples:
+    ///   yew-ssg serve
+    ///   yew-ssg serve .
+    ///   yew-ssg serve --port 8080
+    ///   yew-ssg serve ./my-site
+    Serve {
+        /// Root directory of the site (must contain site.toml).
+        #[arg(default_value = ".", value_name = "PATH")]
+        dir: PathBuf,
+
+        /// Port to listen on.
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+
+        /// Print detailed progress for each build stage.
+        #[arg(short, long, conflicts_with = "quiet")]
+        verbose: bool,
+
+        /// Suppress all output except errors.
+        #[arg(short, long, conflicts_with = "verbose")]
+        quiet: bool,
+
+        /// Open the site in a browser after starting the server.
+        #[arg(short, long)]
+        open: bool,
+    },
 }
 
 fn main() {
@@ -205,6 +238,9 @@ fn main() {
     // Initialize tracing based on command and flags
     match &cli.command {
         Commands::Build { verbose, quiet, .. } => {
+            init_tracing(*verbose, *quiet);
+        }
+        Commands::Serve { verbose, quiet, .. } => {
             init_tracing(*verbose, *quiet);
         }
         _ => {
@@ -284,7 +320,84 @@ fn main() {
                 std::process::exit(1);
             }
         },
+        Commands::Serve {
+            dir,
+            port,
+            verbose: _,
+            quiet,
+            open,
+        } => {
+            match run_serve(&ServeArgs {
+                dir,
+                port,
+                quiet,
+                open,
+            }) {
+                Ok(()) => {}
+                Err(e) => {
+                    render_error(&e);
+                    std::process::exit(1);
+                }
+            }
+        }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Serve
+// ---------------------------------------------------------------------------
+
+struct ServeArgs {
+    dir: PathBuf,
+    port: u16,
+    quiet: bool,
+    open: bool,
+}
+
+#[tokio::main]
+async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
+    use yew_ssg_lib::serve::{DevServer, DevServerConfig};
+
+    // Load config to get output directory
+    let config = yew_ssg_lib::SiteConfig::from_dir(&args.dir)?;
+
+    // Create server configuration
+    let server_config = DevServerConfig::default()
+        .with_port(args.port)
+        .with_output_dir(config.build.output_dir.clone())
+        .with_site_dir(args.dir.clone());
+
+    if !args.quiet {
+        println!("Starting development server...");
+        println!("Site: {}", args.dir.display());
+        println!("Output: {}", config.build.output_dir.display());
+        println!("Port: {}", args.port);
+    }
+
+    // Create and run the server
+    let server = DevServer::new(server_config);
+
+    if !args.quiet {
+        println!("\n  Static site: http://localhost:{}", args.port);
+        println!("  Press Ctrl+C to stop\n");
+    }
+
+    // Open browser if requested
+    if args.open {
+        let url = format!("http://localhost:{}", args.port);
+        if let Err(e) = webbrowser::open(&url) {
+            eprintln!("Warning: Failed to open browser: {}", e);
+        }
+    }
+
+    server.run().await.map_err(|e| {
+        GeneratorError::Serve(yew_ssg_lib::serve::ServeError::Server(format!(
+            "Server error: {}",
+            e
+        )))
+    })?;
+
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

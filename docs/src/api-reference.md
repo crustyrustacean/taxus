@@ -646,6 +646,88 @@ Default template content for new sites.
 | `site_toml(name: &str, base_url: &str) -> String` | Generate site.toml content |
 | `index_md(site_name: &str) -> String` | Generate _index.md content |
 
+### `serve`
+
+Development server with hot reloading.
+
+#### `DevServer`
+
+Main server type for serving the site with live reload.
+
+```rust
+pub struct DevServer { /* ... */ }
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `new(config: ServeConfig) -> Self` | Create server with configuration |
+| `run(&self) -> Result<()>` | Start the server (blocking) |
+
+#### `ServeConfig`
+
+Configuration for the development server.
+
+```rust
+pub struct ServeConfig {
+    pub site_dir: PathBuf,
+    pub port: u16,
+    pub open: bool,
+}
+```
+
+##### Methods
+
+| Method | Description |
+|--------|-------------|
+| `default() -> Self` | Create with default values (port 3000, current dir) |
+| `with_site_dir<P: Into<PathBuf>>(self, dir: P) -> Self` | Set site directory |
+| `with_port(self, port: u16) -> Self` | Set port |
+| `with_open(self, open: bool) -> Self` | Set auto-open browser |
+
+#### `ServeError`
+
+Errors that can occur during serving.
+
+```rust
+pub enum ServeError {
+    Io(io::Error),
+    PortInUse { port: u16 },
+    BuildFailed(String),
+    WatcherFailed(String),
+    ConfigNotFound(PathBuf),
+    WebSocket(String),
+}
+```
+
+#### `ChangeType`
+
+Categorization of file changes for rebuild decisions.
+
+```rust
+pub enum ChangeType {
+    Content,    // .md files in content/
+    Template,   // .html files in templates/
+    Style,      // .scss/.sass files in styles/
+    Static,     // files in static/
+    Config,     // site.toml
+    Unknown,    // other files
+}
+```
+
+#### `WebSocketMessage`
+
+Messages sent over WebSocket for live reload.
+
+```rust
+pub enum WebSocketMessage {
+    Connected,
+    Reload { url: String },
+    Error { message: String },
+}
+```
+
 ## Re-exports
 
 The library re-exports commonly used types:
@@ -668,6 +750,9 @@ pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 
 // Init
 pub use init::{DefaultTemplates, InitOptions, InitReport, InitScaffolder};
+
+// Serve
+pub use serve::{ChangeType, DevServer, ServeConfig, ServeError, WebSocketMessage};
 
 // Errors
 pub use error::{AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError, TemplateError};
@@ -969,7 +1054,7 @@ fn process_assets() -> Result<()> {
 
 ## CLI Reference
 
-The `yew-ssg` binary provides four subcommands.
+The `yew-ssg` binary provides five subcommands.
 
 ### `yew-ssg build`
 
@@ -1057,6 +1142,26 @@ Routes for "My Site"
   Total: 4 routes (2 pages, 2 sections)
 ```
 
+### `yew-ssg serve`
+
+Start a local development server with hot reloading.
+
+```
+yew-ssg serve [OPTIONS]
+
+Options:
+  -p, --port <PORT>       Port to listen on [default: 3000]
+  -s, --site-dir <PATH>   Site directory to serve [default: .]
+  -o, --open              Open browser automatically
+  -h, --help              Print help
+```
+
+The serve command:
+1. Builds the site if not already built
+2. Starts an HTTP server on the specified port
+3. Watches for file changes in content, templates, styles, and static directories
+4. Automatically rebuilds and refreshes connected browsers on changes
+
 ### Error Hints
 
 When a command fails, the CLI prints an actionable hint alongside the error:
@@ -1069,11 +1174,13 @@ When a command fails, the CLI prints an actionable hint alongside the error:
 
 ## Feature Flags
 
-The library currently has no feature flags. Future versions may add:
+The library has one feature flag:
 
-- `async`: Async API support
-- `cli`: CLI utilities
-- `serve`: Development server
+| Feature | Default | Description |
+|---|---|---|
+| `islands` | off | Enables Yew SSR + `tokio` + `common` crate compilation; activates `island()` Tera function |
+
+The development server (`serve` command) is always available and does not require a feature flag.
 
 ## Versioning
 

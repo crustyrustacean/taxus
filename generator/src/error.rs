@@ -5,6 +5,8 @@
 
 use std::path::PathBuf;
 
+use crate::serve::ServeError;
+
 /// Main error type for the generator library.
 #[derive(Debug, thiserror::Error)]
 pub enum GeneratorError {
@@ -35,6 +37,10 @@ pub enum GeneratorError {
     /// Init-related errors
     #[error("Init error: {0}")]
     Init(#[from] InitError),
+
+    /// Serve-related errors
+    #[error("Serve error: {0}")]
+    Serve(#[from] ServeError),
 
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]

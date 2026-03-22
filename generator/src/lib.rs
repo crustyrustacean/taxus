@@ -32,6 +32,7 @@ pub mod content;
 pub mod error;
 pub mod init;
 pub mod routes;
+pub mod serve;
 pub mod templates;
 pub mod tracing;
 

@@ -145,7 +145,7 @@ impl InitReport {
         println!("  Edit site.toml to set your site name and base URL");
         println!("  Add content to the content/ directory");
         println!("  Customize templates in templates/");
-        println!("  Run: yew-ssg build --verbose");
+        println!("  Run: yew-ssg serve --open");
     }
 }
 

@@ -10,5 +10,6 @@
 - [Content](./content.md)
 - [Templates](./templates.md)
 - [Styling](./styling.md)
+- [Development Server](./serve.md)
 - [Development](./development.md)
 - [API Reference](./api-reference.md)
