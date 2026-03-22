@@ -16,6 +16,8 @@ pub struct BuildReport {
     pub sections_rendered: usize,
     /// Number of drafts skipped
     pub drafts_skipped: usize,
+    /// Number of URLs in sitemap
+    pub sitemap_urls: usize,
     /// Asset processing report
     pub assets: AssetReport,
     /// Build duration
@@ -33,6 +35,7 @@ impl BuildReport {
             pages_rendered: 0,
             sections_rendered: 0,
             drafts_skipped: 0,
+            sitemap_urls: 0,
             assets: AssetReport::new(),
             duration: Duration::ZERO,
             warnings: Vec::new(),

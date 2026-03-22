@@ -13,6 +13,8 @@ A Rust-based static site generator built with [Yew](https://yew.rs/), designed f
 - **Blog Features**: Summary/excerpt extraction, reading time, word count, and custom slugs
 - **Pagination**: Split large content collections across multiple pages with configurable sorting
 - **RSS/Atom Feeds**: Automatic feed generation for content syndication
+- **Sitemap Generation**: Automatic sitemap.xml generation with priorities and lastmod dates
+- **Robots.txt**: Automatic robots.txt generation with sitemap reference
 - **Taxonomies**: Tags, categories, and series for content organization with automatic taxonomy pages
 - **Route System**: Automatic route discovery from content directory structure
 - **Template System**: Flexible Tera-based templates with inheritance and custom context; `{{ island(component="...", ...) | safe }}` function for embedding islands

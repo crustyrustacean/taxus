@@ -10,6 +10,8 @@
 - [Content](./content.md)
   - [Pagination](./content.md#pagination)
   - [RSS/Atom Feeds](./content.md#rssatom-feeds)
+  - [Sitemap Generation](./content.md#sitemap-generation)
+  - [Robots.txt Generation](./content.md#robotstxt-generation)
 - [Templates](./templates.md)
 - [Styling](./styling.md)
 - [Development Server](./serve.md)

@@ -713,6 +713,91 @@ Each feed entry includes:
 | Published   | Page `date` field                            |
 | Updated     | Page `updated` field (Atom only)             |
 
+## Sitemap Generation
+
+Yew SSG automatically generates a `sitemap.xml` file for SEO optimization.
+
+### Automatic Sitemap
+
+The sitemap is generated during every build with the following rules:
+
+- **All routes** are included (pages and sections)
+- **Draft pages** are excluded
+- **URLs** are constructed from `base_url` + route path
+- **Last modification date** is included when a page has a `date` field
+
+### Sitemap Entry Fields
+
+| Field          | Value                                               |
+| -------------- | --------------------------------------------------- |
+| `<loc>`        | Full URL (base_url + path)                          |
+| `<lastmod>`    | Page date in YYYY-MM-DD format (if available)       |
+| `<changefreq>` | `weekly` for home, `monthly` for others             |
+| `<priority>`   | `1.0` for home, `0.8` for sections, `0.7` for pages |
+
+### Example Sitemap
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://example.com/blog/</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://example.com/blog/first-post/</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
+```
+
+### Sitemap URL
+
+After generation, the sitemap is available at:
+
+- `https://example.com/sitemap.xml`
+
+## Robots.txt Generation
+
+Yew SSG automatically generates a `robots.txt` file for search engine crawlers.
+
+### Default Behavior
+
+If no `static/robots.txt` file exists, a default one is generated:
+
+```text
+User-agent: *
+Allow: /
+
+Sitemap: https://example.com/sitemap.xml
+```
+
+### Custom Robots.txt
+
+To provide your own `robots.txt`, create it in the `static/` directory:
+
+```text
+# static/robots.txt
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /private/
+
+Sitemap: https://example.com/sitemap.xml
+```
+
+When a custom `static/robots.txt` exists, the automatic generation is skipped and your file is copied as-is.
+
 ## Future Enhancements
 
 Planned features for content handling:

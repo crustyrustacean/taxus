@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.27] - 2026-03-22
+
+### Added
+
+#### Sitemap Generation
+
+- **Sitemap.xml Generation**: Automatic sitemap generation for SEO optimization
+  - All routes (pages and sections) are included
+  - Draft pages are excluded from the sitemap
+  - URLs constructed from `base_url` + route path
+  - `<lastmod>` dates included when pages have a `date` field
+  - Priority: home=1.0, sections=0.8, pages=0.7
+  - Changefreq: weekly for home, monthly for others
+
+- **Build Pipeline Integration**: New Stage 7 for sitemap generation
+  - Runs after robots.txt generation
+  - Returns `GeneratedSitemap` with content and URL count
+  - Respects `dry_run` mode
+
+#### Robots.txt Generation
+
+- **Robots.txt Generation**: Automatic robots.txt for search engine crawlers
+  - Default content allows all crawlers
+  - Includes sitemap URL reference
+  - Skipped if `static/robots.txt` exists (custom robots.txt preserved)
+
+- **Build Pipeline Integration**: New Stage 6 for robots.txt generation
+  - Runs after page rendering
+  - Respects `dry_run` mode
+
+### Changed
+
+- **Build Pipeline**: Added Stages 6 and 7 (now 11 stages total)
+  - Stage 6: Generate robots.txt
+  - Stage 7: Generate sitemap.xml
+  - Feeds and assets shifted to stages 9 and 10
+- **BuildReport**: Added `sitemap_urls` field to track sitemap entry count
+
 ## [0.1.26] - 2026-03-22
 
 ### Added

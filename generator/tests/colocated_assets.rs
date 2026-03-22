@@ -6,8 +6,8 @@
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
-use yew_ssg_lib::build::pipeline::copy_colocated_assets;
 use yew_ssg_lib::assets::AssetReport;
+use yew_ssg_lib::build::pipeline::copy_colocated_assets;
 
 // =============================================================================
 // Basic Co-located Asset Tests
