@@ -138,6 +138,30 @@ fn test_render_section_template() {
 }
 
 #[test]
+fn test_render_section_with_word_count_and_reading_time() {
+    let mut renderer = TeraRenderer::new().unwrap();
+
+    // Register a section template that uses word_count and reading_time
+    renderer
+        .register_template(
+            "section.html",
+            r#"<section><h1>{{ section.title }}</h1>{% for p in section.pages %}<article><a href="{{ p.path }}">{{ p.title }}</a><span class="words">{{ p.word_count }} words</span><span class="time">{{ p.reading_time }} min read</span></article>{% endfor %}</section>"#,
+        )
+        .unwrap();
+
+    let ctx = TemplateContext::new(create_test_site_context())
+        .with_section(create_test_section_context());
+
+    let result = renderer.render("section.html", &ctx);
+    assert!(result.is_ok());
+
+    let html = result.unwrap();
+    // Check that word_count and reading_time are rendered
+    assert!(html.contains("3 words"), "Expected word count in output: {}", html);
+    assert!(html.contains("1 min read"), "Expected reading time in output: {}", html);
+}
+
+#[test]
 fn test_template_with_site_variables() {
     let mut renderer = TeraRenderer::new().unwrap();
 

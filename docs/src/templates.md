@@ -103,6 +103,8 @@ Section templates render lists of pages:
         {% if page.date %}
         <time datetime="{{ page.date }}">{{ page.date }}</time>
         {% endif %}
+        <span class="reading-time">{{ page.reading_time }} min read</span>
+        <span class="word-count">{{ page.word_count }} words</span>
       </a>
       {% if page.description %}
       <p class="description">{{ page.description }}</p>
@@ -127,16 +129,18 @@ Section templates render lists of pages:
 
 ### Page Context
 
-| Variable           | Type    | Description                                       |
-| ------------------ | ------- | ------------------------------------------------- |
-| `page.title`       | String  | Page title from frontmatter                       |
-| `page.description` | String? | Optional page description                         |
-| `page.path`        | String  | URL path (e.g., "/about/")                        |
-| `page.permalink`   | String  | Absolute URL (e.g., "https://example.com/about/") |
-| `page.content`     | String  | Rendered HTML content                             |
-| `page.raw_content` | String  | Raw markdown content                              |
-| `page.date`        | String? | Publication date (ISO 8601)                       |
-| `page.draft`       | Boolean | Whether page is a draft                           |
+| Variable            | Type    | Description                                       |
+| ------------------- | ------- | ------------------------------------------------- |
+| `page.title`        | String  | Page title from frontmatter                       |
+| `page.description`  | String? | Optional page description                         |
+| `page.path`         | String  | URL path (e.g., "/about/")                        |
+| `page.permalink`    | String  | Absolute URL (e.g., "https://example.com/about/") |
+| `page.content`      | String  | Rendered HTML content                             |
+| `page.raw_content`  | String  | Raw markdown content                              |
+| `page.date`         | String? | Publication date (ISO 8601)                       |
+| `page.draft`        | Boolean | Whether page is a draft                           |
+| `page.word_count`   | Number  | Word count for the page                           |
+| `page.reading_time` | Number  | Estimated reading time in minutes                 |
 
 ### Section Context
 
