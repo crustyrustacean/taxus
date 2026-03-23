@@ -648,6 +648,12 @@ pub fn write_feeds(feeds: &[GeneratedFeed], output_dir: &Path, dry_run: bool) ->
         return Ok(());
     }
 
+    // Create output directory if it doesn't exist
+    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+        path: output_dir.to_path_buf(),
+        source: e,
+    })?;
+
     for feed in feeds {
         let output_path = output_dir.join(&feed.filename);
 
@@ -714,6 +720,12 @@ pub fn write_robots(robots: &GeneratedRobots, output_dir: &Path, dry_run: bool) 
         debug!("Dry run - skipping robots.txt write");
         return Ok(());
     }
+
+    // Create output directory if it doesn't exist
+    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+        path: output_dir.to_path_buf(),
+        source: e,
+    })?;
 
     let output_path = output_dir.join("robots.txt");
 
@@ -850,6 +862,12 @@ pub fn write_sitemap(sitemap: &GeneratedSitemap, output_dir: &Path, dry_run: boo
         debug!("Dry run - skipping sitemap.xml write");
         return Ok(());
     }
+
+    // Create output directory if it doesn't exist
+    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+        path: output_dir.to_path_buf(),
+        source: e,
+    })?;
 
     let output_path = output_dir.join("sitemap.xml");
 
@@ -1745,5 +1763,163 @@ Content
             result,
             "Check [external](https://example.com) and [internal](/about/) links."
         );
+    }
+
+    // ============================================
+    // Output Directory Creation Tests
+    // ============================================
+
+    #[test]
+    fn test_write_robots_creates_output_dir() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        // Use a non-existent output directory
+        let output_dir = temp_dir.path().join("dist");
+
+        // Ensure output directory doesn't exist
+        assert!(!output_dir.exists());
+
+        let robots = GeneratedRobots {
+            content: "User-agent: *\nAllow: /\n".to_string(),
+        };
+
+        // Write robots.txt - should create the directory
+        let result = write_robots(&robots, &output_dir, false);
+        assert!(result.is_ok());
+
+        // Verify directory was created
+        assert!(output_dir.exists());
+
+        // Verify file was written
+        assert!(output_dir.join("robots.txt").exists());
+    }
+
+    #[test]
+    fn test_write_robots_dry_run() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let output_dir = temp_dir.path().join("dist");
+
+        let robots = GeneratedRobots {
+            content: "User-agent: *\nAllow: /\n".to_string(),
+        };
+
+        // Dry run should not write anything
+        let result = write_robots(&robots, &output_dir, true);
+        assert!(result.is_ok());
+
+        // Verify directory was NOT created
+        assert!(!output_dir.exists());
+    }
+
+    #[test]
+    fn test_write_sitemap_creates_output_dir() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        // Use a non-existent output directory
+        let output_dir = temp_dir.path().join("dist");
+
+        // Ensure output directory doesn't exist
+        assert!(!output_dir.exists());
+
+        let sitemap = GeneratedSitemap {
+            content: r#"<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>"#
+                .to_string(),
+            url_count: 0,
+        };
+
+        // Write sitemap.xml - should create the directory
+        let result = write_sitemap(&sitemap, &output_dir, false);
+        assert!(result.is_ok());
+
+        // Verify directory was created
+        assert!(output_dir.exists());
+
+        // Verify file was written
+        assert!(output_dir.join("sitemap.xml").exists());
+    }
+
+    #[test]
+    fn test_write_sitemap_dry_run() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let output_dir = temp_dir.path().join("dist");
+
+        let sitemap = GeneratedSitemap {
+            content: r#"<?xml version="1.0" encoding="UTF-8"?>"#.to_string(),
+            url_count: 0,
+        };
+
+        // Dry run should not write anything
+        let result = write_sitemap(&sitemap, &output_dir, true);
+        assert!(result.is_ok());
+
+        // Verify directory was NOT created
+        assert!(!output_dir.exists());
+    }
+
+    #[test]
+    fn test_write_feeds_creates_output_dir() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        // Use a non-existent output directory
+        let output_dir = temp_dir.path().join("dist");
+
+        // Ensure output directory doesn't exist
+        assert!(!output_dir.exists());
+
+        let feeds = vec![GeneratedFeed {
+            filename: "feed.xml".to_string(),
+            content: r#"<?xml version="1.0" encoding="UTF-8"?><rss></rss>"#.to_string(),
+        }];
+
+        // Write feeds - should create the directory
+        let result = write_feeds(&feeds, &output_dir, false);
+        assert!(result.is_ok());
+
+        // Verify directory was created
+        assert!(output_dir.exists());
+
+        // Verify file was written
+        assert!(output_dir.join("feed.xml").exists());
+    }
+
+    #[test]
+    fn test_write_feeds_dry_run() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let output_dir = temp_dir.path().join("dist");
+
+        let feeds = vec![GeneratedFeed {
+            filename: "feed.xml".to_string(),
+            content: r#"<?xml version="1.0" encoding="UTF-8"?><rss></rss>"#.to_string(),
+        }];
+
+        // Dry run should not write anything
+        let result = write_feeds(&feeds, &output_dir, true);
+        assert!(result.is_ok());
+
+        // Verify directory was NOT created
+        assert!(!output_dir.exists());
+    }
+
+    #[test]
+    fn test_write_feeds_empty() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let output_dir = temp_dir.path().join("dist");
+
+        // Empty feeds list should succeed
+        let result = write_feeds(&[], &output_dir, false);
+        assert!(result.is_ok());
     }
 }
