@@ -8,8 +8,8 @@ use crate::content::{Page, TaxonomyKind, TaxonomyMap};
 use crate::error::{BuildError, GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::{
-    PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
-    TemplateRenderer, TeraRenderer, compute_permalink,
+    PageContext, SectionContext, SiteContext, TaxonomyListContext, TaxonomyTermContext,
+    TemplateContext, TemplateRenderer, TeraRenderer, compute_permalink,
 };
 use pulldown_cmark::{Parser, html::push_html};
 use std::fs;
@@ -110,7 +110,12 @@ pub fn render_pages(
     let mut rendered = Vec::new();
 
     for processed_page in processed {
-        let template_name = processed_page.page.template();
+        // Use section.html as default for sections, page.html for pages
+        let template_name = if processed_page.route.is_section() {
+            processed_page.page.frontmatter.template.as_deref().unwrap_or("section.html")
+        } else {
+            processed_page.page.template()
+        };
 
         // Use custom slug if defined, otherwise use the discovered route path
         let url_path = if processed_page.page.frontmatter.slug.is_some() {
@@ -144,7 +149,73 @@ pub fn render_pages(
             series: processed_page.page.series().map(|s| s.to_string()),
         };
 
-        let context = TemplateContext::new(site_context.clone()).with_page(page_context);
+        // Build context, adding section context for section routes
+        // Note: Root index ("/") is a special case - it doesn't list all site pages
+        let is_root_index = processed_page.route.path == "/";
+        let context = if processed_page.route.is_section() {
+            // Find all child pages for this section (skip for root index)
+            let mut child_pages: Vec<PageContext> = if is_root_index {
+                Vec::new()
+            } else {
+                processed
+                    .iter()
+                    .filter(|p| {
+                        p.route.is_page()
+                            && p.route.path.starts_with(&processed_page.route.path)
+                            && p.route.path != processed_page.route.path
+                    })
+                    .map(|p| {
+                        let child_url_path = if p.page.frontmatter.slug.is_some() {
+                            p.page.url_path()
+                        } else {
+                            p.route.path.clone()
+                        };
+                        let child_permalink = compute_permalink(&site_context.base_url, &child_url_path);
+                        PageContext {
+                            title: p.page.frontmatter.title.clone(),
+                            description: p.page.frontmatter.description.clone(),
+                            path: child_url_path,
+                            permalink: child_permalink,
+                            content: p.html_content.clone(),
+                            raw_content: p.page.raw_content.clone(),
+                            date: p.page.frontmatter.date.map(|d| d.to_string()),
+                            draft: p.page.is_draft(),
+                            summary: p.page.summary(),
+                            word_count: p.page.word_count(),
+                            reading_time: p.page.reading_time(),
+                            tags: p.page.tags().to_vec(),
+                            categories: p.page.categories().to_vec(),
+                            series: p.page.series().map(|s| s.to_string()),
+                        }
+                    })
+                    .collect()
+            };
+
+            // Sort by date, newest first (pages with dates come before pages without dates)
+            child_pages.sort_by(|a, b| {
+                match (&a.date, &b.date) {
+                    (Some(date_a), Some(date_b)) => date_b.cmp(date_a),
+                    (Some(_), None) => std::cmp::Ordering::Less,
+                    (None, Some(_)) => std::cmp::Ordering::Greater,
+                    (None, None) => std::cmp::Ordering::Equal,
+                }
+            });
+
+            let section_context = SectionContext {
+                title: processed_page.page.frontmatter.title.clone(),
+                description: processed_page.page.frontmatter.description.clone(),
+                path: url_path.clone(),
+                content: Some(processed_page.html_content.clone()),
+                pages: child_pages,
+                pagination: None,
+            };
+
+            TemplateContext::new(site_context.clone())
+                .with_page(page_context)
+                .with_section(section_context)
+        } else {
+            TemplateContext::new(site_context.clone()).with_page(page_context)
+        };
 
         // Render the template
         let content = templates.render(template_name, &context).map_err(|e| {
@@ -1921,5 +1992,269 @@ Content
         // Empty feeds list should succeed
         let result = write_feeds(&[], &output_dir, false);
         assert!(result.is_ok());
+    }
+
+    // ============================================
+    // Section Context Tests
+    // ============================================
+
+    #[test]
+    fn test_render_pages_section_with_child_pages() {
+        use crate::content::Frontmatter;
+        use crate::routes::{RouteInfo, RouteKind};
+        use crate::templates::TeraRenderer;
+        use std::path::PathBuf;
+
+        // Create a simple template that outputs section pages
+        let mut templates = TeraRenderer::new().unwrap();
+        templates
+            .register_template(
+                "page.html",
+                r#"<h1>{{ page.title }}</h1>"#,
+            )
+            .unwrap();
+        templates
+            .register_template(
+                "section.html",
+                r#"<h1>{{ page.title }}</h1>
+<ul>
+{% for p in section.pages %}
+<li>{{ p.title }} - {{ p.date | default(value="no date") }}</li>
+{% endfor %}
+</ul>"#,
+            )
+            .unwrap();
+
+        let site_context = SiteContext {
+            name: "Test Site".to_string(),
+            base_url: "https://example.com".to_string(),
+            description: None,
+            author: None,
+        };
+
+        // Create a section route (blog index)
+        let section_route = RouteInfo::new(
+            "/blog/".to_string(),
+            PathBuf::from("blog/_index.md"),
+            PathBuf::from("blog/index.html"),
+            RouteKind::Section,
+        )
+        .unwrap();
+
+        // Create child page routes
+        let page1_route = RouteInfo::new(
+            "/blog/first-post/".to_string(),
+            PathBuf::from("blog/first-post.md"),
+            PathBuf::from("blog/first-post/index.html"),
+            RouteKind::Page,
+        )
+        .unwrap();
+
+        let page2_route = RouteInfo::new(
+            "/blog/second-post/".to_string(),
+            PathBuf::from("blog/second-post.md"),
+            PathBuf::from("blog/second-post/index.html"),
+            RouteKind::Page,
+        )
+        .unwrap();
+
+        // Create processed pages
+        let section_page = ProcessedPage {
+            route: section_route,
+            page: Page {
+                frontmatter: Frontmatter {
+                    title: "Blog".to_string(),
+                    description: None,
+                    date: None,
+                    draft: false,
+                    slug: None,
+                    template: Some("section.html".to_string()),
+                    summary: None,
+                    aliases: vec![],
+                    tags: vec![],
+                    categories: vec![],
+                    series: None,
+                    extra: None,
+                    sort_by: Default::default(),
+                    paginate_by: 0,
+                    paginate_template: None,
+                    weight: 0,
+                    updated: None,
+                },
+                path: "/blog/".to_string(),
+                source: PathBuf::from("blog/_index.md"),
+                raw_content: "Blog index".to_string(),
+                content: None,
+            },
+            html_content: "<p>Blog index</p>".to_string(),
+        };
+
+        let page1 = ProcessedPage {
+            route: page1_route,
+            page: Page {
+                frontmatter: Frontmatter {
+                    title: "First Post".to_string(),
+                    description: None,
+                    date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15),
+                    draft: false,
+                    slug: None,
+                    template: None,
+                    summary: None,
+                    aliases: vec![],
+                    tags: vec![],
+                    categories: vec![],
+                    series: None,
+                    extra: None,
+                    sort_by: Default::default(),
+                    paginate_by: 0,
+                    paginate_template: None,
+                    weight: 0,
+                    updated: None,
+                },
+                path: "/blog/first-post/".to_string(),
+                source: PathBuf::from("blog/first-post.md"),
+                raw_content: "First post content".to_string(),
+                content: None,
+            },
+            html_content: "<p>First post content</p>".to_string(),
+        };
+
+        let page2 = ProcessedPage {
+            route: page2_route,
+            page: Page {
+                frontmatter: Frontmatter {
+                    title: "Second Post".to_string(),
+                    description: None,
+                    date: chrono::NaiveDate::from_ymd_opt(2024, 2, 20),
+                    draft: false,
+                    slug: None,
+                    template: None,
+                    summary: None,
+                    aliases: vec![],
+                    tags: vec![],
+                    categories: vec![],
+                    series: None,
+                    extra: None,
+                    sort_by: Default::default(),
+                    paginate_by: 0,
+                    paginate_template: None,
+                    weight: 0,
+                    updated: None,
+                },
+                path: "/blog/second-post/".to_string(),
+                source: PathBuf::from("blog/second-post.md"),
+                raw_content: "Second post content".to_string(),
+                content: None,
+            },
+            html_content: "<p>Second post content</p>".to_string(),
+        };
+
+        let processed = vec![section_page, page1, page2];
+
+        // Render pages
+        let result = render_pages(&processed, &templates, &site_context, false).unwrap();
+
+        // Find the section page
+        let section_rendered = result
+            .iter()
+            .find(|r| r.route.path == "/blog/")
+            .expect("Section page should be rendered");
+
+        // Verify the section context was populated
+        assert!(section_rendered.content.contains("Second Post"));
+        assert!(section_rendered.content.contains("First Post"));
+
+        // Verify sorting: newest first (Second Post should appear before First Post)
+        let second_pos = section_rendered.content.find("Second Post").unwrap();
+        let first_pos = section_rendered.content.find("First Post").unwrap();
+        assert!(
+            second_pos < first_pos,
+            "Second Post (newer) should appear before First Post (older)"
+        );
+    }
+
+    #[test]
+    fn test_render_pages_section_without_child_pages() {
+        use crate::content::Frontmatter;
+        use crate::routes::{RouteInfo, RouteKind};
+        use crate::templates::TeraRenderer;
+        use std::path::PathBuf;
+
+        // Create a simple template
+        let mut templates = TeraRenderer::new().unwrap();
+        templates
+            .register_template(
+                "section.html",
+                r#"<h1>{{ page.title }}</h1>
+<ul>
+{% for p in section.pages %}
+<li>{{ p.title }}</li>
+{% endfor %}
+</ul>"#,
+            )
+            .unwrap();
+
+        let site_context = SiteContext {
+            name: "Test Site".to_string(),
+            base_url: "https://example.com".to_string(),
+            description: None,
+            author: None,
+        };
+
+        // Create a section route with no children
+        let section_route = RouteInfo::new(
+            "/empty/".to_string(),
+            PathBuf::from("empty/_index.md"),
+            PathBuf::from("empty/index.html"),
+            RouteKind::Section,
+        )
+        .unwrap();
+
+        let section_page = ProcessedPage {
+            route: section_route,
+            page: Page {
+                frontmatter: Frontmatter {
+                    title: "Empty Section".to_string(),
+                    description: None,
+                    date: None,
+                    draft: false,
+                    slug: None,
+                    template: Some("section.html".to_string()),
+                    summary: None,
+                    aliases: vec![],
+                    tags: vec![],
+                    categories: vec![],
+                    series: None,
+                    extra: None,
+                    sort_by: Default::default(),
+                    paginate_by: 0,
+                    paginate_template: None,
+                    weight: 0,
+                    updated: None,
+                },
+                path: "/empty/".to_string(),
+                source: PathBuf::from("empty/_index.md"),
+                raw_content: "Empty section".to_string(),
+                content: None,
+            },
+            html_content: "<p>Empty section</p>".to_string(),
+        };
+
+        let processed = vec![section_page];
+
+        // Render pages
+        let result = render_pages(&processed, &templates, &site_context, false).unwrap();
+
+        // Find the section page
+        let section_rendered = result
+            .iter()
+            .find(|r| r.route.path == "/empty/")
+            .expect("Section page should be rendered");
+
+        // Verify the section context has empty pages list
+        assert!(section_rendered.content.contains("<ul>"));
+        assert!(section_rendered.content.contains("</ul>"));
+        // Should not contain any list items
+        assert!(!section_rendered.content.contains("<li>"));
     }
 }

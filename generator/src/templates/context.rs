@@ -133,8 +133,16 @@ pub struct SectionContext {
     /// Section title
     pub title: String,
 
+    /// Section description (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+
     /// Section URL path (e.g., "/blog/")
     pub path: String,
+
+    /// Section HTML content (rendered from markdown)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
 
     /// Pages in this section
     pub pages: Vec<PageContext>,
@@ -369,7 +377,9 @@ impl TemplateContext {
     /// };
     /// let section = SectionContext {
     ///     title: "Blog".to_string(),
+    ///     description: None,
     ///     path: "/blog/".to_string(),
+    ///     content: None,
     ///     pages: vec![],
     ///     pagination: None,
     /// };
@@ -445,7 +455,9 @@ mod tests {
     fn create_test_section() -> SectionContext {
         SectionContext {
             title: "Blog".to_string(),
+            description: Some("Blog section description".to_string()),
             path: "/blog/".to_string(),
+            content: Some("<p>Welcome to the blog.</p>".to_string()),
             pages: vec![create_test_page()],
             pagination: None,
         }
