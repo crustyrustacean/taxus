@@ -4,10 +4,10 @@ default-members = ["generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.32"
+version = "0.1.33"
 edition = "2024"
 authors = ["Jeff Mitchell"]
-description = "A Rust workspace for a Yew based static site generator"
+description = "A workspace for a Rust based static site generator, using Tera and Yew."
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/example/yew-ssg.git"

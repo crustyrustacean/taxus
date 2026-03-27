@@ -355,7 +355,7 @@ struct ServeArgs {
 }
 
 #[tokio::main]
-async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
+async fn run_serve(args: &ServeArgs) -> Result<(), Box<GeneratorError>> {
     use yew_ssg_lib::serve::{DevServer, DevServerConfig};
 
     // Load config to get output directory
@@ -368,25 +368,25 @@ async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
         .with_site_dir(args.dir.clone());
 
     if !args.quiet {
-        println!("Starting development server...");
-        println!("Site: {}", args.dir.display());
-        println!("Output: {}", config.build.output_dir.display());
-        println!("Port: {}", args.port);
+        tracing::info!("Starting development server...");
+        tracing::info!("Site: {}", args.dir.display());
+        tracing::info!("Output: {}", config.build.output_dir.display());
+        tracing::info!("Port: {}", args.port);
     }
 
     // Create and run the server
     let server = DevServer::new(server_config);
 
     if !args.quiet {
-        println!("\n  Static site: http://localhost:{}", args.port);
-        println!("  Press Ctrl+C to stop\n");
+        tracing::info!("\n  Static site: http://localhost:{}", args.port);
+        tracing::info!("  Press Ctrl+C to stop\n");
     }
 
     // Open browser if requested
     if args.open {
         let url = format!("http://localhost:{}", args.port);
         if let Err(e) = webbrowser::open(&url) {
-            eprintln!("Warning: Failed to open browser: {}", e);
+            tracing::error!("Warning: Failed to open browser: {}", e);
         }
     }
 
@@ -413,8 +413,7 @@ struct BuildArgs {
     output: Option<PathBuf>,
 }
 
-#[allow(clippy::result_large_err)]
-fn run_build(args: &BuildArgs) -> Result<BuildReport, GeneratorError> {
+fn run_build(args: &BuildArgs) -> Result<BuildReport, Box<GeneratorError>> {
     // Load config so we can apply the --output override before building
     let mut config = yew_ssg_lib::SiteConfig::from_dir(&args.dir)?;
     if let Some(ref output) = args.output {
@@ -443,9 +442,8 @@ fn run_build(args: &BuildArgs) -> Result<BuildReport, GeneratorError> {
 // Clean
 // ---------------------------------------------------------------------------
 
-#[allow(clippy::result_large_err)]
-fn run_clean(dir: &Path) -> Result<(), GeneratorError> {
-    SiteBuilder::from_dir(dir)?.clean()
+fn run_clean(dir: &Path) -> Result<(), Box<GeneratorError>> {
+    Ok(SiteBuilder::from_dir(dir)?.clean()?)
 }
 
 // ---------------------------------------------------------------------------
@@ -460,8 +458,7 @@ struct InitArgs {
     islands: bool,
 }
 
-#[allow(clippy::result_large_err)]
-fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
+fn run_init(args: &InitArgs) -> Result<InitReport, Box<GeneratorError>> {
     use yew_ssg_lib::init::{derive_site_name, is_directory_empty};
 
     // Check if directory is empty
@@ -516,8 +513,7 @@ fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
 // Routes
 // ---------------------------------------------------------------------------
 
-#[allow(clippy::result_large_err)]
-fn run_routes(dir: &Path) -> Result<(), GeneratorError> {
+fn run_routes(dir: &Path) -> Result<(), Box<GeneratorError>> {
     use yew_ssg_lib::{RouteDiscovery, SiteConfig};
 
     let config = SiteConfig::from_dir(dir)?;
@@ -597,8 +593,6 @@ fn render_error(e: &GeneratorError) {
 
     if let Some(hint) = hint {
         tracing::warn!(hint = hint, "Suggestion");
-        eprintln!("  Hint: {hint}");
+        tracing::error!("  Hint: {hint}");
     }
-
-    eprintln!();
 }

@@ -55,6 +55,30 @@ pub enum GeneratorError {
     },
 }
 
+macro_rules! impl_boxed_error {
+    ($($error_type:ty => $variant:ident),* $(,)?) => {
+        $(
+            impl From<$error_type> for Box<GeneratorError> {
+                fn from(err: $error_type) -> Self {
+                    Box::new(GeneratorError::$variant(err))
+                }
+            }
+        )*
+    };
+}
+
+impl_boxed_error! {
+    ConfigError => Config,
+    ContentError => Content,
+    TemplateError => Template,
+    AssetError => Asset,
+    RouteError => Route,
+    BuildError => Build,
+    InitError => Init,
+    crate::serve::ServeError => Serve,
+    FeedError => Feed,
+}
+
 /// Template-related errors.
 #[derive(Debug, thiserror::Error)]
 pub enum TemplateError {

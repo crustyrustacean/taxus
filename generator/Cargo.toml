@@ -35,21 +35,21 @@ serde_json = "1.0"
 tera = "1.20"
 thiserror = "2.0"
 toml = "1.0.6"
-walkdir = "2.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+walkdir = "2.5"
 
 # ── Async runtime (required for serve command and islands) ────────────────────
-tokio = { version = "1.50.0", features = ["full"] }
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "signal"] }
 
 # ── Dev server dependencies ───────────────────────────────────────────────────
-axum = { version = "0.8", features = ["ws"] }
-axum-extra = { version = "0.10", features = ["typed-header"] }
+axum = { version = "0.8.8", features = ["ws"] }
+axum-extra = { version = "0.12.5", features = ["typed-header"] }
+futures-util = "0.3"
+notify = "8.2.0"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "set-header"] }
 tokio-stream = "0.1"
-notify = "6.1"
-futures-util = "0.3"
 webbrowser = "1.0"
 
 # ── Islands feature dependencies (compiled only with --features islands) ──────
@@ -58,5 +58,5 @@ yew = { version = "0.23.0", features = ["ssr"], optional = true }
 
 [dev-dependencies]
 tempfile = "3.10"
-reqwest = { version = "0.11", features = ["json"] }
-tokio-tungstenite = "0.21"
+reqwest = { version = "0.13.2", features = ["json"] }
+tokio-tungstenite = "0.29"

@@ -112,7 +112,12 @@ pub fn render_pages(
     for processed_page in processed {
         // Use section.html as default for sections, page.html for pages
         let template_name = if processed_page.route.is_section() {
-            processed_page.page.frontmatter.template.as_deref().unwrap_or("section.html")
+            processed_page
+                .page
+                .frontmatter
+                .template
+                .as_deref()
+                .unwrap_or("section.html")
         } else {
             processed_page.page.template()
         };
@@ -170,7 +175,8 @@ pub fn render_pages(
                         } else {
                             p.route.path.clone()
                         };
-                        let child_permalink = compute_permalink(&site_context.base_url, &child_url_path);
+                        let child_permalink =
+                            compute_permalink(&site_context.base_url, &child_url_path);
                         PageContext {
                             title: p.page.frontmatter.title.clone(),
                             description: p.page.frontmatter.description.clone(),
@@ -192,13 +198,11 @@ pub fn render_pages(
             };
 
             // Sort by date, newest first (pages with dates come before pages without dates)
-            child_pages.sort_by(|a, b| {
-                match (&a.date, &b.date) {
-                    (Some(date_a), Some(date_b)) => date_b.cmp(date_a),
-                    (Some(_), None) => std::cmp::Ordering::Less,
-                    (None, Some(_)) => std::cmp::Ordering::Greater,
-                    (None, None) => std::cmp::Ordering::Equal,
-                }
+            child_pages.sort_by(|a, b| match (&a.date, &b.date) {
+                (Some(date_a), Some(date_b)) => date_b.cmp(date_a),
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => std::cmp::Ordering::Equal,
             });
 
             let section_context = SectionContext {
@@ -2008,10 +2012,7 @@ Content
         // Create a simple template that outputs section pages
         let mut templates = TeraRenderer::new().unwrap();
         templates
-            .register_template(
-                "page.html",
-                r#"<h1>{{ page.title }}</h1>"#,
-            )
+            .register_template("page.html", r#"<h1>{{ page.title }}</h1>"#)
             .unwrap();
         templates
             .register_template(

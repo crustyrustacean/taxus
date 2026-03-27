@@ -108,7 +108,10 @@ fn test_word_count_and_reading_time_in_section() {
     // The content is: "# First Post\n\nThis is my first blog post. Check out the [about page](@/about.md) for more info.\n"
     // Words should be counted correctly
     assert!(page.word_count() > 0, "Word count should be greater than 0");
-    assert!(page.reading_time() > 0, "Reading time should be greater than 0");
+    assert!(
+        page.reading_time() > 0,
+        "Reading time should be greater than 0"
+    );
 
     // Print for debugging
     println!("Word count: {}", page.word_count());
@@ -162,8 +165,10 @@ fn test_word_count_reading_time_rendered_in_section() {
 </section>
 {% endblock %}"#;
 
-    let mut file = std::fs::File::create(templates_dir.join("section.html")).expect("Failed to create section.html");
-    file.write_all(section_template.as_bytes()).expect("Failed to write section.html");
+    let mut file = std::fs::File::create(templates_dir.join("section.html"))
+        .expect("Failed to create section.html");
+    file.write_all(section_template.as_bytes())
+        .expect("Failed to write section.html");
 
     // Copy content directory
     fn copy_dir_all(src: &Path, dst: &Path) {
@@ -174,7 +179,8 @@ fn test_word_count_reading_time_rendered_in_section() {
             if ty.is_dir() {
                 copy_dir_all(&entry.path(), &dst.join(entry.file_name()));
             } else {
-                std::fs::copy(entry.path(), dst.join(entry.file_name())).expect("Failed to copy file");
+                std::fs::copy(entry.path(), dst.join(entry.file_name()))
+                    .expect("Failed to copy file");
             }
         }
     }
@@ -183,8 +189,11 @@ fn test_word_count_reading_time_rendered_in_section() {
     copy_dir_all(&fixture_dir.join("content"), &content_dir);
 
     // Create site.toml
-    std::fs::copy(fixture_dir.join("site.toml"), temp_dir.path().join("site.toml"))
-        .expect("Failed to copy site.toml");
+    std::fs::copy(
+        fixture_dir.join("site.toml"),
+        temp_dir.path().join("site.toml"),
+    )
+    .expect("Failed to copy site.toml");
 
     // Load config from temp directory
     let mut config = SiteConfig::from_dir(temp_dir.path()).expect("Failed to load config");

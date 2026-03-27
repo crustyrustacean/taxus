@@ -157,8 +157,16 @@ fn test_render_section_with_word_count_and_reading_time() {
 
     let html = result.unwrap();
     // Check that word_count and reading_time are rendered
-    assert!(html.contains("3 words"), "Expected word count in output: {}", html);
-    assert!(html.contains("1 min read"), "Expected reading time in output: {}", html);
+    assert!(
+        html.contains("3 words"),
+        "Expected word count in output: {}",
+        html
+    );
+    assert!(
+        html.contains("1 min read"),
+        "Expected reading time in output: {}",
+        html
+    );
 }
 
 #[test]
