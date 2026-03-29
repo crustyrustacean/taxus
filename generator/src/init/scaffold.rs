@@ -285,6 +285,30 @@ This is your new static site. Start editing this file to add your content.
             report.created_files.push(section_path);
         }
 
+        // Create 404.html
+        let notfound_path = path.join("templates/404.html");
+        if !notfound_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}404 - Page Not Found{% endblock %}
+
+{% block content %}
+<article class="error-page">
+    <h1>404</h1>
+    <h2>Page Not Found</h2>
+    <p>Sorry, the page you're looking for doesn't exist.</p>
+    <p><a href="/">Return to the home page</a></p>
+</article>
+{% endblock %}
+"#;
+            std::fs::write(&notfound_path, content).map_err(|e| InitError::FileWrite {
+                path: notfound_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(notfound_path);
+        }
+
         Ok(())
     }
 
@@ -387,6 +411,25 @@ footer {
     padding: 1rem;
     background: #f5f5f5;
     margin-top: 2rem;
+}
+
+.error-page {
+    text-align: center;
+    padding: 4rem 0;
+    
+    h1 {
+        font-size: 6rem;
+        margin: 0;
+        color: #ccc;
+    }
+    
+    h2 {
+        margin: 0 0 1rem 0;
+    }
+    
+    a {
+        color: #0066cc;
+    }
 }
 "#;
 
@@ -514,6 +557,7 @@ mod tests {
         assert!(temp_dir.path().join("templates/base.html").exists());
         assert!(temp_dir.path().join("templates/page.html").exists());
         assert!(temp_dir.path().join("templates/section.html").exists());
+        assert!(temp_dir.path().join("templates/404.html").exists());
     }
 
     #[test]
@@ -548,9 +592,9 @@ mod tests {
 
         let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
-        // 4 directories + 8 files (site.toml, _index.md, base.html, page.html, section.html, main.scss, scripts.js, favicon.png)
+        // 4 directories + 9 files (site.toml, _index.md, base.html, page.html, section.html, 404.html, main.scss, scripts.js, favicon.png)
         assert_eq!(report.directories_created, 4);
-        assert_eq!(report.files_created, 8);
+        assert_eq!(report.files_created, 9);
     }
 
     #[test]

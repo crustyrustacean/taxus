@@ -118,7 +118,7 @@ impl SiteBuilder {
 
         // Stage 1: Discover routes
         let _routes_span = info_span!("discover_routes").entered();
-        info!("[1/11] Discovering routes...");
+        info!("[1/12] Discovering routes...");
         let registry = pipeline::discover_routes(&self.config)?;
 
         if registry.is_empty() {
@@ -130,7 +130,7 @@ impl SiteBuilder {
 
         // Stage 2: Load templates
         let _templates_span = info_span!("load_templates").entered();
-        info!("[2/11] Loading templates...");
+        info!("[2/12] Loading templates...");
         let templates = pipeline::load_templates(&self.config)?;
 
         debug!(
@@ -141,7 +141,7 @@ impl SiteBuilder {
 
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
-        info!("[3/11] Processing content...");
+        info!("[3/12] Processing content...");
         let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
 
         if processed.is_empty() {
@@ -165,7 +165,7 @@ impl SiteBuilder {
 
         // Stage 4: Copy co-located assets
         let _colocated_span = info_span!("copy_colocated_assets").entered();
-        info!("[4/11] Copying co-located assets...");
+        info!("[4/12] Copying co-located assets...");
         let colocated_assets = pipeline::copy_colocated_assets(
             &self.config.build.content_dir,
             &output_dir,
@@ -180,7 +180,7 @@ impl SiteBuilder {
 
         // Stage 5: Render pages
         let _render_span = info_span!("render_pages").entered();
-        info!("[5/11] Rendering pages...");
+        info!("[5/12] Rendering pages...");
         let site_context = SiteContext {
             name: self.config.site.name.clone(),
             base_url: self.config.site.base_url.clone(),
@@ -193,7 +193,7 @@ impl SiteBuilder {
 
         // Stage 6: Generate robots.txt
         let _robots_span = info_span!("generate_robots").entered();
-        info!("[6/11] Generating robots.txt...");
+        info!("[6/12] Generating robots.txt...");
         let robots = pipeline::generate_robots(&self.config)?;
         if let Some(ref robots) = robots {
             pipeline::write_robots(robots, &output_dir, self.dry_run)?;
@@ -202,15 +202,23 @@ impl SiteBuilder {
 
         // Stage 7: Generate sitemap.xml
         let _sitemap_span = info_span!("generate_sitemap").entered();
-        info!("[7/11] Generating sitemap.xml...");
+        info!("[7/12] Generating sitemap.xml...");
         let sitemap = pipeline::generate_sitemap(&processed, &self.config)?;
         debug!(urls = sitemap.url_count, "Sitemap generated");
         pipeline::write_sitemap(&sitemap, &output_dir, self.dry_run)?;
         drop(_sitemap_span);
 
-        // Stage 8: Build and render taxonomy pages
+        // Stage 8: Generate 404.html
+        let _404_span = info_span!("generate_404").entered();
+        info!("[8/12] Generating 404.html...");
+        if let Some(ref page_404) = pipeline::generate_404(&templates, &site_context)? {
+            pipeline::write_404(page_404, &output_dir, self.dry_run)?;
+        }
+        drop(_404_span);
+
+        // Stage 9: Build and render taxonomy pages
         let _taxonomy_span = info_span!("render_taxonomy").entered();
-        info!("[8/11] Building taxonomy pages...");
+        info!("[9/12] Building taxonomy pages...");
         let taxonomy_map = pipeline::build_taxonomy_map(&processed);
         let taxonomy_pages =
             pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
@@ -220,16 +228,16 @@ impl SiteBuilder {
         );
         drop(_taxonomy_span);
 
-        // Stage 9: Generate feeds
+        // Stage 10: Generate feeds
         let _feeds_span = info_span!("generate_feeds").entered();
-        info!("[9/11] Generating feeds...");
+        info!("[10/12] Generating feeds...");
         let feeds = pipeline::generate_feeds(&processed, &self.config)?;
         debug!(feeds = feeds.len(), "Feeds generated");
         drop(_feeds_span);
 
-        // Stage 10: Process assets
+        // Stage 11: Process assets
         let _assets_span = info_span!("process_assets").entered();
-        info!("[10/11] Processing assets...");
+        info!("[11/12] Processing assets...");
         let mut assets = pipeline::process_assets(&self.config, &output_dir)?;
 
         // Merge co-located assets report into main assets report
@@ -238,9 +246,9 @@ impl SiteBuilder {
         debug!(files_processed = assets.files_processed, "Assets processed");
         drop(_assets_span);
 
-        // Stage 11: Write output
+        // Stage 12: Write output
         let _write_span = info_span!("write_output").entered();
-        info!("[11/11] Writing output...");
+        info!("[12/12] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
 
         // Write taxonomy pages

@@ -2,9 +2,9 @@
 
 use std::path::PathBuf;
 use tempfile::TempDir;
-use yew_ssg_lib::TemplateRenderer;
 use yew_ssg_lib::error::InitError;
-use yew_ssg_lib::init::{InitOptions, InitScaffolder, derive_site_name, is_directory_empty};
+use yew_ssg_lib::init::{derive_site_name, is_directory_empty, InitOptions, InitScaffolder};
+use yew_ssg_lib::TemplateRenderer;
 
 #[test]
 fn test_init_empty_directory() {
@@ -15,7 +15,7 @@ fn test_init_empty_directory() {
     let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
     assert_eq!(report.directories_created, 4);
-    assert_eq!(report.files_created, 8);
+    assert_eq!(report.files_created, 9);
     assert!(temp_dir.path().join("site.toml").exists());
 }
 

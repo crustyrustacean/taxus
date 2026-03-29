@@ -1093,6 +1093,61 @@ pub fn write_aliases(aliases: &[AliasPage], output_dir: &Path, dry_run: bool) ->
     Ok(())
 }
 
+/// Generated 404.html content.
+#[derive(Debug, Clone)]
+pub struct Generated404 {
+    /// HTML content
+    pub content: String,
+}
+
+/// Generate 404.html page.
+///
+/// If 404.html template doesn't exist, returns None.
+/// Otherwise, renders the template with site context.
+pub fn generate_404(
+    templates: &TeraRenderer,
+    site_context: &SiteContext,
+) -> Result<Option<Generated404>> {
+    if !templates.has_template("404.html") {
+        debug!("No 404.html template found, skipping 404 page generation");
+        return Ok(None);
+    }
+
+    let context = TemplateContext::new(site_context.clone());
+    let content = templates.render("404.html", &context)?;
+
+    info!("Generated 404.html");
+    Ok(Some(Generated404 { content }))
+}
+
+/// Write 404.html to output directory.
+pub fn write_404(page: &Generated404, output_dir: &Path, dry_run: bool) -> Result<()> {
+    if dry_run {
+        debug!("Dry run - skipping 404.html write");
+        return Ok(());
+    }
+
+    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+        path: output_dir.to_path_buf(),
+        source: e,
+    })?;
+
+    let output_path = output_dir.join("404.html");
+
+    fs::write(&output_path, &page.content).map_err(|e| BuildError::Io {
+        path: output_path.clone(),
+        source: e,
+    })?;
+
+    debug!(
+        path = %output_path.display(),
+        "Written 404.html"
+    );
+
+    info!("Wrote 404.html");
+    Ok(())
+}
+
 /// Clean the output directory.
 pub fn clean_output(output_dir: &Path) -> Result<()> {
     if output_dir.exists() {

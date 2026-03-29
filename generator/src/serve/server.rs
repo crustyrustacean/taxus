@@ -362,7 +362,30 @@ where
                     Ok(response)
                 }
                 Err(_) => {
-                    // File not found
+                    // File not found - try to serve 404.html
+                    let not_found_path = output_dir.join("404.html");
+
+                    if let Ok(content) = tokio::fs::read_to_string(&not_found_path).await {
+                        // Inject live reload script if it's HTML
+                        if content.contains("<!DOCTYPE html") || content.contains("<html") {
+                            let injected = inject_live_reload_script(&content);
+                            let response = axum::response::Response::builder()
+                                .status(axum::http::StatusCode::NOT_FOUND)
+                                .header(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+                                .body(axum::body::Body::from(injected))
+                                .unwrap();
+                            return Ok(response);
+                        }
+                        // Return as-is with 404 status
+                        let response = axum::response::Response::builder()
+                            .status(axum::http::StatusCode::NOT_FOUND)
+                            .header(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+                            .body(axum::body::Body::from(content))
+                            .unwrap();
+                        return Ok(response);
+                    }
+
+                    // No 404.html - fall back to plain text
                     let response = axum::response::Response::builder()
                         .status(axum::http::StatusCode::NOT_FOUND)
                         .body(axum::body::Body::from("Not Found"))
