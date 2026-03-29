@@ -371,7 +371,10 @@ where
                             let injected = inject_live_reload_script(&content);
                             let response = axum::response::Response::builder()
                                 .status(axum::http::StatusCode::NOT_FOUND)
-                                .header(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+                                .header(
+                                    axum::http::header::CONTENT_TYPE,
+                                    "text/html; charset=utf-8",
+                                )
                                 .body(axum::body::Body::from(injected))
                                 .unwrap();
                             return Ok(response);
