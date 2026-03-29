@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.30] - 2026-03-28
+
+### Added
+
+#### 404 Page Handling
+
+- **404.html Template**: New template generated during `yew-ssg init`
+  - Renders a user-friendly 404 page with site styling
+  - Available at `/404.html` in the output directory
+  - Uses the same base template as other pages
+
+- **Development Server 404 Support**: `serve` command now serves 404.html for unknown routes
+  - Falls back to 404.html content with 404 status code
+  - Works with the live reload WebSocket connection
+  - Provides better development experience when testing navigation
+
+### Fixed
+
+- **Section Content Rendering**: Section templates now properly render content
+  - Added `description` field to `SectionContext`
+  - Added `content` field to `SectionContext` for rendered markdown content
+  - Section `_index.md` files now correctly populate template variables
+
+- **Output Directory Creation**: `robots.txt`, `sitemap.xml`, and feed files now properly create output directories
+  - `write_robots()`, `write_sitemap()`, and `write_feeds()` now call `fs::create_dir_all()`
+  - Previously failed if the output directory didn't exist before these stages
+
+### Changed
+
+- **Clippy Lint Fixes**: Resolved all clippy warnings across the codebase
+  - Updated dependencies to latest versions
+  - Improved code quality and idiomatic Rust patterns
+
 ## [0.1.29] - 2026-03-22
 
 ### Added

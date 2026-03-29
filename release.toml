@@ -1,0 +1,13 @@
+[workspace]
+allow-branch = ["trunk"]
+sign-commit = false
+sign-tag = false
+pre-release-commit-message = "chore: release v{{version}}"
+tag-message = "v{{version}}"
+tag-name = "v{{version}}"
+pre-release-replacements = [
+  { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", exactly = 1 },
+]
+
+# Run git-cliff before the release commit to regenerate the full changelog
+pre-release-hook = ["git-cliff", "--output", "CHANGELOG.md", "--tag", "v{{version}}"]
