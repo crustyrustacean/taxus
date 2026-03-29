@@ -7,4 +7,4 @@ pre-release-commit-message = "chore: release v{{version}}"
 tag-message = "v{{version}}"
 tag-name = "v{{version}}"
 
-pre-release-hook = ["git-cliff", "--output", "CHANGELOG.md", "--tag", "v{{version}}"]
+pre-release-hook = ["git-cliff", "--workdir", ".", "--output", "CHANGELOG.md", "--tag", "v{{version}}"]
