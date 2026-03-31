@@ -194,25 +194,25 @@ impl SiteBuilder {
         // Stage 6: Generate robots.txt
         let _robots_span = info_span!("generate_robots").entered();
         info!("[6/12] Generating robots.txt...");
-        let robots = pipeline::generate_robots(&self.config)?;
+        let robots = pipeline::robots::generate_robots(&self.config)?;
         if let Some(ref robots) = robots {
-            pipeline::write_robots(robots, &output_dir, self.dry_run)?;
+            pipeline::robots::write_robots(robots, &output_dir, self.dry_run)?;
         }
         drop(_robots_span);
 
         // Stage 7: Generate sitemap.xml
         let _sitemap_span = info_span!("generate_sitemap").entered();
         info!("[7/12] Generating sitemap.xml...");
-        let sitemap = pipeline::generate_sitemap(&processed, &self.config)?;
+        let sitemap = pipeline::sitemap::generate_sitemap(&processed, &self.config)?;
         debug!(urls = sitemap.url_count, "Sitemap generated");
-        pipeline::write_sitemap(&sitemap, &output_dir, self.dry_run)?;
+        pipeline::sitemap::write_sitemap(&sitemap, &output_dir, self.dry_run)?;
         drop(_sitemap_span);
 
         // Stage 8: Generate 404.html
         let _404_span = info_span!("generate_404").entered();
         info!("[8/12] Generating 404.html...");
-        if let Some(ref page_404) = pipeline::generate_404(&templates, &site_context)? {
-            pipeline::write_404(page_404, &output_dir, self.dry_run)?;
+        if let Some(ref page_404) = pipeline::not_found::generate_404(&templates, &site_context)? {
+            pipeline::not_found::write_404(page_404, &output_dir, self.dry_run)?;
         }
         drop(_404_span);
 
