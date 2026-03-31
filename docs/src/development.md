@@ -1,22 +1,14 @@
 # Development
 
-This guide covers development workflows and best practices for Yew SSG.
+This guide covers development workflows for contributing to Yew SSG.
 
-## Development Setup
+## Prerequisites
 
-### Prerequisites
+- **Rust** — [Install Rust](https://rustup.rs/)
+- **trunk** — WebAssembly bundler: `cargo install trunk`
+- **mdbook** — Documentation: `cargo install mdbook`
 
-1. **Rust**: Install from [rustup.rs](https://rustup.rs/)
-2. **trunk**: WebAssembly bundler
-   ```bash
-   cargo install trunk
-   ```
-3. **mdbook**: Documentation generator (optional)
-   ```bash
-   cargo install mdbook
-   ```
-
-### Clone and Build
+## Setup
 
 ```bash
 git clone https://github.com/crustyrustacean/yew-ssg.git
@@ -24,12 +16,10 @@ cd yew-ssg
 cargo build
 ```
 
-## Development Workflow
-
-### Running Tests
+## Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (238+ tests)
 cargo test
 
 # Run tests for a specific crate
@@ -42,131 +32,50 @@ cargo test --lib
 cargo test --test config_loading
 ```
 
-### Building the Site
+## Building
 
 ```bash
-# Build static site
-cargo run
+# Build static site (plain SSG)
+cargo run -- build --dir my-site
+
+# Build with islands support
+cargo run --features islands -- build --dir my-site
+
+# Build release binary
+cargo build --release
 ```
 
-### Client Development
-
-For client-side development with hot-reload:
+## Development Server
 
 ```bash
-cd client
-trunk serve
+# Start server with auto-reload
+cargo run -- serve --dir my-site --open
 ```
 
-This starts a development server at `http://localhost:8080`.
-
-### Documentation
-
-Build and serve the documentation:
+## Documentation
 
 ```bash
 cd docs
 mdbook serve
 ```
 
-Open `http://localhost:3000` to view the documentation.
+Open `http://localhost:3000` to view.
 
-## Project Commands
+## Code Commands
 
 | Command | Description |
 |---------|-------------|
 | `cargo build` | Build all crates |
 | `cargo test` | Run all tests |
-| `cargo run` | Build the static site |
-| `cargo doc` | Generate API documentation |
+| `cargo run -- build` | Build the static site |
+| `cargo run -- serve` | Start dev server |
+| `cargo doc` | Generate API docs |
 | `cargo clippy` | Run linter |
 | `cargo fmt` | Format code |
 
-## Code Organization
+## Logging
 
-### Workspace Structure
-
-The project uses a Cargo workspace with three crates:
-
-```
-Cargo.toml          # Workspace manifest
-client/             # WebAssembly client
-common/             # Shared components
-generator/          # SSG library and binary
-```
-
-### Adding Dependencies
-
-Add dependencies to the appropriate crate's `Cargo.toml`:
-
-```toml
-# generator/Cargo.toml
-[dependencies]
-thiserror = "2.0"
-```
-
-For workspace-wide dependencies, add to the root `Cargo.toml`:
-
-```toml
-[workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }
-```
-
-Then reference in crate manifests:
-
-```toml
-[dependencies]
-serde = { workspace = true }
-```
-
-## Testing
-
-### Unit Tests
-
-Unit tests are placed in the source files:
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_something() {
-        // Test code
-    }
-}
-```
-
-### Integration Tests
-
-Integration tests go in the `tests/` directory:
-
-```
-generator/
-└── tests/
-    ├── config_loading.rs
-    └── fixtures/
-        ├── minimal_site/
-        └── full_site/
-```
-
-### Test Fixtures
-
-Use test fixtures for integration tests:
-
-```rust
-#[test]
-fn test_load_config() {
-    let config = SiteConfig::from_dir("tests/fixtures/minimal_site").unwrap();
-    assert_eq!(config.site.name, "Minimal Site");
-}
-```
-
-## Debugging
-
-### Logging
-
-The generator uses the `tracing` crate for structured logging. Control log output with CLI flags or the `RUST_LOG` environment variable:
+Control log output with CLI flags or `RUST_LOG`:
 
 ```bash
 # Default: info level
@@ -183,7 +92,7 @@ RUST_LOG=debug cargo run -- build
 RUST_LOG=yew_ssg_lib=trace cargo run -- build
 ```
 
-Add logging to your code:
+Add logging to code:
 
 ```rust
 use tracing::{info, debug, warn, error};
@@ -192,101 +101,27 @@ fn build_site() {
     info!("Building site");
     debug!("Processing content");
     
-    // Structured logging with fields
+    // Structured fields
     info!(pages = 5, sections = 2, "Build complete");
-    
-    // Warnings and errors
-    warn!(file = "missing.md", "File not found");
-    error!(error = %e, "Build failed");
 }
 ```
 
-For spans (structured context):
+## Workspace Structure
 
-```rust
-use tracing::{info, debug_span};
-
-#[tracing::instrument(skip(content))]
-fn process_page(path: &str, content: &str) {
-    let span = debug_span!("page_processing", path = %path);
-    let _enter = span.enter();
-    
-    info!("Processing page");
-    // ...
-}
 ```
-
-### Error Messages
-
-Use descriptive error messages:
-
-```rust
-let config = SiteConfig::from_dir(".")
-    .map_err(|e| {
-        eprintln!("Failed to load configuration: {}", e);
-        e
-    })?;
-```
-
-## Release Process
-
-### Build for Production
-
-```bash
-# Build in release mode
-cargo build --release
-
-# Build client for production
-cd client && trunk build --release
-```
-
-### Generate Documentation
-
-```bash
-# Generate API docs
-cargo doc --no-deps
-
-# Build mdbook
-cd docs && mdbook build
+yew-ssg/
+├── client/     # WASM hydration client
+├── common/     # Shared Yew components
+├── generator/  # SSG library and CLI
+└── docs/       # mdBook documentation
 ```
 
 ## Contributing
 
-### Code Style
-
-1. Run `cargo fmt` before committing
-2. Run `cargo clippy` and fix warnings
-3. Add tests for new functionality
-4. Update documentation
-
-### Pull Request Process
-
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
+3. Make changes
 4. Run tests: `cargo test`
 5. Run linter: `cargo clippy`
-6. Format code: `cargo fmt`
+6. Format: `cargo fmt`
 7. Submit a pull request
-
-## IDE Setup
-
-### VS Code
-
-Recommended extensions:
-
-- rust-analyzer
-- CodeLLDB
-- Better TOML
-- Markdown All in One
-
-### Configuration
-
-Create `.vscode/settings.json`:
-
-```json
-{
-    "rust-analyzer.checkOnSave.command": "clippy",
-    "rust-analyzer.cargo.features": "all"
-}
-```

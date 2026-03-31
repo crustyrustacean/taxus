@@ -1,78 +1,67 @@
 # API Reference
 
-This page documents the public API of the generator library.
+This page documents the public API of the `yew_ssg_lib` generator library.
 
-## Modules
+## Re-exports
 
-### `tracing`
-
-Structured logging initialization for the generator.
-
-#### Functions
-
-| Function                       | Description                                             |
-| ------------------------------ | ------------------------------------------------------- |
-| `init()`                       | Initialize tracing with `RUST_LOG` environment variable |
-| `init_with_level(level: &str)` | Initialize tracing with a specific log level            |
-
-#### Usage
+The library re-exports commonly used types from `lib.rs`:
 
 ```rust
-use yew_ssg_lib::tracing;
+// Configuration
+pub use config::{BuildConfig, FeedConfig, SiteConfig, SiteMeta};
 
-// Initialize with RUST_LOG environment variable
-tracing::init();
+// Content
+pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
 
-// Initialize with a specific level
-tracing::init_with_level("debug");
+// Templates
+pub use templates::{
+    PageContext, PaginationContext, SectionContext, SiteContext,
+    TemplateContext, TemplateRenderer, TeraRenderer,
+};
+
+// Assets
+pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+
+// Build
+pub use build::{BuildReport, ProcessedPage, RenderedPage, SiteBuilder};
+
+// Feed
+pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
+
+// Init
+pub use init::{InitOptions, InitReport, InitScaffolder};
+
+// Routes
+pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
+
+// Errors
+pub use error::{
+    AssetError, BuildError, ConfigError, ContentError, FeedError,
+    GeneratorError, InitError, Result, RouteError, ServeError, TemplateError,
+};
 ```
 
-#### Log Levels
+## `config` Module
 
-| Level   | Description                  |
-| ------- | ---------------------------- |
-| `error` | Build failures only          |
-| `warn`  | Warnings and errors          |
-| `info`  | Build progress (default)     |
-| `debug` | Detailed stage information   |
-| `trace` | Verbose internal diagnostics |
-
-#### Environment Variable
-
-Control logging via `RUST_LOG`:
-
-```bash
-RUST_LOG=debug cargo run -- build
-RUST_LOG=yew_ssg_lib=trace cargo run -- build
-```
-
-### `config`
-
-Configuration types for loading and representing site configuration.
-
-#### `SiteConfig`
-
-Main configuration type.
+### `SiteConfig`
 
 ```rust
 pub struct SiteConfig {
     pub site: SiteMeta,
     pub build: BuildConfig,
+    pub feed: FeedConfig,
+    pub base_dir: PathBuf,
 }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `from_file(path: P) -> Result<Self>` | Load from file |
+| `from_dir(dir: P) -> Result<Self>` | Load from directory (looks for `site.toml`) |
+| `new(name, base_url) -> Self` | Create programmatically |
+| `validate(&self) -> Result<()>` | Validate required fields |
 
-| Method                                                              | Description                         |
-| ------------------------------------------------------------------- | ----------------------------------- |
-| `from_file<P: AsRef<Path>>(path: P) -> Result<Self>`                | Load configuration from a file      |
-| `from_dir<P: AsRef<Path>>(dir: P) -> Result<Self>`                  | Load configuration from a directory |
-| `new(name: impl Into<String>, base_url: impl Into<String>) -> Self` | Create a new configuration          |
-| `validate(&self) -> Result<()>`                                     | Validate the configuration          |
-
-#### `SiteMeta`
-
-Site metadata.
+### `SiteMeta`
 
 ```rust
 pub struct SiteMeta {
@@ -83,53 +72,64 @@ pub struct SiteMeta {
 }
 ```
 
-#### `BuildConfig`
-
-Build configuration.
+### `BuildConfig`
 
 ```rust
 pub struct BuildConfig {
-    pub content_dir: PathBuf,
-    pub output_dir: PathBuf,
-    pub static_dir: PathBuf,
-    pub styles_dir: PathBuf,
-    pub templates_dir: PathBuf,
+    pub content_dir: PathBuf,    // default: "content"
+    pub output_dir: PathBuf,     // default: "dist"
+    pub static_dir: PathBuf,     // default: "static"
+    pub styles_dir: PathBuf,     // default: "styles"
+    pub templates_dir: PathBuf,  // default: "templates"
 }
 ```
 
-Implements `Default` with sensible defaults.
+### `FeedConfig`
 
-### `content`
+```rust
+pub struct FeedConfig {
+    pub rss_enabled: bool,       // default: true
+    pub atom_enabled: bool,      // default: false
+    pub limit: usize,            // default: 0 (all)
+    pub full_content: bool,      // default: false
+    pub title: Option<String>,
+    pub rss_path: Option<String>,
+    pub atom_path: Option<String>,
+}
+```
 
-Content types for parsing and managing Markdown files with TOML frontmatter.
+## `content` Module
 
-#### `Frontmatter`
-
-Page metadata parsed from TOML between `+++` markers.
+### `Frontmatter`
 
 ```rust
 pub struct Frontmatter {
     pub title: String,
     pub description: Option<String>,
     pub date: Option<NaiveDate>,
+    pub updated: Option<NaiveDate>,
     pub template: Option<String>,
     pub draft: bool,
+    pub summary: Option<String>,
+    pub slug: Option<String>,
+    pub aliases: Vec<String>,
+    pub tags: Vec<String>,
+    pub categories: Vec<String>,
+    pub series: Option<String>,
     pub extra: Option<toml::Value>,
+    pub sort_by: SortBy,           // default: Date
+    pub paginate_by: usize,
+    pub paginate_template: Option<String>,
+    pub weight: i32,
 }
 ```
 
-Implements `Default` with empty values and `draft: false`.
+| Method | Description |
+|--------|-------------|
+| `from_str(s: &str) -> Result<Self, toml::de::Error>` | Parse from TOML |
+| `template(&self) -> &str` | Get template (default: `"page.html"`) |
 
-##### Methods
-
-| Method                                               | Description                                 |
-| ---------------------------------------------------- | ------------------------------------------- |
-| `from_str(s: &str) -> Result<Self, toml::de::Error>` | Parse frontmatter from TOML string          |
-| `template(&self) -> &str`                            | Get template name (defaults to "page.html") |
-
-#### `Page`
-
-A single page with frontmatter and Markdown content.
+### `Page`
 
 ```rust
 pub struct Page {
@@ -141,40 +141,33 @@ pub struct Page {
 }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `from_file(path: P) -> Result<Self>` | Load from Markdown file |
+| `from_str(content: &str, source: &str) -> Result<Self>` | Parse from string |
+| `is_draft(&self) -> bool` | Check if draft |
+| `url_path(&self) -> String` | Get URL path |
+| `aliases(&self) -> &Vec<String>` | Get redirect aliases |
 
-| Method                                                  | Description                         |
-| ------------------------------------------------------- | ----------------------------------- |
-| `from_file<P: AsRef<Path>>(path: P) -> Result<Self>`    | Parse a page from a Markdown file   |
-| `from_str(content: &str, source: &str) -> Result<Self>` | Parse a page from a string          |
-| `template(&self) -> &str`                               | Get the template name for this page |
-| `is_draft(&self) -> bool`                               | Check if this page is a draft       |
-
-#### `Section`
-
-A section containing multiple pages (e.g., a blog).
+### `Section`
 
 ```rust
 pub struct Section {
     pub frontmatter: Frontmatter,
     pub path: String,
     pub source: PathBuf,
+    pub content: Option<String>,
     pub pages: Vec<Page>,
 }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `from_dir(dir: P) -> Result<Self>` | Load from directory |
+| `add_page(&mut self, page: Page)` | Add a page |
+| `sort_by_date(&mut self)` | Sort by date (newest first) |
 
-| Method                                             | Description                            |
-| -------------------------------------------------- | -------------------------------------- |
-| `from_dir<P: AsRef<Path>>(dir: P) -> Result<Self>` | Create a section from a directory      |
-| `add_page(&mut self, page: Page)`                  | Add a page to this section             |
-| `sort_by_date(&mut self)`                          | Sort pages by date (newest first)      |
-| `template(&self) -> &str`                          | Get the template name for this section |
-
-#### `ContentSource` Trait
-
-Trait for loading content from various sources.
+### `ContentSource` Trait
 
 ```rust
 pub trait ContentSource: Send + Sync {
@@ -184,353 +177,110 @@ pub trait ContentSource: Send + Sync {
 }
 ```
 
-#### `FilesystemContentSource`
-
-Default filesystem-based content source.
+### `FilesystemContentSource`
 
 ```rust
-pub struct FilesystemContentSource {
-    root: PathBuf,
-}
+pub struct FilesystemContentSource { /* ... */ }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new(root: P) -> Self` | Create with root directory |
 
-| Method                                   | Description                            |
-| ---------------------------------------- | -------------------------------------- |
-| `new<P: Into<PathBuf>>(root: P) -> Self` | Create a new filesystem content source |
+## `routes` Module
 
-### `routes`
-
-Route discovery and management types for mapping content files to URL paths.
-
-#### `RouteKind`
-
-Enum distinguishing between page and section routes.
+### `RouteKind`
 
 ```rust
 pub enum RouteKind {
-    /// A single page (e.g., /about/)
     Page,
-    /// A section index (e.g., /blog/)
     Section,
 }
 ```
 
-##### Methods
-
-| Method                      | Description                             |
-| --------------------------- | --------------------------------------- |
-| `is_page(&self) -> bool`    | Returns true if this is a page route    |
-| `is_section(&self) -> bool` | Returns true if this is a section route |
-
-#### `RouteInfo`
-
-Information about a single route.
+### `RouteInfo`
 
 ```rust
 pub struct RouteInfo {
-    /// URL path (e.g., "/about/")
     pub path: String,
-    /// Content file path relative to content directory
     pub content_file: PathBuf,
-    /// Output file path relative to output directory
     pub output_file: PathBuf,
-    /// Route type
     pub kind: RouteKind,
 }
 ```
 
-##### Methods
-
-| Method                                                                                                        | Description                                  |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `new(path: String, content_file: PathBuf, output_file: PathBuf, kind: RouteKind) -> Result<Self, RouteError>` | Create a new route info with path validation |
-| `is_page(&self) -> bool`                                                                                      | Returns true if this is a page route         |
-| `is_section(&self) -> bool`                                                                                   | Returns true if this is a section route      |
-
-#### `RouteRegistry`
-
-Registry of all routes in the site.
+### `RouteRegistry`
 
 ```rust
-pub struct RouteRegistry {
-    routes: HashMap<String, RouteInfo>,
-}
+pub struct RouteRegistry { /* ... */ }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create empty registry |
+| `register(&mut self, route: RouteInfo)` | Register a route |
+| `get(&self, path: &str) -> Option<&RouteInfo>` | Get by path |
+| `contains(&self, path: &str) -> bool` | Check existence |
+| `len(&self) -> usize` | Count routes |
+| `iter(&self) -> impl Iterator<Item = &RouteInfo>` | Iterate all |
+| `pages(&self) -> impl Iterator<Item = &RouteInfo>` | Iterate pages |
+| `sections(&self) -> impl Iterator<Item = &RouteInfo>` | Iterate sections |
 
-| Method                                                            | Description                           |
-| ----------------------------------------------------------------- | ------------------------------------- |
-| `new() -> Self`                                                   | Create a new empty registry           |
-| `register(&mut self, route: RouteInfo) -> Result<(), RouteError>` | Register a route (fails on duplicate) |
-| `get(&self, path: &str) -> Option<&RouteInfo>`                    | Get route by path                     |
-| `contains(&self, path: &str) -> bool`                             | Check if a route exists               |
-| `len(&self) -> usize`                                             | Get the number of routes              |
-| `is_empty(&self) -> bool`                                         | Check if the registry is empty        |
-| `iter(&self) -> impl Iterator<Item = &RouteInfo>`                 | Iterate over all routes               |
-| `pages(&self) -> impl Iterator<Item = &RouteInfo>`                | Iterate over all page routes          |
-| `sections(&self) -> impl Iterator<Item = &RouteInfo>`             | Iterate over all section routes       |
-| `generate_rust_manifest(&self) -> String`                         | Generate Rust code for client routing |
-
-#### `RouteDiscovery`
-
-Discovers routes from content directory structure.
+### `RouteDiscovery`
 
 ```rust
-pub struct RouteDiscovery {
-    content_dir: PathBuf,
-}
+pub struct RouteDiscovery { /* ... */ }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new(content_dir: P) -> Self` | Create with content directory |
+| `discover(&self) -> Result<RouteRegistry>` | Discover all routes |
 
-| Method                                                                                           | Description                                |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `new<P: Into<PathBuf>>(content_dir: P) -> Self`                                                  | Create a new route discovery               |
-| `discover(&self) -> Result<RouteRegistry, RouteError>`                                           | Discover all routes from content directory |
-| `discover_from_source<S: ContentSource>(&self, source: &S) -> Result<RouteRegistry, RouteError>` | Discover routes using ContentSource trait  |
+## `templates` Module
 
-##### Path Conversion Logic
-
-| Content File         | URL Path            | Output File                  | Route Kind |
-| -------------------- | ------------------- | ---------------------------- | ---------- |
-| `_index.md`          | `/`                 | `index.html`                 | Section    |
-| `about.md`           | `/about/`           | `about/index.html`           | Page       |
-| `blog/_index.md`     | `/blog/`            | `blog/index.html`            | Section    |
-| `blog/first-post.md` | `/blog/first-post/` | `blog/first-post/index.html` | Page       |
-
-### `error`
-
-Error types for the library.
-
-#### `GeneratorError`
-
-Main error type.
-
-```rust
-pub enum GeneratorError {
-    Config(ConfigError),
-    Content(ContentError),
-    Template(TemplateError),
-    Asset(AssetError),
-    Route(RouteError),
-    Io { path: PathBuf, source: std::io::Error },
-}
-```
-
-Implements `std::error::Error` and `Display`.
-
-#### `ConfigError`
-
-Configuration errors.
-
-```rust
-pub enum ConfigError {
-    NotFound(PathBuf),
-    Invalid(String),
-    Parse(toml::de::Error),
-    MissingField { field: &'static str },
-}
-```
-
-#### `ContentError`
-
-Content-related errors.
-
-```rust
-pub enum ContentError {
-    NotFound(PathBuf),
-    InvalidFrontmatter { path: PathBuf, source: toml::de::Error },
-    UnclosedFrontmatter(PathBuf),
-    Io { path: PathBuf, source: std::io::Error },
-    MissingField { field: &'static str, path: PathBuf },
-    InvalidPath(String),
-}
-```
-
-#### `TemplateError`
-
-Template-related errors.
-
-```rust
-pub enum TemplateError {
-    NotFound(String),
-    Render(String),
-    Syntax { template: String, message: String },
-    Io { path: PathBuf, source: std::io::Error },
-    DirNotFound(PathBuf),
-}
-```
-
-#### `AssetError`
-
-Asset-related errors.
-
-```rust
-pub enum AssetError {
-    NotFound(PathBuf),
-    Scss(String),
-    Io { path: PathBuf, source: std::io::Error },
-    CopyFailed { src: PathBuf, dest: PathBuf, reason: String },
-}
-```
-
-#### `RouteError`
-
-Route-related errors.
-
-```rust
-pub enum RouteError {
-    NotFound(String),
-    Duplicate(String),
-    InvalidPath(String),
-    DiscoveryFailed(String),
-}
-```
-
-#### `Result`
-
-Result alias for generator operations.
-
-```rust
-pub type Result<T> = std::result::Result<T, GeneratorError>;
-```
-
-### `assets`
-
-Asset processing types for SCSS compilation and static file copying.
-
-#### `AssetProcessor` Trait
-
-Trait for processing assets from source to destination.
-
-```rust
-pub trait AssetProcessor: Send + Sync {
-    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError>;
-    fn handles(&self, path: &Path) -> bool;
-    fn name(&self) -> &'static str;
-}
-```
-
-#### `ScssProcessor`
-
-SCSS/SASS processor for compiling stylesheets.
-
-```rust
-pub struct ScssProcessor {
-    include_paths: Vec<PathBuf>,
-    minify: bool,
-}
-```
-
-##### Methods
-
-| Method                                            | Description                                       |
-| ------------------------------------------------- | ------------------------------------------------- |
-| `new() -> Self`                                   | Create a new SCSS processor with default settings |
-| `with_include_paths(paths: Vec<PathBuf>) -> Self` | Create processor with include paths for `@import` |
-| `with_minify(minify: bool) -> Self`               | Enable or disable CSS minification                |
-
-#### `StaticCopier`
-
-Static file copier for assets that need no processing.
-
-```rust
-pub struct StaticCopier {
-    exclude_patterns: Vec<String>,
-}
-```
-
-##### Methods
-
-| Method                                           | Description                           |
-| ------------------------------------------------ | ------------------------------------- |
-| `new() -> Self`                                  | Create a new static file copier       |
-| `with_exclusions(patterns: Vec<String>) -> Self` | Create copier with exclusion patterns |
-
-#### `AssetReport`
-
-Report of processed assets.
-
-```rust
-pub struct AssetReport {
-    pub files_processed: usize,
-    pub files_skipped: usize,
-    pub errors: Vec<String>,
-}
-```
-
-##### Methods
-
-| Method                                    | Description                           |
-| ----------------------------------------- | ------------------------------------- |
-| `new() -> Self`                           | Create a new empty report             |
-| `add_processed(&mut self)`                | Add a processed file to the report    |
-| `add_skipped(&mut self)`                  | Add a skipped file to the report      |
-| `add_error(&mut self, error: AssetError)` | Add an error to the report            |
-| `has_errors(&self) -> bool`               | Check if the report has any errors    |
-| `total_files(&self) -> usize`             | Get total files (processed + skipped) |
-| `merge(&mut self, other: AssetReport)`    | Merge another report into this one    |
-
-### `templates`
-
-Template rendering types for Tera-based templates.
-
-#### `TemplateRenderer` Trait
-
-Trait for template rendering backends.
+### `TemplateRenderer` Trait
 
 ```rust
 pub trait TemplateRenderer: Send + Sync {
-    fn render(&self, template: &str, context: &TemplateContext) -> Result<String, TemplateError>;
-    fn register_template(&mut self, name: &str, content: &str) -> Result<(), TemplateError>;
+    fn render(&self, template: &str, context: &TemplateContext) -> Result<String>;
+    fn register_template(&mut self, name: &str, content: &str) -> Result<()>;
     fn has_template(&self, name: &str) -> bool;
-    fn load_templates(&mut self, dir: &Path) -> Result<(), TemplateError>;
+    fn load_templates(&mut self, dir: &Path) -> Result<()>;
 }
 ```
 
-#### `TeraRenderer`
-
-Tera-based template renderer.
+### `TeraRenderer`
 
 ```rust
 pub struct TeraRenderer { /* ... */ }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new() -> Result<Self>` | Create empty renderer |
+| `from_dir(dir: P) -> Result<Self>` | Create and load from directory |
 
-| Method                                                            | Description                                       |
-| ----------------------------------------------------------------- | ------------------------------------------------- |
-| `new() -> Result<Self, TemplateError>`                            | Create a new empty renderer                       |
-| `from_dir<P: AsRef<Path>>(dir: P) -> Result<Self, TemplateError>` | Create renderer and load templates from directory |
-
-#### `TemplateContext`
-
-Context for template rendering containing all available variables.
+### `TemplateContext`
 
 ```rust
 pub struct TemplateContext {
     pub page: Option<PageContext>,
     pub section: Option<SectionContext>,
     pub site: SiteContext,
+    pub now: NowContext,
     pub extra: HashMap<String, serde_json::Value>,
 }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new(site: SiteContext) -> Self` | Create with site |
+| `with_page(self, page: PageContext) -> Self` | Add page |
+| `with_section(self, section: SectionContext) -> Self` | Add section |
+| `with_extra(self, extra: HashMap) -> Self` | Add extra |
 
-| Method                                                        | Description                             |
-| ------------------------------------------------------------- | --------------------------------------- |
-| `new(site: SiteContext) -> Self`                              | Create a new context with site defaults |
-| `with_page(self, page: PageContext) -> Self`                  | Add page context                        |
-| `with_section(self, section: SectionContext) -> Self`         | Add section context                     |
-| `with_extra(self, extra: HashMap<String, JsonValue>) -> Self` | Add extra variables                     |
-
-#### `PageContext`
-
-Page-specific context for templates.
+### `PageContext`
 
 ```rust
 pub struct PageContext {
@@ -551,21 +301,35 @@ pub struct PageContext {
 }
 ```
 
-#### `SectionContext`
-
-Section-specific context for templates.
+### `SectionContext`
 
 ```rust
 pub struct SectionContext {
     pub title: String,
+    pub description: Option<String>,
     pub path: String,
+    pub content: Option<String>,
     pub pages: Vec<PageContext>,
+    pub pagination: Option<PaginationContext>,
 }
 ```
 
-#### `SiteContext`
+### `PaginationContext`
 
-Site-wide context for templates.
+```rust
+pub struct PaginationContext {
+    pub current: usize,
+    pub total: usize,
+    pub per_page: usize,
+    pub total_items: usize,
+    pub prev: Option<String>,
+    pub next: Option<String>,
+    pub first: String,
+    pub last: String,
+}
+```
+
+### `SiteContext`
 
 ```rust
 pub struct SiteContext {
@@ -576,13 +340,131 @@ pub struct SiteContext {
 }
 ```
 
-### `init`
+### `NowContext`
 
-Site initialization types for scaffolding new sites.
+```rust
+pub struct NowContext {
+    pub year: i32,
+}
+```
 
-#### `InitOptions`
+## `build` Module
 
-Configuration for site initialization.
+### `SiteBuilder`
+
+```rust
+pub struct SiteBuilder {
+    config: SiteConfig,
+    dry_run: bool,
+    verbose: bool,
+    include_drafts: bool,
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `from_dir(dir: &Path) -> Result<Self>` | Create from directory |
+| `new(config: SiteConfig) -> Self` | Create from config |
+| `dry_run(self, bool) -> Self` | Set dry-run mode |
+| `verbose(self, bool) -> Self` | Set verbose mode |
+| `include_drafts(self, bool) -> Self` | Include drafts |
+| `build(self) -> Result<BuildReport>` | Run build pipeline |
+| `clean(self) -> Result<()>` | Clean output directory |
+
+### `BuildReport`
+
+```rust
+pub struct BuildReport {
+    pub output_dir: PathBuf,
+    pub pages_rendered: usize,
+    pub sections_rendered: usize,
+    pub drafts_skipped: usize,
+    pub sitemap_urls: usize,
+    pub assets: AssetReport,
+    pub duration: Duration,
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `print_summary(&self)` | Print summary |
+| `has_warnings(&self) -> bool` | Check for warnings |
+
+### `ProcessedPage`
+
+```rust
+pub struct ProcessedPage {
+    pub route: RouteInfo,
+    pub page: Page,
+}
+```
+
+### `RenderedPage`
+
+```rust
+pub struct RenderedPage {
+    pub route: RouteInfo,
+    pub html: String,
+}
+```
+
+## `assets` Module
+
+### `AssetProcessor` Trait
+
+```rust
+pub trait AssetProcessor: Send + Sync {
+    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport>;
+    fn handles(&self, path: &Path) -> bool;
+    fn name(&self) -> &'static str;
+}
+```
+
+### `ScssProcessor`
+
+```rust
+pub struct ScssProcessor {
+    include_paths: Vec<PathBuf>,
+    minify: bool,
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create with defaults |
+| `with_include_paths(paths: Vec<PathBuf>) -> Self` | Set include paths |
+| `with_minify(bool) -> Self` | Set minify |
+
+### `StaticCopier`
+
+```rust
+pub struct StaticCopier {
+    exclude_patterns: Vec<String>,
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create with defaults |
+| `with_exclusions(patterns: Vec<String>) -> Self` | Set exclusions |
+
+### `AssetReport`
+
+```rust
+pub struct AssetReport {
+    pub files_processed: usize,
+    pub files_skipped: usize,
+    pub errors: Vec<String>,
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `merge(&mut self, other: AssetReport)` | Merge reports |
+
+## `init` Module
+
+### `InitOptions`
 
 ```rust
 pub struct InitOptions {
@@ -593,626 +475,107 @@ pub struct InitOptions {
 }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new(name, base_url) -> Self` | Create options |
+| `with_force(bool) -> Self` | Set force |
+| `with_islands(bool) -> Self` | Set islands |
 
-| Method                                                              | Description                                                    |
-| ------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `new(name: impl Into<String>, base_url: impl Into<String>) -> Self` | Create new options                                             |
-| `with_force(self, force: bool) -> Self`                             | Set force flag                                                 |
-| `with_islands(self, islands: bool) -> Self`                         | Set islands flag (includes WASM hydration script in templates) |
-| `validate(&self) -> std::result::Result<(), InitError>`             | Validate options                                               |
-
-#### `InitScaffolder`
-
-Main entry point for creating new sites.
+### `InitScaffolder`
 
 ```rust
 pub struct InitScaffolder { /* ... */ }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new(options: InitOptions) -> Self` | Create scaffolder |
+| `scaffold(&self, path: &Path) -> Result<InitReport>` | Scaffold site |
 
-| Method                                               | Description                          |
-| ---------------------------------------------------- | ------------------------------------ |
-| `new(options: InitOptions) -> Self`                  | Create scaffolder with options       |
-| `scaffold(&self, path: &Path) -> Result<InitReport>` | Create directory structure and files |
-
-#### `InitReport`
-
-Statistics and results from initialization.
+### `InitReport`
 
 ```rust
 pub struct InitReport {
     pub path: PathBuf,
     pub directories_created: usize,
     pub files_created: usize,
-    pub created_dirs: Vec<PathBuf>,   // paths of directories created
-    pub created_files: Vec<PathBuf>,  // paths of files created
+    pub created_dirs: Vec<PathBuf>,
+    pub created_files: Vec<PathBuf>,
 }
 ```
 
-##### Methods
+## `serve` Module
 
-| Method                       | Description                  |
-| ---------------------------- | ---------------------------- |
-| `new(path: PathBuf) -> Self` | Create a new report          |
-| `print_summary(&self)`       | Print initialization summary |
-
-#### `DefaultTemplates`
-
-Default template content for new sites.
-
-##### Methods
-
-| Method                                            | Description                 |
-| ------------------------------------------------- | --------------------------- |
-| `base_html() -> &'static str`                     | Get base.html template      |
-| `page_html() -> &'static str`                     | Get page.html template      |
-| `section_html() -> &'static str`                  | Get section.html template   |
-| `main_scss() -> &'static str`                     | Get main.scss content       |
-| `site_toml(name: &str, base_url: &str) -> String` | Generate site.toml content  |
-| `index_md(site_name: &str) -> String`             | Generate \_index.md content |
-
-### `serve`
-
-Development server with hot reloading.
-
-#### `DevServer`
-
-Main server type for serving the site with live reload.
+### `DevServer`
 
 ```rust
 pub struct DevServer { /* ... */ }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `new(config: DevServerConfig) -> Self` | Create server |
+| `run(&self) -> Result<()>` | Start server (async) |
 
-| Method                             | Description                      |
-| ---------------------------------- | -------------------------------- |
-| `new(config: ServeConfig) -> Self` | Create server with configuration |
-| `run(&self) -> Result<()>`         | Start the server (blocking)      |
-
-#### `ServeConfig`
-
-Configuration for the development server.
+### `DevServerConfig`
 
 ```rust
-pub struct ServeConfig {
+pub struct DevServerConfig {
     pub site_dir: PathBuf,
     pub port: u16,
-    pub open: bool,
+    pub output_dir: PathBuf,
 }
 ```
 
-##### Methods
+| Method | Description |
+|--------|-------------|
+| `default() -> Self` | Create with defaults |
+| `with_port(self, port: u16) -> Self` | Set port |
+| `with_output_dir(self, dir: PathBuf) -> Self` | Set output dir |
+| `with_site_dir(self, dir: PathBuf) -> Self` | Set site dir |
 
-| Method                                                  | Description                                         |
-| ------------------------------------------------------- | --------------------------------------------------- |
-| `default() -> Self`                                     | Create with default values (port 3000, current dir) |
-| `with_site_dir<P: Into<PathBuf>>(self, dir: P) -> Self` | Set site directory                                  |
-| `with_port(self, port: u16) -> Self`                    | Set port                                            |
-| `with_open(self, open: bool) -> Self`                   | Set auto-open browser                               |
+## `error` Module
 
-#### `ServeError`
-
-Errors that can occur during serving.
+### `GeneratorError`
 
 ```rust
-pub enum ServeError {
-    Io(io::Error),
-    PortInUse { port: u16 },
-    BuildFailed(String),
-    WatcherFailed(String),
-    ConfigNotFound(PathBuf),
-    WebSocket(String),
+pub enum GeneratorError {
+    Config(ConfigError),
+    Content(ContentError),
+    Template(TemplateError),
+    Asset(AssetError),
+    Route(RouteError),
+    Build(BuildError),
+    Feed(FeedError),
+    Init(InitError),
+    Serve(ServeError),
+    Io { path: PathBuf, source: std::io::Error },
 }
 ```
 
-#### `ChangeType`
+### Sub-Errors
 
-Categorization of file changes for rebuild decisions.
+| Type | Description |
+|------|-------------|
+| `ConfigError` | Configuration errors (not found, parse, missing field) |
+| `ContentError` | Content errors (not found, frontmatter, IO) |
+| `TemplateError` | Template errors (not found, render, syntax) |
+| `AssetError` | Asset errors (SCSS, copy) |
+| `RouteError` | Route errors (not found, duplicate, invalid) |
+| `BuildError` | Build errors (no content) |
+| `FeedError` | Feed generation errors |
+| `InitError` | Initialization errors (cancelled) |
+| `ServeError` | Server errors (port in use, WebSocket) |
+
+### `Result`
 
 ```rust
-pub enum ChangeType {
-    Content,    // .md files in content/
-    Template,   // .html files in templates/
-    Style,      // .scss/.sass files in styles/
-    Static,     // files in static/
-    Config,     // site.toml
-    Unknown,    // other files
-}
+pub type Result<T> = std::result::Result<T, GeneratorError>;
 ```
 
-#### `WebSocketMessage`
-
-Messages sent over WebSocket for live reload.
-
-```rust
-pub enum WebSocketMessage {
-    Connected,
-    Reload { url: String },
-    Error { message: String },
-}
-```
-
-## Re-exports
-
-The library re-exports commonly used types:
-
-```rust
-// Configuration
-pub use config::{BuildConfig, SiteConfig, SiteMeta};
-
-// Content
-pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
-
-// Templates
-pub use templates::{
-    PageContext, SectionContext, SiteContext, TemplateContext,
-    TemplateRenderer, TeraRenderer,
-};
-
-// Assets
-pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
-
-// Init
-pub use init::{DefaultTemplates, InitOptions, InitReport, InitScaffolder};
-
-// Serve
-pub use serve::{ChangeType, DevServer, ServeConfig, ServeError, WebSocketMessage};
-
-// Errors
-pub use error::{AssetError, BuildError, ContentError, GeneratorError, InitError, Result, RouteError, TemplateError};
-```
-
-## Usage Examples
-
-### Loading Configuration
-
-```rust
-use generator::{SiteConfig, Result};
-
-fn main() -> Result<()> {
-    // From a specific file
-    let config = SiteConfig::from_file("site.toml")?;
-
-    // From a directory
-    let config = SiteConfig::from_dir(".")?;
-
-    // Programmatic creation
-    let config = SiteConfig::new("My Site", "https://example.com");
-
-    Ok(())
-}
-```
-
-### Loading a Page
-
-```rust
-use generator::{Page, Result};
-
-fn main() -> Result<()> {
-    // Load from file
-    let page = Page::from_file("content/about.md")?;
-
-    println!("Title: {}", page.frontmatter.title);
-    println!("Path: {}", page.path);
-    println!("Draft: {}", page.is_draft());
-
-    Ok(())
-}
-```
-
-### Loading a Section
-
-```rust
-use generator::{Section, Result};
-
-fn main() -> Result<()> {
-    let mut section = Section::from_dir("content/blog")?;
-
-    // Add pages and sort by date
-    section.sort_by_date();
-
-    println!("Section: {}", section.frontmatter.title);
-    for page in &section.pages {
-        println!("  - {}", page.frontmatter.title);
-    }
-
-    Ok(())
-}
-```
-
-### Using ContentSource
-
-```rust
-use generator::{ContentSource, FilesystemContentSource, Result};
-use std::path::PathBuf;
-
-fn list_content() -> Result<()> {
-    let source = FilesystemContentSource::new("content");
-
-    // List all markdown files
-    for file in source.list()? {
-        println!("Found: {}", file.display());
-    }
-
-    // Check if file exists
-    if source.exists(&PathBuf::from("about.md")) {
-        let content = source.load(&PathBuf::from("about.md"))?;
-        println!("Content length: {} bytes", content.len());
-    }
-
-    Ok(())
-}
-```
-
-### Validating Configuration
-
-```rust
-use generator::{SiteConfig, ConfigError, GeneratorError};
-
-fn validate_site() -> Result<(), String> {
-    let config = SiteConfig::from_dir(".")
-        .map_err(|e| format!("Failed to load: {}", e))?;
-
-    config.validate()
-        .map_err(|e| format!("Invalid config: {}", e))?;
-
-    Ok(())
-}
-```
-
-### Error Handling
-
-```rust
-use generator::{SiteConfig, Page, GeneratorError, ConfigError, ContentError};
-
-fn load_site() {
-    match SiteConfig::from_dir(".") {
-        Ok(config) => {
-            println!("Site: {}", config.site.name);
-        }
-        Err(GeneratorError::Config(ConfigError::NotFound(path))) => {
-            eprintln!("Config not found: {}", path.display());
-        }
-        Err(GeneratorError::Config(ConfigError::Parse(e))) => {
-            eprintln!("Parse error: {}", e);
-        }
-        Err(e) => {
-            eprintln!("Error: {}", e);
-        }
-    }
-}
-
-fn load_page() {
-    match Page::from_file("content/about.md") {
-        Ok(page) => {
-            println!("Title: {}", page.frontmatter.title);
-        }
-        Err(GeneratorError::Content(ContentError::NotFound(path))) => {
-            eprintln!("Page not found: {}", path.display());
-        }
-        Err(GeneratorError::Content(ContentError::InvalidFrontmatter { path, source })) => {
-            eprintln!("Invalid frontmatter in {}: {}", path.display(), source);
-        }
-        Err(e) => {
-            eprintln!("Error: {}", e);
-        }
-    }
-}
-```
-
-### Accessing Configuration Values
-
-```rust
-use generator::SiteConfig;
-
-let config = SiteConfig::from_dir(".")?;
-
-// Site metadata
-println!("Name: {}", config.site.name);
-println!("URL: {}", config.site.base_url);
-
-if let Some(desc) = &config.site.description {
-    println!("Description: {}", desc);
-}
-
-// Build configuration
-println!("Content: {:?}", config.build.content_dir);
-println!("Output: {:?}", config.build.output_dir);
-```
-
-### Template Rendering
-
-```rust
-use generator::{
-    TeraRenderer, TemplateRenderer, TemplateContext,
-    SiteContext, PageContext, Result
-};
-
-fn render_page() -> Result<()> {
-    // Create renderer and load templates
-    let mut renderer = TeraRenderer::new()?;
-    renderer.register_template("page.html", r#"
-        <article>
-            <h1>{{ page.title }}</h1>
-            {{ page.content | safe }}
-        </article>
-    "#)?;
-
-    // Create context
-    let site = SiteContext {
-        name: "My Site".to_string(),
-        base_url: "https://example.com".to_string(),
-        description: None,
-        author: None,
-    };
-
-    let page = PageContext {
-        title: "Hello".to_string(),
-        description: None,
-        path: "/hello/".to_string(),
-        permalink: "https://example.com/hello/".to_string(),
-        content: "<p>World</p>".to_string(),
-        raw_content: "World".to_string(),
-        date: None,
-        draft: false,
-        summary: String::new(),
-        word_count: 1,
-        reading_time: 1,
-        tags: vec![],
-        categories: vec![],
-        series: None,
-    };
-
-    let ctx = TemplateContext::new(site).with_page(page);
-
-    // Render
-    let html = renderer.render("page.html", &ctx)?;
-    println!("{}", html);
-
-    Ok(())
-}
-```
-
-### Loading Templates from Directory
-
-```rust
-use generator::{TeraRenderer, TemplateRenderer, Result};
-
-fn load_templates() -> Result<()> {
-    // Load all .html templates from directory
-    let renderer = TeraRenderer::from_dir("templates")?;
-
-    // Check if template exists
-    if renderer.has_template("base.html") {
-        println!("Base template loaded");
-    }
-
-    Ok(())
-}
-```
-
-### Template Inheritance
-
-```rust
-use generator::{TeraRenderer, TemplateRenderer, TemplateContext, SiteContext, Result};
-
-fn render_with_inheritance() -> Result<()> {
-    let mut renderer = TeraRenderer::new()?;
-
-    // Base template with blocks
-    renderer.register_template("base.html", r#"
-        <!DOCTYPE html>
-        <html>
-        <head>{% block title %}{% endblock %}</head>
-        <body>{% block content %}{% endblock %}</body>
-        </html>
-    "#)?;
-
-    // Child template extending base
-    renderer.register_template("page.html", r#"
-        {% extends "base.html" %}
-        {% block title %}{{ page.title }}{% endblock %}
-        {% block content %}{{ page.content | safe }}{% endblock %}
-    "#)?;
-
-    let site = SiteContext {
-        name: "My Site".to_string(),
-        base_url: "https://example.com".to_string(),
-        description: None,
-        author: None,
-    };
-
-    // Render child template
-    let ctx = TemplateContext::new(site);
-    let html = renderer.render("page.html", &ctx)?;
-
-    Ok(())
-}
-```
-
-### Asset Processing
-
-```rust
-use generator::{AssetProcessor, ScssProcessor, StaticCopier, Result};
-use std::path::Path;
-
-fn process_assets() -> Result<()> {
-    // Compile SCSS to CSS
-    let scss_processor = ScssProcessor::with_include_paths(
-        vec![Path::new("styles").to_path_buf()]
-    ).with_minify(true);
-
-    let report = scss_processor.process(
-        Path::new("styles/main.scss"),
-        Path::new("dist/styles/main.css")
-    )?;
-    println!("Processed {} SCSS files", report.files_processed);
-
-    // Copy static files with exclusions
-    let static_copier = StaticCopier::with_exclusions(
-        vec!["*.scss".to_string()]
-    );
-
-    let report = static_copier.process(
-        Path::new("static"),
-        Path::new("dist/static")
-    )?;
-    println!("Copied {} static files", report.files_processed);
-
-    Ok(())
-}
-```
-
-## CLI Reference
-
-The `yew-ssg` binary provides five subcommands.
-
-### `yew-ssg build`
-
-Build the static site from content and templates.
-
-```
-yew-ssg build [OPTIONS]
-
-Options:
-  -d, --dir <PATH>       Root directory (must contain site.toml) [default: .]
-  -v, --verbose          Print detailed progress for each build stage
-  -q, --quiet            Suppress all output except errors
-      --include-drafts   Include pages marked draft = true
-      --dry-run          Simulate without writing files
-      --clean            Remove output directory before building
-  -o, --output <PATH>    Override the output directory from site.toml
-  -h, --help             Print help
-```
-
-### `yew-ssg clean`
-
-Remove all generated files from the output directory.
-
-```
-yew-ssg clean [OPTIONS]
-
-Options:
-  -d, --dir <PATH>   Root directory (must contain site.toml) [default: .]
-  -h, --help         Print help
-```
-
-### `yew-ssg init`
-
-Initialize a new site with a default directory structure.
-
-```
-yew-ssg init [OPTIONS] [PATH]
-
-Arguments:
-  [PATH]   Directory to initialize [default: .]
-
-Options:
-  -n, --name <NAME>       Site name used in templates and site.toml
-  -u, --base-url <URL>    Base URL (must start with http:// or https://)
-  -f, --force             Initialize even if directory is not empty
-  -i, --islands           Include WASM hydration script in templates for islands support
-  -h, --help              Print help
-```
-
-Files created by `init`:
-
-| Path                     | Description              |
-| ------------------------ | ------------------------ |
-| `site.toml`              | Site configuration       |
-| `content/_index.md`      | Home page content        |
-| `templates/base.html`    | Base HTML layout         |
-| `templates/page.html`    | Single-page template     |
-| `templates/section.html` | Section/listing template |
-| `styles/main.scss`       | Starter stylesheet       |
-| `static/scripts.js`      | Placeholder scripts      |
-| `static/favicon.png`     | Placeholder favicon      |
-
-### `yew-ssg routes`
-
-List all routes discovered from the content directory without building.
-
-```
-yew-ssg routes [OPTIONS]
-
-Options:
-  -d, --dir <PATH>   Root directory (must contain site.toml) [default: .]
-  -h, --help         Print help
-```
-
-Example output:
-
-```
-Routes for "My Site"
-─────────────────────────────────────────────────────
-  [section]  /             _index.md              index.html
-  [page]     /about/       about.md               about/index.html
-  [section]  /blog/        blog/_index.md         blog/index.html
-  [page]     /blog/hello/  blog/hello-world.md    blog/hello/index.html
-─────────────────────────────────────────────────────
-  Total: 4 routes (2 pages, 2 sections)
-```
-
-### `yew-ssg serve`
-
-Start a local development server with hot reloading.
-
-```
-yew-ssg serve [OPTIONS]
-
-Options:
-  -p, --port <PORT>       Port to listen on [default: 3000]
-  -s, --site-dir <PATH>   Site directory to serve [default: .]
-  -o, --open              Open browser automatically
-  -h, --help              Print help
-```
-
-The serve command:
-
-1. Builds the site if not already built
-2. Starts an HTTP server on the specified port
-3. Watches for file changes in content, templates, styles, and static directories
-4. Automatically rebuilds and refreshes connected browsers on changes
-
-### Error Hints
-
-When a command fails, the CLI prints an actionable hint alongside the error:
-
-| Error                 | Hint                                                          |
-| --------------------- | ------------------------------------------------------------- |
-| `site.toml` not found | Run `yew-ssg init` or use `--dir`                             |
-| No content found      | Add `.md` files to `content/`, start with `content/_index.md` |
-| Template not found    | Check that `templates/` contains `base.html` and `page.html`  |
-
-## Feature Flags
-
-The library has one feature flag:
-
-| Feature   | Default | Description                                                                                |
-| --------- | ------- | ------------------------------------------------------------------------------------------ |
-| `islands` | off     | Enables Yew SSR + `tokio` + `common` crate compilation; activates `island()` Tera function |
-
-The development server (`serve` command) is always available and does not require a feature flag.
-
-## Versioning
-
-The library follows [Semantic Versioning](https://semver.org/):
-
-- **Major**: Breaking API changes
-- **Minor**: New features, backward compatible
-- **Patch**: Bug fixes, backward compatible
-
-## Stability
-
-The current API is considered **unstable** and may change between versions.
-
-The following are considered stable and will not change in minor versions:
-
-- Error type hierarchy
-- `SiteConfig::from_file` and `from_dir` signatures
-- `BuildConfig::default()` behavior
-- `Page::from_file` and `Page::from_str` signatures
-- `Frontmatter::from_str` signature
+## `tracing` Module
+
+| Function | Description |
+|----------|-------------|
+| `init()` | Initialize with `RUST_LOG` env var |
+| `init_with_level(level: &str)` | Initialize with specific level |
