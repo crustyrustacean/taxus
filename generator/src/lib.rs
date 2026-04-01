@@ -34,8 +34,8 @@ pub mod feed;
 pub mod init;
 pub mod routes;
 pub mod serve;
+pub mod telemetry;
 pub mod templates;
-pub mod tracing;
 
 // Re-exports for convenience
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};

@@ -8,13 +8,13 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 
+[[bin]]
+name = "yew-ssg"
+path = "src/bin/yew-ssg/main.rs"
+
 [lib]
 name = "yew_ssg_lib"
 path = "src/lib.rs"
-
-[[bin]]
-name = "yew-ssg"
-path = "src/bin/main.rs"
 
 [features]
 # Enable Yew SSR island support.

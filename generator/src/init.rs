@@ -1,3 +1,5 @@
+// generator/src/init/mod.rs
+
 //! Site initialization module.
 //!
 //! This module provides functionality for scaffolding new static sites
@@ -5,12 +7,10 @@
 
 mod scaffold;
 
+use crate::error::{GeneratorError, InitError, Result};
+pub use scaffold::InitScaffolder;
 use std::path::{Path, PathBuf};
 use tracing::info;
-
-use crate::error::{GeneratorError, InitError, Result};
-
-pub use scaffold::InitScaffolder;
 
 /// Options for initializing a new site.
 #[derive(Debug, Clone)]
@@ -122,30 +122,28 @@ impl InitReport {
         );
 
         // Human-readable output
-        println!("\n✓ Site initialized at {}/\n", self.path.display());
+        info!("\n✓ Site initialized at {}/\n", self.path.display());
 
         if !self.created_dirs.is_empty() {
-            println!("  Directories");
+            info!("  Directories");
             for dir in &self.created_dirs {
-                println!("    {}/", dir.display());
+                info!("    {}/", dir.display());
             }
-            println!();
         }
 
         if !self.created_files.is_empty() {
-            println!("  Files");
+            info!("  Files");
             for file in &self.created_files {
-                println!("    {}", file.display());
+                info!("    {}", file.display());
             }
-            println!();
         }
 
-        println!("Next steps:");
-        println!("  cd {}", self.path.display());
-        println!("  Edit site.toml to set your site name and base URL");
-        println!("  Add content to the content/ directory");
-        println!("  Customize templates in templates/");
-        println!("  Run: yew-ssg serve --open");
+        info!("Next steps:");
+        info!("  cd {}", self.path.display());
+        info!("  Edit site.toml to set your site name and base URL");
+        info!("  Add content to the content/ directory");
+        info!("  Customize templates in templates/");
+        info!("  Run: yew-ssg serve --open");
     }
 }
 

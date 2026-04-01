@@ -1,4 +1,6 @@
-//! Tracing initialization for the generator.
+// generator/src/telemetry.rs
+
+//! Telemetry initialization for the generator.
 //!
 //! This module provides structured logging via the `tracing` crate, replacing
 //! the previous `println!`/`eprintln!` based output. Log levels are controlled
@@ -44,7 +46,7 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 ///
 /// ```rust,ignore
 /// // Call early in main
-/// yew_ssg_lib::tracing::init();
+/// yew_ssg_lib::telemetry::init();
 /// ```
 pub fn init() {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
@@ -53,6 +55,26 @@ pub fn init() {
         .with(filter)
         .with(tracing_subscriber::fmt::layer())
         .init();
+}
+
+/// Initialize tracing based on CLI flags.
+///
+/// Maps `--verbose` to debug level and `--quiet` to error level.
+/// Respects `RUST_LOG` environment variable if set.
+pub fn init_tracing(verbose: bool, quiet: bool) {
+    let level = if quiet {
+        "error"
+    } else if verbose {
+        "debug"
+    } else {
+        // Respect RUST_LOG if set, otherwise use info
+        if std::env::var("RUST_LOG").is_ok() {
+            return; // init() will use RUST_LOG
+        }
+        "info"
+    };
+
+    init_with_level(level);
 }
 
 /// Initialize tracing with a specific level override.
@@ -68,10 +90,10 @@ pub fn init() {
 ///
 /// ```rust,ignore
 /// // For --quiet flag
-/// yew_ssg_lib::tracing::init_with_level("error");
+/// yew_ssg_lib::telemetry::init_with_level("error");
 ///
 /// // For --verbose flag
-/// yew_ssg_lib::tracing::init_with_level("debug");
+/// yew_ssg_lib::telemetry::init_with_level("debug");
 /// ```
 pub fn init_with_level(level: &str) {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level));
