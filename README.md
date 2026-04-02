@@ -1,6 +1,6 @@
-# Yew Static Site Generator (SSG) Template
+# Yew SSG
 
-A Rust-based static site generator built with [Yew](https://yew.rs/), designed for building fast, SEO-friendly websites with the power of WebAssembly.
+A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), designed for building fast, SEO-friendly websites with the power of WebAssembly.
 
 ## Features
 
@@ -73,13 +73,6 @@ cargo run -- build --dir my-site
 
 # Islands SSG — Yew SSR pre-renders components at build time
 cargo run --features islands -- build --dir my-site
-```
-
-Using `just`:
-
-```bash
-just build my-site           # plain SSG
-just build-islands my-site   # SSG + WASM islands
 ```
 
 ## Prerequisites

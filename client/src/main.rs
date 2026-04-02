@@ -14,17 +14,36 @@ use common::components::counter::{Counter, CounterProps};
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
+/// helper function to log errors to the console
+fn console_error(msg: &str) {
+    web_sys::console::error_1(&JsValue::from_str(msg));
+}
+
 /// WASM module entry point — called automatically when the module is instantiated.
 #[wasm_bindgen(start)]
 pub fn hydrate_islands() {
     // Find every island mount point in the document
-    let document = web_sys::window().unwrap().document().unwrap();
+    let window = match web_sys::window() {
+        Some(w) => w,
+        None => return console_error("No window object."),
+    };
 
-    let nodes = document.query_selector_all("[data-island]").unwrap();
+    let document = match window.document() {
+        Some(d) => d,
+        None => return console_error("No document object."),
+    };
+
+    let nodes = match document.query_selector_all("[data-island]") {
+        Ok(n) => n,
+        Err(_) => return console_error("Failed to query islands."),
+    };
 
     for i in 0..nodes.length() {
         if let Some(el) = nodes.item(i) {
-            let el: HtmlElement = el.dyn_into().unwrap();
+            let el: HtmlElement = match el.dyn_into() {
+                Ok(el) => el,
+                Err(_) => continue,
+            };
             let dataset = el.dataset();
 
             let name = dataset.get("island").unwrap_or_default();

@@ -12,6 +12,7 @@ pub struct CounterProps {
     pub initial: i32,
 }
 
+// A sample component, adds a counter that increments with a button click
 #[component]
 pub fn Counter(props: &CounterProps) -> Html {
     let count = use_state(|| props.initial);
@@ -22,7 +23,8 @@ pub fn Counter(props: &CounterProps) -> Html {
     };
 
     html! {
-        <div class="counter">
+        <div>
+            <p>{ "Counter Widget" }</p>
             <span>{ *count }</span>
             <button onclick={on_click}>{ "+" }</button>
         </div>
