@@ -1,4 +1,4 @@
-// generator/src/init/mod.rs
+// generator/src/init/init.rs
 
 //! Site initialization module.
 //!

@@ -4,7 +4,7 @@ default-members = ["generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.39"
+version = "0.1.40"
 edition = "2024"
 authors = ["Jeff Mitchell"]
 description = "A workspace for a Rust based static site generator, using Tera and Yew."

@@ -1,10 +1,10 @@
+// generator/src/init/scaffold.rs
+
 //! Site scaffolding functionality.
 
-use std::path::Path;
-
-use crate::error::{InitError, Result};
-
 use super::{InitOptions, InitReport};
+use crate::error::{InitError, Result};
+use std::path::Path;
 
 /// Scaffolder for creating new site structures.
 pub struct InitScaffolder {
@@ -143,7 +143,8 @@ This is your new static site. Start editing this file to add your content.
 1. Edit `site.toml` to configure your site settings
 2. Add new markdown files in the `content/` directory
 3. Customize templates in `templates/`
-4. Run `yew-ssg build` to generate your site
+4. Run `yew-ssg serve` to develop your site, with hot-reloading of changes.
+5. Run `yew-ssg build` to generate your site
 "#,
             self.options.name, self.options.name
         );
@@ -232,8 +233,6 @@ This is your new static site. Start editing this file to add your content.
     {% endif %}
     {{ page.content | safe }}
 </article>
-{# Place a Counter island on the page #}
-{{ island(component="Counter", initial=3) | safe }}
 {% endblock %}
 "#;
             std::fs::write(&page_path, content).map_err(|e| InitError::FileWrite {
@@ -275,6 +274,8 @@ This is your new static site. Start editing this file to add your content.
     
     {{ section.content | safe }}
 </section>
+{# Place a Counter island on the page #}
+{{ island(component="Counter", initial=3) | safe }}
 {% endblock %}
 "#;
             std::fs::write(&section_path, content).map_err(|e| InitError::FileWrite {
