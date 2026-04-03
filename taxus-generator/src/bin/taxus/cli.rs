@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 /// A static site generator founded in Tera with WebAssembly islands.
 ///
-/// yew-ssg turns Markdown content and Tera templates into a fully static website.
+/// taxus turns Markdown content and Tera templates into a fully static website.
 /// Configuration is read from site.toml in the site root directory.
 ///
 /// Quick start:
@@ -13,7 +13,7 @@ use std::path::PathBuf;
 ///   cd my-site
 ///   taxus build                  # generate output in dist/
 #[derive(Parser)]
-#[command(name = "yew-ssg")]
+#[command(name = "taxus")]
 #[command(about = "A Yew-based static site generator")]
 #[command(version)]
 pub struct Cli {
@@ -76,7 +76,7 @@ pub enum Commands {
 
         /// Remove all files from the output directory before building.
         ///
-        /// Equivalent to running `yew-ssg clean` then `yew-ssg build`.
+        /// Equivalent to running `taxus clean` then `taxus build`.
         #[arg(long)]
         clean: bool,
 
@@ -143,7 +143,7 @@ pub enum Commands {
 
         /// Initialize even if the directory is not empty.
         ///
-        /// Without this flag, yew-ssg will prompt for confirmation before
+        /// Without this flag, taxus will prompt for confirmation before
         /// initializing a non-empty directory. Existing files are never
         /// overwritten.
         #[arg(short, long)]

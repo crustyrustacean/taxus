@@ -396,6 +396,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
+name = "client"
+version = "0.1.44"
+dependencies = [
+ "serde_json",
+ "taxus-common",
+ "wasm-bindgen",
+ "web-sys",
+ "yew",
+]
+
+[[package]]
 name = "cmake"
 version = "0.1.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2648,7 +2659,7 @@ dependencies = [
 
 [[package]]
 name = "taxus"
-version = "0.1.43"
+version = "0.1.44"
 dependencies = [
  "axum",
  "axum-extra",
@@ -2679,19 +2690,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "taxus-client"
-version = "0.1.43"
-dependencies = [
- "serde_json",
- "taxus-common",
- "wasm-bindgen",
- "web-sys",
- "yew",
-]
-
-[[package]]
 name = "taxus-common"
-version = "0.1.43"
+version = "0.1.44"
 dependencies = [
  "serde",
  "yew",

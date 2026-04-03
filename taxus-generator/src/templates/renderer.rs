@@ -214,7 +214,7 @@ impl TeraRenderer {
             let html = match component {
                 "Counter" => {
                     use crate::build::pipeline::render_island_counter;
-                    use common::components::counter::CounterProps;
+                    use taxus_common::components::counter::CounterProps;
 
                     let initial = args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
 

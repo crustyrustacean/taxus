@@ -143,7 +143,7 @@ impl InitReport {
         info!("  Edit site.toml to set your site name and base URL");
         info!("  Add content to the content/ directory");
         info!("  Customize templates in templates/");
-        info!("  Run: yew-ssg serve --open");
+        info!("  Run: taxus serve --open");
     }
 }
 

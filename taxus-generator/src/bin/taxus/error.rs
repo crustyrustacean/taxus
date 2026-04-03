@@ -16,7 +16,7 @@ pub fn render_error(e: &GeneratorError) {
 
     let hint: Option<&str> = match e {
         GeneratorError::Config(ConfigError::NotFound(_)) => Some(
-            "Run 'yew-ssg init' to create a new site, or use --dir to point to your site directory.",
+            "Run 'taxus init' to create a new site, or use --dir to point to your site directory.",
         ),
         GeneratorError::Build(BuildError::NoContent) => {
             Some("Add .md files to your content/ directory. Start with content/_index.md.")

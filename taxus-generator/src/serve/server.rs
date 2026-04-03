@@ -1,3 +1,5 @@
+// taxus-generator/src/serve/server.rs
+
 //! Development server with live reload.
 //!
 //! This module provides the main development server that serves static files
@@ -341,6 +343,7 @@ where
                         Some("html") => "text/html; charset=utf-8",
                         Some("css") => "text/css; charset=utf-8",
                         Some("js") => "application/javascript; charset=utf-8",
+                        Some("wasm") => "application/wasm",
                         Some("json") => "application/json; charset=utf-8",
                         Some("png") => "image/png",
                         Some("jpg") | Some("jpeg") => "image/jpeg",

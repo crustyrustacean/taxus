@@ -274,7 +274,7 @@ mod injector_tests {
 
         let result = inject_live_reload_script(html);
         // Should still inject (we don't check for existing script)
-        assert!(result.contains("yew-ssg"));
+        assert!(result.contains("taxus"));
     }
 
     #[test]

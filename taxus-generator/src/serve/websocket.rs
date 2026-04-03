@@ -107,11 +107,11 @@ mod tests {
     #[test]
     fn test_websocket_message_connected() {
         let message = WebSocketMessage::Connected {
-            server: "yew-ssg-dev".to_string(),
+            server: "taxus-dev".to_string(),
         };
 
         let json = serde_json::to_string(&message).unwrap();
         assert!(json.contains("connected"));
-        assert!(json.contains("yew-ssg-dev"));
+        assert!(json.contains("taxus-dev"));
     }
 }

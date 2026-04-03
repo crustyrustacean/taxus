@@ -24,7 +24,7 @@ use tracing::{debug, debug_span, info};
 
 // Island-specific imports — only compiled when the `islands` feature is enabled.
 #[cfg(feature = "islands")]
-use common::components::counter::{Counter, CounterProps};
+use taxus_common::components::counter::{Counter, CounterProps};
 #[cfg(feature = "islands")]
 use yew::ServerRenderer;
 
@@ -1053,14 +1053,31 @@ pub fn render_island_counter(props: CounterProps) -> String {
     // We cannot use Handle::current() because the generator's main() is synchronous
     // and has no ambient tokio runtime running. Builder::new_current_thread() creates
     // a temporary runtime that exists only for the duration of block_on.
-    let ssr_html = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .expect("Failed to build tokio runtime for island SSR")
-        .block_on(async {
-            ServerRenderer::<Counter>::with_props(move || props)
-                .render()
-                .await
-        });
+    let ssr_html = match tokio::runtime::Handle::try_current() {
+        Ok(handle) => {
+            // Already inside a tokio runtime (e.g., serve command) —
+            // use block_in_place to avoid nesting runtimes.
+            tokio::task::block_in_place(|| {
+                handle.block_on(async {
+                    ServerRenderer::<Counter>::with_props(move || props)
+                        .render()
+                        .await
+                })
+            })
+        }
+        Err(_) => {
+            // No ambient runtime (e.g., build command) —
+            // create a temporary single-threaded runtime.
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .expect("Failed to build tokio runtime for island SSR")
+                .block_on(async {
+                    ServerRenderer::<Counter>::with_props(move || props)
+                        .render()
+                        .await
+                })
+        }
+    };
 
     // Emit the mount point wrapper around the SSR output
     format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)

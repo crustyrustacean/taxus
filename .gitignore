@@ -1,4 +1,7 @@
-# gitignore configuration for yew-ssg-template
+# gitignore configuration for taxus
+
+# OS system files
+.DS_Store
 
 # IDE settings
 .vscode

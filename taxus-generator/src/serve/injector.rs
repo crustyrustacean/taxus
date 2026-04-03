@@ -27,7 +27,7 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'reload') {
-                    console.log('[yew-ssg] Reloading due to:', data.change_type, data.files);
+                    console.log('[taxus] Reloading due to:', data.change_type, data.files);
                     window.location.reload();
                 } else if (data.type === 'error') {
                     console.error('[taxus] Build error:', data.message);
@@ -39,7 +39,7 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
         };
         
         ws.onclose = function() {
-            console.log('[yew-ssg] WebSocket closed');
+            console.log('[taxus] WebSocket closed');
             if (reconnectAttempts < maxReconnectAttempts) {
                 reconnectAttempts++;
                 setTimeout(connect, reconnectDelay);
@@ -47,7 +47,7 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
         };
         
         ws.onerror = function(err) {
-            console.error('[yew-ssg] WebSocket error:', err);
+            console.error('[taxus] WebSocket error:', err);
         };
     }
 

@@ -16,7 +16,7 @@ pub enum ServeError {
     },
 
     /// The site configuration file was not found.
-    #[error("Configuration file not found: {0}. Run 'yew-ssg init' to create a new site.")]
+    #[error("Configuration file not found: {0}. Run 'taxus init' to create a new site.")]
     ConfigNotFound(PathBuf),
 
     /// A build failed during the serve session.
@@ -79,7 +79,7 @@ mod tests {
         let error = ServeError::ConfigNotFound(path.clone());
         let message = format!("{}", error);
         assert!(message.contains("Configuration file not found"));
-        assert!(message.contains("yew-ssg init"));
+        assert!(message.contains("taxus init"));
     }
 
     #[test]

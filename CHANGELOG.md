@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 404 Page Handling
 
-- **404.html Template**: New template generated during `yew-ssg init`
+- **404.html Template**: New template generated during `taxus init`
   - Renders a user-friendly 404 page with site styling
   - Available at `/404.html` in the output directory
   - Uses the same base template as other pages
@@ -323,7 +323,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Development Server with Hot Reloading
 
 - **`serve` command**: New command for local development with live reload support
-  - `yew-ssg serve`: Starts a development server on port 3000
+  - `taxus serve`: Starts a development server on port 3000
   - `--port` / `-p`: Custom port selection
   - `--site-dir`: Serve from a different directory
   - `--open`: Automatically open browser on start
@@ -357,7 +357,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **`init` command output**: Now recommends `yew-ssg serve --open` after scaffolding
+- **`init` command output**: Now recommends `taxus serve --open` after scaffolding
 
 ## [0.1.21] - 2026-03-21
 
@@ -395,8 +395,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Init Command Islands Flag
 
 - **`--islands` flag for `init` command**: Scaffold sites with or without Yew/WASM hydration support
-  - `yew-ssg init my-site`: Creates a plain SSG site (no WASM hydration script in templates)
-  - `yew-ssg init my-site --islands`: Creates a site with islands support (includes WASM hydration script)
+  - `taxus init my-site`: Creates a plain SSG site (no WASM hydration script in templates)
+  - `taxus init my-site --islands`: Creates a site with islands support (includes WASM hydration script)
   - `InitOptions` struct now has `islands: bool` field with `with_islands()` builder method
   - `InitScaffolder` conditionally includes WASM hydration script in `base.html` based on flag
 
@@ -510,12 +510,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### CLI Improvements
 
 - **`clean` Subcommand**: New standalone subcommand to remove the output directory
-  - `yew-ssg clean`: Delete generated files from the output directory
-  - `yew-ssg clean --dir PATH`: Clean a site in a different directory
-  - Previously, cleaning required `yew-ssg build --clean` which also triggered a build
+  - `taxus clean`: Delete generated files from the output directory
+  - `taxus clean --dir PATH`: Clean a site in a different directory
+  - Previously, cleaning required `taxus build --clean` which also triggered a build
 
 - **`routes` Subcommand**: New diagnostic command to inspect discovered routes
-  - `yew-ssg routes`: List all routes that would be generated from the content directory
+  - `taxus routes`: List all routes that would be generated from the content directory
   - Displays a sorted table of URL path → source file → output file
   - Prints counts of total routes, pages, and sections
   - Useful for debugging route discovery without running a full build
@@ -526,7 +526,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`--output` / `-o PATH` Flag on `build`**: Override the output directory at runtime
   - Avoids editing `site.toml` just to preview output in a temporary location
-  - Works with all other flags: `yew-ssg build --output /tmp/preview --dry-run`
+  - Works with all other flags: `taxus build --output /tmp/preview --dry-run`
 
 - **Richer Help Text**: All subcommands and arguments now have expanded descriptions
   - Root command includes a "Quick start" block
@@ -534,7 +534,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Every argument explains _what_ it is and _when_ to use it
 
 - **Actionable Error Messages**: Errors now include a contextual `Hint:` line
-  - `Config::NotFound` → suggests `yew-ssg init` or `--dir`
+  - `Config::NotFound` → suggests `taxus init` or `--dir`
   - `Build::NoContent` → suggests adding `.md` files to `content/`
   - `Template::NotFound` / `Template::DirNotFound` → suggests checking `templates/`
   - `Init::Cancelled` → silent (intentional user action)
@@ -584,12 +584,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Static file scaffolding** (`generator/src/init/scaffold.rs`):
   - `create_static_files()` now generates both `static/scripts.js` and an embedded minimal `static/favicon.png` (1×1 transparent PNG bytes, no external dependencies)
-  - Previously these files were not created during `yew-ssg init`, leaving the base template with a broken favicon and missing scripts reference
+  - Previously these files were not created during `taxus init`, leaving the base template with a broken favicon and missing scripts reference
   - Integration test `test_scaffold_creates_static_files` added to cover both files
 
 - **Removed workspace-level static assets**:
   - `static/favicon.png` and `static/scripts.js` deleted from the workspace root
-  - These files were leftover from the pre-scaffolding era; they are now generated per-site by `yew-ssg init`
+  - These files were leftover from the pre-scaffolding era; they are now generated per-site by `taxus init`
 
 ## [0.1.13] - 2026-03-18
 
@@ -639,7 +639,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.8] through ## [0.1.10]
 
-> These versions covered the integration of the init command with the full build pipeline — verifying the end-to-end flow from `yew-ssg init` through `yew-ssg build` to a working static site. Bug fixes were iterative; see individual commits `355fad7`, `666e650`, `5e93e5b` in the git history.
+> These versions covered the integration of the init command with the full build pipeline — verifying the end-to-end flow from `taxus init` through `taxus build` to a working static site. Bug fixes were iterative; see individual commits `355fad7`, `666e650`, `5e93e5b` in the git history.
 
 ## [0.1.7] - 2026-03-17
 
@@ -678,11 +678,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `InitError::InvalidBaseUrl`: Invalid base URL
 
 - **CLI Subcommands**: Refactored binary with subcommand structure
-  - `yew-ssg init [path]`: Initialize a new site
-  - `yew-ssg init --name "My Site"`: Set site name
-  - `yew-ssg init --base-url "https://example.com"`: Set base URL
-  - `yew-ssg init --force`: Force initialization in non-empty directory
-  - `yew-ssg build`: Build the static site (moved to subcommand)
+  - `taxus init [path]`: Initialize a new site
+  - `taxus init --name "My Site"`: Set site name
+  - `taxus init --base-url "https://example.com"`: Set base URL
+  - `taxus init --force`: Force initialization in non-empty directory
+  - `taxus build`: Build the static site (moved to subcommand)
 
 - **User Prompt**: Interactive confirmation for non-empty directories
   - Prompts user before initializing in non-empty directory
@@ -1175,4 +1175,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - License file
 - Git ignore configuration
 
-[0.1.0]: https://github.com/crustyrustacean/yew-ssg/releases/tag/v0.1.0
+[0.1.0]: https://github.com/crustyrustacean/taxus/releases/tag/v0.1.0
