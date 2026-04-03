@@ -7,7 +7,7 @@ This page provides a technical overview of Yew SSG's architecture, including the
 Yew SSG is organized as a multi-crate Cargo workspace with three crates:
 
 ```
-yew-ssg/
+taxus/
 ├── client/              # WASM hydration client
 ├── common/              # Shared Yew components
 └── generator/           # SSG library and CLI binary
@@ -17,9 +17,9 @@ yew-ssg/
 
 | Crate | Role | Output |
 |-------|------|--------|
-| `common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
-| `generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`yew-ssg`) |
-| `client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (via Trunk) |
+| `taxus-common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
+| `taxus-generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`taxus`) |
+| `taxus-client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (via Trunk) |
 
 ### Data Flow Between Crates
 

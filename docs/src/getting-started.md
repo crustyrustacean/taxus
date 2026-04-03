@@ -15,8 +15,8 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/crustyrustacean/yew-ssg.git
-cd yew-ssg
+git clone https://github.com/crustyrustacean/taxus.git
+cd taxus
 
 # Create a new site
 cargo run -- init my-site --name "My Site" --base-url "https://example.com"

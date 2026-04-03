@@ -450,7 +450,7 @@ async fn handle_websocket(socket: WebSocket, state: Arc<ServerState>) {
 
     // Send connected message
     let connected_msg = WebSocketMessage::Connected {
-        server: "yew-ssg-dev".to_string(),
+        server: "taxus".to_string(),
     };
     if let Ok(json) = serde_json::to_string(&connected_msg) {
         let _ = ws_tx.send(Message::Text(json.into())).await;

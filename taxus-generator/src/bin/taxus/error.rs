@@ -1,4 +1,4 @@
-// src/generator/src/bin/error.rs
+// src/generator/bin/taxus/error.rs
 
 use taxus_lib::error::{BuildError, ConfigError, GeneratorError, InitError, TemplateError};
 
@@ -25,7 +25,7 @@ pub fn render_error(e: &GeneratorError) {
             "Check that your templates/ directory exists and contains base.html and page.html.",
         ),
         GeneratorError::Template(TemplateError::DirNotFound(_)) => Some(
-            "Check that your templates/ directory exists. Run 'yew-ssg init' to create a default site.",
+            "Check that your templates/ directory exists. Run 'taxus init' to create a default site.",
         ),
         GeneratorError::Init(InitError::Cancelled) => {
             // Silent — user intentionally cancelled

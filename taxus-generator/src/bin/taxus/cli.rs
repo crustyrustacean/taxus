@@ -1,17 +1,17 @@
-// generator/src/bin/yew-ssg/cli.rs
+// generator/src/bin/taxus/cli.rs
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-/// A Yew-based static site generator.
+/// A static site generator founded in Tera with WebAssembly islands.
 ///
 /// yew-ssg turns Markdown content and Tera templates into a fully static website.
 /// Configuration is read from site.toml in the site root directory.
 ///
 /// Quick start:
-///   yew-ssg init my-site          # scaffold a new site
+///   taxus init my-site          # scaffold a new site
 ///   cd my-site
-///   yew-ssg build                  # generate output in dist/
+///   taxus build                  # generate output in dist/
 #[derive(Parser)]
 #[command(name = "yew-ssg")]
 #[command(about = "A Yew-based static site generator")]
@@ -31,12 +31,12 @@ pub enum Commands {
     /// directory (default: dist/).
     ///
     /// Examples:
-    ///   yew-ssg build
-    ///   yew-ssg build --verbose
-    ///   yew-ssg build --dir ./my-site --include-drafts
-    ///   yew-ssg build --clean --verbose
-    ///   yew-ssg build --dry-run
-    ///   yew-ssg build --output /tmp/preview
+    ///   taxus build
+    ///   taxus build --verbose
+    ///   taxus build --dir ./my-site --include-drafts
+    ///   taxus build --clean --verbose
+    ///   taxus build --dry-run
+    ///   taxus build --output /tmp/preview
     Build {
         /// Root directory of the site (must contain site.toml).
         ///
@@ -94,8 +94,8 @@ pub enum Commands {
     /// Does not affect content, templates, or styles.
     ///
     /// Examples:
-    ///   yew-ssg clean
-    ///   yew-ssg clean --dir ./my-site
+    ///   taxus clean
+    ///   taxus clean --dir ./my-site
     Clean {
         /// Root directory of the site (must contain site.toml).
         #[arg(short, long, default_value = ".", value_name = "PATH")]
@@ -116,10 +116,10 @@ pub enum Commands {
     ///   static/favicon.png      placeholder favicon
     ///
     /// Examples:
-    ///   yew-ssg init
-    ///   yew-ssg init my-site
-    ///   yew-ssg init my-site --name "My Blog" --base-url "https://myblog.com"
-    ///   yew-ssg init my-site --force
+    ///   taxus init
+    ///   taxus init my-site
+    ///   taxus init my-site --name "My Blog" --base-url "https://myblog.com"
+    ///   taxus init my-site --force
     Init {
         /// Directory to initialize (defaults to the current directory).
         ///
@@ -164,8 +164,8 @@ pub enum Commands {
     /// files they would produce. No files are written.
     ///
     /// Examples:
-    ///   yew-ssg routes
-    ///   yew-ssg routes --dir ./my-site
+    ///   taxus routes
+    ///   taxus routes --dir ./my-site
     Routes {
         /// Root directory of the site (must contain site.toml).
         #[arg(short, long, default_value = ".", value_name = "PATH")]
@@ -179,10 +179,10 @@ pub enum Commands {
     /// and connected browsers are automatically reloaded via WebSocket.
     ///
     /// Examples:
-    ///   yew-ssg serve
-    ///   yew-ssg serve .
-    ///   yew-ssg serve --port 8080
-    ///   yew-ssg serve ./my-site
+    ///   taxus serve
+    ///   taxus serve .
+    ///   taxus serve --port 8080
+    ///   taxus serve ./my-site
     Serve {
         /// Root directory of the site (must contain site.toml).
         #[arg(default_value = ".", value_name = "PATH")]

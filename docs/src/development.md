@@ -11,8 +11,8 @@ This guide covers development workflows for contributing to Yew SSG.
 ## Setup
 
 ```bash
-git clone https://github.com/crustyrustacean/yew-ssg.git
-cd yew-ssg
+git clone https://github.com/crustyrustacean/taxus.git
+cd taxus
 cargo build
 ```
 
@@ -109,7 +109,7 @@ fn build_site() {
 ## Workspace Structure
 
 ```
-yew-ssg/
+taxus/
 ├── client/     # WASM hydration client
 ├── common/     # Shared Yew components
 ├── generator/  # SSG library and CLI

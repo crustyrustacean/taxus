@@ -1,6 +1,6 @@
 # Islands Architecture
 
-Yew SSG implements the **Islands Architecture**: Tera templates render the static "sea" of HTML, while Yew components are pre-rendered server-side into "islands" and then hydrated by the WASM client in the browser.
+Taxus implements the **Islands Architecture**: Tera templates render the static "sea" of HTML, while Yew components are pre-rendered server-side into "islands" and then hydrated by the WASM client in the browser.
 
 ## How It Works
 
@@ -39,7 +39,7 @@ When the page loads:
 
 ## Two-Tier Interactivity
 
-Yew SSG supports two layers of interactivity:
+taxus supports two layers of interactivity:
 
 | Tier | Technology | Use For |
 |------|------------|---------|

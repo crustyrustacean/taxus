@@ -143,8 +143,8 @@ This is your new static site. Start editing this file to add your content.
 1. Edit `site.toml` to configure your site settings
 2. Add new markdown files in the `content/` directory
 3. Customize templates in `templates/`
-4. Run `yew-ssg serve` to develop your site, with hot-reloading of changes.
-5. Run `yew-ssg build` to generate your site
+4. Run `taxus serve` to develop your site, with hot-reloading of changes.
+5. Run `taxus build` to generate your site
 "#,
             self.options.name, self.options.name
         );

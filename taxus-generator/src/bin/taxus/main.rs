@@ -1,6 +1,6 @@
-// generator/src/bin/main.rs
+// generator/src/bin/taxus/main.rs
 
-//! Yew SSG - A static site generator with Tera and Yew.
+//! Taxus - A static site generator with Tera and Yew.
 //!
 //! This is the CLI binary for the static site generator.
 //! It uses the generator library to build static sites from Markdown content.

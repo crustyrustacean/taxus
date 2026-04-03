@@ -6,16 +6,16 @@ The `serve` command provides a local development server with hot reloading.
 
 ```bash
 # Start server on default port (3000)
-yew-ssg serve
+taxus serve
 
 # Start with custom port
-yew-ssg serve --port 8080
+taxus serve --port 8080
 
 # Start and open browser automatically
-yew-ssg serve --open
+taxus serve --open
 
 # Serve from a different directory
-yew-ssg serve ./my-site
+taxus serve ./my-site
 ```
 
 The serve command performs an initial build automatically before starting the server.
@@ -72,9 +72,9 @@ Press `Ctrl+C` to shut down cleanly:
 ### After `init`
 
 ```bash
-yew-ssg init my-site
+taxus init my-site
 cd my-site
-yew-ssg serve --open
+taxus serve --open
 ```
 
 ### With `build`
@@ -83,10 +83,10 @@ The serve command runs `build` internally. For production:
 
 ```bash
 # Development
-yew-ssg serve
+taxus serve
 
 # Production
-yew-ssg build
+taxus build
 ```
 
 ## Troubleshooting
@@ -94,7 +94,7 @@ yew-ssg build
 ### Port Already in Use
 
 ```bash
-yew-ssg serve --port 3001
+taxus serve --port 3001
 ```
 
 Check what's using the port:

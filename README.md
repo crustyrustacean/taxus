@@ -31,16 +31,16 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 ## Project Structure
 
 ```
-yew-ssg/
-├── client/                 # WASM hydration client (built by Trunk)
+taxus/
+├── taxus-client/                 # WASM hydration client (built by Trunk)
 │   ├── src/main.rs         # Island hydration bootstrap (#[wasm_bindgen(start)])
 │   ├── index.html          # Trunk entry point
 │   └── Trunk.toml          # Trunk build configuration
-├── common/                 # Shared Yew components (generator SSR + WASM client)
+├── taxus-common/                 # Shared Yew components (generator SSR + WASM client)
 │   └── src/
 │       └── components/
 │           └── counter.rs  # Example island component (serializable props)
-├── generator/              # Static site generator
+├── taxus-generator/              # Static site generator
 │   ├── src/
 │   │   ├── lib.rs          # Library entry point and public API re-exports
 │   │   ├── config.rs       # SiteConfig, SiteMeta, BuildConfig
@@ -274,11 +274,11 @@ cd client && trunk serve
 
 ## Workspace Crates
 
-- **client**: WASM hydration client — finds island mount points in the DOM, deserializes their props, calls `yew::Renderer::hydrate()` on each
-- **common**: Shared Yew components — compiled into both the `generator` binary (for SSR) and the `client` WASM bundle (for hydration)
-- **generator**: Static site generator library and binary
+- **taxus-client**: WASM hydration client — finds island mount points in the DOM, deserializes their props, calls `yew::Renderer::hydrate()` on each
+- **taxus-common**: Shared Yew components — compiled into both the `generator` binary (for SSR) and the `client` WASM bundle (for hydration)
+- **taxus-generator**: Static site generator library and binary
   - Library (`taxus_lib`): Configuration, content parsing, route discovery, Tera rendering, asset processing, init scaffolding, dev server
-  - Binary (`yew-ssg`): CLI with `build`, `clean`, `init`, `routes`, and `serve` subcommands
+  - Binary (`taxus`): CLI with `build`, `clean`, `init`, `routes`, and `serve` subcommands
 
 ## Islands Architecture
 
@@ -732,4 +732,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Acknowledgments
 
 - [Yew](https://yew.rs/) - Rust framework for creating reliable and efficient web applications
+- [Tera](https://keats.github.io/tera/) - A powerful, easy to use template engine for Rust
 - [Trunk](https://trunkrs.dev/) - WASM web application bundler for Rust

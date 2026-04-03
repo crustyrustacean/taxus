@@ -1,4 +1,4 @@
-// generator/src/bin/yew-ssg/commands.rs
+// generator/src/bin/taxus/commands.rs
 
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};

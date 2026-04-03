@@ -1,12 +1,12 @@
 # Trunk configuration for the Yew SSG client WASM bundle.
 #
 # The WASM bundle must be placed inside the site's dist/wasm/ directory alongside
-# the HTML pages produced by `yew-ssg build`.
+# the HTML pages produced by `taxus build`.
 #
 # Build workflow for a site in <site-dir>/:
 #
 #   # 1. Build static pages
-#   yew-ssg build --dir <site-dir>
+#   taxus build --dir <site-dir>
 #
 #   # 2. Build WASM client into the same dist/
 #   cd client && trunk build --release --dist ../<site-dir>/dist/wasm

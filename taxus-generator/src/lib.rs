@@ -1,6 +1,6 @@
 //! Generator Library
 //!
-//! A reusable static site generator library for Yew-based projects.
+//! A reusable static site generator library.
 //!
 //! # Overview
 //!

@@ -1,10 +1,10 @@
 # Introduction
 
-Welcome to **Yew SSG**, a Rust-based static site generator built with [Yew](https://yew.rs/), designed for building fast, SEO-friendly websites with the power of WebAssembly.
+Welcome to **Taxus**, a Rust-based static site generator built with [Yew](https://yew.rs/), designed for building fast, SEO-friendly websites with the power of WebAssembly.
 
-## What is Yew SSG?
+## What is Taxus?
 
-Yew SSG is a static site generator that combines:
+taxus is a static site generator that combines:
 
 - **Tera templates** for the static "sea of HTML — page layout, content, navigation
 - **Markdown content** with TOML frontmatter for writing pages and posts
@@ -30,7 +30,7 @@ The key insight: pages are immediately visible with no JavaScript required. Inte
 
 ## Who is this for?
 
-Yew SSG is ideal for:
+taxus is ideal for:
 
 - **Rust developers** who want to build websites without leaving their favorite language
 - **Performance enthusiasts** who want fast, optimized static sites with selective WASM interactivity

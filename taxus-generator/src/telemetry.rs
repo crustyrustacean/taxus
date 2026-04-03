@@ -20,19 +20,19 @@
 //!
 //! ```bash
 //! # Default (info and above)
-//! RUST_LOG=info yew-ssg build
+//! RUST_LOG=info taxus build
 //!
 //! # Verbose equivalent
-//! RUST_LOG=debug yew-ssg build
+//! RUST_LOG=debug taxus build
 //!
 //! # Everything
-//! RUST_LOG=trace yew-ssg build
+//! RUST_LOG=trace taxus build
 //!
 //! # Only errors
-//! RUST_LOG=error yew-ssg build
+//! RUST_LOG=error taxus build
 //!
 //! # Module-specific
-//! RUST_LOG=taxus_lib::build=debug yew-ssg build
+//! RUST_LOG=taxus_lib::build=debug taxus build
 //! ```
 
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};

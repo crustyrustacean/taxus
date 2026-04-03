@@ -1,19 +1,19 @@
 # CLI Reference
 
-The `yew-ssg` binary provides five subcommands for building and managing static sites.
+The `taxus` binary provides five subcommands for building and managing static sites.
 
 ## Global Usage
 
 ```bash
-yew-ssg <SUBCOMMAND> [OPTIONS]
+taxus <SUBCOMMAND> [OPTIONS]
 ```
 
-## `yew-ssg build`
+## `taxus build`
 
 Build the static site from Markdown content and templates.
 
 ```
-yew-ssg build [OPTIONS]
+taxus build [OPTIONS]
 
 Options:
   -d, --dir <PATH>         Root directory (must contain site.toml) [default: .]
@@ -30,25 +30,25 @@ Options:
 
 ```bash
 # Build from current directory
-yew-ssg build
+taxus build
 
 # Build with verbose output
-yew-ssg build --verbose
+taxus build --verbose
 
 # Build from a specific directory
-yew-ssg build --dir ./my-site
+taxus build --dir ./my-site
 
 # Build including drafts
-yew-ssg build --include-drafts
+taxus build --include-drafts
 
 # Dry run (validate without writing)
-yew-ssg build --dry-run
+taxus build --dry-run
 
 # Clean and rebuild
-yew-ssg build --clean
+taxus build --clean
 
 # Override output directory
-yew-ssg build --output /tmp/preview
+taxus build --output /tmp/preview
 ```
 
 ### Build Pipeline Stages
@@ -66,12 +66,12 @@ yew-ssg build --output /tmp/preview
 11. Process assets (SCSS, static files)
 12. Write output files
 
-## `yew-ssg clean`
+## `taxus clean`
 
 Remove all generated files from the output directory.
 
 ```
-yew-ssg clean [OPTIONS]
+taxus clean [OPTIONS]
 
 Options:
   -d, --dir <PATH>   Root directory (must contain site.toml) [default: .]
@@ -82,18 +82,18 @@ Options:
 
 ```bash
 # Clean current site
-yew-ssg clean
+taxus clean
 
 # Clean a site in a different directory
-yew-ssg clean --dir ./my-site
+taxus clean --dir ./my-site
 ```
 
-## `yew-ssg init`
+## `taxus init`
 
 Initialize a new site with a default directory structure.
 
 ```
-yew-ssg init [OPTIONS] [PATH]
+taxus init [OPTIONS] [PATH]
 
 Arguments:
   [PATH]               Directory to initialize [default: .]
@@ -123,27 +123,27 @@ Options:
 
 ```bash
 # Initialize in current directory
-yew-ssg init
+taxus init
 
 # Initialize in a new directory
-yew-ssg init my-site
+taxus init my-site
 
 # Initialize with custom options
-yew-ssg init my-site --name "My Blog" --base-url "https://myblog.com"
+taxus init my-site --name "My Blog" --base-url "https://myblog.com"
 
 # Initialize with islands support
-yew-ssg init my-site --islands
+taxus init my-site --islands
 
 # Force initialization in non-empty directory
-yew-ssg init my-site --force
+taxus init my-site --force
 ```
 
-## `yew-ssg routes`
+## `taxus routes`
 
 List all routes that would be discovered from the content directory without building.
 
 ```
-yew-ssg routes [OPTIONS]
+taxus routes [OPTIONS]
 
 Options:
   -d, --dir <PATH>   Root directory (must contain site.toml) [default: .]
@@ -167,18 +167,18 @@ Routes for "My Site"
 
 ```bash
 # List routes for current site
-yew-ssg routes
+taxus routes
 
 # List routes for a specific site
-yew-ssg routes --dir ./my-site
+taxus routes --dir ./my-site
 ```
 
-## `yew-ssg serve`
+## `taxus serve`
 
 Start a development server with live reload.
 
 ```
-yew-ssg serve [OPTIONS] [DIR]
+taxus serve [OPTIONS] [DIR]
 
 Arguments:
   [DIR]               Root directory (must contain site.toml) [default: .]
@@ -197,19 +197,19 @@ The serve command performs an initial build automatically, then watches for file
 
 ```bash
 # Start on default port
-yew-ssg serve
+taxus serve
 
 # Start with custom port
-yew-ssg serve --port 8080
+taxus serve --port 8080
 
 # Start and open browser
-yew-ssg serve --open
+taxus serve --open
 
 # Serve from specific directory
-yew-ssg serve ./my-site
+taxus serve ./my-site
 
 # Combined options
-yew-ssg serve ./my-site --port 8080 --open --verbose
+taxus serve ./my-site --port 8080 --open --verbose
 ```
 
 ## Error Hints
@@ -218,7 +218,7 @@ When a command fails, the CLI prints an actionable hint alongside the error:
 
 | Error | Hint |
 |-------|------|
-| `site.toml` not found | Run `yew-ssg init` or use `--dir` |
+| `site.toml` not found | Run `taxus init` or use `--dir` |
 | No content found | Add `.md` files to `content/`, start with `content/_index.md` |
 | Template not found | Check that `templates/` contains `base.html` and `page.html` |
 
@@ -228,17 +228,17 @@ Control log output with CLI flags or the `RUST_LOG` environment variable:
 
 ```bash
 # Default: info level (build progress)
-yew-ssg build
+taxus build
 
 # Verbose: debug level (detailed stages)
-yew-ssg build --verbose
+taxus build --verbose
 
 # Quiet: errors only
-yew-ssg build --quiet
+taxus build --quiet
 
 # Custom via RUST_LOG
-RUST_LOG=debug yew-ssg build
-RUST_LOG=taxus_lib=trace yew-ssg build
+RUST_LOG=debug taxus build
+RUST_LOG=taxus_lib=trace taxus build
 ```
 
 Log levels:

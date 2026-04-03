@@ -19,7 +19,7 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
         ws = new WebSocket(wsUrl);
         
         ws.onopen = function() {
-            console.log('[yew-ssg] Live reload connected');
+            console.log('[taxus] Live reload connected');
             reconnectAttempts = 0;
         };
         
@@ -30,11 +30,11 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
                     console.log('[yew-ssg] Reloading due to:', data.change_type, data.files);
                     window.location.reload();
                 } else if (data.type === 'error') {
-                    console.error('[yew-ssg] Build error:', data.message);
+                    console.error('[taxus] Build error:', data.message);
                     showErrorOverlay(data.message);
                 }
             } catch (e) {
-                console.error('[yew-ssg] Failed to parse message:', e);
+                console.error('[taxus] Failed to parse message:', e);
             }
         };
         
@@ -53,7 +53,7 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
 
     function showErrorOverlay(message) {
         // Remove existing overlay if present
-        const existing = document.getElementById('__yew_ssg_error__');
+        const existing = document.getElementById('__taxus_error__');
         if (existing) existing.remove();
         
         const overlay = document.createElement('div');
@@ -190,6 +190,6 @@ mod tests {
     #[test]
     fn test_script_contains_error_overlay() {
         assert!(LIVE_RELOAD_SCRIPT.contains("showErrorOverlay"));
-        assert!(LIVE_RELOAD_SCRIPT.contains("__yew_ssg_error__"));
+        assert!(LIVE_RELOAD_SCRIPT.contains("__taxus_error__"));
     }
 }
