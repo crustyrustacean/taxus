@@ -1,8 +1,10 @@
+// taxus-generator/src/templates.rs
+
 //! Template rendering module.
 //!
 //! This module provides a flexible template system with a trait-based
 //! backend, allowing different template engines to be used. The primary
-//! implementation uses [Tera](https://tera.netlify.app/), a Jinja2-like
+//! implementation uses [Tera](https://keats.github.io/tera/), a Jinja2-like
 //! template engine for Rust.
 //!
 //! # Overview

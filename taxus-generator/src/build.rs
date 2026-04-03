@@ -1,3 +1,5 @@
+// taxus-generator/src/build.rs
+
 //! Build system for generating static sites.
 //!
 //! This module provides the main build orchestration for the static site generator.

@@ -1,3 +1,5 @@
+// taxus-generator/src/assets.rs
+
 //! Asset processing module for the generator library.
 //!
 //! This module provides a trait-based architecture for processing different

@@ -1,3 +1,5 @@
+// taxus-generator/src/feed.rs
+
 //! Feed generation module.
 //!
 //! This module provides types for generating RSS and Atom feeds for blog content.

@@ -1,3 +1,5 @@
+// taxus-generator/src/routes.rs
+
 //! Route discovery and management.
 //!
 //! This module provides types for discovering and managing routes in a static site.

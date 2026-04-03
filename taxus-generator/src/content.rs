@@ -1,3 +1,5 @@
+// taxus-generator/src/content.rs
+
 //! Content loading and parsing.
 //!
 //! This module provides types for parsing and managing Markdown content files

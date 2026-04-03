@@ -1,3 +1,5 @@
+// taxus-generator/src/serve.rs
+
 //! Development server with hot-reload support.
 //!
 //! This module provides a development server that serves static files and
