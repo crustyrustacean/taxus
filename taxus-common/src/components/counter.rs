@@ -23,10 +23,9 @@ pub fn Counter(props: &CounterProps) -> Html {
     };
 
     html! {
-        <div>
-            <p>{ "Counter Widget" }</p>
-            <span>{ *count }</span>
-            <button onclick={on_click}>{ "+" }</button>
-        </div>
-    }
+    <div class="counter">
+        <span class="counter-value">{ *count }</span>
+        <button class="counter-btn" onclick={on_click}>{ "+" }</button>
+    </div>
+}
 }

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}{{ site.name }}{% endblock %}</title>
+        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="/css/main.css">
+    </head>
+<body>
+    <div class="page">
+        <header>
+            <a href="/" aria-label="taxus home">
+            <img class="logo" src="/static/favicon.svg" alt="taxus logo" width="64" height="64">
+            </a>
+            <h1>taxus</h1>
+            <h2>A static site generator built in Rust.</h2>
+            <p>Founded on <a href="https://keats.github.io/tera/">Tera</a> and <a href="https://yew.rs">Yew</a>. Named for the genus of the yew tree.</p>
+            <nav aria-label="primary">
+                <a href="/" class="btn-primary">Home</a>
+                <a href="/getting_started" class="btn-primary">Getting Started</a>
+                <a href="/blog" class="btn-primary">Blog</a>
+            </nav>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        <footer>
+            <p>
+                <strong>taxus</strong> &mdash;
+                built with
+                <a href="https://keats.github.io/tera/" target="_blank" rel="noopener noreferrer">Tera</a>
+                &amp;
+                <a href="https://yew.rs"  target="_blank" rel="noopener noreferrer">Yew</a>
+            </p>
+            <p>&copy; {{ now.year }} &middot; <a href="https://jeff-mitchell.dev" target="_blank" rel="noopener noreferrer">Jeffery D. Mitchell</a></p>
+            <p style="margin-top: 0.5rem;">
+            <a href="https://github.com/crustyrustacean/taxus.git" target="_blank" rel="noopener noreferrer">GitHub</a>
+                &middot;
+            <a href="https://crustyrustacean.github.io/taxux" target="_blank" rel="noopener noreferrer">Docs</a>
+            </p>
+        </footer>
+    </div>
+    <!-- General interactivity via plain JavaScript -->
+    <script src="/static/scripts.js"></script>
+    <!-- WASM hydration client compiled by Trunk.
+         client.js is a wasm-bindgen ES module; it must be loaded via
+         `import init` inside a type="module" script, not via a plain src= tag. -->
+    <script type="module">
+        import init, * as bindings from '/wasm/client.js';
+        const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
+        window.wasmBindings = bindings;
+    </script>
+
+</body>
+</html>

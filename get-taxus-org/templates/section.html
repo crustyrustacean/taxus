@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }} | {{ section.title }}{% endblock %}
+
+{% block content %}
+<article class="section-content">
+
+  <h1>{{ section.title }}</h1>
+
+  {% if section.description %}
+  <p class="description">{{ section.description }}</p>
+  {% endif %}
+
+  {{ section.content | safe }}
+
+  {% if section.pages %}
+  <nav class="section-pages" aria-label="section pages">
+    {% for page in section.pages %}
+    <a href="{{ page.path }}">
+      <span class="section-page-title">{{ page.title }}</span>
+      {% if page.description %}
+      <span class="section-page-desc">{{ page.description }}</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+</article>
+
+{# Counter island #}
+{% if section.path == "/" %}
+<div class="island-wrapper">
+  <h3 class="island-label">Counter Widget</h3>
+  {{ island(component="Counter", initial=3) | safe }}
+</div>
+{% endif %}
+
+{% endblock %}

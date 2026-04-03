@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  
+  <!-- Trunk -->
+  <path d="M16 30 L16 16" stroke="#1a472a" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Left branch -->
+  <path d="M16 20 Q11 17 7 14" fill="none" stroke="#1a472a" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Right branch -->
+  <path d="M16 18 Q21 15 25 12" fill="none" stroke="#1a472a" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Top branch -->
+  <path d="M16 16 L16 5" fill="none" stroke="#1a472a" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Needle clusters (simplified, fewer strokes) -->
+  <g stroke="#2d6a4f" stroke-width="1.2" stroke-linecap="round">
+    <!-- Left needles -->
+    <path d="M10 17 L6 14 M9 18 L5 19"/>
+    <!-- Right needles -->
+    <path d="M22 14 L26 11 M23 13 L27 14"/>
+    <!-- Top needles -->
+    <path d="M16 10 L12 6 M16 8 L20 4 M16 5 L13 2"/>
+  </g>
+</svg>
