@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`compute_permalink` Function**: Public helper for URL construction
   - Handles edge cases: trailing slashes on base_url, leading slashes on path
-  - Exported from `yew_ssg_lib::templates` module
+  - Exported from `taxus_lib::templates` module
 
 ### Changed
 

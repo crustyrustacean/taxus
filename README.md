@@ -1,4 +1,4 @@
-# Yew SSG
+# Taxus - A Tera Based Static Site Generator with WebAssembly Islands
 
 A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), designed for building fast, SEO-friendly websites with the power of WebAssembly.
 
@@ -213,7 +213,7 @@ cargo run -- build --verbose
 cargo run -- build --quiet
 
 # Custom: use RUST_LOG for fine-grained control
-RUST_LOG=yew_ssg_lib=trace cargo run -- build
+RUST_LOG=taxus_lib=trace cargo run -- build
 RUST_LOG=debug cargo run -- build  # all crates at debug level
 ```
 
@@ -277,7 +277,7 @@ cd client && trunk serve
 - **client**: WASM hydration client — finds island mount points in the DOM, deserializes their props, calls `yew::Renderer::hydrate()` on each
 - **common**: Shared Yew components — compiled into both the `generator` binary (for SSR) and the `client` WASM bundle (for hydration)
 - **generator**: Static site generator library and binary
-  - Library (`yew_ssg_lib`): Configuration, content parsing, route discovery, Tera rendering, asset processing, init scaffolding, dev server
+  - Library (`taxus_lib`): Configuration, content parsing, route discovery, Tera rendering, asset processing, init scaffolding, dev server
   - Binary (`yew-ssg`): CLI with `build`, `clean`, `init`, `routes`, and `serve` subcommands
 
 ## Islands Architecture

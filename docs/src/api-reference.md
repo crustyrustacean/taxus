@@ -1,6 +1,6 @@
 # API Reference
 
-This page documents the public API of the `yew_ssg_lib` generator library.
+This page documents the public API of the `taxus_lib` generator library.
 
 ## Re-exports
 

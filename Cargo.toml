@@ -1,16 +1,16 @@
 [workspace]
-members = ["common", "generator", "client"]
-default-members = ["generator"]
+members = ["taxus-client", "taxus-common", "taxus-generator"]
+default-members = ["taxus-generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.41"
+version = "0.1.42"
 edition = "2024"
 authors = ["Jeff Mitchell"]
 description = "A workspace for a Rust based static site generator, using Tera and Yew."
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/example/yew-ssg.git"
+repository = "https://github.com/example/taxus_lib.git"
 publish = false
 
 [workspace.dependencies]

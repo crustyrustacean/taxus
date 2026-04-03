@@ -18,7 +18,7 @@ yew-ssg/
 | Crate | Role | Output |
 |-------|------|--------|
 | `common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
-| `generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`yew_ssg_lib`) + Binary (`yew-ssg`) |
+| `generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`yew-ssg`) |
 | `client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (via Trunk) |
 
 ### Data Flow Between Crates

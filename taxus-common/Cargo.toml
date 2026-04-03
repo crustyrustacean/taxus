@@ -1,0 +1,13 @@
+[package]
+name = "taxus-common"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+yew = "0.23.0"

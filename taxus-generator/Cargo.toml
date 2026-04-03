@@ -1,0 +1,62 @@
+[package]
+name = "taxus"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "taxus"
+path = "src/bin/taxus/main.rs"
+
+[lib]
+name = "taxus_lib"
+path = "src/lib.rs"
+
+[features]
+# Enable Yew SSR island support.
+# When enabled: the `island()` Tera function renders Yew components server-side
+# and the `common` crate and `yew/ssr` are compiled in.
+# Without this feature the generator is a plain Tera + Markdown SSG with no
+# Yew/WASM dependency, and `island()` calls in templates produce empty output.
+islands = ["dep:taxus-common", "dep:yew"]
+
+[dependencies]
+# ── Core SSG dependencies (always compiled) ──────────────────────────────────
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+grass = "0.13.4"
+pulldown-cmark = "0.13.1"
+serde = { workspace = true, features = ["derive"] }
+serde_json = "1.0"
+tera = "1.20"
+thiserror = "2.0"
+toml = "1.0.6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+walkdir = "2.5"
+
+# ── Async runtime (required for serve command and islands) ────────────────────
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "signal"] }
+
+# ── Dev server dependencies ───────────────────────────────────────────────────
+axum = { version = "0.8.8", features = ["ws"] }
+axum-extra = { version = "0.12.5", features = ["typed-header"] }
+futures-util = "0.3"
+notify = "8.2.0"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "set-header"] }
+tokio-stream = "0.1"
+webbrowser = "1.0"
+
+# ── Islands feature dependencies (compiled only with --features islands) ──────
+taxus-common = { path = "../taxus-common", optional = true }
+yew = { version = "0.23.0", features = ["ssr"], optional = true }
+
+[dev-dependencies]
+tempfile = "3.10"
+reqwest = { version = "0.13.2", features = ["json"] }
+tokio-tungstenite = "0.29"

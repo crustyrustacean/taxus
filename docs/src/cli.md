@@ -238,7 +238,7 @@ yew-ssg build --quiet
 
 # Custom via RUST_LOG
 RUST_LOG=debug yew-ssg build
-RUST_LOG=yew_ssg_lib=trace yew-ssg build
+RUST_LOG=taxus_lib=trace yew-ssg build
 ```
 
 Log levels:
