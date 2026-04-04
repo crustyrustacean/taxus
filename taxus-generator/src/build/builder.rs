@@ -5,7 +5,7 @@
 //! This module provides the main [`SiteBuilder`] type for building static sites.
 
 use crate::build;
-use crate::build::pipeline::{self, AliasPage};
+use crate::build::pipeline::{self, alias::AliasPage};
 use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
 use crate::error::{BuildError, Result};
@@ -294,7 +294,7 @@ impl SiteBuilder {
             .collect();
 
         if !aliases.is_empty() {
-            pipeline::write_aliases(&aliases, &output_dir, self.dry_run)?;
+            pipeline::alias::write_aliases(&aliases, &output_dir, self.dry_run)?;
             debug!(alias_count = aliases.len(), "Written alias redirects");
         }
 
