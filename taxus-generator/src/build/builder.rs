@@ -1,7 +1,10 @@
+// taxus-generator/src/build/builder.rs
+
 //! Site builder for orchestrating the build pipeline.
 //!
 //! This module provides the main [`SiteBuilder`] type for building static sites.
 
+use crate::build;
 use crate::build::pipeline::{self, AliasPage};
 use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
@@ -231,7 +234,7 @@ impl SiteBuilder {
         // Stage 10: Generate feeds
         let _feeds_span = info_span!("generate_feeds").entered();
         info!("[10/12] Generating feeds...");
-        let feeds = pipeline::generate_feeds(&processed, &self.config)?;
+        let feeds = build::pipeline::feeds::generate_feeds(&processed, &self.config)?;
         debug!(feeds = feeds.len(), "Feeds generated");
         drop(_feeds_span);
 
@@ -258,7 +261,7 @@ impl SiteBuilder {
 
         // Write feeds
         if !feeds.is_empty() {
-            pipeline::write_feeds(&feeds, &output_dir, self.dry_run)?;
+            build::pipeline::feeds::write_feeds(&feeds, &output_dir, self.dry_run)?;
         }
 
         // Collect and write aliases
