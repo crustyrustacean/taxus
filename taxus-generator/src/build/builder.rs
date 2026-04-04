@@ -223,9 +223,13 @@ impl SiteBuilder {
         // Stage 9: Build and render taxonomy pages
         let _taxonomy_span = info_span!("render_taxonomy").entered();
         info!("[9/12] Building taxonomy pages...");
-        let taxonomy_map = pipeline::build_taxonomy_map(&processed);
-        let taxonomy_pages =
-            pipeline::render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context)?;
+        let taxonomy_map = pipeline::taxonomy::build_taxonomy_map(&processed);
+        let taxonomy_pages = pipeline::taxonomy::render_taxonomy_pages(
+            &processed,
+            &taxonomy_map,
+            &templates,
+            &site_context,
+        )?;
         debug!(
             taxonomy_pages = taxonomy_pages.len(),
             "Taxonomy pages rendered"
@@ -257,7 +261,7 @@ impl SiteBuilder {
 
         // Write taxonomy pages
         if !taxonomy_pages.is_empty() {
-            pipeline::write_taxonomy_pages(&taxonomy_pages, &output_dir, self.dry_run)?;
+            pipeline::taxonomy::write_taxonomy_pages(&taxonomy_pages, &output_dir, self.dry_run)?;
         }
 
         // Write feeds
