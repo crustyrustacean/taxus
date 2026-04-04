@@ -1,3 +1,5 @@
+// taxus-generator/src/build/pipeline.rs
+
 //! Build pipeline stages.
 //!
 //! This module provides the individual stages of the build pipeline.
@@ -308,7 +310,8 @@ pub fn render_pages(
 
                     let context = TemplateContext::new(site_context.clone())
                         .with_page(paginated_page_context)
-                        .with_section(section_context);
+                        .with_section(section_context)
+                        .with_extra(processed_page.page.frontmatter.extra_as_json());
 
                     let content = templates.render(paginate_template, &context).map_err(|e| {
                         BuildError::PageRenderFailed {
@@ -357,8 +360,11 @@ pub fn render_pages(
             TemplateContext::new(site_context.clone())
                 .with_page(page_context)
                 .with_section(section_context)
+                .with_extra(processed_page.page.frontmatter.extra_as_json())
         } else {
-            TemplateContext::new(site_context.clone()).with_page(page_context)
+            TemplateContext::new(site_context.clone())
+                .with_page(page_context)
+                .with_extra(processed_page.page.frontmatter.extra_as_json())
         };
 
         // Render the template
@@ -2114,4 +2120,73 @@ fn test_render_pages_no_pagination_when_not_configured() {
     assert_eq!(section_pages.len(), 1);
     assert_eq!(section_pages[0].route.path, "/blog/");
     assert!(section_pages[0].content.contains("Post 1"));
+}
+
+#[test]
+fn test_render_pages_with_extra_variables() {
+    use crate::routes::{RouteInfo, RouteKind};
+
+    let content = r#"
++++
+title = "Styled Page"
+
+[extra]
+hero_image = "/images/hero.jpg"
+css_class = "dark-theme"
+featured = true
++++
+Content here.
+"#;
+    let page = Page::from_str(content.trim_start(), "styled.md").unwrap();
+
+    let route = RouteInfo::new(
+        "/styled/".to_string(),
+        std::path::PathBuf::from("styled.md"),
+        std::path::PathBuf::from("styled/index.html"),
+        RouteKind::Page,
+    )
+    .unwrap();
+
+    let processed = ProcessedPage {
+        route,
+        page,
+        html_content: "<p>Content here.</p>".to_string(),
+    };
+
+    let mut templates = TeraRenderer::new().unwrap();
+    templates
+        .register_template(
+            "page.html",
+            r#"<div class="{{ extra.css_class }}">
+<img src="{{ extra.hero_image | safe }}" />
+{% if extra.featured %}<span>Featured!</span>{% endif %}
+<h1>{{ page.title }}</h1>
+</div>"#,
+        )
+        .unwrap();
+
+    let site_context = SiteContext {
+        name: "Test Site".to_string(),
+        base_url: "https://example.com".to_string(),
+        description: None,
+        author: None,
+    };
+
+    let rendered = render_pages(&[processed], &templates, &site_context, false).unwrap();
+
+    assert_eq!(rendered.len(), 1);
+    let html = &rendered[0].content;
+    println!("Rendered HTML:\n{}", html);
+    assert!(
+        html.contains("dark-theme"),
+        "Should contain css_class extra variable"
+    );
+    assert!(
+        html.contains("/images/hero.jpg"),
+        "Should contain hero_image extra variable"
+    );
+    assert!(
+        html.contains("Featured!"),
+        "Should contain featured extra variable"
+    );
 }

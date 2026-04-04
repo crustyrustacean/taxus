@@ -1,3 +1,5 @@
+// taxus-generator/src/templates/context.rs
+
 //! Template context types for rendering.
 //!
 //! This module provides the context types that hold variables available

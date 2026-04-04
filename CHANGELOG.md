@@ -5,17 +5,88 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.46] - 2026-04-03
+
+### Added
+
+- **Project Site**: Added `get-taxus-org` site directory with full site content
+  - Content pages: `_index.md`, getting started, blog posts
+  - Templates: `base.html`, `page.html`, `section.html`, `404.html`
+  - Styles: `main.scss` with full styling
+  - Static assets: favicon and scripts
+
+### Changed
+
+- **Counter Component**: Updated counter component styling and structure
+
+## [0.1.45] - 2026-04-03
+
+### Changed
+
+- **Module Structure**: Refactored from `mod.rs` pattern to filename-based modules
+  - `assets/mod.rs` → `assets.rs`
+  - `build/mod.rs` → `build.rs`
+  - `content/mod.rs` → `content.rs`
+  - `feed/mod.rs` → `feed.rs`
+  - `routes/mod.rs` → `routes.rs`
+  - `serve/mod.rs` → `serve.rs`
+  - `templates/mod.rs` → `templates.rs`
+
+## [0.1.44] - 2026-04-03
+
+### Fixed
+
+- **Dev Server Islands**: Fixed tokio runtime issue that prevented islands from loading
+  - Corrected async runtime handling in dev server
+  - Fixed WebSocket connection for live reload
+  - Islands now hydrate properly in development mode
+
+### Changed
+
+- Updated dependencies in Cargo.lock
+
+## [0.1.43] - 2026-04-02
+
+### Changed
+
+- **Naming Consistency**: Completed renaming to "taxus" throughout the codebase
+  - Updated CLI help text and error messages
+  - Updated documentation to use `taxus` command
+  - Updated telemetry and logging references
+
+## [0.1.42] - 2026-04-02
+
+### Changed
+
+- **Project Renaming**: Renamed project from "generator/client/common" to "taxus-*"
+  - `generator` → `taxus-generator`
+  - `client` → `taxus-client`
+  - `common` → `taxus-common`
+  - Updated all import paths and references
+  - Updated documentation to reflect new naming
+
+## [0.1.41] - 2026-04-02
+
+### Changed
+
+- **Frontend Refactor**: Refactored client and common crates
+  - Consolidated component structure
+  - Simplified client entry point
+  - Improved counter component implementation
+
+## [0.1.40] - 2026-04-01
+
+### Changed
+
+- **Init Module**: Minor refactoring to init module
+  - Improved scaffolding structure
+  - Cleaned up initialization code
+
 ## [0.1.39] - 2026-04-01
 
 ### Changed
 
 - **main**: Break main up into submodules
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.36] - 2026-03-29
 
@@ -26,12 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Fix issues with CHANGELOG.md
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.35] - 2026-03-29
 

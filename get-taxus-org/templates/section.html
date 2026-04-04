@@ -5,7 +5,7 @@
 {% block content %}
 <article class="section-content">
 
-  <h1>{{ section.title }}</h1>
+  <h2>{{ section.title }}</h2>
 
   {% if section.description %}
   <p class="description">{{ section.description }}</p>
@@ -28,12 +28,12 @@
 
 </article>
 
-{# Counter island #}
-{% if section.path == "/" %}
+{% if extra.counter %}
 <div class="island-wrapper">
   <h3 class="island-label">Counter Widget</h3>
   {{ island(component="Counter", initial=3) | safe }}
 </div>
 {% endif %}
+
 
 {% endblock %}

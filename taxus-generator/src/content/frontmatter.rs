@@ -1,12 +1,14 @@
+// taxus-generator/src/content/frontmatter.rs
+
 //! Frontmatter parsing for content files.
 //!
 //! Frontmatter is TOML metadata at the beginning of a Markdown file,
 //! delimited by `+++` markers.
 
-use std::str::FromStr;
-
 use chrono::NaiveDate;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::str::FromStr;
 
 /// Page frontmatter metadata parsed from TOML between `+++` markers.
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -53,9 +55,6 @@ pub struct Frontmatter {
     /// Custom extra metadata
     pub extra: Option<toml::Value>,
 
-    // ========================================
-    // Phase 3: Pagination Fields
-    // ========================================
     /// Sort order for section pages
     #[serde(default)]
     pub sort_by: SortBy,
@@ -151,6 +150,19 @@ impl Frontmatter {
     /// Get the template name, defaulting to "page.html".
     pub fn template(&self) -> &str {
         self.template.as_deref().unwrap_or("page.html")
+    }
+
+    /// Convert the extra metadata to a JSON-compatible HashMap for template rendering.
+    pub fn extra_as_json(&self) -> HashMap<String, serde_json::Value> {
+        match &self.extra {
+            Some(toml::Value::Table(table)) => table
+                .iter()
+                .filter_map(|(key, value)| {
+                    serde_json::to_value(value).ok().map(|v| (key.clone(), v))
+                })
+                .collect(),
+            _ => HashMap::new(),
+        }
     }
 }
 
