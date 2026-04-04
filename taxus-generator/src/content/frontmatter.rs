@@ -6,7 +6,7 @@
 //! delimited by `+++` markers.
 
 use chrono::NaiveDate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -21,7 +21,7 @@ pub struct Frontmatter {
     pub description: Option<String>,
 
     /// Optional publication date (TOML datetime)
-    #[serde(default, with = "optional_date")]
+    #[serde(default, deserialize_with = "optional_date::deserialize")]
     pub date: Option<NaiveDate>,
 
     /// Optional template override
@@ -71,43 +71,14 @@ pub struct Frontmatter {
     pub weight: i32,
 
     /// Last updated date
-    #[serde(default, with = "optional_date")]
+    #[serde(default, deserialize_with = "optional_date::deserialize")]
     pub updated: Option<NaiveDate>,
-}
-
-/// Sort order for pages within a section.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum SortBy {
-    /// Sort by date (newest first)
-    #[default]
-    Date,
-    /// Sort by title (alphabetically)
-    Title,
-    /// Sort by weight (lowest first)
-    Weight,
-    /// No sorting (preserve filesystem order)
-    None,
 }
 
 /// Custom serialization module for optional NaiveDate with TOML datetime support.
 mod optional_date {
     use chrono::NaiveDate;
-    use serde::{Deserialize, Deserializer, Serializer};
-
-    #[allow(dead_code)]
-    pub fn serialize<S>(date: &Option<NaiveDate>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match date {
-            Some(d) => {
-                let s = d.format("%Y-%m-%d").to_string();
-                serializer.serialize_str(&s)
-            }
-            None => serializer.serialize_none(),
-        }
-    }
+    use serde::{Deserialize, Deserializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
     where
@@ -164,6 +135,21 @@ impl Frontmatter {
             _ => HashMap::new(),
         }
     }
+}
+
+/// Sort order for pages within a section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SortBy {
+    /// Sort by date (newest first)
+    #[default]
+    Date,
+    /// Sort by title (alphabetically)
+    Title,
+    /// Sort by weight (lowest first)
+    Weight,
+    /// No sorting (preserve filesystem order)
+    None,
 }
 
 #[cfg(test)]

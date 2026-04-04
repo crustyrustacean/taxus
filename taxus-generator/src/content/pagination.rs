@@ -1,26 +1,13 @@
+// taxus-generator/src/content/pagination.rs
+
 //! Pagination types for section content.
 //!
 //! This module provides types for splitting large collections of pages
 //! across multiple pages (pagination).
 
+use super::frontmatter::SortBy;
+use super::page::Page;
 use serde::{Deserialize, Serialize};
-
-use super::Page;
-
-/// Sort order for pages within a section.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum SortBy {
-    /// Sort by date (newest first)
-    #[default]
-    Date,
-    /// Sort by title (alphabetically)
-    Title,
-    /// Sort by weight (lowest first)
-    Weight,
-    /// No sorting (preserve filesystem order)
-    None,
-}
 
 /// Pagination information for a single page.
 #[derive(Debug, Clone, Serialize, Deserialize)]
