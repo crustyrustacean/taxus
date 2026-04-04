@@ -4,7 +4,7 @@ default-members = ["taxus-generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.48"
+version = "0.1.49"
 edition = "2024"
 authors = ["Jeff Mitchell"]
 description = "A Rust based static site generator, founded in Tera and Yew."

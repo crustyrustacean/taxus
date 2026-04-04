@@ -1,11 +1,12 @@
+// taxus-generator/src/feed/atom.rs
+
 //! Atom feed generation.
 //!
 //! This module provides functions for generating Atom feeds.
 
-use chrono::{DateTime, Utc};
-
-use super::{FeedConfig, FeedEntry};
+use super::{FeedConfig, FeedEntry, escape_xml};
 use crate::error::Result;
+use chrono::{DateTime, Utc};
 
 /// Generate an Atom feed from entries.
 pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<String> {
@@ -142,22 +143,6 @@ fn generate_entry_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> 
         category_xml,
         content_xml
     ))
-}
-
-/// Escape special XML characters.
-fn escape_xml(s: &str) -> String {
-    let mut result = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '&' => result.push_str("\u{26}amp;"),
-            '<' => result.push_str("\u{26}lt;"),
-            '>' => result.push_str("\u{26}gt;"),
-            '"' => result.push_str("\u{26}quot;"),
-            '\'' => result.push_str("\u{26}apos;"),
-            _ => result.push(c),
-        }
-    }
-    result
 }
 
 #[cfg(test)]

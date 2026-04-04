@@ -1,11 +1,12 @@
+// taxus-generator/src/feed/rss.rs
+
 //! RSS 2.0 feed generation.
 //!
 //! This module provides functions for generating RSS 2.0 feeds.
 
-use chrono::{DateTime, Utc};
-
-use super::{FeedConfig, FeedEntry};
+use super::{FeedConfig, FeedEntry, escape_xml};
 use crate::error::Result;
+use chrono::{DateTime, Utc};
 
 /// Generate an RSS 2.0 feed from entries.
 pub fn generate_rss_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<String> {
@@ -106,22 +107,6 @@ fn generate_item_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> {
         content_xml,
         guid
     ))
-}
-
-/// Escape special XML characters.
-fn escape_xml(s: &str) -> String {
-    let mut result = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '&' => result.push_str("\u{26}amp;"),
-            '<' => result.push_str("\u{26}lt;"),
-            '>' => result.push_str("\u{26}gt;"),
-            '"' => result.push_str("\u{26}quot;"),
-            '\'' => result.push_str("\u{26}apos;"),
-            _ => result.push(c),
-        }
-    }
-    result
 }
 
 #[cfg(test)]

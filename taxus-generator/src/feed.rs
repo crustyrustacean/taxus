@@ -250,6 +250,22 @@ impl FeedGenerator {
     }
 }
 
+/// Escape special XML characters.
+pub fn escape_xml(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => result.push_str("\u{26}amp;"),
+            '<' => result.push_str("\u{26}lt;"),
+            '>' => result.push_str("\u{26}gt;"),
+            '"' => result.push_str("\u{26}quot;"),
+            '\'' => result.push_str("\u{26}apos;"),
+            _ => result.push(c),
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
