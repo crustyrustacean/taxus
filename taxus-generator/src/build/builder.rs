@@ -191,7 +191,8 @@ impl SiteBuilder {
             author: self.config.site.author.clone(),
         };
 
-        let rendered = pipeline::render_pages(&processed, &templates, &site_context, self.verbose)?;
+        let rendered =
+            pipeline::pages::render_pages(&processed, &templates, &site_context, self.verbose)?;
         drop(_render_span);
 
         // Stage 6: Generate robots.txt
