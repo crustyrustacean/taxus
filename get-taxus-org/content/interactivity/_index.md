@@ -1,11 +1,13 @@
 +++
-title = "Islands"
+title = "Interactivity"
 
 [extra]
 counter = true
 +++
 
-## Interactivity Two Ways
+### Interactivity Two Ways
+
+Taxus provides two options to make your static site interactive. You can use them independently or together, your choice.
 
 ### Plain 'ol JavaScript
 

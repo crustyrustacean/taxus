@@ -2,23 +2,28 @@
 title = "Home"
 +++
 
-## An opinionated static site generator
+## Static Site Generation for 2026 and beyond
 
-This is a static site generator project, founded in Tera and leveraging WebAssembly via Yew.
+Building for the web has become unnecessarily difficult. Taxus is an opinionated take on making it easier. It takes in assets and markdown and outputs a fully complete website, ready for deployment.
 
 ## Pillars
 
-Taxus is founded on the following pillars:
+Taxus stands on the following pillars:
 
-- content should be easy to write
-    - the full power of common-mark markdown is in your hands, via [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark)
-- site structure should easy to build
+- author with power
+    - write with common-mark compliant markdown, via [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark)
+- structure is easy and familiar
     - HTML templates with [Tera](https://keats.github.io/tera)
-- styles should be yours to determine, but without complex themes and version control
-    - CSS with [grass](https://github.com/connorskees/grass)
-- interactivity should be up to you, choose simple or performant
+- appearance is yours to determine
+    - flexible SASS compliation with [grass](https://github.com/connorskees/grass)
+- interactivity is simple, performant, or both
     - JavaScript via ready-made `scripts.js`
     - WebAssembly via the "islands" architecture, enabled with [Yew](https://yew.rs) components
-- good development experience, with a server that hot-reloads
 
+## Foundations
 
+Taxus stands on several foundational crates from the Rust ecosystem, including [Tokio](https://tokio.rs/), [Axum](https://github.com/tokio-rs/axum) and many others.
+
+## License
+
+The project is MIT licensed. Take it, modify it, use it as you see fit and need.
