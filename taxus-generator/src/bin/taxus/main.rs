@@ -7,7 +7,7 @@
 
 use crate::commands::{BuildArgs, InitArgs, ServeArgs};
 use clap::Parser;
-use taxus_lib::telemetry::init_tracing;
+use taxus_lib::telemetry::{init, init_tracing};
 use tracing::info;
 
 mod cli;
@@ -18,7 +18,8 @@ use cli::{Cli, Commands};
 use commands::{run_build, run_clean, run_init, run_routes, run_serve};
 use error::render_error;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
     // Initialize tracing based on command and flags
@@ -30,10 +31,11 @@ fn main() {
             init_tracing(*verbose, *quiet);
         }
         _ => {
-            taxus_lib::telemetry::init();
+            init();
         }
     }
 
+    // actions based on the CLI command
     match cli.command {
         Commands::Build {
             dir,
@@ -118,7 +120,9 @@ fn main() {
                 port,
                 quiet,
                 open,
-            }) {
+            })
+            .await
+            {
                 Ok(()) => {}
                 Err(e) => {
                     render_error(&e);

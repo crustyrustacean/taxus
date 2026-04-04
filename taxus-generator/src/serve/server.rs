@@ -7,9 +7,13 @@
 
 use std::future::Future;
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
+
+/// A function that rebuilds the site. Returns Ok(()) on success or
+/// an error message on failure
+pub type RebuildFn = Arc<dyn Fn() -> Result<(), String> + Send + Sync>;
 
 use axum::{
     Router,
@@ -28,7 +32,6 @@ use super::error::ServeError;
 use super::injector::inject_live_reload_script;
 use super::watcher::FileWatcher;
 use super::websocket::{ReloadEvent, WebSocketMessage};
-use crate::build::SiteBuilder;
 
 /// Configuration for the development server.
 #[derive(Debug, Clone)]
@@ -92,12 +95,13 @@ pub struct ServerState {
 /// Development server with live reload support.
 pub struct DevServer {
     config: DevServerConfig,
+    rebuild: RebuildFn,
 }
 
 impl DevServer {
     /// Create a new development server.
-    pub fn new(config: DevServerConfig) -> Self {
-        Self { config }
+    pub fn new(config: DevServerConfig, rebuild: RebuildFn) -> Self {
+        Self { config, rebuild }
     }
 
     /// Build the Axum router.
@@ -125,7 +129,7 @@ impl DevServer {
 
         // Perform initial build
         info!("Performing initial build...");
-        match self.rebuild() {
+        match (self.rebuild)() {
             Ok(_) => info!("Initial build complete"),
             Err(e) => {
                 warn!("Initial build failed: {}", e);
@@ -161,9 +165,9 @@ impl DevServer {
         let shutdown_signal = shutdown_signal();
 
         // Spawn the watcher task with shutdown awareness
-        let site_dir = self.config.site_dir.clone();
-        let include_drafts = self.config.include_drafts;
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+        let rebuild = self.rebuild.clone();
 
         let watcher_handle = tokio::spawn(async move {
             loop {
@@ -180,7 +184,7 @@ impl DevServer {
                                 info!("Change detected: {:?}", event.change_type);
 
                                 // Trigger rebuild
-                                match Self::do_rebuild(&site_dir, include_drafts) {
+                                match (rebuild)() {
                                     Ok(_) => {
                                         // Send reload notification
                                         let files: Vec<String> = event
@@ -225,21 +229,6 @@ impl DevServer {
 
         info!("Development server stopped");
 
-        Ok(())
-    }
-
-    /// Perform a rebuild of the site.
-    fn rebuild(&self) -> Result<(), String> {
-        Self::do_rebuild(&self.config.site_dir, self.config.include_drafts)
-    }
-
-    /// Internal rebuild implementation.
-    fn do_rebuild(site_dir: &Path, include_drafts: bool) -> Result<(), String> {
-        SiteBuilder::from_dir(site_dir)
-            .map_err(|e| e.to_string())?
-            .include_drafts(include_drafts)
-            .build()
-            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -559,7 +548,8 @@ mod tests {
     #[test]
     fn test_server_creation() {
         let config = DevServerConfig::default();
-        let server = DevServer::new(config);
+        let rebuild: RebuildFn = Arc::new(|| Ok(()));
+        let server = DevServer::new(config, rebuild);
         assert_eq!(server.port(), 3000);
     }
 

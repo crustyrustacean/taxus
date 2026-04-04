@@ -2,6 +2,7 @@
 
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use taxus_lib::error::{GeneratorError, InitError};
 use taxus_lib::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilder};
 
@@ -16,9 +17,8 @@ pub struct ServeArgs {
     pub open: bool,
 }
 
-#[tokio::main]
 pub async fn run_serve(args: &ServeArgs) -> Result<(), Box<GeneratorError>> {
-    use taxus_lib::serve::{DevServer, DevServerConfig};
+    use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn};
 
     // Load config to get output directory
     let config = taxus_lib::SiteConfig::from_dir(&args.dir)?;
@@ -29,6 +29,19 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), Box<GeneratorError>> {
         .with_output_dir(config.build.output_dir.clone())
         .with_site_dir(args.dir.clone());
 
+    // Capture what the rebuild needs in the closure
+    let site_dir = args.dir.clone();
+    let include_drafts = false;
+
+    let rebuild: RebuildFn = Arc::new(move || {
+        taxus_lib::SiteBuilder::from_dir(&site_dir)
+            .map_err(|e| e.to_string())?
+            .include_drafts(include_drafts)
+            .build()
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    });
+
     if !args.quiet {
         tracing::info!("Starting development server...");
         tracing::info!("Site: {}", args.dir.display());
@@ -37,7 +50,7 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), Box<GeneratorError>> {
     }
 
     // Create and run the server
-    let server = DevServer::new(server_config);
+    let server = DevServer::new(server_config, rebuild);
 
     if !args.quiet {
         tracing::info!("\n  Static site: http://localhost:{}", args.port);

@@ -1055,35 +1055,14 @@ pub fn render_island_counter(props: CounterProps) -> String {
     // Serialize props to JSON for the data attribute
     let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
 
-    // Build a self-contained single-threaded runtime for this SSR call.
-    // We cannot use Handle::current() because the generator's main() is synchronous
-    // and has no ambient tokio runtime running. Builder::new_current_thread() creates
-    // a temporary runtime that exists only for the duration of block_on.
-    let ssr_html = match tokio::runtime::Handle::try_current() {
-        Ok(handle) => {
-            // Already inside a tokio runtime (e.g., serve command) —
-            // use block_in_place to avoid nesting runtimes.
-            tokio::task::block_in_place(|| {
-                handle.block_on(async {
-                    ServerRenderer::<Counter>::with_props(move || props)
-                        .render()
-                        .await
-                })
-            })
-        }
-        Err(_) => {
-            // No ambient runtime (e.g., build command) —
-            // create a temporary single-threaded runtime.
-            tokio::runtime::Builder::new_current_thread()
-                .build()
-                .expect("Failed to build tokio runtime for island SSR")
-                .block_on(async {
-                    ServerRenderer::<Counter>::with_props(move || props)
-                        .render()
-                        .await
-                })
-        }
-    };
+    // do a blocking call on this worker thread, move other tasks elsewhere
+    let ssr_html = tokio::task::block_in_place(|| {
+        tokio::runtime::Handle::current().block_on(async {
+            ServerRenderer::<Counter>::with_props(move || props)
+                .render()
+                .await
+        })
+    });
 
     // Emit the mount point wrapper around the SSR output
     format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)
