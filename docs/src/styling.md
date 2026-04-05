@@ -1,6 +1,6 @@
 # Styling
 
-Yew SSG supports SCSS for modern CSS authoring.
+Taxus supports SCSS for modern CSS authoring.
 
 ## Styles Directory
 

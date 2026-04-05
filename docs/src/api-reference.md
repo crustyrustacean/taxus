@@ -8,15 +8,15 @@ The library re-exports commonly used types from `lib.rs`:
 
 ```rust
 // Configuration
-pub use config::{BuildConfig, FeedConfig, SiteConfig, SiteMeta};
+pub use config::{BuildConfig, SiteConfig, SiteMeta};
 
 // Content
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
 
 // Templates
 pub use templates::{
-    PageContext, PaginationContext, SectionContext, SiteContext,
-    TemplateContext, TemplateRenderer, TeraRenderer,
+    PageContext, SectionContext, SiteContext, TemplateContext,
+    TemplateRenderer, TeraRenderer,
 };
 
 // Assets
@@ -36,8 +36,8 @@ pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 
 // Errors
 pub use error::{
-    AssetError, BuildError, ConfigError, ContentError, FeedError,
-    GeneratorError, InitError, Result, RouteError, ServeError, TemplateError,
+    AssetError, ContentError, FeedError, GeneratorError, InitError,
+    Result, RouteError, TemplateError,
 };
 ```
 
@@ -540,16 +540,18 @@ pub struct DevServerConfig {
 
 ```rust
 pub enum GeneratorError {
-    Config(ConfigError),
-    Content(ContentError),
-    Template(TemplateError),
-    Asset(AssetError),
-    Route(RouteError),
-    Build(BuildError),
-    Feed(FeedError),
-    Init(InitError),
-    Serve(ServeError),
+    Config(Box<ConfigError>),
+    Content(Box<ContentError>),
+    Template(Box<TemplateError>),
+    Asset(Box<AssetError>),
+    Route(Box<RouteError>),
+    Init(Box<InitError>),
+    Serve(Box<ServeError>),
+    Feed(Box<FeedError>),
     Io { path: PathBuf, source: std::io::Error },
+    NoContent,
+    BrokenInternalLink { file: String, target: String },
+    PageRenderFailed { path: String, source: TemplateError },
 }
 ```
 
@@ -562,7 +564,6 @@ pub enum GeneratorError {
 | `TemplateError` | Template errors (not found, render, syntax) |
 | `AssetError` | Asset errors (SCSS, copy) |
 | `RouteError` | Route errors (not found, duplicate, invalid) |
-| `BuildError` | Build errors (no content) |
 | `FeedError` | Feed generation errors |
 | `InitError` | Initialization errors (cancelled) |
 | `ServeError` | Server errors (port in use, WebSocket) |

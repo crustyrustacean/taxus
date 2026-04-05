@@ -1,16 +1,16 @@
 # Architecture
 
-This page provides a technical overview of Yew SSG's architecture, including the workspace structure, module organization, build pipeline, and data flow.
+This page provides a technical overview of Taxus's architecture, including the workspace structure, module organization, build pipeline, and data flow.
 
 ## Workspace Structure
 
-Yew SSG is organized as a multi-crate Cargo workspace with three crates:
+Taxus is organized as a multi-crate Cargo workspace with three crates:
 
 ```
 taxus/
-├── client/              # WASM hydration client
-├── common/              # Shared Yew components
-└── generator/           # SSG library and CLI binary
+├── taxus-client/    # WASM hydration client
+├── taxus-common/    # Shared Yew components
+└── taxus-generator/ # SSG library and CLI binary
 ```
 
 ### Crate Responsibilities

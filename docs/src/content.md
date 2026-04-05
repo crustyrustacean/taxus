@@ -1,6 +1,6 @@
 # Content
 
-Content in Yew SSG is written in Markdown files with TOML frontmatter.
+Content in Taxus is written in Markdown files with TOML frontmatter.
 
 ## Content Files
 
@@ -153,7 +153,7 @@ This creates `/blog/hello-world/` instead of `/blog/my-first-post/`.
 
 ## Markdown Support
 
-Yew SSG supports standard Markdown syntax:
+Taxus supports standard Markdown syntax:
 
 ### Headings
 
@@ -225,7 +225,7 @@ fn main() {
 
 ### Summary and Excerpt
 
-Yew SSG automatically extracts a summary for each page:
+Taxus automatically extracts a summary for each page:
 
 1. **Automatic extraction**: First paragraph of content
 2. **Manual marker**: Use `<!-- more -->` to mark where summary ends
@@ -257,7 +257,7 @@ Each page calculates reading time (200 words/minute) and word count:
 
 ## Taxonomies
 
-Yew SSG supports three taxonomy types:
+Taxus supports three taxonomy types:
 
 ### Tags
 
@@ -294,7 +294,7 @@ series = "Learning Rust"
 
 ### Taxonomy Pages
 
-Yew SSG generates taxonomy listing pages automatically:
+Taxus generates taxonomy listing pages automatically:
 
 - `/tags/` — Lists all tags
 - `/tags/rust/` — Lists pages with the "rust" tag
@@ -380,7 +380,7 @@ full_content = false
 
 ## Sitemap Generation
 
-Yew SSG generates `sitemap.xml` automatically:
+Taxus generates `sitemap.xml` automatically:
 
 - All routes included (pages and sections)
 - Draft pages excluded
@@ -393,7 +393,7 @@ Yew SSG generates `sitemap.xml` automatically:
 
 ## Robots.txt Generation
 
-Yew SSG generates `robots.txt` automatically if no `static/robots.txt` exists:
+Taxus generates `robots.txt` automatically if no `static/robots.txt` exists:
 
 ```text
 User-agent: *

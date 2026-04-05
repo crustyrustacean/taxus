@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide will help you get up and running with Yew SSG quickly.
+This guide will help you get up and running with Taxus quickly.
 
 ## Prerequisites
 

@@ -15,7 +15,7 @@ templates/
 
 ## Template Engine
 
-Yew SSG uses [Tera](https://tera.netlify.app/), a Jinja2-like template engine for Rust:
+Taxus uses [Tera](https://tera.netlify.app/), a Jinja2-like template engine for Rust:
 
 - **Variables**: `{{ variable }}` syntax
 - **Filters**: `{{ content | safe }}` for unescaped HTML

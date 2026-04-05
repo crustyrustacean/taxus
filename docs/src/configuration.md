@@ -1,6 +1,6 @@
 # Configuration
 
-Yew SSG uses a `site.toml` configuration file to define site settings and build options.
+Taxus uses a `site.toml` configuration file to define site settings and build options.
 
 ## Configuration File
 

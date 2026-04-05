@@ -1,6 +1,6 @@
 # Development
 
-This guide covers development workflows for contributing to Yew SSG.
+This guide covers development workflows for contributing to Taxus.
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ cargo build
 cargo test
 
 # Run tests for a specific crate
-cargo test -p generator
+cargo test -p taxus
 
 # Run unit tests only
 cargo test --lib
@@ -110,10 +110,10 @@ fn build_site() {
 
 ```
 taxus/
-├── client/     # WASM hydration client
-├── common/     # Shared Yew components
-├── generator/  # SSG library and CLI
-└── docs/       # mdBook documentation
+├── taxus-client/    # WASM hydration client
+├── taxus-common/    # Shared Yew components
+├── taxus-generator/ # SSG library and CLI
+└── docs/            # mdBook documentation
 ```
 
 ## Contributing

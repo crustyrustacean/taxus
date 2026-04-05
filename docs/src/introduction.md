@@ -1,12 +1,12 @@
 # Introduction
 
-Welcome to **Taxus**, a Rust-based static site generator built with [Yew](https://yew.rs/), designed for building fast, SEO-friendly websites with the power of WebAssembly.
+Welcome to **Taxus**, a Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring optional WebAssembly "islands" for interactive components.
 
 ## What is Taxus?
 
-taxus is a static site generator that combines:
+Taxus is a static site generator that combines:
 
-- **Tera templates** for the static "sea of HTML — page layout, content, navigation
+- **Tera templates** for the static "sea of HTML" — page layout, content, navigation
 - **Markdown content** with TOML frontmatter for writing pages and posts
 - **SCSS** for modern styling
 - **Optional Yew components** — pre-rendered server-side at build time, hydrated by WASM in the browser for interactivity
@@ -26,11 +26,11 @@ The key insight: pages are immediately visible with no JavaScript required. Inte
 - **Sitemap**: Automatic `sitemap.xml` generation with priorities and lastmod dates
 - **Taxonomies**: Tags, categories, and series for content organization
 - **Development Server**: Hot-reloading local server with WebSocket live reload
-- **CLI Interface**: `build`, `clean`, `init`, `routes`, and `erve` subcommands
+- **CLI Interface**: `build`, `clean`, `init`, `routes`, and `serve` subcommands
 
 ## Who is this for?
 
-taxus is ideal for:
+Taxus is ideal for:
 
 - **Rust developers** who want to build websites without leaving their favorite language
 - **Performance enthusiasts** who want fast, optimized static sites with selective WASM interactivity
