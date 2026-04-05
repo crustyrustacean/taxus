@@ -1,5 +1,5 @@
 [package]
-name = "client"
+name = "taxus-client"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -7,6 +7,10 @@ description.workspace = true
 license.workspace = true
 readme.workspace = true
 repository.workspace = true
+
+[[bin]]
+name = "client"
+path = "src/main.rs"
 
 [dependencies]
 taxus-common = { path = "../taxus-common" }
