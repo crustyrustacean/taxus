@@ -1,15 +1,49 @@
 <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}{{ site.name }}{% endblock %}</title>
-        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="/css/main.css">
-    </head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site.name }}{% endblock %}</title>
+    
+    {% if page.description %}
+    <meta name="description" content="{{ page.description }}">
+    {% elif section.description %}
+    <meta name="description" content="{{ section.description }}">
+    {% else %}
+    <meta name="description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
+    {% endif %}
+    
+    <link rel="canonical" href="{{ site.base_url }}{{ page.path | default(value='/') }}">
+    
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Jeffery D. Mitchell">
+    
+    <meta property="og:type" content="{% if page.date %}article{% else %}website{% endif %}">
+    <meta property="og:site_name" content="{{ site.name }}">
+    <meta property="og:url" content="{{ site.base_url }}{{ page.path | default(value='/') }}">
+    {% block opengraph %}
+    <meta property="og:title" content="{{ page.title | default(value=site.name) }}">
+    {% if page.description %}
+    <meta property="og:description" content="{{ page.description }}">
+    {% else %}
+    <meta property="og:description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
+    {% endif %}
+    {% endblock %}
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ page.title | default(value=site.name) }}">
+    {% if page.description %}
+    <meta name="twitter:description" content="{{ page.description }}">
+    {% else %}
+    <meta name="twitter:description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
+    {% endif %}
+    
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
 <body>
     <div class="page">
         {% include "partials/header.html" %}

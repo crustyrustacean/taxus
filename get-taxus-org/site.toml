@@ -1,6 +1,6 @@
 [site]
 name = "Taxus"
-base_url = "https://get-taxus.org"
+base_url = "https://get-taxus-org.pages.dev"
 
 [build]
 content_dir = "content"
