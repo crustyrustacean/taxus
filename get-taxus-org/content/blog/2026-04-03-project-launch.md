@@ -1,26 +1,36 @@
 +++
 title = "Project Launch"
 date = 2026-04-03
-description = "The inagural blog post for the Taxus SSG project."
+description = "The inaugural blog post for the Taxus SSG project."
 draft = false
 +++
 
 ### Ready, Set, Go!
 
-The Taxus project launches, welcome! Welcome to the official project site, but with Taxus itself. This blog will be my place to think about things and share the development process.
+Welcome to the official launch of Taxus! I'm excited to introduce this new static site generator and share the journey that brought us here. This blog will serve as a space to document the development process, share insights, and build a community around the project.
 
-### Why?
+### The Story Behind Taxus
 
-Yes, why. The world doesn't really need another static site generator, does it?  We have many good ones:
+Every project begins with a question. For Taxus, that question was simple: why build another static site generator when so many excellent options already exist?
 
-- Hugo
-- Jekyll
-- Zola
+The landscape includes well-established tools like Hugo, Jekyll, and Zola—each with its own strengths and dedicated communities. Yet despite their capabilities, I found myself searching for something that better matched my workflow and philosophy.
 
-...and many more I can't name off the top of my head.
+### What Makes Taxus Different?
 
-I don't like any of them. I've tried them trust me.
+Taxus is built on a foundation of clarity and approachability:
 
-They are all too technical and just not well documented.
+- **Tera Templates**: Leveraging the power and flexibility of the Tera templating engine, which will feel familiar to anyone who has worked with Jinja2 or Twig.
 
-I set about to create something else. It's not particularly ready for anyone but me, but today I launch anyway.
+- **Yew Integration**: Built-in support for Yew enables interactive components without sacrificing the simplicity of a static site.
+
+- **Rust Performance**: Written in Rust, Taxus benefits from memory safety, speed, and a thriving ecosystem.
+
+- **Thoughtful Documentation**: Documentation isn't an afterthought—it's a core feature. Every capability should be clearly explained with practical examples.
+
+### What's Next?
+
+Taxus is still in its early stages. While it powers this very site, there's much work ahead: refining the API, expanding documentation, and gathering feedback from early adopters.
+
+If you're curious, I invite you to explore the documentation, try it out, and share your thoughts. Building in the open means your feedback shapes what Taxus becomes.
+
+Thank you for stopping by. Here's to the beginning of something worthwhile.

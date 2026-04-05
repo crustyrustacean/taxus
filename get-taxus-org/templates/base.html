@@ -12,40 +12,11 @@
     </head>
 <body>
     <div class="page">
-        <header>
-            <a href="/" aria-label="taxus home">
-            <img class="logo" src="/static/favicon.svg" alt="taxus logo" width="64" height="64">
-            </a>
-            <h1>taxus</h1>
-            <h2>A static site generator built in Rust.</h2>
-            <p>Founded on <a href="https://keats.github.io/tera/">Tera</a> and <a href="https://yew.rs">Yew</a>. Named for the genus of the yew tree.</p>
-            <nav aria-label="primary">
-                <a href="/" class="btn-primary">Home</a>
-                <a href="/authoring" class="btn-primary">Authoring</a>
-                <a href="/structure" class="btn-primary">Structure</a>
-                <a href="/appearance" class="btn-primary">Appearance</a>
-                <a href="/interactivity" class="btn-primary">Interactivity</a>
-                <a href="/blog" class="btn-primary">Blog</a>
-            </nav>
-        </header>
+        {% include "partials/header.html" %}
         <main>
             {% block content %}{% endblock %}
         </main>
-        <footer>
-            <p>
-                <strong>taxus</strong> &mdash;
-                built with
-                <a href="https://keats.github.io/tera/" target="_blank" rel="noopener noreferrer">Tera</a>
-                &amp;
-                <a href="https://yew.rs"  target="_blank" rel="noopener noreferrer">Yew</a>
-            </p>
-            <p>&copy; {{ now.year }} &middot; <a href="https://jeff-mitchell.dev" target="_blank" rel="noopener noreferrer">Jeffery D. Mitchell</a></p>
-            <p style="margin-top: 0.5rem;">
-            <a href="https://github.com/crustyrustacean/taxus.git" target="_blank" rel="noopener noreferrer">GitHub</a>
-                &middot;
-            <a href="https://crustyrustacean.github.io/taxus" target="_blank" rel="noopener noreferrer">Docs</a>
-            </p>
-        </footer>
+        {% include "partials/footer.html" %}
     </div>
     <!-- General interactivity via plain JavaScript -->
     <script src="/static/scripts.js"></script>
