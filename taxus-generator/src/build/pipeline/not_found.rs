@@ -1,6 +1,6 @@
 // generator/src/build/pipeline/not_found.rs
 
-use crate::error::{BuildError, Result};
+use crate::error::{GeneratorError, Result};
 use crate::templates::{SiteContext, TemplateContext, TemplateRenderer, TeraRenderer};
 use std::fs;
 use std::path::Path;
@@ -40,14 +40,14 @@ pub fn write_404(page: &Generated404, output_dir: &Path, dry_run: bool) -> Resul
         return Ok(());
     }
 
-    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+    fs::create_dir_all(output_dir).map_err(|e| GeneratorError::Io {
         path: output_dir.to_path_buf(),
         source: e,
     })?;
 
     let output_path = output_dir.join("404.html");
 
-    fs::write(&output_path, &page.content).map_err(|e| BuildError::Io {
+    fs::write(&output_path, &page.content).map_err(|e| GeneratorError::Io {
         path: output_path.clone(),
         source: e,
     })?;

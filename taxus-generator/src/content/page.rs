@@ -483,6 +483,7 @@ impl Page {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::GeneratorError;
 
     #[test]
     fn test_parse_page_with_frontmatter() {
@@ -570,7 +571,7 @@ This is content.
         let err = result.unwrap_err();
         assert!(matches!(
             err,
-            crate::error::GeneratorError::Content(ContentError::UnclosedFrontmatter(_))
+            GeneratorError::Content(inner) if matches!(*inner, ContentError::UnclosedFrontmatter(_))
         ));
     }
 

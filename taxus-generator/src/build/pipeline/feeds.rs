@@ -2,7 +2,7 @@
 
 use crate::build::ProcessedPage;
 use crate::config::SiteConfig;
-use crate::error::{BuildError, Result};
+use crate::error::{GeneratorError, Result};
 use std::fs;
 use std::path::Path;
 use tracing::{debug, info};
@@ -113,7 +113,7 @@ pub fn write_feeds(feeds: &[GeneratedFeed], output_dir: &Path, dry_run: bool) ->
     }
 
     // Create output directory if it doesn't exist
-    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+    fs::create_dir_all(output_dir).map_err(|e| GeneratorError::Io {
         path: output_dir.to_path_buf(),
         source: e,
     })?;
@@ -122,7 +122,7 @@ pub fn write_feeds(feeds: &[GeneratedFeed], output_dir: &Path, dry_run: bool) ->
         let output_path = output_dir.join(&feed.filename);
 
         // Write the feed file
-        fs::write(&output_path, &feed.content).map_err(|e| BuildError::Io {
+        fs::write(&output_path, &feed.content).map_err(|e| GeneratorError::Io {
             path: output_path.clone(),
             source: e,
         })?;

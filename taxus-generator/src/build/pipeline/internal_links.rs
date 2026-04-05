@@ -1,6 +1,6 @@
 // generator/src/build/pipeline/internal_links.rs
 
-use crate::error::BuildError;
+use crate::error::GeneratorError;
 use crate::routes::RouteRegistry;
 use std::path::{Path, PathBuf};
 
@@ -16,7 +16,7 @@ pub fn resolve_internal_links(
     content: &str,
     source_file: &Path,
     registry: &RouteRegistry,
-) -> std::result::Result<String, BuildError> {
+) -> std::result::Result<String, GeneratorError> {
     let mut result = String::new();
     let mut remaining = content;
 
@@ -56,7 +56,7 @@ pub fn resolve_internal_links(
         let route = registry.find_by_content_file(&target_pathbuf);
 
         let Some(route) = route else {
-            return Err(BuildError::BrokenInternalLink {
+            return Err(GeneratorError::BrokenInternalLink {
                 file: source_file.display().to_string(),
                 target: format!("@/{}", target_path),
             });
@@ -106,7 +106,6 @@ fn test_resolve_internal_links_valid_link() {
 
 #[test]
 fn test_resolve_internal_links_unknown_target() {
-    // Create an empty registry
     let registry = RouteRegistry::new();
 
     let content = "See my [about page](@/about.md) for more details.";
@@ -115,8 +114,8 @@ fn test_resolve_internal_links_unknown_target() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(matches!(err, BuildError::BrokenInternalLink { .. }));
-    if let BuildError::BrokenInternalLink { file, target } = err {
+    assert!(matches!(err, GeneratorError::BrokenInternalLink { .. }));
+    if let GeneratorError::BrokenInternalLink { file, target } = err {
         assert_eq!(file, "blog/my-post.md");
         assert_eq!(target, "@/about.md");
     }
@@ -136,97 +135,102 @@ fn test_resolve_internal_links_no_internal_links() {
     );
 }
 
-#[test]
-fn test_resolve_internal_links_multiple_links() {
-    use crate::routes::{RouteInfo, RouteKind};
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    // Create a registry with multiple routes
-    let mut registry = RouteRegistry::new();
-    registry
-        .register(
-            RouteInfo::new(
-                "/about/".to_string(),
-                PathBuf::from("about.md"),
-                PathBuf::from("about/index.html"),
-                RouteKind::Page,
+    #[test]
+    fn test_resolve_internal_links_multiple_links() {
+        use crate::routes::{RouteInfo, RouteKind};
+
+        // Create a registry with multiple routes
+        let mut registry = RouteRegistry::new();
+        registry
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        )
-        .unwrap();
-    registry
-        .register(
-            RouteInfo::new(
-                "/blog/first-post/".to_string(),
-                PathBuf::from("blog/first-post.md"),
-                PathBuf::from("blog/first-post/index.html"),
-                RouteKind::Page,
+            .unwrap();
+        registry
+            .register(
+                RouteInfo::new(
+                    "/blog/first-post/".to_string(),
+                    PathBuf::from("blog/first-post.md"),
+                    PathBuf::from("blog/first-post/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        )
-        .unwrap();
+            .unwrap();
 
-    let content = "See my [about page](@/about.md) and [first post](@/blog/first-post.md).";
-    let source_file = Path::new("test.md");
-    let result = resolve_internal_links(content, source_file, &registry).unwrap();
+        let content = "See my [about page](@/about.md) and [first post](@/blog/first-post.md).";
+        let source_file = Path::new("test.md");
+        let result = resolve_internal_links(content, source_file, &registry).unwrap();
 
-    assert_eq!(
-        result,
-        "See my [about page](/about/) and [first post](/blog/first-post/)."
-    );
-}
+        assert_eq!(
+            result,
+            "See my [about page](/about/) and [first post](/blog/first-post/)."
+        );
+    }
 
-#[test]
-fn test_resolve_internal_links_nested_path() {
-    use crate::routes::{RouteInfo, RouteKind};
+    #[test]
+    fn test_resolve_internal_links_nested_path() {
+        use crate::routes::{RouteInfo, RouteKind};
 
-    // Create a registry with a nested route
-    let mut registry = RouteRegistry::new();
-    registry
-        .register(
-            RouteInfo::new(
-                "/docs/guide/getting-started/".to_string(),
-                PathBuf::from("docs/guide/getting-started.md"),
-                PathBuf::from("docs/guide/getting-started/index.html"),
-                RouteKind::Page,
+        // Create a registry with a nested route
+        let mut registry = RouteRegistry::new();
+        registry
+            .register(
+                RouteInfo::new(
+                    "/docs/guide/getting-started/".to_string(),
+                    PathBuf::from("docs/guide/getting-started.md"),
+                    PathBuf::from("docs/guide/getting-started/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        )
-        .unwrap();
+            .unwrap();
 
-    let content = "Read the [getting started guide](@/docs/guide/getting-started.md).";
-    let source_file = Path::new("index.md");
-    let result = resolve_internal_links(content, source_file, &registry).unwrap();
+        let content = "Read the [getting started guide](@/docs/guide/getting-started.md).";
+        let source_file = Path::new("index.md");
+        let result = resolve_internal_links(content, source_file, &registry).unwrap();
 
-    assert_eq!(
-        result,
-        "Read the [getting started guide](/docs/guide/getting-started/)."
-    );
-}
+        assert_eq!(
+            result,
+            "Read the [getting started guide](/docs/guide/getting-started/)."
+        );
+    }
 
-#[test]
-fn test_resolve_internal_links_mixed_links() {
-    use crate::routes::{RouteInfo, RouteKind};
+    #[test]
+    fn test_resolve_internal_links_mixed_links() {
+        use crate::routes::{RouteInfo, RouteKind};
 
-    // Create a registry
-    let mut registry = RouteRegistry::new();
-    registry
-        .register(
-            RouteInfo::new(
-                "/about/".to_string(),
-                PathBuf::from("about.md"),
-                PathBuf::from("about/index.html"),
-                RouteKind::Page,
+        // Create a registry
+        let mut registry = RouteRegistry::new();
+        registry
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        )
-        .unwrap();
+            .unwrap();
 
-    let content = "Check [external](https://example.com) and [internal](@/about.md) links.";
-    let source_file = Path::new("test.md");
-    let result = resolve_internal_links(content, source_file, &registry).unwrap();
+        let content = "Check [external](https://example.com) and [internal](@/about.md) links.";
+        let source_file = Path::new("test.md");
+        let result = resolve_internal_links(content, source_file, &registry).unwrap();
 
-    assert_eq!(
-        result,
-        "Check [external](https://example.com) and [internal](/about/) links."
-    );
+        assert_eq!(
+            result,
+            "Check [external](https://example.com) and [internal](/about/) links."
+        );
+    }
 }

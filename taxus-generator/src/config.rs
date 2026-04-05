@@ -304,7 +304,7 @@ mod tests {
         let err = result.unwrap_err();
         assert!(matches!(
             err,
-            GeneratorError::Config(ConfigError::MissingField { .. })
+            GeneratorError::Config(inner) if matches!(*inner, ConfigError::MissingField { .. })
         ));
     }
 

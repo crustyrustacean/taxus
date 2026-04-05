@@ -72,10 +72,13 @@ fn test_load_missing_config() {
     let err = result.unwrap_err();
 
     match err {
-        GeneratorError::Config(ConfigError::NotFound(path)) => {
-            assert!(path.ends_with("site.toml"));
-        }
-        _ => panic!("Expected NotFound error"),
+        GeneratorError::Config(inner) => match *inner {
+            ConfigError::NotFound(path) => {
+                assert!(path.ends_with("site.toml"));
+            }
+            other => panic!("Expected NotFound error, got: {other}"),
+        },
+        other => panic!("Expected Config error, got: {other}"),
     }
 }
 

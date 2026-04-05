@@ -2,7 +2,7 @@
 
 use crate::build::ProcessedPage;
 use crate::config::SiteConfig;
-use crate::error::{BuildError, Result};
+use crate::error::{GeneratorError, Result};
 use crate::templates::compute_permalink;
 use std::fs;
 use std::path::Path;
@@ -128,7 +128,7 @@ pub fn write_sitemap(sitemap: &GeneratedSitemap, output_dir: &Path, dry_run: boo
     }
 
     // Create output directory if it doesn't exist
-    fs::create_dir_all(output_dir).map_err(|e| BuildError::Io {
+    fs::create_dir_all(output_dir).map_err(|e| GeneratorError::Io {
         path: output_dir.to_path_buf(),
         source: e,
     })?;
@@ -136,7 +136,7 @@ pub fn write_sitemap(sitemap: &GeneratedSitemap, output_dir: &Path, dry_run: boo
     let output_path = output_dir.join("sitemap.xml");
 
     // Write the sitemap file
-    fs::write(&output_path, &sitemap.content).map_err(|e| BuildError::Io {
+    fs::write(&output_path, &sitemap.content).map_err(|e| GeneratorError::Io {
         path: output_path.clone(),
         source: e,
     })?;

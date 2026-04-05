@@ -17,7 +17,7 @@ use crate::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 use crate::build::pipeline::internal_links::resolve_internal_links;
 use crate::config::SiteConfig;
 use crate::content::Page;
-use crate::error::{BuildError, GeneratorError, Result};
+use crate::error::{GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
 use pulldown_cmark::{Parser, html::push_html};
@@ -52,23 +52,19 @@ pub struct RenderedPage {
 }
 
 /// Load configuration from a directory.
-pub fn load_config(dir: &Path) -> std::result::Result<SiteConfig, BuildError> {
-    SiteConfig::from_dir(dir).map_err(|e| match e {
-        GeneratorError::Config(err) => BuildError::Config(err),
-        GeneratorError::Io { path, source } => BuildError::Io { path, source },
-        other => BuildError::Config(crate::error::ConfigError::Invalid(other.to_string())),
-    })
+pub fn load_config(dir: &Path) -> std::result::Result<SiteConfig, GeneratorError> {
+    SiteConfig::from_dir(dir)
 }
 
 /// Discover routes from the content directory.
-pub fn discover_routes(config: &SiteConfig) -> std::result::Result<RouteRegistry, BuildError> {
+pub fn discover_routes(config: &SiteConfig) -> Result<RouteRegistry> {
     let discovery = RouteDiscovery::new(&config.build.content_dir);
-    discovery.discover().map_err(BuildError::from)
+    Ok(discovery.discover()?)
 }
 
 /// Load templates from the templates directory.
-pub fn load_templates(config: &SiteConfig) -> std::result::Result<TeraRenderer, BuildError> {
-    TeraRenderer::from_dir(&config.build.templates_dir).map_err(BuildError::from)
+pub fn load_templates(config: &SiteConfig) -> Result<TeraRenderer> {
+    Ok(TeraRenderer::from_dir(&config.build.templates_dir)?)
 }
 
 /// Process content files into rendered HTML.
@@ -114,9 +110,7 @@ pub fn process_assets(config: &SiteConfig, output_dir: &Path) -> Result<AssetRep
     if config.build.styles_dir.exists() {
         let scss_processor = ScssProcessor::new();
         let css_output = output_dir.join("css");
-        let scss_report = scss_processor
-            .process(&config.build.styles_dir, &css_output)
-            .map_err(BuildError::from)?;
+        let scss_report = scss_processor.process(&config.build.styles_dir, &css_output)?;
         report.merge(scss_report);
     }
 
@@ -124,9 +118,7 @@ pub fn process_assets(config: &SiteConfig, output_dir: &Path) -> Result<AssetRep
     if config.build.static_dir.exists() {
         let static_copier = StaticCopier::new();
         let static_output = output_dir.join("static");
-        let static_report = static_copier
-            .process(&config.build.static_dir, &static_output)
-            .map_err(BuildError::from)?;
+        let static_report = static_copier.process(&config.build.static_dir, &static_output)?;
         report.merge(static_report);
     }
 
@@ -209,14 +201,14 @@ pub fn copy_colocated_assets(
 
         // Create parent directories
         if let Some(parent) = dest_path.parent() {
-            fs::create_dir_all(parent).map_err(|e| BuildError::Io {
+            fs::create_dir_all(parent).map_err(|e| GeneratorError::Io {
                 path: parent.to_path_buf(),
                 source: e,
             })?;
         }
 
         // Copy the file
-        fs::copy(path, &dest_path).map_err(|e| BuildError::Io {
+        fs::copy(path, &dest_path).map_err(|e| GeneratorError::Io {
             path: dest_path.clone(),
             source: e,
         })?;
@@ -254,14 +246,14 @@ pub fn write_output(
 
         // Create parent directories
         if let Some(parent) = output_path.parent() {
-            fs::create_dir_all(parent).map_err(|e| BuildError::Io {
+            fs::create_dir_all(parent).map_err(|e| GeneratorError::Io {
                 path: parent.to_path_buf(),
                 source: e,
             })?;
         }
 
         // Write the file
-        fs::write(&output_path, &rendered_page.content).map_err(|e| BuildError::Io {
+        fs::write(&output_path, &rendered_page.content).map_err(|e| GeneratorError::Io {
             path: output_path.clone(),
             source: e,
         })?;
@@ -288,7 +280,7 @@ fn markdown_to_html(markdown: &str) -> String {
 /// Clean the output directory.
 pub fn clean_output(output_dir: &Path) -> Result<()> {
     if output_dir.exists() {
-        fs::remove_dir_all(output_dir).map_err(|e| BuildError::Io {
+        fs::remove_dir_all(output_dir).map_err(|e| GeneratorError::Io {
             path: output_dir.to_path_buf(),
             source: e,
         })?;

@@ -3,7 +3,7 @@
 use crate::Page;
 use crate::build::ProcessedPage;
 use crate::content::{TaxonomyKind, TaxonomyMap};
-use crate::error::{BuildError, Result};
+use crate::error::{GeneratorError, Result};
 use crate::templates::{
     PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
     TemplateRenderer, TeraRenderer, compute_permalink,
@@ -104,12 +104,7 @@ pub fn render_taxonomy_pages(
                 .collect(),
             );
 
-            let content = templates.render(&template_name, &context).map_err(|e| {
-                BuildError::PageRenderFailed {
-                    path: list_path.clone(),
-                    source: e,
-                }
-            })?;
+            let content = templates.render(&template_name, &context)?;
 
             let output_file = PathBuf::from(kind.path_prefix()).join("index.html");
 
@@ -177,12 +172,7 @@ pub fn render_taxonomy_pages(
                     .collect(),
                 );
 
-                let content = templates.render(&template_name, &context).map_err(|e| {
-                    BuildError::PageRenderFailed {
-                        path: term_path.clone(),
-                        source: e,
-                    }
-                })?;
+                let content = templates.render(&template_name, &context)?;
 
                 let output_file =
                     PathBuf::from(&term_path.trim_start_matches('/')).join("index.html");
@@ -218,14 +208,14 @@ pub fn write_taxonomy_pages(
 
         // Create parent directories
         if let Some(parent) = output_path.parent() {
-            fs::create_dir_all(parent).map_err(|e| BuildError::Io {
+            fs::create_dir_all(parent).map_err(|e| GeneratorError::Io {
                 path: parent.to_path_buf(),
                 source: e,
             })?;
         }
 
         // Write the file
-        fs::write(&output_path, &taxonomy_page.content).map_err(|e| BuildError::Io {
+        fs::write(&output_path, &taxonomy_page.content).map_err(|e| GeneratorError::Io {
             path: output_path.clone(),
             source: e,
         })?;

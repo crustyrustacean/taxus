@@ -1,6 +1,6 @@
 // taxus-generator/src/pipeline/alias.rs
 
-use crate::error::{BuildError, Result};
+use crate::error::{GeneratorError, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
@@ -71,7 +71,7 @@ pub fn write_aliases(aliases: &[AliasPage], output_dir: &Path, dry_run: bool) ->
 
         // Create parent directories
         if let Some(parent) = output_path.parent() {
-            fs::create_dir_all(parent).map_err(|e| BuildError::Io {
+            fs::create_dir_all(parent).map_err(|e| GeneratorError::Io {
                 path: parent.to_path_buf(),
                 source: e,
             })?;
@@ -79,7 +79,7 @@ pub fn write_aliases(aliases: &[AliasPage], output_dir: &Path, dry_run: bool) ->
 
         // Write the redirect HTML
         let html = alias.to_html();
-        fs::write(&output_path, &html).map_err(|e| BuildError::Io {
+        fs::write(&output_path, &html).map_err(|e| GeneratorError::Io {
             path: output_path.clone(),
             source: e,
         })?;

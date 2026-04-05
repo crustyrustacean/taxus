@@ -17,7 +17,7 @@ pub struct ServeArgs {
     pub open: bool,
 }
 
-pub async fn run_serve(args: &ServeArgs) -> Result<(), Box<GeneratorError>> {
+pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
     use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn};
 
     // Load config to get output directory
@@ -65,12 +65,7 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), Box<GeneratorError>> {
         }
     }
 
-    server.run().await.map_err(|e| {
-        GeneratorError::Serve(taxus_lib::serve::ServeError::Server(format!(
-            "Server error: {}",
-            e
-        )))
-    })?;
+    server.run().await?;
 
     Ok(())
 }
@@ -88,7 +83,7 @@ pub struct BuildArgs {
     pub output: Option<PathBuf>,
 }
 
-pub fn run_build(args: &BuildArgs) -> Result<BuildReport, Box<GeneratorError>> {
+pub fn run_build(args: &BuildArgs) -> Result<BuildReport, GeneratorError> {
     // Load config so we can apply the --output override before building
     let mut config = taxus_lib::SiteConfig::from_dir(&args.dir)?;
     if let Some(ref output) = args.output {
@@ -117,8 +112,8 @@ pub fn run_build(args: &BuildArgs) -> Result<BuildReport, Box<GeneratorError>> {
 // Clean
 // ---------------------------------------------------------------------------
 
-pub fn run_clean(dir: &Path) -> Result<(), Box<GeneratorError>> {
-    Ok(SiteBuilder::from_dir(dir)?.clean()?)
+pub fn run_clean(dir: &Path) -> Result<(), GeneratorError> {
+    SiteBuilder::from_dir(dir)?.clean()
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +128,7 @@ pub struct InitArgs {
     pub islands: bool,
 }
 
-pub fn run_init(args: &InitArgs) -> Result<InitReport, Box<GeneratorError>> {
+pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
     use taxus_lib::init::{derive_site_name, is_directory_empty};
 
     // Check if directory is empty
@@ -188,7 +183,7 @@ pub fn run_init(args: &InitArgs) -> Result<InitReport, Box<GeneratorError>> {
 // Routes
 // ---------------------------------------------------------------------------
 
-pub fn run_routes(dir: &Path) -> Result<(), Box<GeneratorError>> {
+pub fn run_routes(dir: &Path) -> Result<(), GeneratorError> {
     use taxus_lib::{RouteDiscovery, SiteConfig};
 
     let config = SiteConfig::from_dir(dir)?;

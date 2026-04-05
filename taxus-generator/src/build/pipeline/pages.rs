@@ -2,7 +2,7 @@
 
 use crate::build::{ProcessedPage, RenderedPage};
 use crate::content::SortBy;
-use crate::error::{BuildError, Result};
+use crate::error::Result;
 use crate::routes::RouteInfo;
 use crate::templates::{
     PageContext, PaginationContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer,
@@ -196,12 +196,7 @@ pub fn render_pages(
                         .with_section(section_context)
                         .with_extra(processed_page.page.frontmatter.extra_as_json());
 
-                    let content = templates.render(paginate_template, &context).map_err(|e| {
-                        BuildError::PageRenderFailed {
-                            path: page_url(page_num),
-                            source: e,
-                        }
-                    })?;
+                    let content = templates.render(paginate_template, &context)?;
 
                     // Determine output file path
                     let output_file = if page_num == 1 {
@@ -220,8 +215,7 @@ pub fn render_pages(
                         processed_page.route.content_file.clone(),
                         output_file,
                         processed_page.route.kind,
-                    )
-                    .map_err(BuildError::from)?;
+                    )?;
 
                     rendered.push(RenderedPage { route, content });
                 }
@@ -251,12 +245,7 @@ pub fn render_pages(
         };
 
         // Render the template
-        let content = templates.render(template_name, &context).map_err(|e| {
-            BuildError::PageRenderFailed {
-                path: url_path.clone(),
-                source: e,
-            }
-        })?;
+        let content = templates.render(template_name, &context)?;
 
         // Create route with potentially overridden path
         let output_file = if processed_page.page.frontmatter.slug.is_some() {
@@ -275,8 +264,7 @@ pub fn render_pages(
             processed_page.route.content_file.clone(),
             output_file,
             processed_page.route.kind,
-        )
-        .map_err(BuildError::from)?;
+        )?;
 
         rendered.push(RenderedPage { route, content });
     }

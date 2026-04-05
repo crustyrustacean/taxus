@@ -12,39 +12,35 @@ use crate::serve::ServeError;
 pub enum GeneratorError {
     /// Configuration-related errors
     #[error("Configuration error: {0}")]
-    Config(#[from] ConfigError),
+    Config(Box<ConfigError>),
 
     /// Content-related errors
     #[error("Content error: {0}")]
-    Content(#[from] ContentError),
+    Content(Box<ContentError>),
 
     /// Template-related errors
     #[error("Template error: {0}")]
-    Template(#[from] TemplateError),
+    Template(Box<TemplateError>),
 
     /// Asset-related errors
     #[error("Asset error: {0}")]
-    Asset(#[from] AssetError),
+    Asset(Box<AssetError>),
 
     /// Route-related errors
     #[error("Route error: {0}")]
-    Route(#[from] RouteError),
-
-    /// Build-related errors
-    #[error("Build error: {0}")]
-    Build(#[from] BuildError),
+    Route(Box<RouteError>),
 
     /// Init-related errors
     #[error("Init error: {0}")]
-    Init(#[from] InitError),
+    Init(Box<InitError>),
 
     /// Serve-related errors
     #[error("Serve error: {0}")]
-    Serve(#[from] ServeError),
+    Serve(Box<ServeError>),
 
     /// Feed-related errors
     #[error("Feed error: {0}")]
-    Feed(#[from] FeedError),
+    Feed(Box<FeedError>),
 
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
@@ -53,29 +49,44 @@ pub enum GeneratorError {
         #[source]
         source: std::io::Error,
     },
+
+    /// No content found to build
+    #[error("No content found to build")]
+    NoContent,
+
+    /// Broken internal link
+    #[error("Broken internal link in '{file}': target '{target}' not found")]
+    BrokenInternalLink { file: String, target: String },
+
+    /// Page rendering failed
+    #[error("Failed to render page '{path}': {source}")]
+    PageRenderFailed {
+        path: String,
+        #[source]
+        source: TemplateError,
+    },
 }
 
-macro_rules! impl_boxed_error {
+macro_rules! impl_from_for_generator_error {
     ($($error_type:ty => $variant:ident),* $(,)?) => {
         $(
-            impl From<$error_type> for Box<GeneratorError> {
+            impl From<$error_type> for GeneratorError {
                 fn from(err: $error_type) -> Self {
-                    Box::new(GeneratorError::$variant(err))
+                    GeneratorError::$variant(Box::new(err))
                 }
             }
         )*
     };
 }
 
-impl_boxed_error! {
+impl_from_for_generator_error! {
     ConfigError => Config,
     ContentError => Content,
     TemplateError => Template,
     AssetError => Asset,
     RouteError => Route,
-    BuildError => Build,
     InitError => Init,
-    crate::serve::ServeError => Serve,
+    ServeError => Serve,
     FeedError => Feed,
 }
 
@@ -209,62 +220,6 @@ pub enum RouteError {
     /// Content discovery failed
     #[error("Content discovery failed: {0}")]
     DiscoveryFailed(String),
-}
-
-/// Build-related errors.
-#[derive(Debug, thiserror::Error)]
-pub enum BuildError {
-    /// No content found to build
-    #[error("No content found to build")]
-    NoContent,
-
-    /// Output directory creation failed
-    #[error("Failed to create output directory '{path}': {source}")]
-    OutputDirCreation {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-
-    /// Page rendering failed
-    #[error("Failed to render page '{path}': {source}")]
-    PageRenderFailed {
-        path: String,
-        #[source]
-        source: TemplateError,
-    },
-
-    /// Content processing failed
-    #[error("Content processing failed: {0}")]
-    ContentProcessing(#[from] ContentError),
-
-    /// Asset processing failed
-    #[error("Asset processing failed: {0}")]
-    AssetProcessing(#[from] AssetError),
-
-    /// Route discovery failed
-    #[error("Route discovery failed: {0}")]
-    RouteDiscovery(#[from] RouteError),
-
-    /// Configuration error
-    #[error("Configuration error: {0}")]
-    Config(#[from] ConfigError),
-
-    /// Template error
-    #[error("Template error: {0}")]
-    Template(#[from] TemplateError),
-
-    /// I/O error with context
-    #[error("I/O error for {path}: {source}")]
-    Io {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-
-    /// Broken internal link
-    #[error("Broken internal link in '{file}': target '{target}' not found")]
-    BrokenInternalLink { file: String, target: String },
 }
 
 /// Init-related errors.
@@ -552,79 +507,22 @@ mod tests {
 
     #[test]
     fn test_build_error_no_content() {
-        let err = BuildError::NoContent;
+        let err = GeneratorError::NoContent;
         let msg = err.to_string();
         assert!(msg.contains("No content found"));
     }
 
     #[test]
-    fn test_build_error_output_dir_creation() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
-        let err = BuildError::OutputDirCreation {
-            path: PathBuf::from("dist"),
-            source: io_err,
-        };
-        let msg = err.to_string();
-        assert!(msg.contains("Failed to create output directory"));
-        assert!(msg.contains("dist"));
-        assert!(msg.contains("access denied"));
-    }
-
-    #[test]
-    fn test_build_error_page_render_failed() {
+    fn test_page_render_failed_error() {
         let template_err = TemplateError::NotFound("page.html".to_string());
-        let err = BuildError::PageRenderFailed {
+        let err = GeneratorError::PageRenderFailed {
             path: "/about/".to_string(),
             source: template_err,
         };
         let msg = err.to_string();
-        assert!(msg.contains("Failed to render page"));
+        assert!(msg.contains("Failed to render"));
         assert!(msg.contains("/about/"));
     }
-
-    #[test]
-    fn test_build_error_from_content() {
-        let content_err = ContentError::NotFound(PathBuf::from("test.md"));
-        let build_err: BuildError = content_err.into();
-        assert!(matches!(build_err, BuildError::ContentProcessing(_)));
-    }
-
-    #[test]
-    fn test_build_error_from_asset() {
-        let asset_err = AssetError::NotFound(PathBuf::from("test.png"));
-        let build_err: BuildError = asset_err.into();
-        assert!(matches!(build_err, BuildError::AssetProcessing(_)));
-    }
-
-    #[test]
-    fn test_build_error_from_route() {
-        let route_err = RouteError::NotFound("/test/".to_string());
-        let build_err: BuildError = route_err.into();
-        assert!(matches!(build_err, BuildError::RouteDiscovery(_)));
-    }
-
-    #[test]
-    fn test_build_error_from_config() {
-        let config_err = ConfigError::NotFound(PathBuf::from("site.toml"));
-        let build_err: BuildError = config_err.into();
-        assert!(matches!(build_err, BuildError::Config(_)));
-    }
-
-    #[test]
-    fn test_build_error_from_template() {
-        let template_err = TemplateError::NotFound("test.html".to_string());
-        let build_err: BuildError = template_err.into();
-        assert!(matches!(build_err, BuildError::Template(_)));
-    }
-
-    #[test]
-    fn test_generator_error_from_build() {
-        let build_err = BuildError::NoContent;
-        let gen_err: GeneratorError = build_err.into();
-        assert!(matches!(gen_err, GeneratorError::Build(_)));
-    }
-
-    // InitError tests
 
     #[test]
     fn test_init_error_directory_not_empty() {

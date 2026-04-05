@@ -39,7 +39,7 @@ fn test_load_page_not_found() {
     let err = result.unwrap_err();
     assert!(matches!(
         err,
-        GeneratorError::Content(ContentError::Io { .. })
+        GeneratorError::Content(inner) if matches!(*inner, ContentError::Io { .. })
     ));
 }
 

@@ -8,7 +8,7 @@ use crate::build;
 use crate::build::pipeline::{self, alias::AliasPage};
 use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
-use crate::error::{BuildError, Result};
+use crate::error::{GeneratorError, Result};
 use crate::templates::SiteContext;
 use std::path::Path;
 use std::time::Instant;
@@ -125,7 +125,7 @@ impl SiteBuilder {
         let registry = pipeline::discover_routes(&self.config)?;
 
         if registry.is_empty() {
-            return Err(BuildError::NoContent.into());
+            return Err(GeneratorError::NoContent);
         }
 
         debug!("Found {} routes", registry.len());
@@ -148,7 +148,7 @@ impl SiteBuilder {
         let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
 
         if processed.is_empty() {
-            return Err(BuildError::NoContent.into());
+            return Err(GeneratorError::NoContent);
         }
 
         // Count drafts skipped

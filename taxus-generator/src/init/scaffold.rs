@@ -621,9 +621,10 @@ mod tests {
 
         let result = scaffolder.scaffold(temp_dir.path());
         assert!(result.is_err());
+        let err = result.unwrap_err();
         assert!(matches!(
-            result.unwrap_err(),
-            GeneratorError::Init(InitError::InvalidName(_))
+            err,
+            GeneratorError::Init(inner) if matches!(*inner, InitError::InvalidName(_))
         ));
     }
 
