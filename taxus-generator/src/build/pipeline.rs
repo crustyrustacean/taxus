@@ -20,7 +20,7 @@ use crate::content::Page;
 use crate::error::{GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
-use pulldown_cmark::{Parser, html::push_html, Options};
+use pulldown_cmark::{Options, Parser, html::push_html};
 use std::fs;
 use std::path::Path;
 use tracing::{debug, debug_span, info};
