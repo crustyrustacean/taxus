@@ -20,7 +20,7 @@ use crate::content::Page;
 use crate::error::{GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
-use pulldown_cmark::{Parser, html::push_html};
+use pulldown_cmark::{Parser, html::push_html, Options};
 use std::fs;
 use std::path::Path;
 use tracing::{debug, debug_span, info};
@@ -271,7 +271,9 @@ pub fn write_output(
 
 /// Convert markdown content to HTML.
 fn markdown_to_html(markdown: &str) -> String {
-    let parser = Parser::new(markdown);
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    let parser = Parser::new_ext(markdown, options);
     let mut output = String::new();
     push_html(&mut output, parser);
     output
@@ -340,6 +342,16 @@ mod tests {
         let html = markdown_to_html(markdown);
         assert!(html.contains("<pre>"));
         assert!(html.contains("<code>"));
+    }
+
+    #[test]
+    fn test_markdown_to_html_tables() {
+        let markdown = "| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |";
+        let html = markdown_to_html(markdown);
+        assert!(html.contains("<table>"));
+        assert!(html.contains("<thead>"));
+        assert!(html.contains("<th>Header 1</th>"));
+        assert!(html.contains("<td>Cell 1</td>"));
     }
 
     #[test]

@@ -10,15 +10,26 @@ Building for the web has become unnecessarily difficult. Taxus is an opinionated
 
 Taxus stands on the following pillars:
 
-- author with power
-    - write with common-mark compliant markdown, via [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark)
-- structure is easy and familiar
-    - HTML templates with [Tera](https://keats.github.io/tera)
-- appearance is yours to determine
-    - flexible SASS compliation with [grass](https://github.com/connorskees/grass)
-- interactivity is simple, performant, or both
-    - JavaScript via ready-made `scripts.js`
-    - WebAssembly via the "islands" architecture, enabled with [Yew](https://yew.rs) components
+- **Author with power** — write with CommonMark-compliant markdown, via [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark). [Learn more →](/authoring/)
+
+- **Structure is easy and familiar** — HTML templates with [Tera](https://keats.github.io/tera). [Learn more →](/structure/)
+
+- **Appearance is yours to determine** — flexible SCSS compilation with [grass](https://github.com/connorskees/grass). [Learn more →](/appearance/)
+
+- **Interactivity is simple, performant, or both** — JavaScript via ready-made `scripts.js`, or WebAssembly via the "islands" architecture with [Yew](https://yew.rs) components. [Learn more →](/interactivity/)
+
+## Documentation
+
+Comprehensive documentation is available at [crustyrustacean.github.io/taxus](https://crustyrustacean.github.io/taxus):
+
+- [Introduction](https://crustyrustacean.github.io/taxus/introduction.html)
+- [Getting Started](https://crustyrustacean.github.io/taxus/getting-started.html)
+- [Architecture](https://crustyrustacean.github.io/taxus/architecture.html)
+- [Configuration](https://crustyrustacean.github.io/taxus/configuration.html)
+- [Content](https://crustyrustacean.github.io/taxus/content.html)
+- [Templates](https://crustyrustacean.github.io/taxus/templates.html)
+- [Islands Architecture](https://crustyrustacean.github.io/taxus/islands.html)
+- [CLI Reference](https://crustyrustacean.github.io/taxus/cli.html)
 
 ## Foundations
 

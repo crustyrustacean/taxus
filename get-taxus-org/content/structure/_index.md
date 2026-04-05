@@ -6,16 +6,29 @@ title = "Structure"
 
 ### Sensible but Flexible
 
-Taxus sites are described by `tera` templates. Sensible defaults are built for you, including `base.html`, `section.html` and `page.html` templates. Howver you're not limited by those choices. Override them at your leisure with your own. Simply update the frontmatter in your content to describe the template that's needed.
+Taxus sites are built with [Tera](https://keats.github.io/tera) templates. Sensible defaults are provided: `base.html`, `section.html`, and `page.html`. Override them with your own, or specify custom templates per-page in frontmatter.
 
 ### Variables
 
-Frontmatter content becomes variables that are injectable into the `tera` templates. These allow templates to display different content for each page.
+Frontmatter content becomes variables injected into templates. Site configuration from `site.toml` is also available:
+
+```html
+<h1>{{ page.title }}</h1>
+<p>{{ site.description }}</p>
+```
 
 ### Partials
 
-Describe partial components for templates as you normally would. Crate a `partials` directory, under `templates` and build all your pieces there. Reference the partials with the standard `tera` extend syntax.
+Create reusable template components in `templates/partials/`. Reference them with standard Tera syntax:
+
+```html
+{% include "partials/nav.html" %}
+```
 
 ### Tera Syntax
 
-The full `tera` syntax is available, including conditionals and looping, leaving you to build as you see fit.
+The full Tera syntax is available—inheritance with `{% extends %}` and `{% block %}`, loops, conditionals, filters, and functions. Build templates as you see fit.
+
+### Documentation
+
+For complete template reference, see the [Templates documentation](https://crustyrustacean.github.io/taxus/templates.html).

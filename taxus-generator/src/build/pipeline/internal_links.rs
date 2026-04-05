@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 /// Internal links use the syntax `](@/path/to/file.md)` where the path is relative
 /// to the content directory root. This function resolves them to the actual URL path.
 ///
+/// Code blocks (triple backticks) are skipped to avoid processing example code.
+///
 /// # Errors
 ///
 /// Returns a `BuildError::BrokenInternalLink` if any target path is not found in the registry.
@@ -21,37 +23,36 @@ pub fn resolve_internal_links(
     let mut remaining = content;
 
     while let Some(start) = remaining.find("](@/") {
-        // Find the opening bracket to capture the link text
+        if is_inside_code_block(content, remaining, start) {
+            let after_close = start + 4;
+            result.push_str(&remaining[..after_close]);
+            remaining = &remaining[after_close..];
+            continue;
+        }
+
         let bracket_pos = remaining[..start].rfind('[');
 
         let Some(bracket_pos) = bracket_pos else {
-            // No opening bracket found, append and continue
             result.push_str(&remaining[..start + 4]);
             remaining = &remaining[start + 4..];
             continue;
         };
 
-        // Append content before the link
         result.push_str(&remaining[..bracket_pos]);
 
-        // Extract link text
         let link_text = &remaining[bracket_pos + 1..start];
 
-        // Find the closing parenthesis
-        let after_at = start + 4; // Skip "](@/"
+        let after_at = start + 4;
         let end_paren = remaining[after_at..].find(')').map(|p| after_at + p);
 
         let Some(end_paren) = end_paren else {
-            // No closing paren found, append and continue
             result.push_str(&remaining[bracket_pos..start + 4]);
             remaining = &remaining[start + 4..];
             continue;
         };
 
-        // Extract the target path
         let target_path = &remaining[after_at..end_paren];
 
-        // Look up the target in the registry
         let target_pathbuf = PathBuf::from(target_path);
         let route = registry.find_by_content_file(&target_pathbuf);
 
@@ -62,17 +63,35 @@ pub fn resolve_internal_links(
             });
         };
 
-        // Append the resolved link
         result.push_str(&format!("[{}]({})", link_text, route.path));
 
-        // Move past this link
         remaining = &remaining[end_paren + 1..];
     }
 
-    // Append any remaining content
     result.push_str(remaining);
 
     Ok(result)
+}
+
+fn is_inside_code_block(full_content: &str, remaining: &str, pos: usize) -> bool {
+    let offset = full_content.len() - remaining.len();
+    let absolute_pos = offset + pos;
+
+    let mut in_code_block = false;
+    let mut byte_idx = 0;
+
+    for chunk in full_content.split("```") {
+        if byte_idx >= absolute_pos {
+            break;
+        }
+        if byte_idx + chunk.len() >= absolute_pos {
+            return in_code_block;
+        }
+        in_code_block = !in_code_block;
+        byte_idx += chunk.len() + 3;
+    }
+
+    in_code_block
 }
 
 // ============================================
@@ -232,5 +251,49 @@ mod tests {
             result,
             "Check [external](https://example.com) and [internal](/about/) links."
         );
+    }
+
+    #[test]
+    fn test_resolve_internal_links_inside_code_block() {
+        let registry = RouteRegistry::new();
+
+        let content = r#"Here is some text.
+
+```markdown
+See my [about page](@/about.md) for more.
+```
+
+And [real link](@/about.md) outside.
+"#;
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(content, source_file, &registry);
+        assert!(
+            result.is_err(),
+            "Should error on real link outside code block"
+        );
+    }
+
+    #[test]
+    fn test_resolve_internal_links_only_in_code_block() {
+        let registry = RouteRegistry::new();
+
+        let content = r#"Here is some text.
+
+```markdown
+See my [example](@/path/to/page.md) for more.
+```
+
+No other links.
+"#;
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(content, source_file, &registry);
+        assert!(
+            result.is_ok(),
+            "Should not error when internal link is only in code block"
+        );
+        let result = result.unwrap();
+        assert!(result.contains("](@/path/to/page.md)"));
     }
 }

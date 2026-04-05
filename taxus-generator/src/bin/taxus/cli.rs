@@ -180,12 +180,12 @@ pub enum Commands {
     ///
     /// Examples:
     ///   taxus serve
-    ///   taxus serve .
+    ///   taxus serve --dir ./my-site
     ///   taxus serve --port 8080
-    ///   taxus serve ./my-site
+    ///   taxus serve --dir ./my-site --open
     Serve {
         /// Root directory of the site (must contain site.toml).
-        #[arg(default_value = ".", value_name = "PATH")]
+        #[arg(short, long, default_value = ".", value_name = "PATH")]
         dir: PathBuf,
 
         /// Port to listen on.
