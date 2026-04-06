@@ -131,72 +131,8 @@ impl TeraRenderer {
     /// // Templates are loaded from templates/**/*.html
     /// ```
     pub fn from_dir<P: AsRef<Path>>(dir: P) -> Result<Self, TemplateError> {
-        let dir = dir.as_ref();
-        if !dir.exists() {
-            return Err(TemplateError::DirNotFound(dir.to_path_buf()));
-        }
-
-        use std::fs;
-        use walkdir::WalkDir;
-
-        // Create a new empty Tera instance
-        let mut tera = Tera::default();
-
-        // Collect all templates first (name -> content)
-        let mut templates: Vec<(String, String)> = Vec::new();
-
-        // Walk the templates directory and collect each template
-        for entry in WalkDir::new(dir)
-            .follow_links(true)
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
-            let path = entry.path();
-
-            // Only process .html files
-            if path.extension().is_some_and(|ext| ext == "html") {
-                // Get the relative path from the templates directory
-                let relative = path
-                    .strip_prefix(dir)
-                    .map_err(|_| TemplateError::DirNotFound(dir.to_path_buf()))?;
-
-                // Use forward slashes for template names (Tera convention)
-                let name = relative.to_string_lossy().replace('\\', "/");
-
-                // Read the template content
-                let content = fs::read_to_string(path).map_err(|e| TemplateError::Syntax {
-                    template: name.clone(),
-                    message: e.to_string(),
-                })?;
-
-                templates.push((name, content));
-            }
-        }
-
-        // Sort templates so that base templates are registered before their children.
-        // Templates with no {% extends %} come first, then templates that extend them, etc.
-        // We use a simple heuristic: templates without "extends" in their content come first.
-        // This works because base templates don't extend anything, while child templates do.
-        templates.sort_by(|a, b| {
-            let a_extends = a.1.contains("{% extends");
-            let b_extends = b.1.contains("{% extends");
-
-            // Templates without extends come first
-            match (a_extends, b_extends) {
-                (false, true) => std::cmp::Ordering::Less,
-                (true, false) => std::cmp::Ordering::Greater,
-                _ => std::cmp::Ordering::Equal,
-            }
-        });
-
-        // Register templates in sorted order
-        for (name, content) in templates {
-            tera.add_raw_template(&name, &content)
-                .map_err(|e| TemplateError::Syntax {
-                    template: name.clone(),
-                    message: e.to_string(),
-                })?;
-        }
+        let mut renderer = Self::new()?;
+        renderer.load_templates(dir.as_ref())?;
 
         // Register the island() Tera function.
         //
@@ -206,34 +142,39 @@ impl TeraRenderer {
         // Without the `islands` feature, this registers a no-op that returns an empty
         // string, so templates using {{ island(...) | safe }} still render without error.
         #[cfg(feature = "islands")]
-        tera.register_function("island", |args: &HashMap<String, tera::Value>| {
-            use tera::Value;
+        renderer
+            .tera
+            .register_function("island", |args: &HashMap<String, tera::Value>| {
+                use tera::Value;
 
-            let component = args.get("component").and_then(Value::as_str).unwrap_or("");
+                let component = args.get("component").and_then(Value::as_str).unwrap_or("");
 
-            let html = match component {
-                "Counter" => {
-                    use crate::build::pipeline::render_island_counter;
-                    use taxus_common::components::counter::CounterProps;
+                let html = match component {
+                    "Counter" => {
+                        use crate::build::pipeline::render_island_counter;
+                        use taxus_common::components::counter::CounterProps;
 
-                    let initial = args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
+                        let initial =
+                            args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
 
-                    render_island_counter(CounterProps { initial })
-                }
-                other => format!("<!-- unknown island: {other} -->"),
-            };
+                        render_island_counter(CounterProps { initial })
+                    }
+                    other => format!("<!-- unknown island: {other} -->"),
+                };
 
-            Ok(Value::String(html))
-        });
+                Ok(Value::String(html))
+            });
 
         // No-op island() function when the `islands` feature is not enabled.
         // Returns an empty string so {{ island(...) | safe }} in templates is a silent no-op.
         #[cfg(not(feature = "islands"))]
-        tera.register_function("island", |_args: &HashMap<String, tera::Value>| {
-            Ok(tera::Value::String(String::new()))
-        });
+        renderer
+            .tera
+            .register_function("island", |_args: &HashMap<String, tera::Value>| {
+                Ok(tera::Value::String(String::new()))
+            });
 
-        Ok(Self { tera })
+        Ok(renderer)
     }
 
     /// Convert [`TemplateContext`] to Tera [`Context`].
@@ -383,6 +324,7 @@ mod tests {
         PageContext {
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
+            tagline: Some("This is a tagline".to_string()),
             path: "/test/".to_string(),
             permalink: "https://example.com/test/".to_string(),
             content: "<p>Hello World</p>".to_string(),

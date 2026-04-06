@@ -26,6 +26,7 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
     PageContext {
         title: processed.page.frontmatter.title.clone(),
         description: processed.page.frontmatter.description.clone(),
+        tagline: processed.page.frontmatter.tagline.clone(),
         path: url_path,
         permalink,
         content: processed.html_content.clone(),
@@ -764,6 +765,7 @@ This is the content.
         let content = r#"
 +++
 title = "Styled Page"
+tagline = "This is a test tagline."
 
 [extra]
 hero_image = "/images/hero.jpg"
@@ -796,6 +798,7 @@ Content here.
 <img src="{{ extra.hero_image | safe }}" />
 {% if extra.featured %}<span>Featured!</span>{% endif %}
 <h1>{{ page.title }}</h1>
+<h2>{{ page.tagline }}</h2>
 </div>"#,
             )
             .unwrap();
@@ -811,6 +814,9 @@ Content here.
         assert!(
             html.contains("/images/hero.jpg"),
             "Should contain hero_image extra variable"
+        );
+        assert!(
+            html.contains("This is a test tagline."), "Should contain tagline variable"
         );
         assert!(
             html.contains("Featured!"),

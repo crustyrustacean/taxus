@@ -20,6 +20,7 @@ fn create_test_page_context() -> PageContext {
     PageContext {
         title: "Test Page".to_string(),
         description: Some("A test page".to_string()),
+        tagline: Some("A test tagline".to_string()),
         path: "/test/".to_string(),
         permalink: "https://test.example.com/test/".to_string(),
         content: "<p>This is test content.</p>".to_string(),
@@ -45,6 +46,7 @@ fn create_test_section_context() -> SectionContext {
             PageContext {
                 title: "First Post".to_string(),
                 description: Some("My first post".to_string()),
+                tagline: Some("A test tagline".to_string()),
                 path: "/blog/first/".to_string(),
                 permalink: "https://test.example.com/blog/first/".to_string(),
                 content: "<p>First post content</p>".to_string(),
@@ -61,6 +63,7 @@ fn create_test_section_context() -> SectionContext {
             PageContext {
                 title: "Second Post".to_string(),
                 description: Some("My second post".to_string()),
+                tagline: Some("A test tagline".to_string()),
                 path: "/blog/second/".to_string(),
                 permalink: "https://test.example.com/blog/second/".to_string(),
                 content: "<p>Second post content</p>".to_string(),
@@ -391,6 +394,7 @@ fn test_render_with_optional_fields() {
     let minimal_page = PageContext {
         title: "Minimal".to_string(),
         description: None,
+        tagline: None,
         path: "/minimal/".to_string(),
         permalink: "https://test.example.com/minimal/".to_string(),
         content: String::new(),

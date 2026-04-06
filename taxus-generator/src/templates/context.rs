@@ -55,6 +55,9 @@ pub struct PageContext {
     /// Page description
     pub description: Option<String>,
 
+    /// Page tagline
+    pub tagline: Option<String>,
+
     /// Page URL path (e.g., "/about/")
     pub path: String,
 
@@ -439,6 +442,7 @@ mod tests {
         PageContext {
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
+            tagline: Some("This is a tagline.".to_string()),
             path: "/test/".to_string(),
             permalink: "https://example.com/test/".to_string(),
             content: "<p>Content</p>".to_string(),

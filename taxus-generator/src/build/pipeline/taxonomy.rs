@@ -136,6 +136,7 @@ pub fn render_taxonomy_pages(
                         let page_context = PageContext {
                             title: proc_page.page.frontmatter.title.clone(),
                             description: proc_page.page.frontmatter.description.clone(),
+                            tagline: proc_page.page.frontmatter.tagline.clone(),
                             path: url_path,
                             permalink,
                             content: proc_page.html_content.clone(),

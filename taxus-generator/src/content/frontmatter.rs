@@ -20,6 +20,9 @@ pub struct Frontmatter {
     /// Optional page description
     pub description: Option<String>,
 
+    /// Optional tag line
+    pub tagline: Option<String>,
+
     /// Optional publication date (TOML datetime)
     #[serde(default, deserialize_with = "optional_date::deserialize")]
     pub date: Option<NaiveDate>,
@@ -183,6 +186,18 @@ draft = true
         assert_eq!(fm.date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
         assert_eq!(fm.template, Some("custom.html".to_string()));
         assert!(fm.draft);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_tagline() {
+        let fm = Frontmatter::from_str(
+            r#"
+        title = "Test"
+        tagline = "A catchy subtitle"
+    "#,
+        )
+        .unwrap();
+        assert_eq!(fm.tagline, Some("A catchy subtitle".to_string()));
     }
 
     #[test]
