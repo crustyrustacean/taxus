@@ -23,6 +23,8 @@ path = "src/lib.rs"
 # Without this feature the generator is a plain Tera + Markdown SSG with no
 # Yew/WASM dependency, and `island()` calls in templates produce empty output.
 islands = ["dep:taxus-common", "dep:yew"]
+lang-rust = ["dep:tree-sitter-rust"]
+default = ["lang-rust"]
 
 [dependencies]
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
@@ -34,13 +36,14 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = "1.0"
 tera = "1.20"
 thiserror = "2.0"
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "signal"] }
 toml = "1.0.6"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tree-sitter = "0.26.8"
+tree-sitter-highlight = "0.26.8"
+tree-sitter-rust = { version = "0.24.2", optional = true }
 walkdir = "2.5"
-
-# ── Async runtime (required for serve command and islands) ────────────────────
-tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "signal"] }
 
 # ── Dev server dependencies ───────────────────────────────────────────────────
 axum = { version = "0.8.8", features = ["ws"] }

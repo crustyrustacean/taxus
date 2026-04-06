@@ -9,6 +9,7 @@ use crate::build::pipeline::{self, alias::AliasPage};
 use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};
+use crate::highlighting::{CodeHighlighter, LanguageRegistry};
 use crate::templates::SiteContext;
 use std::path::Path;
 use std::time::Instant;
@@ -142,10 +143,18 @@ impl SiteBuilder {
         );
         drop(_templates_span);
 
+        // create a code syntax highlighter
+        let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
+
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
         info!("[3/12] Processing content...");
-        let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
+        let processed = pipeline::process_content(
+            &registry,
+            &self.config,
+            self.include_drafts,
+            &mut highlighter,
+        )?;
 
         if processed.is_empty() {
             return Err(GeneratorError::NoContent);
