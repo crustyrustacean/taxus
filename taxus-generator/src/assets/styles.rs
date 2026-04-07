@@ -80,6 +80,11 @@ impl ScssProcessor {
     fn compile(&self, content: &str, source_path: &Path) -> Result<String, AssetError> {
         let mut options = grass::Options::default();
 
+        // Add the source file's directory so @import resolves siblings
+        if let Some(parent) = source_path.parent() {
+            options = options.load_path(parent);
+        }
+
         // Add include paths
         for path in &self.include_paths {
             options = options.load_path(path.clone());

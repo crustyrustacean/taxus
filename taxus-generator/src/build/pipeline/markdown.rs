@@ -3,7 +3,7 @@
 use crate::highlighting::{CodeHighlighter, HighlightResult};
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 
-pub fn markdown_to_html(markdown: &str, highlighter: &mut CodeHighlighter) -> String {
+pub fn markdown_to_html(markdown: &str, mut highlighter: Option<&mut CodeHighlighter>) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     let parser = Parser::new_ext(markdown, options);
@@ -31,7 +31,10 @@ pub fn markdown_to_html(markdown: &str, highlighter: &mut CodeHighlighter) -> St
 
                 match &code_lang {
                     Some(lang) => {
-                        let result = highlighter.highlight(&code_buffer, lang);
+                        let result = match highlighter {
+                            Some(ref mut h1) => h1.highlight(&code_buffer, lang),
+                            None => HighlightResult::Unsupported(escape_html(&code_buffer)),
+                        };
                         match result {
                             HighlightResult::Highlighted(html) => {
                                 output.push_str(&format!(
@@ -102,7 +105,7 @@ mod tests {
     fn test_markdown_to_html() {
         let mut hl = test_highlighter();
         let markdown = "# Hello\n\nThis is **bold** text.";
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
         assert!(html.contains("<h1>Hello</h1>"));
         assert!(html.contains("<strong>bold</strong>"));
     }
@@ -110,7 +113,7 @@ mod tests {
     #[test]
     fn test_markdown_to_html_empty() {
         let mut hl = test_highlighter();
-        let html = markdown_to_html("", &mut hl);
+        let html = markdown_to_html("", Some(&mut hl));
         assert!(html.is_empty());
     }
 
@@ -118,7 +121,7 @@ mod tests {
     fn test_markdown_to_html_links() {
         let mut hl = test_highlighter();
         let markdown = "[link](https://example.com)";
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
         assert!(html.contains("<a href=\"https://example.com\">link</a>"));
     }
 
@@ -126,7 +129,7 @@ mod tests {
     fn test_markdown_to_html_code() {
         let mut hl = test_highlighter();
         let markdown = "```\ncode\n```";
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
         assert!(html.contains("<pre>"));
         assert!(html.contains("<code>"));
     }
@@ -135,7 +138,7 @@ mod tests {
     fn test_markdown_to_html_tables() {
         let mut hl = test_highlighter();
         let markdown = "| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |";
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
         println!("TABLE OUTPUT: {}", html);
         assert!(html.contains("<table>"));
         assert!(html.contains("<thead>"));
@@ -155,7 +158,7 @@ fn main() {
 
 Some text after.
 "#;
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
 
         // Should have the highlight wrapper
         assert!(html.contains("<pre class=\"highlight\">"));
@@ -173,7 +176,7 @@ Some text after.
     fn test_markdown_to_html_unknown_language_code_block() {
         let mut hl = test_highlighter();
         let markdown = "```brainfuck\n+++++\n```\n";
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
 
         // Should fall back to plain code block without highlight class
         assert!(html.contains("<pre><code"));
@@ -185,10 +188,21 @@ Some text after.
     fn test_markdown_to_html_no_language_code_block() {
         let mut hl = test_highlighter();
         let markdown = "```\nplain text\n```\n";
-        let html = markdown_to_html(markdown, &mut hl);
+        let html = markdown_to_html(markdown, Some(&mut hl));
 
         // No language specified, plain code block
         assert!(html.contains("<pre><code>"));
         assert!(html.contains("plain text"));
+    }
+
+    #[test]
+    fn test_markdown_to_html_highlighting_disabled() {
+        let markdown = "```rust\nfn main() {}\n```\n";
+        let html = markdown_to_html(markdown, None);
+
+        // Should render as plain code block without highlight class
+        assert!(html.contains("<pre><code"));
+        assert!(!html.contains("highlight"));
+        assert!(!html.contains("hl-keyword"));
     }
 }

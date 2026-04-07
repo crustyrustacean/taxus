@@ -144,7 +144,8 @@ impl SiteBuilder {
         drop(_templates_span);
 
         // create a code syntax highlighter
-        let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
+        let mut highlighter =
+            CodeHighlighter::new(LanguageRegistry::new(), &self.config.highlight.class_prefix);
 
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
@@ -153,7 +154,7 @@ impl SiteBuilder {
             &registry,
             &self.config,
             self.include_drafts,
-            &mut highlighter,
+            Some(&mut highlighter),
         )?;
 
         if processed.is_empty() {
@@ -344,7 +345,7 @@ impl SiteBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{BuildConfig, SiteMeta};
+    use crate::config::{BuildConfig, FeedConfig, HighlightConfig, SiteMeta};
     use std::path::PathBuf;
 
     fn test_config() -> SiteConfig {
@@ -362,7 +363,8 @@ mod tests {
                 styles_dir: PathBuf::from("tests/fixtures/content_site/styles"),
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
             },
-            feed: crate::config::FeedConfig::default(),
+            feed: FeedConfig::default(),
+            highlight: HighlightConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

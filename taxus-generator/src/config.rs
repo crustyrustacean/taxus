@@ -1,3 +1,5 @@
+// taxus-generator/src/config.rs
+
 //! Configuration types for the generator.
 //!
 //! This module provides types for loading and representing site configuration
@@ -18,6 +20,9 @@ pub struct SiteConfig {
     /// Feed configuration
     #[serde(default)]
     pub feed: FeedConfig,
+    // Syntax highlighting configuration
+    #[serde(default)]
+    pub highlight: HighlightConfig,
     /// Base directory containing site.toml (not serialized)
     #[serde(skip)]
     pub base_dir: PathBuf,
@@ -143,6 +148,35 @@ impl Default for FeedConfig {
     }
 }
 
+/// Highlight configuration from the [highlight] section.
+#[derive(Debug, Clone, Deserialize)]
+pub struct HighlightConfig {
+    /// Enable syntax highlighting
+    #[serde(default = "default_highlight_enabled")]
+    pub enabled: bool,
+
+    /// CSS class prefix for highlight spans
+    #[serde(default = "default_class_prefix")]
+    pub class_prefix: String,
+}
+
+fn default_highlight_enabled() -> bool {
+    true
+}
+
+fn default_class_prefix() -> String {
+    "hl-".to_string()
+}
+
+impl Default for HighlightConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_highlight_enabled(),
+            class_prefix: default_class_prefix(),
+        }
+    }
+}
+
 impl BuildConfig {
     /// Resolve all relative paths to be absolute paths based on the base directory.
     ///
@@ -241,6 +275,7 @@ impl SiteConfig {
             },
             build: BuildConfig::default(),
             feed: FeedConfig::default(),
+            highlight: HighlightConfig::default(),
             base_dir: PathBuf::new(),
         }
     }
@@ -365,4 +400,41 @@ content_dir = "content"
         let result: std::result::Result<SiteConfig, toml::de::Error> = toml::from_str(toml);
         assert!(result.is_err());
     }
+}
+
+#[test]
+fn test_highlight_config_defaults() {
+    let config = HighlightConfig::default();
+    assert!(config.enabled);
+    assert_eq!(config.class_prefix, "hl-");
+}
+
+#[test]
+fn test_highlight_config_from_toml() {
+    let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[highlight]
+enabled = false
+class_prefix = "syntax-"
+"#;
+
+    let config: SiteConfig = toml::from_str(toml).unwrap();
+    assert!(!config.highlight.enabled);
+    assert_eq!(config.highlight.class_prefix, "syntax-");
+}
+
+#[test]
+fn test_highlight_config_missing_uses_defaults() {
+    let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+"#;
+
+    let config: SiteConfig = toml::from_str(toml).unwrap();
+    assert!(config.highlight.enabled);
+    assert_eq!(config.highlight.class_prefix, "hl-");
 }

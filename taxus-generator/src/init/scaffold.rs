@@ -313,134 +313,44 @@ This is your new static site. Start editing this file to add your content.
         Ok(())
     }
 
-    /// Create the main.scss stylesheet.
+    /// Create the main.scss stylesheet and associated dark/light syntax highlighting stylesheets.
     fn create_stylesheet(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        let styles_path = path.join("styles/main.scss");
+        let styles_path_main = path.join("styles/main.scss");
+        let styles_path_highlight_dark = path.join("styles/_highlight-dark.scss");
+        let styles_path_highlight_light = path.join("styles/_highlight-light.scss");
 
-        if styles_path.exists() {
+        let styles_main = include_str!("styles/_main.scss");
+        let styles_highlight_dark = include_str!("styles/_highlight-dark.scss");
+        let styles_highlight_light = include_str!("styles/_highlight-light.scss");
+
+        if styles_path_main.exists() {
             return Ok(()); // Don't overwrite existing styles
         }
 
-        let content = r#"// Basic site styles
-* {
-    box-sizing: border-box;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-}
-
-header {
-    background: #f5f5f5;
-    padding: 1rem;
-    
-    h1 {
-        margin: 0;
-    }
-    
-    nav {
-        margin-top: 0.5rem;
-        
-        a {
-            margin-right: 1rem;
-            text-decoration: none;
-            color: #0066cc;
-            
-            &:hover {
-                text-decoration: underline;
-            }
-        }
-    }
-}
-
-main {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
-    
-    h1 {
-        margin-top: 0;
-    }
-}
-
-article {
-    .description {
-        color: #666;
-        font-style: italic;
-    }
-}
-
-.page-list {
-    list-style: none;
-    padding: 0;
-    
-    li {
-        margin-bottom: 1.5rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid #eee;
-        
-        &:last-child {
-            border-bottom: none;
-        }
-        
-        a {
-            text-decoration: none;
-            color: inherit;
-            
-            &:hover h2 {
-                color: #0066cc;
-            }
-        }
-        
-        h2 {
-            margin: 0 0 0.5rem 0;
-            color: #333;
-        }
-        
-        p {
-            margin: 0;
-            color: #666;
-        }
-    }
-}
-
-footer {
-    text-align: center;
-    padding: 1rem;
-    background: #f5f5f5;
-    margin-top: 2rem;
-}
-
-.error-page {
-    text-align: center;
-    padding: 4rem 0;
-    
-    h1 {
-        font-size: 6rem;
-        margin: 0;
-        color: #ccc;
-    }
-    
-    h2 {
-        margin: 0 0 1rem 0;
-    }
-    
-    a {
-        color: #0066cc;
-    }
-}
-"#;
-
-        std::fs::write(&styles_path, content).map_err(|e| InitError::FileWrite {
-            path: styles_path.clone(),
+        std::fs::write(&styles_path_main, styles_main).map_err(|e| InitError::FileWrite {
+            path: styles_path_main.clone(),
             source: e,
         })?;
-
         report.files_created += 1;
-        report.created_files.push(styles_path);
+        report.created_files.push(styles_path_main);
+
+        std::fs::write(&styles_path_highlight_dark, styles_highlight_dark).map_err(|e| {
+            InitError::FileWrite {
+                path: styles_path_highlight_dark.clone(),
+                source: e,
+            }
+        })?;
+        report.files_created += 1;
+        report.created_files.push(styles_path_highlight_dark);
+
+        std::fs::write(&styles_path_highlight_light, styles_highlight_light).map_err(|e| {
+            InitError::FileWrite {
+                path: styles_path_highlight_light.clone(),
+                source: e,
+            }
+        })?;
+        report.files_created += 1;
+        report.created_files.push(styles_path_highlight_light);
         Ok(())
     }
 
@@ -573,6 +483,27 @@ mod tests {
 
         let content = std::fs::read_to_string(styles_path).unwrap();
         assert!(content.contains("box-sizing"));
+        assert!(content.contains("highlight-light"));
+    }
+
+    #[test]
+    fn test_scaffold_creates_highlight_themes() {
+        let temp_dir = TempDir::new().unwrap();
+        let scaffolder = InitScaffolder::new(test_options());
+
+        scaffolder.scaffold(temp_dir.path()).unwrap();
+
+        let dark = temp_dir.path().join("styles/_highlight-dark.scss");
+        let light = temp_dir.path().join("styles/_highlight-light.scss");
+
+        assert!(dark.exists());
+        assert!(light.exists());
+
+        let dark_content = std::fs::read_to_string(dark).unwrap();
+        assert!(dark_content.contains("hl-keyword"));
+
+        let light_content = std::fs::read_to_string(light).unwrap();
+        assert!(light_content.contains("hl-keyword"));
     }
 
     #[test]
@@ -595,7 +526,7 @@ mod tests {
 
         // 4 directories + 9 files (site.toml, _index.md, base.html, page.html, section.html, 404.html, main.scss, scripts.js, favicon.png)
         assert_eq!(report.directories_created, 4);
-        assert_eq!(report.files_created, 9);
+        assert_eq!(report.files_created, 11);
     }
 
     #[test]

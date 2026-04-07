@@ -15,7 +15,7 @@ fn test_init_empty_directory() {
     let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
     assert_eq!(report.directories_created, 4);
-    assert_eq!(report.files_created, 9);
+    assert_eq!(report.files_created, 11);
     assert!(temp_dir.path().join("site.toml").exists());
 }
 
@@ -195,6 +195,7 @@ fn test_init_creates_scss_file() {
     assert!(scss_path.exists());
 
     let content = std::fs::read_to_string(scss_path).unwrap();
+    assert!(content.contains("highlight-light"));
     assert!(content.contains("box-sizing"));
     assert!(content.contains("font-family"));
 }

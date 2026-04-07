@@ -73,7 +73,7 @@ pub fn process_content(
     registry: &RouteRegistry,
     config: &SiteConfig,
     include_drafts: bool,
-    highlighter: &mut CodeHighlighter,
+    mut highlighter: Option<&mut CodeHighlighter>,
 ) -> Result<Vec<ProcessedPage>> {
     let mut pages = Vec::new();
 
@@ -92,7 +92,8 @@ pub fn process_content(
             resolve_internal_links(&page.raw_content, &route.content_file, registry)?;
 
         // Convert markdown to HTML
-        let html_content = markdown::markdown_to_html(&resolved_content, highlighter);
+        let html_content =
+            markdown::markdown_to_html(&resolved_content, highlighter.as_deref_mut());
 
         pages.push(ProcessedPage {
             route: route.clone(),

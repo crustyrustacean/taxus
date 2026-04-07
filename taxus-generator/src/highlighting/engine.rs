@@ -58,7 +58,7 @@ impl CodeHighlighter {
                 spec.injection_query.unwrap_or(""),
                 spec.locals_query.unwrap_or(""),
             )
-            .expect(&format!("Failed to create highlight config for {}", name));
+            .unwrap_or_else(|_| panic!("Failed to create highlight config for {}", name));
 
             config.configure(HIGHLIGHT_NAMES);
 
@@ -163,6 +163,259 @@ mod tests {
             HighlightResult::Unsupported(_) => {
                 panic!("Rust should be supported when lang-rust feature is enabled");
             }
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_function_definition() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r#"fn greet(name: &str) -> String {
+    format!("Hello, {}", name)
+}"#;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(html.contains("hl-keyword"));
+                assert!(html.contains("hl-function"));
+                assert!(html.contains("hl-variable-parameter"));
+                assert!(html.contains("hl-type-builtin"));
+                assert!(html.contains("hl-type"));
+                assert!(html.contains("hl-function-macro"));
+                assert!(html.contains("hl-string"));
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_lifetimes() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r#"fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() { x } else { y }
+}"#;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(
+                    html.contains("hl-label"),
+                    "should highlight lifetime as label"
+                );
+                assert!(
+                    html.contains("hl-keyword"),
+                    "should highlight 'fn' and 'if' as keywords"
+                );
+                assert!(
+                    html.contains("hl-function"),
+                    "should highlight 'longest' and 'len' as functions"
+                );
+                assert!(
+                    html.contains("hl-type-builtin"),
+                    "should highlight 'str' as builtin type"
+                );
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_attributes() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r#"#[derive(Debug, Clone)]
+#[cfg(feature = "islands")]
+pub struct Config {
+    pub name: String,
+}"#;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(html.contains("hl-attribute"), "should highlight attributes");
+                assert!(
+                    html.contains("hl-constructor"),
+                    "should highlight derive traits as constructors"
+                );
+                assert!(
+                    html.contains("hl-string"),
+                    "should highlight feature string"
+                );
+                assert!(
+                    html.contains("hl-keyword"),
+                    "should highlight 'pub' and 'struct' as keywords"
+                );
+                assert!(
+                    html.contains("hl-type"),
+                    "should highlight 'Config' and 'String' as types"
+                );
+                assert!(
+                    html.contains("hl-property"),
+                    "should highlight 'name' as property"
+                );
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_turbofish() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r#"let x = "42".parse::<u32>().unwrap();
+let v = Vec::<i32>::new();"#;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(
+                    html.contains("hl-keyword"),
+                    "should highlight 'let' as keyword"
+                );
+                assert!(
+                    html.contains("hl-function"),
+                    "should highlight 'parse', 'unwrap', 'new' as functions"
+                );
+                assert!(
+                    html.contains("hl-type-builtin"),
+                    "should highlight 'u32' and 'i32' as builtin types"
+                );
+                assert!(html.contains("hl-type"), "should highlight 'Vec' as type");
+                assert!(html.contains("hl-string"), "should highlight '42' string");
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_closures_and_async() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r#"let add = |a, b| a + b;
+let result = add(2, 3);
+
+async fn fetch_data(url: &str) -> Result<String, Error> {
+    let response = reqwest::get(url).await?;
+    Ok(response.text().await?)
+}"#;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(
+                    html.contains("hl-keyword"),
+                    "should highlight 'let', 'async', 'fn', 'await' as keywords"
+                );
+                assert!(
+                    html.contains("hl-function"),
+                    "should highlight function names"
+                );
+                assert!(
+                    html.contains("hl-type"),
+                    "should highlight 'Result', 'String', 'Error' as types"
+                );
+                assert!(
+                    html.contains("hl-type-builtin"),
+                    "should highlight 'str' as builtin type"
+                );
+                assert!(
+                    html.contains("hl-variable-parameter"),
+                    "should highlight 'url' as parameter"
+                );
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_raw_strings_and_doc_comments() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r####"/// This is a doc comment
+/// with multiple lines
+fn example() {
+    let raw = r#"raw string with "quotes""#;
+    let multi = r##"another "raw" string"##;
+}"####;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(html.contains("hl-comment"), "should highlight doc comments");
+                assert!(
+                    html.contains("hl-keyword"),
+                    "should highlight 'fn' and 'let' as keywords"
+                );
+                assert!(
+                    html.contains("hl-function"),
+                    "should highlight 'example' as function"
+                );
+                assert!(html.contains("hl-string"), "should highlight raw strings");
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
+        }
+    }
+
+    #[test]
+    fn test_highlight_rust_impl_with_traits() {
+        let registry = LanguageRegistry::new();
+        let mut highlighter = CodeHighlighter::new(registry, "hl-");
+
+        let code = r#"impl<T: Clone + Send> Display for MyType<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}"#;
+
+        let result = highlighter.highlight(code, "rust");
+
+        match result {
+            HighlightResult::Highlighted(html) => {
+                assert!(
+                    html.contains("hl-keyword"),
+                    "should highlight 'impl', 'for', 'where', 'fn', 'mut' as keywords"
+                );
+                assert!(html.contains("hl-type"), "should highlight type names");
+                assert!(
+                    html.contains("hl-variable-builtin"),
+                    "should highlight 'self' as builtin variable"
+                );
+                assert!(
+                    html.contains("hl-variable-parameter"),
+                    "should highlight 'f' as parameter"
+                );
+                assert!(
+                    html.contains("hl-function-macro"),
+                    "should highlight 'write!' as macro"
+                );
+                assert!(
+                    html.contains("hl-function"),
+                    "should highlight 'fmt' as function"
+                );
+                assert!(
+                    html.contains("hl-label"),
+                    "should highlight anonymous lifetime '_"
+                );
+                assert!(html.contains("hl-string"), "should highlight format string");
+            }
+            HighlightResult::Unsupported(_) => panic!("Rust should be supported"),
         }
     }
 
