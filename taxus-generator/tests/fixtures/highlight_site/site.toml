@@ -1,0 +1,7 @@
+[site]
+name = "Highlight Test Site"
+base_url = "https://example.com"
+
+[highlight]
+enabled = true
+class_prefix = "hl-"

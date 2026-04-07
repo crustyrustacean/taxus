@@ -70,3 +70,49 @@ impl LanguageRegistry {
         self.languages.contains_key(name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_registry_has_rust_when_enabled() {
+        let registry = LanguageRegistry::new();
+        assert!(registry.supports("rust"));
+    }
+
+    #[test]
+    fn test_registry_alias_rs() {
+        let registry = LanguageRegistry::new();
+        assert!(registry.supports("rs"));
+    }
+
+    #[test]
+    fn test_registry_canonical_name() {
+        let registry = LanguageRegistry::new();
+        assert_eq!(registry.canonical_name("rs"), Some("rust"));
+        assert_eq!(registry.canonical_name("rust"), Some("rust"));
+    }
+
+    #[test]
+    fn test_registry_canonical_name_case_insensitive() {
+        let registry = LanguageRegistry::new();
+        assert_eq!(registry.canonical_name("Rust"), Some("rust"));
+        assert_eq!(registry.canonical_name("RS"), Some("rust"));
+    }
+
+    #[test]
+    fn test_registry_unknown_language() {
+        let registry = LanguageRegistry::new();
+        assert!(!registry.supports("brainfuck"));
+        assert_eq!(registry.canonical_name("brainfuck"), None);
+    }
+
+    #[test]
+    fn test_registry_iter() {
+        let registry = LanguageRegistry::new();
+        let count = registry.iter().count();
+        // "rust" and "rs" entries
+        assert!(count >= 2, "should have at least rust and rs entries");
+    }
+}
