@@ -9,6 +9,7 @@ use crate::build::pipeline::{self, alias::AliasPage};
 use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};
+use crate::highlighting::{CodeHighlighter, LanguageRegistry};
 use crate::templates::SiteContext;
 use std::path::Path;
 use std::time::Instant;
@@ -142,10 +143,25 @@ impl SiteBuilder {
         );
         drop(_templates_span);
 
+        // create a code syntax highlighter
+        let mut highlighter = if self.config.highlight.enabled {
+            Some(CodeHighlighter::new(
+                LanguageRegistry::new(),
+                &self.config.highlight.class_prefix,
+            ))
+        } else {
+            None
+        };
+
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
         info!("[3/12] Processing content...");
-        let processed = pipeline::process_content(&registry, &self.config, self.include_drafts)?;
+        let processed = pipeline::process_content(
+            &registry,
+            &self.config,
+            self.include_drafts,
+            highlighter.as_mut(),
+        )?;
 
         if processed.is_empty() {
             return Err(GeneratorError::NoContent);
@@ -335,7 +351,7 @@ impl SiteBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{BuildConfig, SiteMeta};
+    use crate::config::{BuildConfig, FeedConfig, HighlightConfig, SiteMeta};
     use std::path::PathBuf;
 
     fn test_config() -> SiteConfig {
@@ -353,7 +369,8 @@ mod tests {
                 styles_dir: PathBuf::from("tests/fixtures/content_site/styles"),
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
             },
-            feed: crate::config::FeedConfig::default(),
+            feed: FeedConfig::default(),
+            highlight: HighlightConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

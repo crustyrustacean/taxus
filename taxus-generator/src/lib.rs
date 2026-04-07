@@ -31,6 +31,7 @@ pub mod config;
 pub mod content;
 pub mod error;
 pub mod feed;
+pub mod highlighting;
 pub mod init;
 pub mod routes;
 pub mod serve;
@@ -47,6 +48,7 @@ pub use error::{
     TemplateError,
 };
 pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
+pub use highlighting::{CodeHighlighter, LanguageRegistry};
 pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{

@@ -7,12 +7,14 @@
 pub mod alias;
 pub mod feeds;
 pub mod internal_links;
+pub mod markdown;
 pub mod not_found;
 pub mod pages;
 pub mod robots;
 pub mod sitemap;
 pub mod taxonomy;
 
+use crate::CodeHighlighter;
 use crate::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 use crate::build::pipeline::internal_links::resolve_internal_links;
 use crate::config::SiteConfig;
@@ -20,7 +22,6 @@ use crate::content::Page;
 use crate::error::{GeneratorError, Result};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
-use pulldown_cmark::{Options, Parser, html::push_html};
 use std::fs;
 use std::path::Path;
 use tracing::{debug, debug_span, info};
@@ -72,6 +73,7 @@ pub fn process_content(
     registry: &RouteRegistry,
     config: &SiteConfig,
     include_drafts: bool,
+    mut highlighter: Option<&mut CodeHighlighter>,
 ) -> Result<Vec<ProcessedPage>> {
     let mut pages = Vec::new();
 
@@ -90,7 +92,8 @@ pub fn process_content(
             resolve_internal_links(&page.raw_content, &route.content_file, registry)?;
 
         // Convert markdown to HTML
-        let html_content = markdown_to_html(&resolved_content);
+        let html_content =
+            markdown::markdown_to_html(&resolved_content, highlighter.as_deref_mut());
 
         pages.push(ProcessedPage {
             route: route.clone(),
@@ -269,16 +272,6 @@ pub fn write_output(
     Ok(())
 }
 
-/// Convert markdown content to HTML.
-fn markdown_to_html(markdown: &str) -> String {
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    let parser = Parser::new_ext(markdown, options);
-    let mut output = String::new();
-    push_html(&mut output, parser);
-    output
-}
-
 /// Clean the output directory.
 pub fn clean_output(output_dir: &Path) -> Result<()> {
     if output_dir.exists() {
@@ -314,45 +307,6 @@ pub fn render_island_counter(props: CounterProps) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_markdown_to_html() {
-        let markdown = "# Hello\n\nThis is **bold** text.";
-        let html = markdown_to_html(markdown);
-        assert!(html.contains("<h1>Hello</h1>"));
-        assert!(html.contains("<strong>bold</strong>"));
-    }
-
-    #[test]
-    fn test_markdown_to_html_empty() {
-        let html = markdown_to_html("");
-        assert!(html.is_empty());
-    }
-
-    #[test]
-    fn test_markdown_to_html_links() {
-        let markdown = "[link](https://example.com)";
-        let html = markdown_to_html(markdown);
-        assert!(html.contains("<a href=\"https://example.com\">link</a>"));
-    }
-
-    #[test]
-    fn test_markdown_to_html_code() {
-        let markdown = "```\ncode\n```";
-        let html = markdown_to_html(markdown);
-        assert!(html.contains("<pre>"));
-        assert!(html.contains("<code>"));
-    }
-
-    #[test]
-    fn test_markdown_to_html_tables() {
-        let markdown = "| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |";
-        let html = markdown_to_html(markdown);
-        assert!(html.contains("<table>"));
-        assert!(html.contains("<thead>"));
-        assert!(html.contains("<th>Header 1</th>"));
-        assert!(html.contains("<td>Cell 1</td>"));
-    }
 
     #[test]
     fn test_copy_colocated_assets_basic() {
