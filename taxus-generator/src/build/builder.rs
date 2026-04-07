@@ -144,8 +144,14 @@ impl SiteBuilder {
         drop(_templates_span);
 
         // create a code syntax highlighter
-        let mut highlighter =
-            CodeHighlighter::new(LanguageRegistry::new(), &self.config.highlight.class_prefix);
+        let mut highlighter = if self.config.highlight.enabled {
+            Some(CodeHighlighter::new(
+                LanguageRegistry::new(),
+                &self.config.highlight.class_prefix,
+            ))
+        } else {
+            None
+        };
 
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
@@ -154,7 +160,7 @@ impl SiteBuilder {
             &registry,
             &self.config,
             self.include_drafts,
-            Some(&mut highlighter),
+            highlighter.as_mut(),
         )?;
 
         if processed.is_empty() {
