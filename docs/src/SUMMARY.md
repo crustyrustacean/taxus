@@ -6,6 +6,7 @@
 - [Configuration](./configuration.md)
 - [Content](./content.md)
 - [Templates](./templates.md)
+- [Syntax Highlighting](./syntax-highlighting.md)
 - [Islands Architecture](./islands.md)
 - [CLI Reference](./cli.md)
 - [Development Server](./serve.md)

@@ -215,6 +215,8 @@ fn main() {
 ```
 ````
 
+Code blocks with a language identifier are highlighted using tree-sitter. See [Syntax Highlighting](./syntax-highlighting.md) for configuration and supported languages.
+
 ### Blockquotes
 
 ```markdown

@@ -66,6 +66,17 @@ RSS/Atom feed configuration for content syndication.
 | `rss_path` | string | `None` | RSS feed output path (default: `rss.xml`) |
 | `atom_path` | string | `None` | Atom feed output path (default: `atom.xml`) |
 
+### `[highlight]` Section
+
+Syntax highlighting configuration for code blocks.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Enable tree-sitter syntax highlighting |
+| `class_prefix` | string | `"hl-"` | CSS class prefix for highlight spans |
+
+See [Syntax Highlighting](./syntax-highlighting.md) for details on styling and supported languages.
+
 ## Minimal Configuration
 
 The minimal required configuration:
@@ -102,6 +113,10 @@ full_content = false
 title = "My Blog Feed"
 rss_path = "rss.xml"
 atom_path = "atom.xml"
+
+[highlight]
+enabled = true
+class_prefix = "hl-"
 ```
 
 ## Validation
