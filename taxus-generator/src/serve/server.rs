@@ -330,6 +330,7 @@ where
                     // Determine content type based on extension
                     let content_type = match file_path.extension().and_then(|e| e.to_str()) {
                         Some("html") => "text/html; charset=utf-8",
+                        Some("xml") => "application/xml; charset=utf-8",
                         Some("css") => "text/css; charset=utf-8",
                         Some("js") => "application/javascript; charset=utf-8",
                         Some("wasm") => "application/wasm",
