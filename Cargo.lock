@@ -2655,7 +2655,7 @@ dependencies = [
 
 [[package]]
 name = "taxus"
-version = "0.1.62"
+version = "0.1.63"
 dependencies = [
  "axum",
  "axum-extra",
@@ -2690,7 +2690,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-client"
-version = "0.1.62"
+version = "0.1.63"
 dependencies = [
  "serde_json",
  "taxus-common",
@@ -2701,7 +2701,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-common"
-version = "0.1.62"
+version = "0.1.63"
 dependencies = [
  "serde",
  "yew",
