@@ -16,8 +16,8 @@ fn build_highlight_site() -> (TempDir, String) {
     let builder = SiteBuilder::new(config);
     builder.build().expect("Build failed");
 
-    let html = std::fs::read_to_string(output_dir.join("index.html"))
-        .expect("Failed to read output");
+    let html =
+        std::fs::read_to_string(output_dir.join("index.html")).expect("Failed to read output");
 
     (temp_dir, html)
 }
@@ -121,8 +121,8 @@ fn test_highlighting_disabled_produces_plain_blocks() {
     let builder = SiteBuilder::new(config);
     builder.build().expect("Build failed");
 
-    let html = std::fs::read_to_string(output_dir.join("index.html"))
-        .expect("Failed to read output");
+    let html =
+        std::fs::read_to_string(output_dir.join("index.html")).expect("Failed to read output");
 
     assert!(
         !html.contains("hl-keyword"),
@@ -147,8 +147,8 @@ fn test_custom_class_prefix() {
     let builder = SiteBuilder::new(config);
     builder.build().expect("Build failed");
 
-    let html = std::fs::read_to_string(output_dir.join("index.html"))
-        .expect("Failed to read output");
+    let html =
+        std::fs::read_to_string(output_dir.join("index.html")).expect("Failed to read output");
 
     assert!(
         html.contains("syntax-keyword"),

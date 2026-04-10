@@ -813,7 +813,8 @@ Content here.
             "Should contain hero_image extra variable"
         );
         assert!(
-            html.contains("This is a test tagline."), "Should contain tagline variable"
+            html.contains("This is a test tagline."),
+            "Should contain tagline variable"
         );
         assert!(
             html.contains("Featured!"),
