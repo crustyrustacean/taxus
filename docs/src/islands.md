@@ -142,6 +142,20 @@ tera.register_function("island", |args: &HashMap<String, tera::Value>| {
             
             render_island_counter(CounterProps { initial })
         }
+        "SearchBox" => {
+            use crate::build::pipeline::render_search_box;
+            use common::components::search_box::SearchBoxProps;
+            
+            let placeholder = args.get("placeholder")
+                .and_then(Value::as_str)
+                .unwrap_or("Search...")
+                .to_string();
+            let max_results = args.get("max_results")
+                .and_then(Value::as_i64)
+                .unwrap_or(5) as usize;
+            
+            render_search_box(SearchBoxProps { placeholder, max_results })
+        }
         "MyWidget" => {
             // Add your component here
             use crate::build::pipeline::render_island_generic;
@@ -172,21 +186,45 @@ tera.register_function("island", |args: &HashMap<String, tera::Value>| {
 In `client/src/main.rs`, add a match arm to the hydration function:
 
 ```rust
-fn hydrate_island(el: Element, component: &str, props_json: &str) {
-    match component {
+fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
+    match name {
         "Counter" => {
             let props: CounterProps = serde_json::from_str(props_json)
                 .unwrap_or(CounterProps { initial: 0 });
             yew::Renderer::<Counter>::with_root_and_props(el.into(), props).hydrate();
+        }
+        "SearchBox" => {
+            let props: SearchBoxProps = serde_json::from_str(props_json)
+                .unwrap_or(SearchBoxProps {
+                    placeholder: String::new(),
+                    max_results: 5,
+                });
+            yew::Renderer::<SearchBox>::with_root_and_props(el.into(), props).hydrate();
         }
         "MyWidget" => {
             let props: MyWidgetProps = serde_json::from_str(props_json)
                 .unwrap_or(MyWidgetProps { label: String::new(), count: 0 });
             yew::Renderer::<MyWidget>::with_root_and_props(el.into(), props).hydrate();
         }
-        other => tracing::warn!("Unknown island component: {}", other),
+        _ => { /* ignore unknown islands */ }
     }
 }
+```
+
+## Built-in Islands
+
+Taxus includes two built-in island components:
+
+### Counter
+
+A simple counter with increment button. This is an example component demonstrating the islands architecture — useful for testing and learning, but not intended for production use.
+
+### SearchBox
+
+A production-ready search component with debounced input and async results. See [Search](./search.md) for full documentation.
+
+```html
+{{ island(component="SearchBox", placeholder="Search...", max_results=10) | safe }}
 ```
 
 ## Initializing a Site with Islands

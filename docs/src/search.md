@@ -1,10 +1,15 @@
 # Search
 
-Taxus provides a full-text search index that can be shipped to the browser for client-side search. The index uses TF-IDF (Term Frequency-Inverse Document Frequency) ranking with English stemming.
+Taxus provides a built-in search component with client-side full-text search. The `SearchBox` island component uses TF-IDF (Term Frequency-Inverse Document Frequency) ranking with English stemming.
 
 ## Overview
 
-When the `islands` feature is enabled, the build pipeline generates a search index at `dist/search_index.bin`. This binary file contains:
+When the `islands` feature is enabled, the build pipeline:
+
+1. Generates a search index at `dist/search_index.bin`
+2. The `SearchBox` component is available for use in templates
+
+The binary index contains:
 
 - **Document metadata** — Title, path, summary, tags, and categories for each page
 - **Inverted index** — Mapping from word stems to document IDs with TF-IDF scores
@@ -20,6 +25,87 @@ cargo run --features islands -- build --dir my-site
 ```
 
 This generates `dist/search_index.bin` alongside your static files.
+
+## Using the SearchBox Component
+
+The `SearchBox` island component provides a ready-to-use search interface. Add it to any template:
+
+```html
+<div class="search-container">
+  {{ island(component="SearchBox") | safe }}
+</div>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `placeholder` | string | `"Search..."` | Placeholder text for the input |
+| `max_results` | number | `5` | Maximum number of results to display |
+
+Example with custom props:
+
+```html
+{{ island(component="SearchBox", placeholder="Find content...", max_results=10) | safe }}
+```
+
+### Styling
+
+The component uses these CSS classes that you can style:
+
+| Class | Element |
+|-------|---------|
+| `.search-box` | Container div |
+| `.search-input` | Text input field |
+| `.search-results` | Results list (`<ul>`) |
+| `.search-result` | Individual result item (`<li>`) |
+| `.search-result-link` | Result title link |
+| `.search-result-summary` | Result summary text |
+
+Example SCSS:
+
+```scss
+.search-container {
+  max-inline-size: 48rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+.search-input {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  color: var(--text);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.search-result {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.search-result-link {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.search-result-summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+```
 
 ## How It Works
 
@@ -40,16 +126,19 @@ When a user searches:
 3. TF-IDF scores are summed for matching documents
 4. Results are returned sorted by relevance score
 
+### Component Architecture
+
+The `SearchBox` component:
+
+1. Uses a 200ms debounce on input to avoid excessive queries
+2. Requires at least 2 characters before searching
+3. Calls the `window.wasmBindings.search()` function exposed by the WASM client
+4. The WASM client lazily loads the search index on first use
+5. Results are truncated to `max_results` and displayed in a list
+
 ## Output Format
 
-The search index is written to `dist/search_index.bin` in `postcard` binary format. To use it client-side:
-
-```rust
-// In WASM client
-let bytes = fetch("/search_index.bin").await;
-let index = SearchIndex::from_bytes(&bytes);
-let results = index.search("rust programming");
-```
+The search index is written to `dist/search_index.bin` in `postcard` binary format.
 
 Each `SearchDocument` in the results contains:
 
@@ -61,72 +150,6 @@ Each `SearchDocument` in the results contains:
 | `summary` | Page summary for display |
 | `tags` | Tags from frontmatter |
 | `categories` | Categories from frontmatter |
-
-## Using Search Client-Side
-
-### Fetch and Deserialize
-
-```javascript
-// Fetch the binary index
-const response = await fetch('/search_index.bin');
-const buffer = await response.arrayBuffer();
-const bytes = new Uint8Array(buffer);
-
-// Use postcard (or a Rust WASM module) to deserialize
-// The SearchIndex struct is defined in taxus-common
-```
-
-### Integration with Yew
-
-Create a search island component that loads the index on mount:
-
-```rust
-// In taxus-common/src/components/search.rs
-use yew::prelude::*;
-use crate::search::{SearchIndex, SearchDocument};
-
-#[function_component(SearchBox)]
-pub fn search_box() -> Html {
-    let index = use_state(|| None::<SearchIndex>);
-    let query = use_state(|| String::new());
-    let results = use_state(|| Vec::<SearchDocument>::new);
-
-    // Load index on mount
-    {
-        let index = index.clone();
-        use_effect_with((), move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                let resp = gloo::net::http::Request::get("/search_index.bin")
-                    .send()
-                    .await
-                    .unwrap();
-                let bytes = resp.binary().await.unwrap();
-                index.set(Some(SearchIndex::from_bytes(&bytes)));
-            });
-            || ()
-        });
-    }
-
-    // Render search UI
-    html! {
-        <div class="search">
-            <input
-                type="text"
-                placeholder="Search..."
-                oninput={|e| query.set(e.value())}
-            />
-            <ul class="search-results">
-                { for results.iter().map(|doc| html! {
-                    <li>
-                        <a href={doc.path.clone()}>{ &doc.title }</a>
-                        <p>{ &doc.summary }</p>
-                    </li>
-                })}
-            </ul>
-        </div>
-    }
-}
-```
 
 ## API Reference
 
@@ -180,6 +203,7 @@ Applies English Porter stemmer to tokens.
 - **Index size** — Typically 10-30% of total content size
 - **Deserialization** — Near-instant with postcard format
 - **Search latency** — Sub-millisecond for typical queries
+- **Lazy loading** — Index is loaded only when first search is performed
 
 ## Limitations
 

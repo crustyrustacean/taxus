@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.67] - 2026-04-11
+
+### Added
+
+#### SearchBox Island Component
+
+- **SearchBox Component** (`taxus-common/src/components/search_box.rs`): Production-ready search UI component
+  - Debounced input (200ms) to avoid excessive queries
+  - Minimum 2 characters before searching
+  - Configurable `placeholder` and `max_results` props
+  - CSS classes for styling: `.search-box`, `.search-input`, `.search-results`, `.search-result`, `.search-result-link`, `.search-result-summary`
+
+- **WASM Search Function** (`taxus-client/src/search.rs`): Client-side search bindings
+  - `search(query)`: Async function exposed to WASM via `#[wasm_bindgen]`
+  - Lazy-loads search index on first use (cached in thread-local storage)
+  - Returns results as `JsValue` for JavaScript interop
+
+- **Generator Integration** (`taxus-generator/src/templates/renderer.rs`):
+  - `SearchBox` registered in island SSR registry
+  - Props: `placeholder` (default: "Search..."), `max_results` (default: 5)
+
+- **Client Hydration** (`taxus-client/src/main.rs`):
+  - `SearchBox` registered in hydration registry
+  - Hydrates with props from `data-props` JSON
+
+### Changed
+
+- **Documentation** (`docs/src/search.md`): Completely rewritten
+  - Documented `SearchBox` component usage and props
+  - Added CSS class reference for styling
+  - Explained component architecture (debouncing, lazy loading, WASM bindings)
+  - Removed outdated example code
+
+- **Documentation** (`docs/src/islands.md`):
+  - Updated registry examples to include `SearchBox`
+  - Added "Built-in Islands" section documenting Counter and SearchBox
+  - Clarified Counter is an example/proof-of-concept
+
 ## [0.1.66] - 2026-04-10
 
 ### Added

@@ -10,7 +10,12 @@
 // #[wasm_bindgen(start)] can be the sole entry without a symbol conflict.
 #![no_main]
 
-use taxus_common::components::counter::{Counter, CounterProps};
+mod search;
+
+use taxus_common::components::{
+    counter::{Counter, CounterProps},
+    search_box::{SearchBox, SearchBoxProps},
+};
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
@@ -62,6 +67,15 @@ fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
 
             // Hydrate: attach Yew to the existing SSR DOM without re-rendering
             yew::Renderer::<Counter>::with_root_and_props(el.into(), props).hydrate();
+        }
+        "SearchBox" => {
+            let props: SearchBoxProps =
+                serde_json::from_str(props_json).unwrap_or(SearchBoxProps {
+                    placeholder: "".to_string(),
+                    max_results: 5,
+                });
+
+            yew::Renderer::<SearchBox>::with_root_and_props(el.into(), props).hydrate();
         }
         _ => { /* ignore unknown islands */ }
     }

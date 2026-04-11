@@ -32,6 +32,8 @@ use tracing::{debug, debug_span, info};
 #[cfg(feature = "islands")]
 use taxus_common::components::counter::{Counter, CounterProps};
 #[cfg(feature = "islands")]
+use taxus_common::components::search_box::SearchBoxProps;
+#[cfg(feature = "islands")]
 use yew::ServerRenderer;
 
 /// Processed page ready for rendering.
@@ -304,6 +306,23 @@ pub fn render_island_counter(props: CounterProps) -> String {
 
     // Emit the mount point wrapper around the SSR output
     format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)
+}
+
+#[cfg(feature = "islands")]
+pub fn render_search_box(props: SearchBoxProps) -> String {
+    use taxus_common::components::search_box::SearchBox;
+
+    let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
+
+    let ssr_html = tokio::task::block_in_place(|| {
+        tokio::runtime::Handle::current().block_on(async {
+            ServerRenderer::<SearchBox>::with_props(move || props)
+                .render()
+                .await
+        })
+    });
+
+    format!(r#"<div data-island="SearchBox" data-props='{props_json}'>{ssr_html}</div>"#)
 }
 
 #[cfg(test)]

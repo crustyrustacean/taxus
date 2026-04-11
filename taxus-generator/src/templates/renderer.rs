@@ -159,6 +159,21 @@ impl TeraRenderer {
 
                         render_island_counter(CounterProps { initial })
                     }
+                    "SearchBox" => {
+                        use crate::build::pipeline::render_search_box;
+                        use taxus_common::components::search_box::SearchBoxProps;
+
+                        let placeholder = args
+                            .get("placeholder")
+                            .and_then(Value::as_str)
+                            .unwrap_or("Search...")
+                            .to_string();
+
+                        render_search_box(SearchBoxProps {
+                            placeholder,
+                            max_results: 5,
+                        })
+                    }
                     other => format!("<!-- unknown island: {other} -->"),
                 };
 
