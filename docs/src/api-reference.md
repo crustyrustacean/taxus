@@ -1,6 +1,69 @@
 # API Reference
 
-This page documents the public API of the `taxus_lib` generator library.
+This page documents the public API of the `taxus_lib` generator library and `taxus-common` shared library.
+
+## `taxus-common` Crate
+
+### `search` Module
+
+The search module provides full-text search with TF-IDF ranking.
+
+#### `SearchDocument`
+
+```rust
+pub struct SearchDocument {
+    pub id: u32,
+    pub title: String,
+    pub path: String,
+    pub summary: String,
+    pub tags: Vec<String>,
+    pub categories: Vec<String>,
+}
+```
+
+Metadata record for each indexed page.
+
+| Method | Description |
+|--------|-------------|
+| `new(id, title, path, summary, tags, categories) -> Self` | Create a new document |
+
+#### `SearchIndex`
+
+```rust
+pub struct SearchIndex {
+    pub documents: Vec<SearchDocument>,
+    pub index: HashMap<String, Vec<(u32, f32)>>,
+}
+```
+
+The main search index structure. The `index` maps word stems to `(document_id, tfidf_score)` pairs.
+
+| Method | Description |
+|--------|-------------|
+| `new() -> Self` | Create empty index |
+| `add_document(&mut self, doc: SearchDocument, content: &str)` | Add a document with its content for indexing |
+| `search(&self, query: &str) -> Vec<&SearchDocument>` | Search and return ranked results |
+| `finalize(&mut self)` | Apply IDF weighting (call after all documents added) |
+| `to_bytes(&self) -> Vec<u8>` | Serialize to binary (postcard format) |
+| `from_bytes(bytes: &[u8]) -> Self` | Deserialize from binary |
+
+#### Helper Functions
+
+```rust
+pub fn tokenize(text: &str) -> Vec<String>
+```
+
+Split text into lowercase tokens. Filters words shorter than 3 characters.
+
+```rust
+pub fn stem(tokens: &[String]) -> Vec<String>
+```
+
+Apply English Porter stemmer to tokens.
+
+---
+
+## `taxus-generator` Crate
 
 ## Re-exports
 
@@ -370,6 +433,23 @@ pub struct SiteBuilder {
 | `include_drafts(self, bool) -> Self` | Include drafts |
 | `build(self) -> Result<BuildReport>` | Run build pipeline |
 | `clean(self) -> Result<()>` | Clean output directory |
+
+### `build::pipeline::search` Module (islands feature only)
+
+#### `GeneratedSearch`
+
+```rust
+pub struct GeneratedSearch {
+    pub search_index: Vec<u8>,
+}
+```
+
+Container for the serialized search index.
+
+| Function | Description |
+|----------|-------------|
+| `generate_search(pages: &[ProcessedPage]) -> Result<GeneratedSearch>` | Create search index from processed pages |
+| `write_search_index(generated: &GeneratedSearch, output_dir: &Path, dry_run: bool) -> Result<()>` | Write `search_index.bin` to output |
 
 ### `BuildReport`
 

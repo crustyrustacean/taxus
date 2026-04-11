@@ -265,3 +265,7 @@ Without the feature:
 - `island()` function returns empty string (no error)
 - No Yew or WASM dependencies compiled
 - Templates that use `{{ island(...) | safe }}` still render without output
+
+## Search
+
+The `islands` feature also enables search index generation. See [Search](./search.md) for details.

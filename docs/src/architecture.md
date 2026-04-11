@@ -96,60 +96,64 @@ The `generator` crate is organized into modules that each own a specific domain:
 
 ## Build Pipeline
 
-The `SiteBuilder` orchestrates a 12-stage build pipeline:
+The `SiteBuilder` orchestrates a 13-stage build pipeline (12 stages without the `islands` feature):
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      SiteBuilder.build()                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [1/12] Discover routes                                          │
+│  [1/13] Discover routes                                          │
 │          └──▶ Walk content/ directory                            │
 │          └──▶ Create RouteRegistry (path → content file mapping) │
 │                                                                  │
-│  [2/12] Load templates                                           │
+│  [2/13] Load templates                                           │
 │          └──▶ Read templates/**/*.html                           │
 │          └──▶ Register with Tera (inheritance, island() fn)      │
 │                                                                  │
-│  [3/12] Process content                                          │
+│  [3/13] Process content                                          │
 │          └──▶ Parse frontmatter (TOML)                           │
 │          └──▶ Convert Markdown → HTML                            │
 │          └──▶ Resolve internal links (@/file.md)                 │
 │          └──▶ Produce ProcessedPage for each route               │
 │                                                                  │
-│  [4/12] Copy co-located assets                                   │
+│  [4/13] Copy co-located assets                                   │
 │          └──▶ Non-.md files in content/ → dist/                  │
 │          └──▶ Preserve directory structure                       │
 │                                                                  │
-│  [5/12] Render pages                                             │
+│  [5/13] Render pages                                             │
 │          └──▶ Apply Tera templates to ProcessedPage              │
 │          └──▶ Handle pagination for sections                     │
 │          └──▶ Produce RenderedPage (final HTML)                  │
 │                                                                  │
-│  [6/12] Generate robots.txt                                      │
+│  [6/13] Generate robots.txt                                      │
 │          └──▶ If no static/robots.txt exists                     │
 │          └──▶ Write default with sitemap reference               │
 │                                                                  │
-│  [7/12] Generate sitemap.xml                                     │
+│  [7/13] Generate sitemap.xml                                     │
 │          └──▶ List all routes with lastmod dates                 │
 │          └──▶ Assign priorities (home: 1.0, sections: 0.8, etc)  │
 │                                                                  │
-│  [8/12] Generate 404.html                                        │
+│  [8/13] Generate 404.html                                        │
 │          └──▶ Render 404 template if present                     │
 │                                                                  │
-│  [9/12] Build and render taxonomy pages                          │
+│  [9/13] Build and render taxonomy pages                          │
 │          └──▶ Extract tags, categories, series from pages        │
 │          └──▶ Generate /tags/, /tags/slug/, etc                  │
 │                                                                  │
-│  [10/12] Generate feeds                                          │
+│  [10/13] Generate feeds                                          │
 │          └──▶ RSS 2.0 (rss_enabled)                              │
 │          └──▶ Atom (atom_enabled)                                │
 │                                                                  │
-│  [11/12] Process assets                                          │
+│  [11/13] Process assets                                          │
 │          └──▶ Compile SCSS → CSS (styles/**/*.scss)              │
 │          └──▶ Copy static/ files to dist/static/                 │
 │                                                                  │
-│  [12/12] Write output                                            │
+│  [12/13] Generate search index (islands feature only)            │
+│          └──▶ Build TF-IDF index from page content               │
+│          └──▶ Write dist/search_index.bin                        │
+│                                                                  │
+│  [13/13] Write output                                            │
 │          └──▶ Write RenderedPage HTML files                      │
 │          └──▶ Write taxonomy pages                               │
 │          └──▶ Write feed XML files                               │

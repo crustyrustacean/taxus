@@ -8,6 +8,7 @@
 - [Templates](./templates.md)
 - [Syntax Highlighting](./syntax-highlighting.md)
 - [Islands Architecture](./islands.md)
+- [Search](./search.md)
 - [CLI Reference](./cli.md)
 - [Development Server](./serve.md)
 - [Styling](./styling.md)

@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.66] - 2026-04-10
+
+### Added
+
+#### Full-Text Search Index
+
+- **Search Module** (`taxus-common/src/search.rs`): TF-IDF search index for client-side search
+  - `SearchDocument`: Metadata record for indexed pages (id, title, path, summary, tags, categories)
+  - `SearchIndex`: Main index structure with inverted index mapping stems to (doc_id, tfidf_score) pairs
+  - `tokenize()`: Split text into lowercase tokens, filter words < 3 characters
+  - `stem()`: Apply English Porter stemmer using `rust-stemmers`
+  - Postcard serialization for compact binary output
+
+- **Pipeline Integration** (`taxus-generator/src/build/pipeline/search.rs`):
+  - Stage 12 in build pipeline (islands feature only)
+  - `generate_search()`: Build index from processed pages
+  - `write_search_index()`: Write `dist/search_index.bin`
+
+- **Documentation**: New `docs/src/search.md` covering:
+  - Enabling search (requires `islands` feature)
+  - Indexing pipeline and TF-IDF scoring
+  - Client-side integration with Yew/WASM
+  - API reference for search types
+
+### Changed
+
+- **Build Pipeline**: Updated from 12 to 13 stages (search index generation is stage 12 with `islands` feature)
+- **README.md**: Added "Full-Text Search" to features list, updated docs links
+- **docs/src/SUMMARY.md**: Added Search entry
+- **docs/src/architecture.md**: Updated pipeline diagram with search stage
+- **docs/src/api-reference.md**: Added `taxus-common::search` and `build::pipeline::search` documentation
+- **docs/src/islands.md**: Added cross-reference to search documentation
+
 ## [0.1.46] - 2026-04-03
 
 ### Added
@@ -14,12 +47,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Templates: `base.html`, `page.html`, `section.html`, `404.html`
   - Styles: `main.scss` with full styling
   - Static assets: favicon and scripts
+  - Blog content with SEO meta tags
+
+### Fixed
+
+- **HtmlInjectService**: Added missing `application/xml` content type for proper XML file serving
+- **Internal Links**: Fixed bug in internal link resolution and CLI `--dir` command handling
 
 ### Changed
 
 - **Counter Component**: Updated counter component styling and structure
+- **Single Page Blog**: Removed special case that prevented single-page blog sites
+- **Tagline Field**: Added `tagline` frontmatter field, cleaned up duplication in template rendering
+- **Pages Module**: Refactored `pages.rs` and associated tests for improved readability
 
 ## [0.1.45] - 2026-04-03
+
+### Added
+
+#### Syntax Highlighting
+
+- **Tree-sitter Highlighting** (`taxus-generator/src/highlighting/`): Syntax highlighting for code blocks
+  - `Highlighter`: Main highlighter using tree-sitter grammars
+  - Support for 30+ languages via tree-sitter grammar crates
+  - Highlight themes: base16-256, base16-mocha, base16-ocean, base16-eighties
+  - Integration with markdown processing pipeline
+
+- **Dependencies Added**:
+  - `tree-sitter` and `tree-sitter-highlight` for parsing and highlighting
+  - Language grammar crates: tree-sitter-rust, tree-sitter-javascript, tree-sitter-python, etc.
 
 ### Changed
 

@@ -7,6 +7,7 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 - **Static Site Generation** — Pre-rendered HTML for optimal performance and SEO
 - **Markdown + TOML Frontmatter** — Write content with familiar syntax
 - **Islands Architecture** — Optional Yew/WASM components that hydrate client-side
+- **Full-Text Search** — TF-IDF search index for client-side search (with `islands` feature)
 - **Hot-Reloading Dev Server** — WebSocket-based live reload during development
 - **RSS/Atom Feeds** — Automatic feed generation
 - **Taxonomies** — Tags, categories, and series with automatic archive pages
@@ -102,6 +103,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - [Content](docs/src/content.md)
 - [Templates](docs/src/templates.md)
 - [Islands Architecture](docs/src/islands.md)
+- [Search](docs/src/search.md)
 - [CLI Reference](docs/src/cli.md)
 - [API Reference](docs/src/api-reference.md)
 
@@ -117,7 +119,7 @@ cd docs && mdbook serve
 |-------|-------------|
 | `taxus-generator` | SSG library and `taxus` CLI binary |
 | `taxus-client` | WASM hydration client (built by Trunk) |
-| `taxus-common` | Shared Yew components for SSR and hydration |
+| `taxus-common` | Shared Yew components for SSR and hydration, search index |
 
 ## License
 
