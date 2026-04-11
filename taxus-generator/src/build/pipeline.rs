@@ -11,6 +11,8 @@ pub mod markdown;
 pub mod not_found;
 pub mod pages;
 pub mod robots;
+#[cfg(feature = "islands")]
+pub mod search;
 pub mod sitemap;
 pub mod taxonomy;
 
