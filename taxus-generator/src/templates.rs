@@ -59,7 +59,7 @@ mod context;
 mod renderer;
 
 pub use context::{
-    compute_permalink, HeroContext, PageContext, PaginationContext, SectionContext, SiteContext,
-    TaxonomyListContext, TaxonomyTermContext, TemplateContext,
+    HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, TaxonomyListContext,
+    TaxonomyTermContext, TemplateContext, compute_permalink,
 };
 pub use renderer::{TemplateRenderer, TeraRenderer};

@@ -5,8 +5,8 @@ use crate::content::SortBy;
 use crate::error::Result;
 use crate::routes::RouteInfo;
 use crate::templates::{
-    compute_permalink, HeroContext, PageContext, PaginationContext, SectionContext, SiteContext,
-    TemplateContext, TemplateRenderer, TeraRenderer,
+    HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, TemplateContext,
+    TemplateRenderer, TeraRenderer, compute_permalink,
 };
 use std::path::PathBuf;
 use tracing::{debug, debug_span, info};
@@ -673,12 +673,16 @@ This is the content.
 
         assert_eq!(section_pages.len(), 3, "Should have 3 paginated pages");
         assert!(section_pages.iter().any(|r| r.route.path == "/blog/"));
-        assert!(section_pages
-            .iter()
-            .any(|r| r.route.path == "/blog/page/2/"));
-        assert!(section_pages
-            .iter()
-            .any(|r| r.route.path == "/blog/page/3/"));
+        assert!(
+            section_pages
+                .iter()
+                .any(|r| r.route.path == "/blog/page/2/")
+        );
+        assert!(
+            section_pages
+                .iter()
+                .any(|r| r.route.path == "/blog/page/3/")
+        );
 
         let page1 = section_pages
             .iter()

@@ -54,5 +54,6 @@ pub use images::{ImageProcessor, ImageRegistry, ProcessedImage, render_picture};
 pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{
-    HeroContext, PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
+    HeroContext, PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer,
+    TeraRenderer,
 };

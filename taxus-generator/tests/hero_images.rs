@@ -5,7 +5,7 @@ use taxus_lib::build::SiteBuilder;
 use taxus_lib::config::{
     BuildConfig, FeedConfig, HighlightConfig, ImageConfig, SiteConfig, SiteMeta,
 };
-use taxus_lib::images::{render_picture, ImageProcessor, ImageRegistry};
+use taxus_lib::images::{ImageProcessor, ImageRegistry, render_picture};
 use tempfile::TempDir;
 
 fn create_hero_site(temp: &TempDir) -> SiteConfig {
