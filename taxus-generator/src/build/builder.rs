@@ -12,6 +12,8 @@ use crate::error::{GeneratorError, Result};
 use crate::highlighting::{CodeHighlighter, LanguageRegistry};
 use crate::templates::SiteContext;
 use std::path::Path;
+#[cfg(feature = "islands")]
+use std::path::PathBuf;
 use std::time::Instant;
 use tracing::{debug, info, info_span};
 
@@ -285,15 +287,32 @@ impl SiteBuilder {
         #[cfg(feature = "islands")]
         {
             let _search_index_span = info_span!("generate_search").entered();
-            info!("[13/14] Generating search index...");
+            info!("[13/15] Generating search index...");
             let search_index = build::pipeline::search::generate_search(&processed)?;
             build::pipeline::search::write_search_index(&search_index, &output_dir, self.dry_run)?;
             drop(_search_index_span);
         }
 
+        #[cfg(feature = "islands")]
+        {
+            let workspace_root = std::env::current_dir().map_err(|e| GeneratorError::Io {
+                path: PathBuf::from("."),
+                source: e,
+            })?;
+            let client_manifest = workspace_root.join("taxus-client/Cargo.toml");
+            if client_manifest.exists() {
+                let _wasm_span = info_span!("build_wasm").entered();
+                info!("[14/15] Building WASM client...");
+                let wasm_output =
+                    build::pipeline::wasm::build_wasm_client(&workspace_root, &output_dir, false)?;
+                info!("WASM client built ({} bytes)", wasm_output.wasm_size);
+                drop(_wasm_span);
+            }
+        }
+
         // Stage 14: Write output
         let _write_span = info_span!("write_output").entered();
-        info!("[14/14] Writing output...");
+        info!("[15/15] Writing output...");
         pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
 
         // Write taxonomy pages

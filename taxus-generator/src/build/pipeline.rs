@@ -15,6 +15,8 @@ pub mod robots;
 pub mod search;
 pub mod sitemap;
 pub mod taxonomy;
+#[cfg(feature = "islands")]
+pub mod wasm;
 
 use crate::CodeHighlighter;
 use crate::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};

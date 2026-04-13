@@ -3,9 +3,11 @@
 //! This module provides a comprehensive error hierarchy using `thiserror`
 //! for idiomatic error handling throughout the library.
 
+use crate::serve::ServeError;
 use std::path::PathBuf;
 
-use crate::serve::ServeError;
+/// Result alias for generator operations.
+pub type Result<T> = std::result::Result<T, GeneratorError>;
 
 /// Main error type for the generator library.
 #[derive(Debug, thiserror::Error)]
@@ -45,6 +47,10 @@ pub enum GeneratorError {
     /// Image-related errors
     #[error("Image error: {0}")]
     Image(Box<ImageError>),
+
+    /// WASM build-related errors
+    #[error("WASM error: {0}")]
+    Wasm(Box<WasmError>),
 
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
@@ -93,6 +99,7 @@ impl_from_for_generator_error! {
     ServeError => Serve,
     FeedError => Feed,
     ImageError => Image,
+    WasmError => Wasm,
 }
 
 /// Template-related errors.
@@ -319,8 +326,17 @@ pub enum ImageError {
     InvalidConfig(String),
 }
 
-/// Result alias for generator operations.
-pub type Result<T> = std::result::Result<T, GeneratorError>;
+/// WASM build-related errors
+#[derive(Debug, thiserror::Error)]
+pub enum WasmError {
+    /// A required tool is not available
+    #[error("{tool} not found. {hint}")]
+    ToolMissing { tool: String, hint: String },
+
+    /// The WASM build failed
+    #[error("WASM build failed: {0}")]
+    BuildFailed(String),
+}
 
 #[cfg(test)]
 mod tests {

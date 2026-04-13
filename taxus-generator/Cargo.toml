@@ -22,7 +22,7 @@ path = "src/lib.rs"
 # and the `common` crate and `yew/ssr` are compiled in.
 # Without this feature the generator is a plain Tera + Markdown SSG with no
 # Yew/WASM dependency, and `island()` calls in templates produce empty output.
-islands = ["dep:taxus-common", "dep:yew"]
+islands = ["dep:taxus-common", "dep:yew", "dep:wasm-bindgen-cli-support"]
 lang-rust = ["dep:tree-sitter-rust"]
 default = ["lang-rust"]
 
@@ -59,6 +59,7 @@ webbrowser = "1.0"
 # ── Islands feature dependencies (compiled only with --features islands) ──────
 taxus-common = { path = "../taxus-common", optional = true }
 yew = { version = "0.23.0", features = ["ssr"], optional = true }
+wasm-bindgen-cli-support = { version = "=0.2.118", optional = true }
 
 [dev-dependencies]
 tempfile = "3.10"
