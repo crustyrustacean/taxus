@@ -63,7 +63,6 @@ mod error_tests {
 mod websocket_tests {
     use super::*;
     use chrono::Utc;
-    use serde_json;
 
     #[test]
     fn test_reload_event_serialization() {

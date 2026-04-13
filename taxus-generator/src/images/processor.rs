@@ -120,6 +120,7 @@ impl ImageProcessor {
             return Ok(Self::build_from_cache(
                 source,
                 &image_output_dir,
+                &self.output_dir,
                 alt,
                 &hash,
                 expected_variants,
@@ -320,7 +321,8 @@ impl ImageProcessor {
 
     fn build_from_cache(
         source: &Path,
-        image_output_dir: &Path,
+        _image_output_dir: &Path,
+        base_output_dir: &Path,
         alt: &str,
         _hash: &str,
         expected: Vec<(u32, u32, PathBuf)>,
@@ -347,7 +349,7 @@ impl ImageProcessor {
 
         ProcessedImage {
             source_path: source.to_path_buf(),
-            output_dir: image_output_dir.to_path_buf(),
+            output_dir: base_output_dir.to_path_buf(),
             meta: ImageMeta {
                 original_width,
                 original_height,
@@ -385,10 +387,10 @@ impl ImageProcessor {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         source.hash(&mut hasher);
         if let Ok(metadata) = std::fs::metadata(source) {
-            if let Ok(modified) = metadata.modified() {
-                if let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH) {
-                    duration.as_nanos().hash(&mut hasher);
-                }
+            if let Ok(modified) = metadata.modified()
+                && let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH)
+            {
+                duration.as_nanos().hash(&mut hasher);
             }
             metadata.len().hash(&mut hasher);
         }
