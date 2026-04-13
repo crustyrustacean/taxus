@@ -62,10 +62,6 @@ fn collect_child_pages(
     all_processed: &[ProcessedPage],
     base_url: &str,
 ) -> Vec<PageContext> {
-    if section.route.path == "/" {
-        return Vec::new();
-    }
-
     all_processed
         .iter()
         .filter(|p| {
