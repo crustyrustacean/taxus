@@ -74,6 +74,15 @@ Page templates extend the base template:
 
 {% block content %}
 <article>
+  {% if page.hero %}
+  <picture>
+    <source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}">
+    <img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+         width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+         loading="eager" decoding="async">
+  </picture>
+  {% endif %}
+
   <h1>{{ page.title }}</h1>
 
   {% if page.description %}
@@ -179,6 +188,35 @@ Section templates render lists of pages:
 | `page.tags` | Array | Tags for the page |
 | `page.categories` | Array | Categories for the page |
 | `page.series` | String? | Series name |
+| `page.hero` | Object? | Hero image context (see below) |
+
+### Hero Image Context
+
+When a page has `hero_image` in its frontmatter, `page.hero` contains:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `page.hero.src` | String | Fallback `<img>` src (middle variant) |
+| `page.hero.srcset` | String | Full srcset string for `<source>` |
+| `page.hero.width` | Number | Original image width |
+| `page.hero.height` | Number | Original image height |
+| `page.hero.alt` | String | Alt text (from `hero_alt`, or page title) |
+| `page.hero.mime_type` | String | MIME type (e.g., `"image/webp"`) |
+
+Example usage:
+
+```html
+{% if page.hero %}
+<picture>
+  <source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}">
+  <img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+       width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+       loading="eager" decoding="async">
+</picture>
+{% endif %}
+```
+
+See [Images](./images.md) for the complete guide.
 
 ### Section Context
 

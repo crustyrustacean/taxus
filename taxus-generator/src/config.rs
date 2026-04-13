@@ -23,6 +23,9 @@ pub struct SiteConfig {
     // Syntax highlighting configuration
     #[serde(default)]
     pub highlight: HighlightConfig,
+    /// Image processing configuration
+    #[serde(default)]
+    pub images: ImageConfig,
     /// Base directory containing site.toml (not serialized)
     #[serde(skip)]
     pub base_dir: PathBuf,
@@ -177,6 +180,50 @@ impl Default for HighlightConfig {
     }
 }
 
+/// Image processing configuration from the [images] section.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ImageConfig {
+    /// Responsive width breakpoints for generated variants
+    #[serde(default = "default_image_widths")]
+    pub widths: Vec<u32>,
+
+    /// Output quality (1-100)
+    #[serde(default = "default_image_quality")]
+    pub quality: u8,
+
+    /// Output format: "webp", "jpeg", or "png"
+    #[serde(default = "default_image_format")]
+    pub format: String,
+
+    /// Subdirectory within dist/ for processed images
+    #[serde(default = "default_image_output_dir")]
+    pub output_dir: PathBuf,
+}
+
+fn default_image_widths() -> Vec<u32> {
+    vec![400, 800, 1200]
+}
+fn default_image_quality() -> u8 {
+    80
+}
+fn default_image_format() -> String {
+    "webp".to_string()
+}
+fn default_image_output_dir() -> PathBuf {
+    PathBuf::from("images")
+}
+
+impl Default for ImageConfig {
+    fn default() -> Self {
+        Self {
+            widths: default_image_widths(),
+            quality: default_image_quality(),
+            format: default_image_format(),
+            output_dir: default_image_output_dir(),
+        }
+    }
+}
+
 impl BuildConfig {
     /// Resolve all relative paths to be absolute paths based on the base directory.
     ///
@@ -276,6 +323,7 @@ impl SiteConfig {
             build: BuildConfig::default(),
             feed: FeedConfig::default(),
             highlight: HighlightConfig::default(),
+            images: ImageConfig::default(),
             base_dir: PathBuf::new(),
         }
     }
@@ -437,4 +485,48 @@ base_url = "https://example.com"
     let config: SiteConfig = toml::from_str(toml).unwrap();
     assert!(config.highlight.enabled);
     assert_eq!(config.highlight.class_prefix, "hl-");
+}
+
+#[test]
+fn test_image_config_defaults() {
+    let config = ImageConfig::default();
+    assert_eq!(config.widths, vec![400, 800, 1200]);
+    assert_eq!(config.quality, 80);
+    assert_eq!(config.format, "webp");
+    assert_eq!(config.output_dir, PathBuf::from("images"));
+}
+
+#[test]
+fn test_image_config_from_toml() {
+    let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[images]
+widths = [300, 600, 900]
+quality = 75
+format = "jpeg"
+output_dir = "img"
+"#;
+
+    let config: SiteConfig = toml::from_str(toml).unwrap();
+    assert_eq!(config.images.widths, vec![300, 600, 900]);
+    assert_eq!(config.images.quality, 75);
+    assert_eq!(config.images.format, "jpeg");
+    assert_eq!(config.images.output_dir, PathBuf::from("img"));
+}
+
+#[test]
+fn test_image_config_missing_uses_defaults() {
+    let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+"#;
+
+    let config: SiteConfig = toml::from_str(toml).unwrap();
+    assert_eq!(config.images.widths, vec![400, 800, 1200]);
+    assert_eq!(config.images.quality, 80);
+    assert_eq!(config.images.format, "webp");
 }

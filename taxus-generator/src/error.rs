@@ -42,6 +42,10 @@ pub enum GeneratorError {
     #[error("Feed error: {0}")]
     Feed(Box<FeedError>),
 
+    /// Image-related errors
+    #[error("Image error: {0}")]
+    Image(Box<ImageError>),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -88,6 +92,7 @@ impl_from_for_generator_error! {
     InitError => Init,
     ServeError => Serve,
     FeedError => Feed,
+    ImageError => Image,
 }
 
 /// Template-related errors.
@@ -280,6 +285,38 @@ pub enum FeedError {
         #[source]
         source: std::io::Error,
     },
+}
+
+/// Image-related errors.
+#[derive(Debug, thiserror::Error)]
+pub enum ImageError {
+    /// Image file not found
+    #[error("Image not found: {0}")]
+    NotFound(PathBuf),
+
+    /// Failed to decode image
+    #[error("Failed to decode image {path}: {reason}")]
+    DecodeFailed { path: PathBuf, reason: String },
+
+    /// Failed to encode image
+    #[error("Failed to encode image: {0}")]
+    EncodeFailed(String),
+
+    /// Failed to resize image
+    #[error("Failed to resize image: {0}")]
+    ResizeFailed(String),
+
+    /// I/O error with path context
+    #[error("I/O error for {path}: {source}")]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    /// Invalid configuration
+    #[error("Invalid image configuration: {0}")]
+    InvalidConfig(String),
 }
 
 /// Result alias for generator operations.
@@ -582,5 +619,33 @@ mod tests {
         let init_err = InitError::Cancelled;
         let gen_err: GeneratorError = init_err.into();
         assert!(matches!(gen_err, GeneratorError::Init(_)));
+    }
+
+    // ImageError tests
+
+    #[test]
+    fn test_image_error_not_found() {
+        let err = ImageError::NotFound(PathBuf::from("hero.jpg"));
+        let msg = err.to_string();
+        assert!(msg.contains("Image not found"));
+        assert!(msg.contains("hero.jpg"));
+    }
+
+    #[test]
+    fn test_image_error_decode_failed() {
+        let err = ImageError::DecodeFailed {
+            path: PathBuf::from("hero.jpg"),
+            reason: "invalid format".to_string(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("Failed to decode"));
+        assert!(msg.contains("hero.jpg"));
+    }
+
+    #[test]
+    fn test_generator_error_from_image() {
+        let image_err = ImageError::NotFound(PathBuf::from("test.jpg"));
+        let gen_err: GeneratorError = image_err.into();
+        assert!(matches!(gen_err, GeneratorError::Image(_)));
     }
 }

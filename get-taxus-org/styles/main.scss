@@ -46,6 +46,7 @@ body {
 img, picture, video, canvas, svg {
   display: block;
   max-width: 100%;
+  height: auto;
 }
 
 input, button, textarea, select {
@@ -307,8 +308,33 @@ code {
 }
 
 pre code {
-  color: var(--accent);
+  color: var(--text);
 }
+
+.hl-keyword        { color: #cba6f7; }
+.hl-string         { color: #a6e3a1; }
+.hl-string-special { color: #a6e3a1; font-style: italic; }
+.hl-comment        { color: #6c7086; font-style: italic; }
+.hl-function       { color: #89b4fa; }
+.hl-function-builtin { color: #89b4fa; }
+.hl-function-macro { color: #89b4fa; font-weight: 600; }
+.hl-type           { color: #f9e2af; }
+.hl-type-builtin   { color: #f9e2af; }
+.hl-constant       { color: #fab387; }
+.hl-constant-builtin { color: #fab387; }
+.hl-number         { color: #fab387; }
+.hl-constructor    { color: #f38ba8; }
+.hl-variable           { color: #cdd6f4; }
+.hl-variable-builtin   { color: #f38ba8; }
+.hl-variable-parameter { color: #eba0ac; }
+.hl-property       { color: #89dceb; }
+.hl-label          { color: #f38ba8; }
+.hl-attribute      { color: #6c7086; }
+.hl-operator       { color: #89dceb; }
+.hl-punctuation           { color: #9399b2; }
+.hl-punctuation-bracket   { color: #9399b2; }
+.hl-punctuation-delimiter { color: #9399b2; }
+.hl-tag            { color: #a6e3a1; }
 
 p code {
   background-color: var(--bg-surface);

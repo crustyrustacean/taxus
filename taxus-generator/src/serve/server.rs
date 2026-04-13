@@ -338,6 +338,7 @@ where
                         Some("png") => "image/png",
                         Some("jpg") | Some("jpeg") => "image/jpeg",
                         Some("gif") => "image/gif",
+                        Some("webp") => "image/webp",
                         Some("svg") => "image/svg+xml",
                         Some("ico") => "image/x-icon",
                         Some("woff") | Some("woff2") => "font/woff2",

@@ -13,6 +13,16 @@
   <p class="description">{{ page.description }}</p>
   {% endif %}
 
+  {% if page.hero %}
+  <picture>
+    <source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}">
+    <img src="{{ page.hero.src }}"
+       alt="{{ page.hero.alt }}"
+       width="{{ page.hero.width }}"
+       height="{{ page.hero.height }}">
+  </picture>
+{% endif %}
+
   {{ page.content | safe }}
 
 </article>

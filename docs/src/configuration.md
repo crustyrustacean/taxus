@@ -77,6 +77,19 @@ Syntax highlighting configuration for code blocks.
 
 See [Syntax Highlighting](./syntax-highlighting.md) for details on styling and supported languages.
 
+### `[images]` Section
+
+Responsive image processing configuration for hero images.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `widths` | array | `[400, 800, 1200]` | Responsive breakpoint widths in pixels |
+| `quality` | number | `80` | Output quality (1–100) |
+| `format` | string | `"webp"` | Output format: `"webp"`, `"jpeg"`, or `"png"` |
+| `output_dir` | string | `"images"` | Subdirectory within `dist/` for processed images |
+
+See [Images](./images.md) for details on hero images and template usage.
+
 ## Minimal Configuration
 
 The minimal required configuration:
@@ -117,6 +130,12 @@ atom_path = "atom.xml"
 [highlight]
 enabled = true
 class_prefix = "hl-"
+
+[images]
+widths = [400, 800, 1200]
+quality = 80
+format = "webp"
+output_dir = "images"
 ```
 
 ## Validation

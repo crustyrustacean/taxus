@@ -32,6 +32,7 @@ pub mod content;
 pub mod error;
 pub mod feed;
 pub mod highlighting;
+pub mod images;
 pub mod init;
 pub mod routes;
 pub mod serve;
@@ -41,16 +42,17 @@ pub mod templates;
 // Re-exports for convenience
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 pub use build::{BuildReport, SiteBuilder};
-pub use config::{BuildConfig, SiteConfig, SiteMeta};
+pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
 pub use error::{
-    AssetError, ContentError, FeedError, GeneratorError, InitError, Result, RouteError,
+    AssetError, ContentError, FeedError, GeneratorError, ImageError, InitError, Result, RouteError,
     TemplateError,
 };
 pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
 pub use highlighting::{CodeHighlighter, LanguageRegistry};
+pub use images::{ImageProcessor, ImageRegistry, ProcessedImage, render_picture};
 pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{
-    PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
+    HeroContext, PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
 };

@@ -33,6 +33,7 @@
 //! let page = PageContext {
 //!     title: "Hello".to_string(),
 //!     description: None,
+//!     tagline: None,
 //!     path: "/hello/".to_string(),
 //!     permalink: "https://example.com/hello/".to_string(),
 //!     content: "<p>World</p>".to_string(),
@@ -45,6 +46,7 @@
 //!     tags: vec![],
 //!     categories: vec![],
 //!     series: None,
+//!     hero: None,
 //! };
 //! let ctx = TemplateContext::new(site).with_page(page);
 //!
@@ -57,7 +59,7 @@ mod context;
 mod renderer;
 
 pub use context::{
-    PageContext, PaginationContext, SectionContext, SiteContext, TaxonomyListContext,
-    TaxonomyTermContext, TemplateContext, compute_permalink,
+    compute_permalink, HeroContext, PageContext, PaginationContext, SectionContext, SiteContext,
+    TaxonomyListContext, TaxonomyTermContext, TemplateContext,
 };
 pub use renderer::{TemplateRenderer, TeraRenderer};

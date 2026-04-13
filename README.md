@@ -12,6 +12,7 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 - **RSS/Atom Feeds** — Automatic feed generation
 - **Taxonomies** — Tags, categories, and series with automatic archive pages
 - **Co-located Assets** — Images in content directories copy to output
+- **Hero Images** — Responsive hero images with automatic WebP conversion and srcset generation
 
 ## Installation
 
@@ -68,6 +69,26 @@ cargo run -- build
 cargo run --features islands -- build
 ```
 
+## Hero Images
+
+Add a hero image to any page with two lines of frontmatter:
+
+```toml
++++
+title = "My Post"
+hero_image = "sunset.jpg"
+hero_alt = "A mountain sunset"
++++
+```
+
+Taxus automatically generates responsive variants (400/800/1200px), converts to WebP, and produces a `<picture>` element with srcset. Configure breakpoints and format in `site.toml`:
+
+```toml
+[images]
+widths = [400, 800, 1200]
+format = "webp"
+```
+
 ## Project Structure
 
 ```
@@ -101,6 +122,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - [Architecture](docs/src/architecture.md)
 - [Configuration](docs/src/configuration.md)
 - [Content](docs/src/content.md)
+- [Images](docs/src/images.md)
 - [Templates](docs/src/templates.md)
 - [Islands Architecture](docs/src/islands.md)
 - [Search](docs/src/search.md)

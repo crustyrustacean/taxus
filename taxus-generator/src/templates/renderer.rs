@@ -352,6 +352,7 @@ mod tests {
             tags: vec![],
             categories: vec![],
             series: None,
+            hero: None,
         }
     }
 

@@ -1,0 +1,9 @@
+[site]
+name = "Hero Test Site"
+base_url = "https://hero.example.com"
+
+[images]
+widths = [400, 800, 1200]
+quality = 80
+format = "webp"
+output_dir = "images"

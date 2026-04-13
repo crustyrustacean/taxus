@@ -5,8 +5,8 @@ use crate::content::SortBy;
 use crate::error::Result;
 use crate::routes::RouteInfo;
 use crate::templates::{
-    PageContext, PaginationContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer,
-    TeraRenderer, compute_permalink,
+    compute_permalink, HeroContext, PageContext, PaginationContext, SectionContext, SiteContext,
+    TemplateContext, TemplateRenderer, TeraRenderer,
 };
 use std::path::PathBuf;
 use tracing::{debug, debug_span, info};
@@ -23,6 +23,14 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
         processed.route.path.clone()
     };
     let permalink = compute_permalink(base_url, &url_path);
+    let hero = processed.hero_image.as_ref().map(|img| HeroContext {
+        src: img.fallback_src(),
+        srcset: img.srcset(),
+        width: img.meta.original_width,
+        height: img.meta.original_height,
+        alt: img.meta.alt.clone(),
+        mime_type: img.mime_type(),
+    });
     PageContext {
         title: processed.page.frontmatter.title.clone(),
         description: processed.page.frontmatter.description.clone(),
@@ -39,6 +47,7 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
         tags: processed.page.tags().to_vec(),
         categories: processed.page.categories().to_vec(),
         series: processed.page.series().map(|s| s.to_string()),
+        hero,
     }
 }
 
@@ -53,6 +62,10 @@ fn collect_child_pages(
     all_processed: &[ProcessedPage],
     base_url: &str,
 ) -> Vec<PageContext> {
+    if section.route.path == "/" {
+        return Vec::new();
+    }
+
     all_processed
         .iter()
         .filter(|p| {
@@ -335,6 +348,7 @@ This is the content.
             route,
             page,
             html_content: "<p>This is the content.</p>".to_string(),
+            hero_image: None,
         };
 
         let templates = TeraRenderer::from_dir(std::path::Path::new(
@@ -374,6 +388,7 @@ This is the content.
             route,
             page,
             html_content: "<p>This is the content.</p>".to_string(),
+            hero_image: None,
         };
 
         let templates = TeraRenderer::from_dir(std::path::Path::new(
@@ -433,6 +448,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>Blog index</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -458,6 +474,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>First post content</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -483,6 +500,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>Second post content</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -542,6 +560,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>Empty section</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -610,6 +629,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>Blog index</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -637,6 +657,7 @@ This is the content.
                     content: None,
                 },
                 html_content: format!("<p>Content {}</p>", i),
+                hero_image: None,
             });
         }
 
@@ -652,16 +673,12 @@ This is the content.
 
         assert_eq!(section_pages.len(), 3, "Should have 3 paginated pages");
         assert!(section_pages.iter().any(|r| r.route.path == "/blog/"));
-        assert!(
-            section_pages
-                .iter()
-                .any(|r| r.route.path == "/blog/page/2/")
-        );
-        assert!(
-            section_pages
-                .iter()
-                .any(|r| r.route.path == "/blog/page/3/")
-        );
+        assert!(section_pages
+            .iter()
+            .any(|r| r.route.path == "/blog/page/2/"));
+        assert!(section_pages
+            .iter()
+            .any(|r| r.route.path == "/blog/page/3/"));
 
         let page1 = section_pages
             .iter()
@@ -718,6 +735,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>Blog</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -742,6 +760,7 @@ This is the content.
                     content: None,
                 },
                 html_content: "<p>Content</p>".to_string(),
+                hero_image: None,
             }
         };
 
@@ -785,6 +804,7 @@ Content here.
             route,
             page,
             html_content: "<p>Content here.</p>".to_string(),
+            hero_image: None,
         };
 
         let mut templates = TeraRenderer::new().unwrap();

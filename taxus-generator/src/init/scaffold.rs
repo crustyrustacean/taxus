@@ -227,6 +227,14 @@ This is your new static site. Start editing this file to add your content.
 
 {% block content %}
 <article>
+    {% if page.hero %}
+    <picture>
+      <source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type | safe }}">
+      <img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+           width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+           loading="eager" decoding="async">
+    </picture>
+    {% endif %}
     <h1>{{ page.title }}</h1>
     {% if page.description %}
     <p class="description">{{ page.description }}</p>

@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.68] - 2026-04-12
+
+### Added
+
+#### Responsive Hero Images
+
+- **Image Processing Module** (`taxus-generator/src/images/`): New module for responsive image handling
+  - `ImageProcessor`: Reads source images, generates responsive variants at configurable widths, supports WebP/JPEG/PNG output, and caches results with content-hash-based filenames
+  - `render_picture()`: Generates `<picture>` element HTML with `<source srcset>` and `<img>` fallback
+  - `ImageRegistry`: HashMap-based storage for processed image metadata keyed by source path
+  - `ProcessedImage`, `ImageVariant`, `ImageMeta`: Rich types for image metadata
+
+- **Image Configuration** (`site.toml` `[images]` section):
+  - `widths`: Responsive breakpoint widths (default: `[400, 800, 1200]`)
+  - `quality`: Output quality 1–100 (default: `80`)
+  - `format`: Output format — `"webp"`, `"jpeg"`, or `"png"` (default: `"webp"`)
+  - `output_dir`: Subdirectory within `dist/` for processed images (default: `"images"`)
+
+- **Hero Image Frontmatter** (`hero_image` and `hero_alt` fields):
+  - `hero_image`: Relative path to a co-located image file
+  - `hero_alt`: Alt text for the hero image; falls back to page title if not set
+
+- **Hero Template Context** (`page.hero` object in Tera templates):
+  - `src`: Fallback `<img>` src (middle variant)
+  - `srcset`: Full srcset string for `<source>` element
+  - `width` / `height`: Original image dimensions for layout shift prevention
+  - `alt`: Alt text
+  - `mime_type`: MIME type (e.g., `"image/webp"`)
+
+- **Build Pipeline Stage 4** (`process_images`): New pipeline stage that processes hero images between content processing and co-located asset copying (pipeline expanded from 13 to 14 stages)
+
+- **Error Handling** (`ImageError` enum): New error type covering NotFound, DecodeFailed, EncodeFailed, ResizeFailed, Io, and InvalidConfig variants
+
+- **Dev Server**: Added `image/webp` MIME type support for serving WebP files
+
+- **Default Template** (`init/scaffold.rs`): Scaffolded `page.html` now includes a hero image `<picture>` block
+
+- **Test Fixtures**: New `tests/fixtures/hero_site/` with hero image frontmatter
+
+- **Integration Tests** (`tests/hero_images.rs`): 7 tests covering variant generation, HTML output, alt text fallback, registry, and picture rendering
+
+### Changed
+
+- **Workspace Version**: Bumped to 0.1.68
+- **Build Pipeline**: Stages renumbered from 13 to 14 to accommodate the new image processing stage
+- **Syntax Highlighting Colors** (`get-taxus-org/styles/main.scss`): Updated code block colors for better contrast
+- **Image Responsive Styling**: Added `height: auto` to `img, picture, video, canvas, svg` rule in project site styles
+
 ## [0.1.67] - 2026-04-11
 
 ### Added

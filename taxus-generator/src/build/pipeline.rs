@@ -22,6 +22,7 @@ use crate::build::pipeline::internal_links::resolve_internal_links;
 use crate::config::SiteConfig;
 use crate::content::Page;
 use crate::error::{GeneratorError, Result};
+use crate::images::{ImageProcessor, ImageRegistry, ProcessedImage};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
 use std::fs;
@@ -45,6 +46,8 @@ pub struct ProcessedPage {
     pub page: Page,
     /// Rendered HTML content
     pub html_content: String,
+    /// Processed hero image metadata (if page has hero_image)
+    pub hero_image: Option<ProcessedImage>,
 }
 
 /// Rendered page ready for writing.
@@ -103,6 +106,7 @@ pub fn process_content(
             route: route.clone(),
             page,
             html_content,
+            hero_image: None,
         });
     }
 
@@ -130,6 +134,51 @@ pub fn process_assets(config: &SiteConfig, output_dir: &Path) -> Result<AssetRep
     }
 
     Ok(report)
+}
+
+/// Process hero images for pages that have `hero_image` in frontmatter.
+///
+/// Walks all `ProcessedPage`s, resolves co-located image paths, and generates
+/// responsive variants. Stores results in the `ImageRegistry` and attaches
+/// `ProcessedImage` metadata to each `ProcessedPage`.
+pub fn process_images(
+    processed: &mut [ProcessedPage],
+    config: &SiteConfig,
+    dry_run: bool,
+) -> Result<ImageRegistry> {
+    let mut registry = ImageRegistry::new();
+    let processor = ImageProcessor::new(config.images.clone(), config.build.output_dir.clone());
+
+    for page in processed.iter_mut() {
+        if let Some(ref hero_image_path) = page.page.frontmatter.hero_image {
+            let content_dir = if let Some(parent) = page.route.content_file.parent() {
+                config.build.content_dir.join(parent)
+            } else {
+                config.build.content_dir.clone()
+            };
+            let source_path = content_dir.join(hero_image_path);
+
+            let alt = page
+                .page
+                .frontmatter
+                .hero_alt
+                .as_deref()
+                .or(Some(&page.page.frontmatter.title))
+                .unwrap_or("")
+                .to_string();
+
+            let result = if dry_run {
+                processor.process_dry(&source_path, &alt)?
+            } else {
+                processor.process(&source_path, &alt)?
+            };
+
+            registry.insert(source_path.clone(), result.clone());
+            page.hero_image = Some(result);
+        }
+    }
+
+    Ok(registry)
 }
 
 /// Copy co-located assets from content directory to output directory.

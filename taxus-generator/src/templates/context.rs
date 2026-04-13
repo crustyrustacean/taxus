@@ -97,6 +97,35 @@ pub struct PageContext {
     /// Series name for the page
     #[serde(default)]
     pub series: Option<String>,
+
+    /// Hero image context (if page has a hero_image)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hero: Option<HeroContext>,
+}
+
+/// Hero image context for templates.
+///
+/// Contains responsive image information for rendering a hero image
+/// with `<picture>` element and srcset.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HeroContext {
+    /// Fallback img src (middle variant)
+    pub src: String,
+
+    /// Full srcset string for `<source>` element
+    pub srcset: String,
+
+    /// Original image width (for layout shift prevention)
+    pub width: u32,
+
+    /// Original image height (for layout shift prevention)
+    pub height: u32,
+
+    /// Alt text for the image
+    pub alt: String,
+
+    /// MIME type (e.g., "image/webp")
+    pub mime_type: String,
 }
 
 /// Compute a permalink by joining base_url and path with proper slash handling.
@@ -345,6 +374,7 @@ impl TemplateContext {
     /// let page = PageContext {
     ///     title: "Test Page".to_string(),
     ///     description: None,
+    ///     tagline: None,
     ///     path: "/test/".to_string(),
     ///     permalink: "https://example.com/test/".to_string(),
     ///     content: String::new(),
@@ -357,6 +387,7 @@ impl TemplateContext {
     ///     tags: vec![],
     ///     categories: vec![],
     ///     series: None,
+    ///     hero: None,
     /// };
     ///
     /// let ctx = TemplateContext::new(site).with_page(page);
@@ -455,6 +486,7 @@ mod tests {
             tags: vec!["rust".to_string(), "tutorial".to_string()],
             categories: vec!["programming".to_string()],
             series: Some("Learning Rust".to_string()),
+            hero: None,
         }
     }
 

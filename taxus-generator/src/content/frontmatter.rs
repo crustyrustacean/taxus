@@ -76,6 +76,12 @@ pub struct Frontmatter {
     /// Last updated date
     #[serde(default, deserialize_with = "optional_date::deserialize")]
     pub updated: Option<NaiveDate>,
+
+    /// Relative path to a co-located hero image
+    pub hero_image: Option<String>,
+
+    /// Alt text for the hero image (falls back to page title)
+    pub hero_alt: Option<String>,
 }
 
 /// Custom serialization module for optional NaiveDate with TOML datetime support.
@@ -603,5 +609,42 @@ template = "custom.html"
         )
         .unwrap();
         assert_eq!(fm.sort_by, SortBy::None);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_hero_image() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Post"
+            hero_image = "hero.jpg"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.title, "My Post");
+        assert_eq!(fm.hero_image, Some("hero.jpg".to_string()));
+        assert!(fm.hero_alt.is_none());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_hero_image_and_alt() {
+        let fm = Frontmatter::from_str(
+            r#"
+            title = "My Post"
+            hero_image = "hero.jpg"
+            hero_alt = "A beautiful hero image"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(fm.hero_image, Some("hero.jpg".to_string()));
+        assert_eq!(fm.hero_alt, Some("A beautiful hero image".to_string()));
+    }
+
+    #[test]
+    fn test_hero_image_defaults_to_none() {
+        let fm = Frontmatter::from_str(r#"title = "Test""#).unwrap();
+        assert!(fm.hero_image.is_none());
+        assert!(fm.hero_alt.is_none());
     }
 }

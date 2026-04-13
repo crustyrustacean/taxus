@@ -105,6 +105,7 @@ mod tests {
             route,
             page,
             html_content: format!("<p>{}</p>", content),
+            hero_image: None,
         }
     }
 

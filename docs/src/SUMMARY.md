@@ -6,6 +6,7 @@
 - [Configuration](./configuration.md)
 - [Content](./content.md)
 - [Templates](./templates.md)
+- [Images](./images.md)
 - [Syntax Highlighting](./syntax-highlighting.md)
 - [Islands Architecture](./islands.md)
 - [Search](./search.md)

@@ -60,6 +60,30 @@ Or use absolute paths from the site root:
 
 For global assets (logos, favicons, shared images), use the `static/` directory instead.
 
+## Hero Images
+
+Pages can have a hero image — a prominent image displayed at the top of the page. Place the image file next to your markdown and reference it in frontmatter:
+
+```markdown
++++
+title = "My Post"
+hero_image = "sunset.jpg"
+hero_alt = "A dramatic mountain sunset"
+date = 2024-03-15
++++
+
+# My Post
+```
+
+Taxus automatically:
+
+- Generates responsive variants at multiple widths (default: 400, 800, 1200)
+- Converts to WebP (or JPEG/PNG if configured)
+- Produces a `<picture>` element with srcset for optimal browser delivery
+- Falls back to the page title if `hero_alt` is not provided
+
+See [Images](./images.md) for full configuration and template usage.
+
 ## Frontmatter
 
 Each Markdown file can include TOML frontmatter enclosed in `+++`:
@@ -102,6 +126,8 @@ Your markdown content here.
 | `paginate_by` | number | No | `0` | Items per page (0 = no pagination) |
 | `paginate_template` | string | No | `None` | Template for paginated pages |
 | `weight` | number | No | `0` | Weight for manual ordering |
+| `hero_image` | string | No | `None` | Relative path to a co-located hero image |
+| `hero_alt` | string | No | `None` | Alt text for hero image (falls back to page title) |
 | `extra` | table | No | `None` | Custom metadata |
 
 \*Title is recommended but not required by the library.

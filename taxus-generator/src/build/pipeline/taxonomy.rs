@@ -1,13 +1,13 @@
 // taxus-generator/src/build/pipeline/taxonomy.rs
 
-use crate::Page;
 use crate::build::ProcessedPage;
 use crate::content::{TaxonomyKind, TaxonomyMap};
 use crate::error::{GeneratorError, Result};
 use crate::templates::{
-    PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
-    TemplateRenderer, TeraRenderer, compute_permalink,
+    compute_permalink, PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext,
+    TemplateContext, TemplateRenderer, TeraRenderer,
 };
+use crate::Page;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
@@ -149,6 +149,7 @@ pub fn render_taxonomy_pages(
                             tags: proc_page.page.tags().to_vec(),
                             categories: proc_page.page.categories().to_vec(),
                             series: proc_page.page.series().map(|s| s.to_string()),
+                            hero: None,
                         };
                         page_contexts.push(page_context);
                     }
@@ -285,11 +286,13 @@ Content 2
                 route: route1,
                 page: page1,
                 html_content: "<p>Content 1</p>".to_string(),
+                hero_image: None,
             },
             ProcessedPage {
                 route: route2,
                 page: page2,
                 html_content: "<p>Content 2</p>".to_string(),
+                hero_image: None,
             },
         ];
 
@@ -333,6 +336,7 @@ Content
             route,
             page,
             html_content: "<p>Content</p>".to_string(),
+            hero_image: None,
         }];
 
         let taxonomy_map = build_taxonomy_map(&processed);
