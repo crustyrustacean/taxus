@@ -14,8 +14,9 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::serve::{DevServer, DevServerConfig};
+//! use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn};
 //! use std::path::PathBuf;
+//! use std::sync::Arc;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +25,8 @@
 //!         .with_site_dir(PathBuf::from("."))
 //!         .with_output_dir(PathBuf::from("dist"));
 //!
-//!     let server = DevServer::new(config);
+//!     let rebuild: RebuildFn = Arc::new(|| Ok(()));
+//!     let server = DevServer::new(config, rebuild);
 //!     server.run().await?;
 //!
 //!     Ok(())

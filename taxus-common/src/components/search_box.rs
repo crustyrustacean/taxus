@@ -35,8 +35,8 @@ extern "C" {
 // A search component with async JS bindings for querying results
 #[component]
 pub fn SearchBox(props: &SearchBoxProps) -> Html {
-    let query = use_state(|| String::new());
-    let results: UseStateHandle<Vec<SearchResult>> = use_state(|| vec![]);
+    let query = use_state(String::new);
+    let results: UseStateHandle<Vec<SearchResult>> = use_state(Vec::new);
     let max_results = props.max_results;
     let timeout_handle: UseStateHandle<Option<Rc<RefCell<Option<Timeout>>>>> = use_state(|| None);
 

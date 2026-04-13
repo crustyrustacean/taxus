@@ -37,7 +37,7 @@ impl SearchDocument {
 }
 
 // struct type to represent the Search Index
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct SearchIndex {
     pub documents: Vec<SearchDocument>,
     pub index: HashMap<String, Vec<(u32, f32)>>,
@@ -45,10 +45,7 @@ pub struct SearchIndex {
 
 impl SearchIndex {
     pub fn new() -> Self {
-        Self {
-            documents: vec![],
-            index: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn add_document(&mut self, search_document: SearchDocument, content: &str) {
@@ -60,22 +57,17 @@ impl SearchIndex {
         // Count occurrences of each stem
         let mut stem_counts: HashMap<String, u32> = HashMap::new();
         for stem in stems.iter() {
-            if stem_counts.contains_key(stem) {
-                *stem_counts.get_mut(stem).unwrap() += 1;
-            } else {
-                stem_counts.insert(stem.to_string(), 1);
-            }
+            *stem_counts.entry(stem.to_string()).or_insert(0) += 1;
         }
 
         // Store counts in the index (will be converted to TF-IDF later)
         let total_words = stems.len() as f32;
         for (stem, count) in stem_counts.iter() {
             let tf = *count as f32 / total_words;
-            if self.index.contains_key(stem) {
-                self.index.get_mut(stem).unwrap().push((document_id, tf));
-            } else {
-                self.index.insert(stem.to_string(), vec![(document_id, tf)]);
-            }
+            self.index
+                .entry(stem.to_string())
+                .or_default()
+                .push((document_id, tf));
         }
     }
 
@@ -88,10 +80,10 @@ impl SearchIndex {
             if self.index.contains_key(stem) {
                 let result = self.index.get(stem).unwrap();
                 for item in result.iter() {
-                    if scores.contains_key(&item.0) {
-                        *scores.get_mut(&item.0).unwrap() += item.1;
+                    if let std::collections::hash_map::Entry::Vacant(e) = scores.entry(item.0) {
+                        e.insert(item.1);
                     } else {
-                        scores.insert(item.0, item.1);
+                        *scores.get_mut(&item.0).unwrap() += item.1;
                     }
                 }
             }
@@ -141,7 +133,7 @@ pub fn tokenize(text: &str) -> Vec<String> {
 pub fn stem(tokens: &[String]) -> Vec<String> {
     let en_stemmer = Stemmer::create(Algorithm::English);
     tokens
-        .into_iter()
+        .iter()
         .map(|t| en_stemmer.stem(t).to_string())
         .collect::<Vec<String>>()
 }
