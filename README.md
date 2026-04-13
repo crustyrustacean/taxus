@@ -1,5 +1,9 @@
 # Taxus
 
+[![CI](https://github.com/crustyrustacean/taxus/actions/workflows/ci.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/crustyrustacean/taxus/actions/workflows/security.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/security.yml)
+[![Docs](https://github.com/crustyrustacean/taxus/actions/workflows/doc.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/doc.yml)
+
 A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring optional WebAssembly "islands" for interactive components.
 
 ## Features
