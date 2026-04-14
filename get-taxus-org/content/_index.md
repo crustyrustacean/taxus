@@ -1,5 +1,6 @@
 +++
 title = "Home"
+template = "home.html"
 +++
 
 ## Static Site Generation for 2026 and beyond

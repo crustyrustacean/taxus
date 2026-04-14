@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }}{% endblock %}
+
+{% block content %}
+<article class="section-content">
+
+  {{ section.content | safe }}
+
+</article>
+{% endblock %}
