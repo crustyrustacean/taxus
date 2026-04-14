@@ -691,10 +691,12 @@ mod tests {
         assert!(temp_dir.path().join("templates/categories.html").exists());
         assert!(temp_dir.path().join("templates/series.html").exists());
         assert!(temp_dir.path().join("templates/tags_term.html").exists());
-        assert!(temp_dir
-            .path()
-            .join("templates/categories_term.html")
-            .exists());
+        assert!(
+            temp_dir
+                .path()
+                .join("templates/categories_term.html")
+                .exists()
+        );
         assert!(temp_dir.path().join("templates/series_term.html").exists());
     }
 

@@ -1,9 +1,9 @@
 //! Integration tests for site initialization.
 
 use std::path::PathBuf;
-use taxus_lib::error::InitError;
-use taxus_lib::init::{derive_site_name, is_directory_empty, InitOptions, InitScaffolder};
 use taxus_lib::TemplateRenderer;
+use taxus_lib::error::InitError;
+use taxus_lib::init::{InitOptions, InitScaffolder, derive_site_name, is_directory_empty};
 use tempfile::TempDir;
 
 #[test]

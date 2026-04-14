@@ -4,8 +4,8 @@ use crate::build::ProcessedPage;
 use crate::content::{TaxonomyKind, TaxonomyMap};
 use crate::error::{GeneratorError, Result};
 use crate::templates::{
-    compute_permalink, PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext,
-    TemplateContext, TemplateRenderer, TeraRenderer,
+    PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
+    TemplateRenderer, TeraRenderer, compute_permalink,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
