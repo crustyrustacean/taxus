@@ -47,9 +47,7 @@
 <body>
     <div class="page">
         {% include "partials/header.html" %}
-        <div class="search-container">
-            {{ island(component="SearchBox") | safe }}
-        </div>
+        {{ island(component="SearchBox", class="search-container") | safe }}
         <main>
             {% block content %}{% endblock %}
         </main>

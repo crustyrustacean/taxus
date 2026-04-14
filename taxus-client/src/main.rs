@@ -63,7 +63,10 @@ fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
     match name {
         "Counter" => {
             let props: CounterProps =
-                serde_json::from_str(props_json).unwrap_or(CounterProps { initial: 0 });
+                serde_json::from_str(props_json).unwrap_or(CounterProps {
+                    initial: 0,
+                    class: String::new(),
+                });
 
             // Hydrate: attach Yew to the existing SSR DOM without re-rendering
             yew::Renderer::<Counter>::with_root_and_props(el.into(), props).hydrate();
@@ -73,6 +76,7 @@ fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
                 serde_json::from_str(props_json).unwrap_or(SearchBoxProps {
                     placeholder: "".to_string(),
                     max_results: 5,
+                    class: String::new(),
                 });
 
             yew::Renderer::<SearchBox>::with_root_and_props(el.into(), props).hydrate();

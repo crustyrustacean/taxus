@@ -157,7 +157,13 @@ impl TeraRenderer {
                         let initial =
                             args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
 
-                        render_island_counter(CounterProps { initial })
+                        let class = args
+                            .get("class")
+                            .and_then(Value::as_str)
+                            .unwrap_or("")
+                            .to_string();
+
+                        render_island_counter(CounterProps { initial, class })
                     }
                     "SearchBox" => {
                         use crate::build::pipeline::render_search_box;
@@ -169,9 +175,16 @@ impl TeraRenderer {
                             .unwrap_or("Search...")
                             .to_string();
 
+                        let class = args
+                            .get("class")
+                            .and_then(Value::as_str)
+                            .unwrap_or("")
+                            .to_string();
+
                         render_search_box(SearchBoxProps {
                             placeholder,
                             max_results: 5,
+                            class,
                         })
                     }
                     other => format!("<!-- unknown island: {other} -->"),

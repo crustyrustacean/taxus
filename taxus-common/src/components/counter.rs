@@ -10,6 +10,8 @@ use yew::prelude::*;
 pub struct CounterProps {
     #[prop_or_default]
     pub initial: i32,
+    #[prop_or_default]
+    pub class: String,
 }
 
 // A sample component, adds a counter that increments with a button click
@@ -22,8 +24,14 @@ pub fn Counter(props: &CounterProps) -> Html {
         Callback::from(move |_| count.set(*count + 1))
     };
 
+    let class = if props.class.is_empty() {
+        "counter".to_string()
+    } else {
+        format!("counter {}", props.class)
+    };
+
     html! {
-        <div class="counter">
+        <div class={class}>
             <span class="counter-value">{ *count }</span>
             <button class="counter-btn" onclick={on_click}>{ "+" }</button>
         </div>

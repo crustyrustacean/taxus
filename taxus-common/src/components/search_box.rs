@@ -17,6 +17,8 @@ pub struct SearchBoxProps {
     pub placeholder: String,
     #[prop_or(5)]
     pub max_results: usize,
+    #[prop_or_default]
+    pub class: String,
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
@@ -83,8 +85,14 @@ pub fn SearchBox(props: &SearchBoxProps) -> Html {
         })
     };
 
+    let class = if props.class.is_empty() {
+        "search-box".to_string()
+    } else {
+        format!("search-box {}", props.class)
+    };
+
     html! {
-        <div class="search-box">
+        <div class={class}>
             <input class="search-input" type="text" oninput={on_input} placeholder={props.placeholder.clone()} />
             <ul class="search-results">
                 { for (*results).iter().map(|r| html! {
