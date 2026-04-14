@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.76] - 2026-04-14
+
+### Fixed
+
+- **`build_taxonomy_map` key mismatch** (`taxonomy.rs`): Replaced the function body to use `route.content_file` as the page identifier instead of converting to `Vec<Page>` and calling `TaxonomyMap::from_pages`. The old implementation stored URL paths (e.g., `/first-post/`) which never matched the `page_lookup` keys built from `route.content_file` (e.g., `blog/first-post.md`), causing all term page lists to be empty.
+
+### Added
+
+- **Taxonomy list templates in scaffold** (`scaffold.rs`): `tags.html`, `categories.html`, and `series.html` are now created by `taxus init`, generating listing pages at `/tags/`, `/categories/`, and `/series/`.
+- **Taxonomy term templates in scaffold** (`scaffold.rs`): `tags_term.html`, `categories_term.html`, and `series_term.html` are now created by `taxus init`, generating individual term pages (e.g., `/tags/rust/`, `/categories/tutorial/`).
+- **Test coverage for taxonomy term page rendering** (`taxonomy.rs`): Added `test_render_taxonomy_term_pages_with_templates` verifying that term pages render correctly when templates exist, correct posts appear on each term page, and output file paths are correct.
+- **Fixture templates for taxonomy tests** (`tests/fixtures/template_site/templates/`): Added `tags.html`, `categories.html`, `series.html`, `tags_term.html`, `categories_term.html`, `series_term.html` so integration tests exercise the full taxonomy rendering path.
+- **Blog post: Search Island** (`get-taxus-org/content/blog/2026-04-14-taxus-feature-focus-search-island.md`): New feature focus post about the client-side search island.
+- **Blog taxonomy frontmatter** (`get-taxus-org`): Added `tags`, `categories`, and `series` frontmatter to all existing blog posts.
+- **Blog section template** (`get-taxus-org/templates/blog.html`): Custom section template with sub-navigation for Tags, Categories, and Series.
+- **Taxonomy links in page template** (`get-taxus-org/templates/page.html`): Posts now display their tags, categories, and series with links to the corresponding taxonomy pages.
+
+### Changed
+
+- **Scaffold file count**: Increased from 11 to 17 (6 new taxonomy templates).
+- **`test_render_taxonomy_pages_no_templates` → `test_render_taxonomy_pages_with_list_and_term_templates`**: Updated to verify both list and term pages render when templates exist (fixture now includes all taxonomy templates).
+- **Documentation**: Updated `getting-started.md`, `templates.md`, `content.md`, and `README.md` to reflect taxonomy template scaffolding and template context.
+
 ## [0.1.74] - 2026-04-14
 
 ### Added

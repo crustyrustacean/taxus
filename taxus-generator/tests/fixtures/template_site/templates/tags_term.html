@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Tag: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Tagged "{{ extra.taxonomy.name }}"</h1>
+    <p>{{ extra.taxonomy.page_count }} post(s)</p>
+    <ul class="page-list">
+        {% for page in extra.taxonomy.pages %}
+        <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

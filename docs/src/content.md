@@ -322,14 +322,18 @@ series = "Learning Rust"
 
 ### Taxonomy Pages
 
-Taxus generates taxonomy listing pages automatically:
+Taxus generates taxonomy listing and term pages automatically when the corresponding templates exist. The scaffold (`taxus init`) creates all six templates:
 
-- `/tags/` — Lists all tags
-- `/tags/rust/` — Lists pages with the "rust" tag
-- `/categories/` — Lists all categories
-- `/categories/tutorial/` — Lists pages in "tutorial" category
-- `/series/` — Lists all series
-- `/series/learning-rust/` — Lists pages in "Learning Rust" series
+| Template | URL | Purpose |
+|----------|-----|---------|
+| `tags.html` | `/tags/` | Lists all tags |
+| `tags_term.html` | `/tags/rust/` | Lists pages with the "rust" tag |
+| `categories.html` | `/categories/` | Lists all categories |
+| `categories_term.html` | `/categories/tutorial/` | Lists pages in "tutorial" category |
+| `series.html` | `/series/` | Lists all series |
+| `series_term.html` | `/series/learning-rust/` | Lists pages in "Learning Rust" series |
+
+If a template is missing, that particular page is skipped silently. See [Templates](./templates.md) for the full taxonomy template context and examples.
 
 ## Pagination
 

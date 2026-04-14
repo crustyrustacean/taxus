@@ -31,7 +31,14 @@ my-site/
 ├── templates/
 │   ├── base.html           # Base HTML layout
 │   ├── page.html           # Single-page template
-│   └── section.html        # Section/listing template
+│   ├── section.html        # Section/listing template
+│   ├── tags.html           # Tag listing page
+│   ├── tags_term.html      # Individual tag page
+│   ├── categories.html     # Category listing page
+│   ├── categories_term.html # Individual category page
+│   ├── series.html         # Series listing page
+│   ├── series_term.html    # Individual series page
+│   └── 404.html            # Not found page
 ├── static/
 │   ├── scripts.js          # Placeholder scripts
 │   └── favicon.png         # Placeholder favicon

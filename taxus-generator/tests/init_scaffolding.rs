@@ -1,9 +1,9 @@
 //! Integration tests for site initialization.
 
 use std::path::PathBuf;
-use taxus_lib::TemplateRenderer;
 use taxus_lib::error::InitError;
-use taxus_lib::init::{InitOptions, InitScaffolder, derive_site_name, is_directory_empty};
+use taxus_lib::init::{derive_site_name, is_directory_empty, InitOptions, InitScaffolder};
+use taxus_lib::TemplateRenderer;
 use tempfile::TempDir;
 
 #[test]
@@ -15,7 +15,7 @@ fn test_init_empty_directory() {
     let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
     assert_eq!(report.directories_created, 4);
-    assert_eq!(report.files_created, 11);
+    assert_eq!(report.files_created, 17);
     assert!(temp_dir.path().join("site.toml").exists());
 }
 
@@ -61,6 +61,12 @@ fn test_init_creates_valid_templates() {
     assert!(renderer.has_template("base.html"));
     assert!(renderer.has_template("page.html"));
     assert!(renderer.has_template("section.html"));
+    assert!(renderer.has_template("tags.html"));
+    assert!(renderer.has_template("categories.html"));
+    assert!(renderer.has_template("series.html"));
+    assert!(renderer.has_template("tags_term.html"));
+    assert!(renderer.has_template("categories_term.html"));
+    assert!(renderer.has_template("series_term.html"));
 }
 
 #[test]

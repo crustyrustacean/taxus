@@ -1,24 +1,44 @@
 // taxus-generator/src/build/pipeline/taxonomy.rs
 
-use crate::Page;
 use crate::build::ProcessedPage;
 use crate::content::{TaxonomyKind, TaxonomyMap};
 use crate::error::{GeneratorError, Result};
 use crate::templates::{
-    PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext, TemplateContext,
-    TemplateRenderer, TeraRenderer, compute_permalink,
+    compute_permalink, PageContext, SiteContext, TaxonomyListContext, TaxonomyTermContext,
+    TemplateContext, TemplateRenderer, TeraRenderer,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
 
 /// Build taxonomy map from processed pages.
+///
+/// Uses `route.content_file` as the page identifier so that term pages
+/// can look up `ProcessedPage`s by the same key later in rendering.
 pub fn build_taxonomy_map(processed: &[ProcessedPage]) -> TaxonomyMap {
-    // Extract pages from processed pages
-    let pages: Vec<&Page> = processed.iter().map(|p| &p.page).collect();
-    // Convert to owned pages for from_pages
-    let owned_pages: Vec<Page> = pages.iter().map(|&p| p.clone()).collect();
-    TaxonomyMap::from_pages(&owned_pages)
+    let mut map = TaxonomyMap::new();
+
+    for p in processed {
+        if p.page.frontmatter.draft {
+            continue;
+        }
+
+        let page_key = p.route.content_file.to_string_lossy().to_string();
+
+        for tag in p.page.tags() {
+            map.add_term(TaxonomyKind::Tag, tag, &page_key);
+        }
+
+        for category in p.page.categories() {
+            map.add_term(TaxonomyKind::Category, category, &page_key);
+        }
+
+        if let Some(series) = p.page.series() {
+            map.add_term(TaxonomyKind::Series, series, &page_key);
+        }
+    }
+
+    map
 }
 
 /// Rendered taxonomy page.
@@ -239,6 +259,7 @@ pub fn write_taxonomy_pages(
 mod tests {
 
     use super::*;
+    use crate::Page;
 
     #[test]
     fn test_build_taxonomy_map() {
@@ -311,10 +332,9 @@ Content 2
     }
 
     #[test]
-    fn test_render_taxonomy_pages_no_templates() {
+    fn test_render_taxonomy_pages_with_list_and_term_templates() {
         use crate::routes::{RouteInfo, RouteKind};
 
-        // Create a page with taxonomies
         let content = r#"
 +++
 title = "Post 1"
@@ -341,7 +361,6 @@ Content
 
         let taxonomy_map = build_taxonomy_map(&processed);
 
-        // Use templates that don't have taxonomy templates
         let templates = TeraRenderer::from_dir(std::path::Path::new(
             "tests/fixtures/template_site/templates",
         ))
@@ -354,10 +373,141 @@ Content
             author: None,
         };
 
-        // Should return empty vec since no taxonomy templates exist
         let rendered =
             render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context).unwrap();
-        assert!(rendered.is_empty());
+
+        // List pages should be rendered
+        assert!(
+            rendered.iter().any(|r| r.path == "/tags/"),
+            "List pages should be rendered when list templates exist"
+        );
+
+        // Term pages should be rendered
+        assert!(
+            rendered.iter().any(|r| r.path == "/tags/rust/"),
+            "Term pages should be rendered when term templates exist"
+        );
+        assert!(
+            rendered.iter().any(|r| r.path == "/tags/web/"),
+            "Term pages should be rendered when term templates exist"
+        );
+    }
+
+    #[test]
+    fn test_render_taxonomy_term_pages_with_templates() {
+        use crate::routes::{RouteInfo, RouteKind};
+
+        let content1 = r#"
++++
+title = "Post 1"
+tags = ["rust", "web"]
+categories = ["tutorial"]
++++
+Content 1
+"#;
+        let content2 = r#"
++++
+title = "Post 2"
+tags = ["rust"]
+series = "Learning Rust"
++++
+Content 2
+"#;
+
+        let page1 = Page::from_str(content1.trim_start(), "post-1.md").unwrap();
+        let page2 = Page::from_str(content2.trim_start(), "post-2.md").unwrap();
+
+        let route1 = RouteInfo::new(
+            "/post-1/".to_string(),
+            std::path::PathBuf::from("post-1.md"),
+            std::path::PathBuf::from("post-1/index.html"),
+            RouteKind::Page,
+        )
+        .unwrap();
+
+        let route2 = RouteInfo::new(
+            "/post-2/".to_string(),
+            std::path::PathBuf::from("post-2.md"),
+            std::path::PathBuf::from("post-2/index.html"),
+            RouteKind::Page,
+        )
+        .unwrap();
+
+        let processed = vec![
+            ProcessedPage {
+                route: route1,
+                page: page1,
+                html_content: "<p>Content 1</p>".to_string(),
+                hero_image: None,
+            },
+            ProcessedPage {
+                route: route2,
+                page: page2,
+                html_content: "<p>Content 2</p>".to_string(),
+                hero_image: None,
+            },
+        ];
+
+        let taxonomy_map = build_taxonomy_map(&processed);
+
+        let templates = TeraRenderer::from_dir(std::path::Path::new(
+            "tests/fixtures/template_site/templates",
+        ))
+        .unwrap();
+
+        let site_context = SiteContext {
+            name: "Test Site".to_string(),
+            base_url: "https://example.com".to_string(),
+            description: None,
+            author: None,
+        };
+
+        let rendered =
+            render_taxonomy_pages(&processed, &taxonomy_map, &templates, &site_context).unwrap();
+
+        assert!(
+            !rendered.is_empty(),
+            "Should render taxonomy term pages when templates exist"
+        );
+
+        let rust_tag_page = rendered.iter().find(|r| r.path == "/tags/rust/");
+        assert!(
+            rust_tag_page.is_some(),
+            "Should render /tags/rust/ page. Rendered paths: {:?}",
+            rendered.iter().map(|r| &r.path).collect::<Vec<_>>()
+        );
+
+        let rust_html = &rust_tag_page.unwrap().content;
+        assert!(
+            rust_html.contains("Post 1"),
+            "Rust tag page should list Post 1"
+        );
+        assert!(
+            rust_html.contains("Post 2"),
+            "Rust tag page should list Post 2"
+        );
+
+        let tutorial_page = rendered.iter().find(|r| r.path == "/categories/tutorial/");
+        assert!(
+            tutorial_page.is_some(),
+            "Should render /categories/tutorial/ page"
+        );
+
+        let tutorial_html = &tutorial_page.unwrap().content;
+        assert!(
+            tutorial_html.contains("Post 1"),
+            "Tutorial category page should list Post 1"
+        );
+        assert!(
+            !tutorial_html.contains("Post 2"),
+            "Tutorial category page should not list Post 2"
+        );
+
+        let rust_tag = rendered.iter().find(|r| r.path == "/tags/rust/").unwrap();
+        assert_eq!(
+            rust_tag.output_file,
+            std::path::PathBuf::from("tags/rust/index.html")
+        );
     }
 
     #[test]

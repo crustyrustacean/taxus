@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Series - {{ site.name }}{% endblock %}
+
+{% block content %}
+<article class="section-content">
+  <h2>Series</h2>
+  {% if extra.taxonomy.terms %}
+  <nav class="section-pages" aria-label="series">
+    {% for term in extra.taxonomy.terms %}
+    <a href="{{ term.path }}">
+      <span class="section-page-title">{{ term.name }}</span>
+      <span class="section-page-desc">{{ term.page_count }} post(s)</span>
+    </a>
+    {% endfor %}
+  </nav>
+  {% else %}
+  <p>No series yet.</p>
+  {% endif %}
+</article>
+{% endblock %}

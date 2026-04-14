@@ -14,7 +14,7 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 - **Full-Text Search** — TF-IDF search index for client-side search (with `islands` feature)
 - **Hot-Reloading Dev Server** — WebSocket-based live reload during development
 - **RSS/Atom Feeds** — Automatic feed generation
-- **Taxonomies** — Tags, categories, and series with automatic archive pages
+- **Taxonomies** — Tags, categories, and series with automatic archive pages (list + term templates included in scaffold)
 - **Co-located Assets** — Images in content directories copy to output
 - **Hero Images** — Responsive hero images with automatic WebP conversion and srcset generation
 

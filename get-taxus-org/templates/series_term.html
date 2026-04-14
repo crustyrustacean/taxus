@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Series: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+<article class="section-content">
+  <h2>Series: {{ extra.taxonomy.name }}</h2>
+  <p>{{ extra.taxonomy.page_count }} post(s)</p>
+  {% if extra.taxonomy.pages %}
+  <nav class="section-pages" aria-label="series posts">
+    {% for page in extra.taxonomy.pages %}
+    <a href="{{ page.path }}">
+      <span class="section-page-title">{{ page.title }}</span>
+      {% if page.description %}
+      <span class="section-page-desc">{{ page.description }}</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+</article>
+{% endblock %}

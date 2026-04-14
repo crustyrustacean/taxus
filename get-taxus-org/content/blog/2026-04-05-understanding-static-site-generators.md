@@ -2,6 +2,8 @@
 title = "Understanding Static Site Generators"
 date = 2026-04-05
 description = "A friendly introduction to static site generators and how Taxus brings the concept to life."
+tags = ["rust", "ssg"]
+categories = ["tutorials"]
 draft = false
 +++
 

@@ -2,6 +2,8 @@
 title = "Project Launch"
 date = 2026-04-03
 description = "The inaugural blog post for the Taxus SSG project."
+tags = ["rust", "ssg"]
+categories = ["announcements"]
 draft = false
 +++
 

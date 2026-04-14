@@ -2,6 +2,9 @@
 title = "Taxus Feature Focus: Syntax Highlighting"
 date = 2026-04-10
 description = "A deep dive on how Taxus handles syntax highlighting."
+tags = ["rust", "tree-sitter", "syntax-highlighting"]
+categories = ["features"]
+series = "Feature Focus"
 hero_image = "syntax_highlighting.jpg"
 hero_alt = "Coloured code streaming across the screen, illustrating syntax highlighting"
 +++

@@ -318,6 +318,216 @@ This is your new static site. Start editing this file to add your content.
             report.created_files.push(notfound_path);
         }
 
+        // Create tags.html
+        let tags_path = path.join("templates/tags.html");
+        if !tags_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}Tags - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Tags</h1>
+    {% if extra.taxonomy.terms %}
+    <ul class="taxonomy-list">
+        {% for term in extra.taxonomy.terms %}
+        <li>
+            <a href="{{ term.path }}">
+                {{ term.name }} ({{ term.page_count }})
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No tags yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
+"#;
+            std::fs::write(&tags_path, content).map_err(|e| InitError::FileWrite {
+                path: tags_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(tags_path);
+        }
+
+        // Create categories.html
+        let categories_path = path.join("templates/categories.html");
+        if !categories_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}Categories - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Categories</h1>
+    {% if extra.taxonomy.terms %}
+    <ul class="taxonomy-list">
+        {% for term in extra.taxonomy.terms %}
+        <li>
+            <a href="{{ term.path }}">
+                {{ term.name }} ({{ term.page_count }})
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No categories yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
+"#;
+            std::fs::write(&categories_path, content).map_err(|e| InitError::FileWrite {
+                path: categories_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(categories_path);
+        }
+
+        // Create series.html
+        let series_path = path.join("templates/series.html");
+        if !series_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}Series - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Series</h1>
+    {% if extra.taxonomy.terms %}
+    <ul class="taxonomy-list">
+        {% for term in extra.taxonomy.terms %}
+        <li>
+            <a href="{{ term.path }}">
+                {{ term.name }} ({{ term.page_count }})
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No series yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
+"#;
+            std::fs::write(&series_path, content).map_err(|e| InitError::FileWrite {
+                path: series_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(series_path);
+        }
+
+        // Create tags_term.html
+        let tags_term_path = path.join("templates/tags_term.html");
+        if !tags_term_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}Tag: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Tagged "{{ extra.taxonomy.name }}"</h1>
+    <p>{{ extra.taxonomy.page_count }} post(s)</p>
+    {% if extra.taxonomy.pages %}
+    <ul class="page-list">
+        {% for page in extra.taxonomy.pages %}
+        <li>
+            <a href="{{ page.path }}">
+                <h2>{{ page.title }}</h2>
+                {% if page.description %}
+                <p>{{ page.description }}</p>
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endblock %}
+"#;
+            std::fs::write(&tags_term_path, content).map_err(|e| InitError::FileWrite {
+                path: tags_term_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(tags_term_path);
+        }
+
+        // Create categories_term.html
+        let categories_term_path = path.join("templates/categories_term.html");
+        if !categories_term_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}Category: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Category: {{ extra.taxonomy.name }}</h1>
+    <p>{{ extra.taxonomy.page_count }} post(s)</p>
+    {% if extra.taxonomy.pages %}
+    <ul class="page-list">
+        {% for page in extra.taxonomy.pages %}
+        <li>
+            <a href="{{ page.path }}">
+                <h2>{{ page.title }}</h2>
+                {% if page.description %}
+                <p>{{ page.description }}</p>
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endblock %}
+"#;
+            std::fs::write(&categories_term_path, content).map_err(|e| InitError::FileWrite {
+                path: categories_term_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(categories_term_path);
+        }
+
+        // Create series_term.html
+        let series_term_path = path.join("templates/series_term.html");
+        if !series_term_path.exists() {
+            let content = r#"{% extends "base.html" %}
+
+{% block title %}Series: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Series: {{ extra.taxonomy.name }}</h1>
+    <p>{{ extra.taxonomy.page_count }} post(s)</p>
+    {% if extra.taxonomy.pages %}
+    <ol class="page-list">
+        {% for page in extra.taxonomy.pages %}
+        <li>
+            <a href="{{ page.path }}">
+                <h2>{{ page.title }}</h2>
+                {% if page.description %}
+                <p>{{ page.description }}</p>
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ol>
+    {% endif %}
+</section>
+{% endblock %}
+"#;
+            std::fs::write(&series_term_path, content).map_err(|e| InitError::FileWrite {
+                path: series_term_path.clone(),
+                source: e,
+            })?;
+            report.files_created += 1;
+            report.created_files.push(series_term_path);
+        }
+
         Ok(())
     }
 
@@ -477,6 +687,15 @@ mod tests {
         assert!(temp_dir.path().join("templates/page.html").exists());
         assert!(temp_dir.path().join("templates/section.html").exists());
         assert!(temp_dir.path().join("templates/404.html").exists());
+        assert!(temp_dir.path().join("templates/tags.html").exists());
+        assert!(temp_dir.path().join("templates/categories.html").exists());
+        assert!(temp_dir.path().join("templates/series.html").exists());
+        assert!(temp_dir.path().join("templates/tags_term.html").exists());
+        assert!(temp_dir
+            .path()
+            .join("templates/categories_term.html")
+            .exists());
+        assert!(temp_dir.path().join("templates/series_term.html").exists());
     }
 
     #[test]
@@ -532,9 +751,10 @@ mod tests {
 
         let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
-        // 4 directories + 9 files (site.toml, _index.md, base.html, page.html, section.html, 404.html, main.scss, scripts.js, favicon.png)
+        // 4 directories + 12 files (site.toml, _index.md, base.html, page.html, section.html, 404.html, tags_term.html, categories_term.html, series_term.html, main.scss, scripts.js, favicon.png)
+        // Note: _highlight-dark.scss and _highlight-light.scss are also created but counted as part of the stylesheet set
         assert_eq!(report.directories_created, 4);
-        assert_eq!(report.files_created, 11);
+        assert_eq!(report.files_created, 17);
     }
 
     #[test]

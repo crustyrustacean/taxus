@@ -2,6 +2,9 @@
 title = "Taxus Feature Focus: Hero Images"
 date = 2026-04-11
 description = "Responsive hero images with automatic WebP conversion and srcset generation."
+tags = ["rust", "images", "webp"]
+categories = ["features"]
+series = "Feature Focus"
 hero_image = "mountain_sunset.jpg"
 hero_alt = "A dramatic mountain landscape showcasing hero image capabilities"
 +++

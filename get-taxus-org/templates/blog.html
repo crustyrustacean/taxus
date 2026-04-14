@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }} | {{ section.title }}{% endblock %}
+
+{% block content %}
+<article class="section-content">
+
+  <h2>{{ section.title }}</h2>
+
+  {% if section.description %}
+  <p class="description">{{ section.description }}</p>
+  {% endif %}
+
+  {{ section.content | safe }}
+
+  <nav class="sub-nav" aria-label="blog navigation">
+    <a href="/tags/" class="btn-secondary">Tags</a>
+    <a href="/categories/" class="btn-secondary">Categories</a>
+    <a href="/series/" class="btn-secondary">Series</a>
+  </nav>
+
+  {% if section.pages %}
+  <nav class="section-pages" aria-label="blog posts">
+    {% for page in section.pages %}
+    <a href="{{ page.path }}">
+      <span class="section-page-title">{{ page.title }}</span>
+      {% if page.description %}
+      <span class="section-page-desc">{{ page.description }}</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+</article>
+{% endblock %}

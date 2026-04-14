@@ -8,9 +8,16 @@ Templates are stored in the `templates/` directory:
 
 ```
 templates/
-├── base.html       # Base template with common structure
-├── page.html       # Single page template
-└── section.html    # Section/list template (e.g., blog)
+├── base.html              # Base template with common structure
+├── page.html              # Single page template
+├── section.html           # Section/list template (e.g., blog)
+├── tags.html              # Tag listing page (all tags)
+├── tags_term.html         # Individual tag page (e.g., /tags/rust/)
+├── categories.html        # Category listing page (all categories)
+├── categories_term.html   # Individual category page (e.g., /categories/tutorial/)
+├── series.html            # Series listing page (all series)
+├── series_term.html       # Individual series page (e.g., /series/learning-rust/)
+└── 404.html               # Not found page
 ```
 
 ## Template Engine
@@ -158,6 +165,99 @@ Section templates render lists of pages:
 </section>
 {% endblock %}
 ```
+
+## Taxonomy Templates
+
+Taxus generates taxonomy listing and term pages when the corresponding templates exist. The scaffold (`taxus init`) creates all six templates automatically.
+
+### Taxonomy List Templates
+
+List templates render all terms for a taxonomy kind:
+
+- `tags.html` — `/tags/`
+- `categories.html` — `/categories/`
+- `series.html` — `/series/`
+
+Each receives `extra.taxonomy` with:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `extra.taxonomy.kind` | String | Taxonomy kind: "Tags", "Categories", or "Series" |
+| `extra.taxonomy.path` | String | URL path (e.g., "/tags/") |
+| `extra.taxonomy.terms` | Array | List of term contexts |
+
+Example `tags.html`:
+
+```html
+{% extends "base.html" %}
+
+{% block title %}Tags - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Tags</h1>
+  {% if extra.taxonomy.terms %}
+  <ul>
+    {% for term in extra.taxonomy.terms %}
+    <li>
+      <a href="{{ term.path }}">{{ term.name }} ({{ term.page_count }})</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}
+```
+
+### Taxonomy Term Templates
+
+Term templates render pages for a specific term:
+
+- `tags_term.html` — `/tags/rust/`
+- `categories_term.html` — `/categories/tutorial/`
+- `series_term.html` — `/series/learning-rust/`
+
+Each receives `extra.taxonomy` with:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `extra.taxonomy.kind` | String | Taxonomy kind: "Tags", "Categories", or "Series" |
+| `extra.taxonomy.name` | String | Display name (e.g., "Rust") |
+| `extra.taxonomy.slug` | String | URL-safe slug (e.g., "rust") |
+| `extra.taxonomy.path` | String | URL path (e.g., "/tags/rust/") |
+| `extra.taxonomy.page_count` | Number | Number of pages with this term |
+| `extra.taxonomy.pages` | Array | List of page objects with `title`, `path`, `description`, etc. |
+
+Example `tags_term.html`:
+
+```html
+{% extends "base.html" %}
+
+{% block title %}Tag: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Tagged "{{ extra.taxonomy.name }}"</h1>
+  <p>{{ extra.taxonomy.page_count }} post(s)</p>
+  <ul>
+    {% for page in extra.taxonomy.pages %}
+    <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
+```
+
+### Term Context in List Templates
+
+When iterating `extra.taxonomy.terms`, each term has:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `term.name` | String | Display name |
+| `term.slug` | String | URL-safe slug |
+| `term.path` | String | URL path |
+| `term.page_count` | Number | Number of pages |
 
 ## Available Variables
 
