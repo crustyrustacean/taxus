@@ -12,8 +12,6 @@ use crate::error::{GeneratorError, Result};
 use crate::highlighting::{CodeHighlighter, LanguageRegistry};
 use crate::templates::SiteContext;
 use std::path::Path;
-#[cfg(feature = "islands")]
-use std::path::PathBuf;
 use std::time::Instant;
 use tracing::{debug, info, info_span};
 
@@ -295,19 +293,11 @@ impl SiteBuilder {
 
         #[cfg(feature = "islands")]
         {
-            let workspace_root = std::env::current_dir().map_err(|e| GeneratorError::Io {
-                path: PathBuf::from("."),
-                source: e,
-            })?;
-            let client_manifest = workspace_root.join("taxus-client/Cargo.toml");
-            if client_manifest.exists() {
-                let _wasm_span = info_span!("build_wasm").entered();
-                info!("[14/15] Building WASM client...");
-                let wasm_output =
-                    build::pipeline::wasm::build_wasm_client(&workspace_root, &output_dir, false)?;
-                info!("WASM client built ({} bytes)", wasm_output.wasm_size);
-                drop(_wasm_span);
-            }
+            let _wasm_span = info_span!("build_wasm").entered();
+            info!("[14/15] Writing WASM client...");
+            let wasm_output = build::pipeline::wasm::build_wasm_client(&output_dir)?;
+            info!("WASM client written ({} bytes)", wasm_output.wasm_size);
+            drop(_wasm_span);
         }
 
         // Stage 14: Write output

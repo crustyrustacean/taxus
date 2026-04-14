@@ -48,10 +48,6 @@ pub enum GeneratorError {
     #[error("Image error: {0}")]
     Image(Box<ImageError>),
 
-    /// WASM build-related errors
-    #[error("WASM error: {0}")]
-    Wasm(Box<WasmError>),
-
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -99,7 +95,6 @@ impl_from_for_generator_error! {
     ServeError => Serve,
     FeedError => Feed,
     ImageError => Image,
-    WasmError => Wasm,
 }
 
 /// Template-related errors.

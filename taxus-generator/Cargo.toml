@@ -59,6 +59,8 @@ webbrowser = "1.0"
 # ── Islands feature dependencies (compiled only with --features islands) ──────
 taxus-common = { path = "../taxus-common", optional = true }
 yew = { version = "0.23.0", features = ["ssr"], optional = true }
+
+[build-dependencies]
 wasm-bindgen-cli-support = { version = "=0.2.118", optional = true }
 
 [dev-dependencies]
