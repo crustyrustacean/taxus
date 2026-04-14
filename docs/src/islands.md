@@ -246,14 +246,9 @@ This includes the WASM hydration script in the generated `templates/base.html`:
 
 ## Building the WASM Client
 
-After building the static site, compile the Yew WASM bundle with Trunk:
+The WASM client is compiled automatically when building with the `islands` feature. A Cargo build script (`taxus-generator/build.rs`) compiles the `taxus-client` crate to `wasm32-unknown-unknown`, runs `wasm-bindgen` to generate JS bindings, and embeds the resulting `client.js` and `client_bg.wasm` into the generator binary via `include_bytes!`. At site build time, these embedded files are written to `dist/wasm/`.
 
-```bash
-# Build the WASM client
-cd client && trunk build --release --dist ../my-site/dist/wasm
-```
-
-This writes `client.js` and `client_bg.wasm` into `my-site/dist/wasm/`.
+No separate build step or external tooling (such as Trunk) is required.
 
 ## Development Workflow
 
@@ -263,23 +258,18 @@ This writes `client.js` and `client_bg.wasm` into `my-site/dist/wasm/`.
 cargo run -- init my-site --islands --name "My Site" --base-url "https://example.com"
 ```
 
-### 2. Build the Static Site
+### 2. Build the Static Site (includes WASM client)
 
 ```bash
 cargo run --features islands -- build --dir my-site --verbose
 ```
 
-### 3. Build the WASM Client
+The WASM client is compiled as part of the Cargo build and embedded in the binary. During the `taxus build` pipeline, the embedded `client.js` and `client_bg.wasm` are written to `dist/wasm/` automatically — no separate build step needed.
+
+### 3. Serve and Test
 
 ```bash
-cd client && trunk build --release --dist ../my-site/dist/wasm
-```
-
-### 4. Serve and Test
-
-```bash
-cd my-site && miniserve dist
-# or: python -m http.server 8000 -d dist
+cargo run -- serve --dir my-site --open
 ```
 
 The page should:
@@ -289,13 +279,14 @@ The page should:
 
 ## Feature Flag
 
-The `islands` Cargo feature controls whether Yew SSR is compiled in:
+The `islands` Cargo feature controls whether Yew SSR and the WASM client are compiled in:
 
 ```bash
 # Plain SSG — no Yew, fastest compile, smallest binary
 cargo run -- build --dir my-site
 
-# Islands SSG — Yew SSR pre-renders components at build time
+# Islands SSG — Yew SSR pre-renders components at build time;
+# WASM client is compiled and embedded in the binary automatically
 cargo run --features islands -- build --dir my-site
 ```
 
@@ -303,6 +294,12 @@ Without the feature:
 - `island()` function returns empty string (no error)
 - No Yew or WASM dependencies compiled
 - Templates that use `{{ island(...) | safe }}` still render without output
+
+With the feature:
+- The WASM client (`taxus-client`) is compiled to `wasm32-unknown-unknown` by `taxus-generator/build.rs`
+- `wasm-bindgen` JS bindings are generated at Cargo build time
+- The resulting `client.js` and `client_bg.wasm` are embedded in the generator binary via `include_bytes!`
+- At site build time, these files are written to `dist/wasm/` automatically
 
 ## Search
 

@@ -64,7 +64,9 @@ taxus build --output /tmp/preview
 9. Build and render taxonomy pages
 10. Generate feeds (RSS/Atom)
 11. Process assets (SCSS, static files)
-12. Write output files
+12. Generate search index (islands feature only)
+13. Write WASM client (islands feature only)
+14. Write output files
 
 ## `taxus clean`
 

@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.74] - 2026-04-14
+
+### Added
+
+#### WASM Client Built Into Binary at Compile Time
+
+- **Build Script** (`taxus-generator/build.rs`): New build script that compiles the WASM client at Cargo build time
+  - When the `islands` feature is enabled, the build script automatically compiles `taxus-client` to `wasm32-unknown-unknown`
+  - Uses `wasm-bindgen-cli-support` to generate JS bindings directly in the build script (no external `trunk` or `wasm-bindgen` CLI required)
+  - WASM artifacts are placed in `OUT_DIR` and embedded into the generator binary via `include_bytes!`
+  - Eliminates the need for a separate WASM build step after running `taxus build`
+  - Build script reruns when `build.rs` or `../taxus-client/src` changes
+
+- **Embedded WASM Pipeline** (`taxus-generator/src/build/pipeline/wasm.rs`): Simplified to write embedded WASM bytes at build time
+  - `CLIENT_JS` and `CLIENT_WASM` constants use `include_bytes!` with `OUT_DIR` paths
+  - `build_wasm_client()` now simply writes the embedded files to `dist/wasm/`
+  - Removed runtime `cargo build`, `wasm-bindgen`, and `wasm-opt` subprocess invocations
+  - Removed `WasmBuildOutput` struct fields (simplified to paths + size)
+
+### Changed
+
+- **Workspace Version**: Bumped to 0.1.74
+- **Build Pipeline**: Now 15 stages with `islands` feature (was 14); stage 14 writes embedded WASM client
+- **`wasm-bindgen-cli-support`**: Moved from runtime dependency to `build-dependency` in `taxus-generator/Cargo.toml`
+- **`WasmError` enum**: Removed from `taxus-generator/src/error.rs` (no longer needed — build-time panics replace runtime errors)
+- **`GeneratorError::Wasm` variant**: Removed (WASM build failures now cause compile-time panics in `build.rs`)
+- **Builder log messages**: Stage 14 now says "Writing WASM client" instead of "Building WASM client"
+- **`taxus-client/Cargo.toml`**: Bumped `wasm-bindgen` from 0.2.114 to 0.2.118
+
+### Removed
+
+- **`taxus-client/Trunk.toml`**: Deleted — no longer needed since WASM is built by `build.rs`
+- **`taxus-client/index.html`**: Deleted — was the Trunk entry point, no longer required
+- **`trunk` dependency**: Users no longer need to install Trunk for WASM islands support
+- **Runtime WASM build functions**: Removed `cargo_build_wasm()`, `find_wasm_artifact()`, `run_bindgen()`, `run_wasm_opt()` from `wasm.rs`
+- **WASM unit tests**: Removed `find_wasm_artifact_release`, `find_wasm_artifact_debug`, `find_wasm_artifact_missing` tests (no longer applicable)
+
+## [0.1.73] - 2026-04-12
+
+### Changed
+
+- **Workspace Version**: Bumped to 0.1.73
+
+### Added
+
+- **WASM Build Pipeline** (`taxus-generator/src/build/pipeline/wasm.rs`): Initial runtime WASM client build module
+  - `build_wasm_client()`: Orchestrates `cargo build`, `wasm-bindgen`, and optional `wasm-opt` as subprocesses
+  - `WasmBuildOutput`: Result type with JS path, WASM path, and binary size
+  - `WasmError` enum: Error type for `ToolMissing` and `BuildFailed` variants
+  - Integrated into `SiteBuilder` as pipeline stage 14/15
+  - Added `wasm-bindgen-cli-support` as a runtime dependency of `taxus-generator`
+
+### Removed
+
+- **`taxus-client/Trunk.toml`**: Deleted — WASM build no longer uses Trunk
+- **`taxus-client/index.html`**: Deleted — was the Trunk entry point
+
+## [0.1.72] - 2026-04-12
+
+### Fixed
+
+- **Blog Post Index Pages** (`taxus-generator/src/build/pipeline/pages.rs`): Removed early return in `collect_child_pages()` that prevented blog posts from appearing on their section's index page when the section route was `"/"` (root)
+
+### Changed
+
+- **Workspace Version**: Bumped to 0.1.72
+
+## [0.1.71] - 2026-04-12
+
+### Fixed
+
+- **Clippy Lints** (`taxus-common`): Replaced redundant closures with associated function refs (`String::new`, `Vec::new`) in `SearchBox` component
+- **Clippy Lints** (`taxus-common`): Derived `Default` for `SearchIndex` instead of manual implementation
+- **Clippy Lints** (`taxus-common`): Used `HashMap::entry` API instead of `contains_key`/`insert` pattern in `add_document` and `search` methods
+- **Clippy Lints** (`taxus-common`): Used `.iter()` instead of `.into_iter()` on slice reference in `stem()`
+- **Doctest Fix** (`taxus-generator/src/serve.rs`): Fixed doc example for `DevServer::new()` which was missing the required `RebuildFn` argument
+
 ## [0.1.68] - 2026-04-12
 
 ### Added

@@ -19,7 +19,7 @@ taxus/
 |-------|------|--------|
 | `taxus-common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
 | `taxus-generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`taxus`) |
-| `taxus-client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (via Trunk) |
+| `taxus-client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (embedded in generator binary at compile time) |
 
 ### Data Flow Between Crates
 
@@ -54,7 +54,7 @@ The `generator` crate is organized into modules that each own a specific domain:
 | `content` | `Page`, `Section`, `Frontmatter`, `ContentSource` | Parse Markdown files with TOML frontmatter |
 | `routes` | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind` | Map content files to URL paths |
 | `templates` | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext` | Render HTML with Tera templates |
-| `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline |
+| `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline (including WASM client writing with `islands` feature) |
 | `assets` | `ScssProcessor`, `StaticCopier`, `AssetReport` | Compile SCSS, copy static files |
 | `feed` | `FeedGenerator`, `FeedEntry`, `FeedConfig` | Generate RSS/Atom feeds |
 | `init` | `InitScaffolder`, `InitOptions`, `InitReport` | Scaffold new site directories |
@@ -96,7 +96,7 @@ The `generator` crate is organized into modules that each own a specific domain:
 
 ## Build Pipeline
 
-The `SiteBuilder` orchestrates a 13-stage build pipeline (12 stages without the `islands` feature):
+The `SiteBuilder` orchestrates a 15-stage build pipeline (13 stages without the `islands` feature):
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -153,7 +153,11 @@ The `SiteBuilder` orchestrates a 13-stage build pipeline (12 stages without the 
 │          └──▶ Build TF-IDF index from page content               │
 │          └──▶ Write dist/search_index.bin                        │
 │                                                                  │
-│  [13/13] Write output                                            │
+│  [13/13] Write WASM client (islands feature only)                │
+│          └──▶ Write embedded client.js to dist/wasm/              │
+│          └──▶ Write embedded client_bg.wasm to dist/wasm/         │
+│                                                                  │
+│  [15/15] Write output                                            │
 │          └──▶ Write RenderedPage HTML files                      │
 │          └──▶ Write taxonomy pages                               │
 │          └──▶ Write feed XML files                               │
@@ -223,7 +227,7 @@ When the `islands` feature is enabled, the generator can pre-render Yew componen
 ### Browser-Time (Hydration)
 
 1. Page loads immediately with pre-rendered HTML (no JavaScript required for initial render)
-2. WASM bundle loads asynchronously
+2. WASM bundle (embedded in the generator binary at compile time) loads asynchronously from `/wasm/`
 3. Client finds all `[data-island]` elements
 4. For each: deserialize `data-props`, call `yew::Renderer::hydrate()`
 
@@ -233,13 +237,14 @@ See [Islands Architecture](./islands.md) for the full guide.
 
 | Feature | Default | Effect |
 |---------|---------|--------|
-| `islands` | off | Enables Yew SSR, tokio, common crate compilation; `island()` Tera function renders components |
+| `islands` | off | Enables Yew SSR, tokio, common crate compilation, and WASM client build/embedding; `island()` Tera function renders components; WASM client is compiled by `build.rs` and embedded in the binary |
 
 Without the `islands` feature:
 
 - Generator is a plain Tera + Markdown SSG
 - `island()` function is a no-op (returns empty string)
 - No Yew or WASM dependencies compiled
+- No WASM client embedded or written
 
 ```bash
 # Plain SSG — no Yew

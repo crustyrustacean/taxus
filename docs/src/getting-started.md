@@ -7,7 +7,6 @@ This guide will help you get up and running with Taxus quickly.
 Before you begin, ensure you have the following installed:
 
 - **Rust** (edition 2024) — [Install Rust](https://www.rust-lang.org/tools/install)
-- **trunk** — WebAssembly bundler for Rust — [Install trunk](https://trunkrs.dev/)
 
 ## Quick Start
 
@@ -46,7 +45,7 @@ my-site/
 cargo run -- build --dir my-site --verbose
 ```
 
-This runs the 12-stage build pipeline and writes output to `my-site/dist/`.
+This runs the 13-stage build pipeline and writes output to `my-site/dist/`.
 
 ### Step 3: Serve and View
 
@@ -74,10 +73,10 @@ If you want interactive Yew components:
 cargo run -- init my-site --islands
 
 # Build with islands feature enabled
+# The WASM client is compiled automatically and embedded in the binary
 cargo run --features islands -- build --dir my-site
-
-# Build the WASM client
-cd client && trunk build --release --dist ../my-site/dist/wasm
 ```
+
+The WASM client (`client.js` and `client_bg.wasm`) is compiled during the Cargo build and written to `dist/wasm/` automatically — no separate build step is needed.
 
 See [Islands Architecture](./islands.md) for the complete guide.

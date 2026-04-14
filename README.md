@@ -28,7 +28,6 @@ cargo build --release
 
 Prerequisites:
 - [Rust](https://www.rust-lang.org/tools/install) (edition 2024)
-- [trunk](https://trunkrs.dev/) (required only for WASM islands)
 
 ## Quick Start
 
@@ -144,7 +143,7 @@ cd docs && mdbook serve
 | Crate | Description |
 |-------|-------------|
 | `taxus-generator` | SSG library and `taxus` CLI binary |
-| `taxus-client` | WASM hydration client (built by Trunk) |
+| `taxus-client` | WASM hydration client (built into the generator binary at compile time) |
 | `taxus-common` | Shared Yew components for SSR and hydration, search index |
 
 ## License
@@ -159,4 +158,4 @@ Pull requests are welcome.
 
 - [Yew](https://yew.rs/) — Rust web framework
 - [Tera](https://keats.github.io/tera/) — Template engine
-- [Trunk](https://trunkrs.dev/) — WASM bundler
+- [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) — WASM/JS interop (invoked automatically at build time)

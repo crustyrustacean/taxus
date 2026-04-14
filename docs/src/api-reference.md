@@ -451,6 +451,26 @@ Container for the serialized search index.
 | `generate_search(pages: &[ProcessedPage]) -> Result<GeneratedSearch>` | Create search index from processed pages |
 | `write_search_index(generated: &GeneratedSearch, output_dir: &Path, dry_run: bool) -> Result<()>` | Write `search_index.bin` to output |
 
+### `build::pipeline::wasm` Module (islands feature only)
+
+The WASM client is compiled at Cargo build time by `taxus-generator/build.rs` and embedded into the binary. At site build time, the embedded files are written to the output directory.
+
+#### `WasmBuildOutput`
+
+```rust
+pub struct WasmBuildOutput {
+    pub js_path: PathBuf,
+    pub wasm_path: PathBuf,
+    pub wasm_size: u64,
+}
+```
+
+Result of writing the embedded WASM client files.
+
+| Function | Description |
+|----------|-------------|
+| `build_wasm_client(output_dir: &Path) -> Result<WasmBuildOutput>` | Write embedded `client.js` and `client_bg.wasm` to `dist/wasm/` |
+
 ### `BuildReport`
 
 ```rust
@@ -635,8 +655,6 @@ pub enum GeneratorError {
 }
 ```
 
-### Sub-Errors
-
 | Type | Description |
 |------|-------------|
 | `ConfigError` | Configuration errors (not found, parse, missing field) |
@@ -645,8 +663,10 @@ pub enum GeneratorError {
 | `AssetError` | Asset errors (SCSS, copy) |
 | `RouteError` | Route errors (not found, duplicate, invalid) |
 | `FeedError` | Feed generation errors |
+| `ImageError` | Image processing errors |
 | `InitError` | Initialization errors (cancelled) |
 | `ServeError` | Server errors (port in use, WebSocket) |
+| `WasmError` | WASM build errors (tool missing, build failed) |
 
 ### `Result`
 

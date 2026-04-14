@@ -5,7 +5,6 @@ This guide covers development workflows for contributing to Taxus.
 ## Prerequisites
 
 - **Rust** — [Install Rust](https://rustup.rs/)
-- **trunk** — WebAssembly bundler: `cargo install trunk`
 - **mdbook** — Documentation: `cargo install mdbook`
 
 ## Setup
@@ -38,7 +37,7 @@ cargo test --test config_loading
 # Build static site (plain SSG)
 cargo run -- build --dir my-site
 
-# Build with islands support
+# Build with islands support (WASM client is compiled and embedded automatically)
 cargo run --features islands -- build --dir my-site
 
 # Build release binary

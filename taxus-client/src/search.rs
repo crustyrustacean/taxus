@@ -9,7 +9,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, Response};
 
 thread_local! {
-    static SEARCH_INDEX: OnceCell<SearchIndex> = OnceCell::new();
+    static SEARCH_INDEX: OnceCell<SearchIndex> = const { OnceCell::new() };
 }
 
 pub async fn load_search_index() -> Result<SearchIndex, JsValue> {

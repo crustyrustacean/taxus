@@ -6,9 +6,6 @@ use std::env;
 use std::path::Path;
 #[cfg(feature = "islands")]
 use std::process::Command;
-#[cfg(feature = "islands")]
-use wasm_bindgen_cli_support;
-
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=../taxus-client/src");
