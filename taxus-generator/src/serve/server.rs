@@ -127,9 +127,14 @@ impl DevServer {
         // Create broadcast channel for reload events
         let (reload_tx, _) = broadcast::channel(16);
 
-        // Perform initial build
+        // Perform initial build (in blocking thread pool to not block async runtime)
         info!("Performing initial build...");
-        match (self.rebuild)() {
+        let rebuild_clone = self.rebuild.clone();
+        let initial_result = tokio::task::spawn_blocking(move || (rebuild_clone)())
+            .await
+            .unwrap_or_else(|e| Err(format!("Initial build task failed: {}", e)));
+
+        match initial_result {
             Ok(_) => info!("Initial build complete"),
             Err(e) => {
                 warn!("Initial build failed: {}", e);
@@ -183,8 +188,15 @@ impl DevServer {
                             Some(event) => {
                                 info!("Change detected: {:?}", event.change_type);
 
-                                // Trigger rebuild
-                                match (rebuild)() {
+                                // Trigger rebuild in a blocking thread pool
+                                // This allows the async runtime to continue serving HTTP requests
+                                // while the build (including image processing) runs
+                                let rebuild_clone = rebuild.clone();
+                                let result = tokio::task::spawn_blocking(move || (rebuild_clone)())
+                                    .await
+                                    .unwrap_or_else(|e| Err(format!("Build task failed: {}", e)));
+
+                                match result {
                                     Ok(_) => {
                                         // Send reload notification
                                         let files: Vec<String> = event
