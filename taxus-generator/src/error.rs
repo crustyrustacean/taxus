@@ -48,6 +48,10 @@ pub enum GeneratorError {
     #[error("Image error: {0}")]
     Image(Box<ImageError>),
 
+    /// Search-related errors
+    #[error("Search error: {0}")]
+    Search(Box<SearchError>),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {
@@ -95,6 +99,7 @@ impl_from_for_generator_error! {
     ServeError => Serve,
     FeedError => Feed,
     ImageError => Image,
+    SearchError => Search,
 }
 
 /// Template-related errors.
@@ -331,6 +336,18 @@ pub enum WasmError {
     /// The WASM build failed
     #[error("WASM build failed: {0}")]
     BuildFailed(String),
+}
+
+/// Search-related errors.
+#[derive(Debug, thiserror::Error)]
+pub enum SearchError {
+    /// Failed to serialize search index
+    #[error("Failed to serialize search index: {0}")]
+    SerializeFailed(String),
+
+    /// Failed to deserialize search index
+    #[error("Failed to deserialize search index: {0}")]
+    DeserializeFailed(String),
 }
 
 #[cfg(test)]

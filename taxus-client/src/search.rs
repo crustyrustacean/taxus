@@ -24,7 +24,7 @@ pub async fn load_search_index() -> Result<SearchIndex, JsValue> {
     let uint8_array = Uint8Array::new(&buffer_value);
     let bytes = uint8_array.to_vec();
 
-    let index = SearchIndex::from_bytes(&bytes);
+    let index = SearchIndex::from_bytes(&bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     Ok(index)
 }

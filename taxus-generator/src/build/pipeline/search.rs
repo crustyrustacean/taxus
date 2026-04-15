@@ -1,7 +1,7 @@
 // taxus-generator/src/build/pipeline/search.rs
 
 use crate::build::ProcessedPage;
-use crate::error::{GeneratorError, Result};
+use crate::error::{GeneratorError, Result, SearchError};
 use std::fs;
 use std::path::Path;
 use taxus_common::search::{SearchDocument, SearchIndex};
@@ -29,8 +29,11 @@ pub fn generate_search(processed_pages: &[ProcessedPage]) -> Result<GeneratedSea
 
     search_index.finalize();
 
+    let bytes = search_index.to_bytes()
+        .map_err(|e| SearchError::SerializeFailed(e.to_string()))?;
+
     Ok(GeneratedSearch {
-        search_index: search_index.to_bytes(),
+        search_index: bytes,
     })
 }
 
@@ -133,7 +136,7 @@ mod tests {
         assert!(!generated.search_index.is_empty());
 
         // Verify we can deserialize and search
-        let index = SearchIndex::from_bytes(&generated.search_index);
+        let index = SearchIndex::from_bytes(&generated.search_index).unwrap();
         assert_eq!(index.documents.len(), 2);
 
         let results = index.search("rust");
@@ -149,7 +152,7 @@ mod tests {
         assert!(result.is_ok());
 
         let generated = result.unwrap();
-        let index = SearchIndex::from_bytes(&generated.search_index);
+        let index = SearchIndex::from_bytes(&generated.search_index).unwrap();
         assert_eq!(index.documents.len(), 0);
     }
 
@@ -215,7 +218,7 @@ mod tests {
 
         // Read back from disk and verify
         let bytes = fs::read(output_dir.join("search_index.bin")).unwrap();
-        let index = SearchIndex::from_bytes(&bytes);
+        let index = SearchIndex::from_bytes(&bytes).unwrap();
 
         assert_eq!(index.documents.len(), 3);
 

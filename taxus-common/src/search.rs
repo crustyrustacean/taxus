@@ -77,14 +77,9 @@ impl SearchIndex {
 
         let mut scores: HashMap<u32, f32> = HashMap::new();
         for stem in stems.iter() {
-            if self.index.contains_key(stem) {
-                let result = self.index.get(stem).unwrap();
-                for item in result.iter() {
-                    if let std::collections::hash_map::Entry::Vacant(e) = scores.entry(item.0) {
-                        e.insert(item.1);
-                    } else {
-                        *scores.get_mut(&item.0).unwrap() += item.1;
-                    }
+            if let Some(value) = self.index.get(stem) {
+                for item in value.iter() {
+                    *scores.entry(item.0).or_insert(0.0) += item.1;
                 }
             }
         }
@@ -111,12 +106,12 @@ impl SearchIndex {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        to_allocvec(self).unwrap()
+    pub fn to_bytes(&self) -> Result<Vec<u8>, postcard::Error> {
+        to_allocvec(self)
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        from_bytes(bytes).unwrap()
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, postcard::Error> {
+        from_bytes(bytes)
     }
 }
 
@@ -419,8 +414,8 @@ mod tests {
         );
         original.finalize();
 
-        let bytes = original.to_bytes();
-        let restored = SearchIndex::from_bytes(&bytes);
+        let bytes = original.to_bytes().unwrap();
+        let restored = SearchIndex::from_bytes(&bytes).unwrap();
 
         // Same number of documents
         assert_eq!(restored.documents.len(), 2);
@@ -439,8 +434,8 @@ mod tests {
     #[test]
     fn empty_search_index_round_trip() {
         let original = SearchIndex::new();
-        let bytes = original.to_bytes();
-        let restored = SearchIndex::from_bytes(&bytes);
+        let bytes = original.to_bytes().unwrap();
+        let restored = SearchIndex::from_bytes(&bytes).unwrap();
 
         assert_eq!(restored.documents.len(), 0);
         assert_eq!(restored.index.len(), 0);
@@ -477,8 +472,8 @@ mod tests {
         let original_results = original.search("ownership");
 
         // Round-trip
-        let bytes = original.to_bytes();
-        let restored = SearchIndex::from_bytes(&bytes);
+        let bytes = original.to_bytes().unwrap();
+        let restored = SearchIndex::from_bytes(&bytes).unwrap();
         let restored_results = restored.search("ownership");
 
         // Same results
