@@ -167,13 +167,14 @@ This is your new static site. Start editing this file to add your content.
             // Conditionally include WASM hydration script based on islands flag
             let wasm_script = if self.options.islands {
                 r#"
-    <!-- WASM hydration client compiled by Trunk.
+    <!-- WASM hydration client.
          client.js is a wasm-bindgen ES module; it must be loaded via
          `import init` inside a type="module" script, not via a plain src= tag. -->
     <script type="module">
         import init, * as bindings from '/wasm/client.js';
         const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
         window.wasmBindings = bindings;
+        bindings.hydrate_islands();
     </script>
 "#
             } else {

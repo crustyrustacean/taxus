@@ -62,6 +62,7 @@
         import init, * as bindings from '/wasm/client.js';
         const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
         window.wasmBindings = bindings;
+        bindings.hydrate_islands();
     </script>
 
 </body>

@@ -6,8 +6,9 @@
 // On startup it scans for island mount points written by the SSG at build time and
 // hydrates each one with the matching Yew component.
 
-// #![no_main] suppresses the implicit Rust binary entry point so that
-// #[wasm_bindgen(start)] can be the sole entry without a symbol conflict.
+// #![no_main] suppresses the implicit Rust binary entry point.
+// This module has no fn main — initialization is driven by the JS host,
+// which calls hydrate_islands() after assigning window.wasmBindings.
 #![no_main]
 
 mod search;
@@ -25,7 +26,7 @@ fn console_error(msg: &str) {
 }
 
 /// WASM module entry point — called automatically when the module is instantiated.
-#[wasm_bindgen(start)]
+#[wasm_bindgen]
 pub fn hydrate_islands() {
     // Find every island mount point in the document
     let window = match web_sys::window() {
