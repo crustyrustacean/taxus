@@ -42,11 +42,12 @@ The `SearchBox` island component provides a ready-to-use search interface. Add i
 |------|------|---------|-------------|
 | `placeholder` | string | `"Search..."` | Placeholder text for the input |
 | `max_results` | number | `5` | Maximum number of results to display |
+| `class` | string | `""` | Custom CSS classes to append to the outer container |
 
 Example with custom props:
 
 ```html
-{{ island(component="SearchBox", placeholder="Find content...", max_results=10) | safe }}
+{{ island(component="SearchBox", placeholder="Find content...", max_results=10, class="docs-search") | safe }}
 ```
 
 ### Styling
@@ -61,6 +62,20 @@ The component uses these CSS classes that you can style:
 | `.search-result` | Individual result item (`<li>`) |
 | `.search-result-link` | Result title link |
 | `.search-result-summary` | Result summary text |
+
+Use the `class` prop to add custom classes for styling hooks:
+
+```html
+{{ island(component="SearchBox", class="docs-search") | safe }}
+```
+
+Then target the custom class in your SCSS:
+
+```scss
+.docs-search .search-input {
+  // Custom styles for docs search input
+}
+```
 
 Example SCSS:
 

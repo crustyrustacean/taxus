@@ -78,6 +78,24 @@ Props are passed as keyword arguments to `island()`:
 
 The props are serialized to JSON and stored in `data-props`.
 
+### The `class` Prop
+
+All island components accept an optional `class` prop that appends custom CSS classes to the component's outer `<div>`:
+
+```html
+{{ island(component="SearchBox", class="docs-search") | safe }}
+```
+
+This renders as:
+
+```html
+<div data-island="SearchBox" data-props='{"placeholder":"Search...","max_results":5,"class":"docs-search"}' class="search-box docs-search">
+  <!-- component content -->
+</div>
+```
+
+This enables template authors to pass CSS styling hooks for targeting descendant elements without modifying component source.
+
 ## Writing an Island Component
 
 Island components live in `common/src/components/`. Their props must implement `Serialize` and `Deserialize`:
@@ -91,6 +109,8 @@ use yew::prelude::*;
 pub struct CounterProps {
     #[prop_or_default]
     pub initial: i32,
+    #[prop_or_default]
+    pub class: String,
 }
 
 #[function_component(Counter)]
@@ -224,7 +244,7 @@ A simple counter with increment button. This is an example component demonstrati
 A production-ready search component with debounced input and async results. See [Search](./search.md) for full documentation.
 
 ```html
-{{ island(component="SearchBox", placeholder="Search...", max_results=10) | safe }}
+{{ island(component="SearchBox", placeholder="Search...", max_results=10, class="my-search") | safe }}
 ```
 
 ## Initializing a Site with Islands

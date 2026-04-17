@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.81] - 2026-04-16
+
+### Improved
+
+- **SearchBox rendering and stability** (`taxus-common/src/components/search_box.rs`): Refactored component for better stability and cleaner code. Simplified state management and improved error handling in search queries.
+
+- **Search index generation** (`taxus-generator/src/build/pipeline/search.rs`): Enhanced search index generation with better error handling and improved document processing.
+
+## [0.1.80] - 2026-04-15
+
+### Fixed
+
+- **Race condition in WASM initialization** (`taxus-client/src/main.rs`): Fixed timing issue where WASM hydration could fail if the module started initializing before the DOM was ready. The hydration now waits for DOMContentLoaded when needed.
+
+### Changed
+
+- **Base template scaffold** (`taxus-generator/src/init/scaffold.rs`): Updated WASM initialization script to use deferred loading pattern for improved reliability.
+
+## [0.1.79] - 2026-04-14
+
+### Added
+
+- **`class` prop for island components** (`taxus-common/src/components/`): Both `SearchBox` and `Counter` now accept an optional `class` prop that appends custom CSS classes to the component's outer `<div>`. This enables template authors to pass styling hooks via the `island()` Tera function:
+  ```html
+  {{ island(component="SearchBox", class="docs-search") | safe }}
+  ```
+
+### Changed
+
+- **Tera island renderer** (`taxus-generator/src/templates/renderer.rs`): Updated to support the new `class` prop for all island components.
+
+- **Hydration client** (`taxus-client/src/main.rs`): Updated hydration logic to pass the `class` prop during component initialization.
+
+## [0.1.77] - 2026-04-14
+
+### Fixed
+
+- **Dev server responsiveness during rebuilds** (`taxus-generator/src/serve/server.rs`): The dev server was blocking during image processing, causing browser timeouts on sites with hero images. Rebuilds now run in Tokio's `spawn_blocking` thread pool, allowing the async runtime to continue serving requests while rebuilds are in progress.
+
+### Changed
+
+- **Home template** (`get-taxus-org/templates/home.html`): Added dedicated home template to prevent blog listings from appearing on the landing page. The `section.html` template renders `section.pages`, which caused blog posts to appear on the root landing page. The new `home.html` template only renders section content without the page listing.
+
 ## [0.1.76] - 2026-04-14
 
 ### Fixed
