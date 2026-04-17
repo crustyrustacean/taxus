@@ -3,7 +3,7 @@
 use postcard::{from_bytes, to_allocvec};
 use rust_stemmers::{Algorithm, Stemmer};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 // struct type to represent the metadata record stored for each indexed page
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
@@ -39,7 +39,7 @@ impl SearchDocument {
 // struct type to represent the Search Index
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct SearchIndex {
-    pub documents: Vec<SearchDocument>,
+    pub documents: BTreeMap<u32, SearchDocument>,
     pub index: HashMap<String, Vec<(u32, f32)>>,
 }
 
@@ -50,7 +50,7 @@ impl SearchIndex {
 
     pub fn add_document(&mut self, search_document: SearchDocument, content: &str) {
         let document_id = search_document.id;
-        self.documents.push(search_document);
+        self.documents.insert(document_id, search_document);
         let tokens = tokenize(content);
         let stems = stem(&tokens);
 
@@ -89,7 +89,7 @@ impl SearchIndex {
 
         results
             .iter()
-            .map(|(id, _score)| &self.documents[*id as usize])
+            .filter_map(|(id, _score)| self.documents.get(id))
             .collect()
     }
 
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn create_new_search_index_works() {
         let search_index = SearchIndex::new();
-        assert_eq!(search_index.documents, vec![]);
+        assert_eq!(search_index.documents, BTreeMap::new());
         assert_eq!(search_index.index, HashMap::new());
     }
 
@@ -419,8 +419,8 @@ mod tests {
 
         // Same number of documents
         assert_eq!(restored.documents.len(), 2);
-        assert_eq!(restored.documents[0].title, "First");
-        assert_eq!(restored.documents[1].title, "Second");
+        assert_eq!(restored.documents[&0].title, "First");
+        assert_eq!(restored.documents[&1].title, "Second");
 
         // Same index structure
         assert_eq!(restored.index.len(), original.index.len());

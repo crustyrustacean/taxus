@@ -3,8 +3,6 @@
 // dependencies
 use gloo_timers::callback::Timeout;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -34,54 +32,49 @@ extern "C" {
     async fn search(query: &str) -> Result<JsValue, JsValue>;
 }
 
+async fn perform_search(
+    query: String,
+    results: UseStateHandle<Vec<SearchResult>>,
+    max_results: usize,
+) {
+    if query.len() < 2 {
+        results.set(vec![]);
+        return;
+    }
+    match search(&query).await {
+        Ok(js_results) => {
+            if let Ok(parsed) = serde_wasm_bindgen::from_value::<Vec<SearchResult>>(js_results) {
+                let truncated = parsed.into_iter().take(max_results).collect();
+                results.set(truncated);
+            }
+        }
+        Err(_) => results.set(vec![]),
+    }
+}
+
 // A search component with async JS bindings for querying results
 #[component]
 pub fn SearchBox(props: &SearchBoxProps) -> Html {
-    let query = use_state(String::new);
     let results: UseStateHandle<Vec<SearchResult>> = use_state(Vec::new);
     let max_results = props.max_results;
-    let timeout_handle: UseStateHandle<Option<Rc<RefCell<Option<Timeout>>>>> = use_state(|| None);
+    let timeout_handle = use_mut_ref(|| None::<Timeout>);
 
     let on_input = {
-        let query = query.clone();
         let results = results.clone();
         let timeout_handle = timeout_handle.clone();
         Callback::from(move |e: InputEvent| {
             let input: web_sys::HtmlInputElement = e.target_unchecked_into();
             let value = input.value();
-            query.set(value.clone());
 
-            if let Some(handle) = &*timeout_handle {
-                handle.borrow_mut().take();
-            }
+            timeout_handle.borrow_mut().take();
 
             let results = results.clone();
-            let holder = Rc::new(RefCell::new(None));
-            let holder_clone = holder.clone();
 
             let timeout = Timeout::new(200, move || {
-                let results = results.clone();
-                spawn_local(async move {
-                    if value.len() < 2 {
-                        results.set(vec![]);
-                        return;
-                    }
-                    match search(&value).await {
-                        Ok(js_results) => {
-                            if let Ok(parsed) =
-                                serde_wasm_bindgen::from_value::<Vec<SearchResult>>(js_results)
-                            {
-                                let truncated = parsed.into_iter().take(max_results).collect();
-                                results.set(truncated);
-                            }
-                        }
-                        Err(_) => results.set(vec![]),
-                    }
-                });
+                spawn_local(perform_search(value, results, max_results));
             });
 
-            *holder_clone.borrow_mut() = Some(timeout);
-            timeout_handle.set(Some(holder_clone));
+            *timeout_handle.borrow_mut() = Some(timeout);
         })
     };
 

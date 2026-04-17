@@ -7,6 +7,9 @@ use std::path::Path;
 use taxus_common::search::{SearchDocument, SearchIndex};
 use tracing::debug;
 
+// truncation limit, for summaries
+const TRUNCATION_LIMIT: usize = 25;
+
 #[derive(Clone, Debug)]
 pub struct GeneratedSearch {
     pub search_index: Vec<u8>,
@@ -20,7 +23,7 @@ pub fn generate_search(processed_pages: &[ProcessedPage]) -> Result<GeneratedSea
             id as u32,
             processed.page.frontmatter.title.clone(),
             processed.route.path.clone(),
-            processed.page.summary(),
+            truncate(&processed.page.summary(), TRUNCATION_LIMIT),
             processed.page.frontmatter.tags.clone(),
             processed.page.frontmatter.categories.clone(),
         );
@@ -29,7 +32,8 @@ pub fn generate_search(processed_pages: &[ProcessedPage]) -> Result<GeneratedSea
 
     search_index.finalize();
 
-    let bytes = search_index.to_bytes()
+    let bytes = search_index
+        .to_bytes()
         .map_err(|e| SearchError::SerializeFailed(e.to_string()))?;
 
     Ok(GeneratedSearch {
@@ -65,6 +69,21 @@ pub fn write_search_index(
     );
 
     Ok(())
+}
+
+fn truncate(summary: &str, length: usize) -> String {
+    let word_count = summary.split_whitespace().count();
+    let truncated = summary
+        .split_whitespace()
+        .take(length)
+        .collect::<Vec<&str>>()
+        .join(" ");
+
+    if word_count > length {
+        format!("{}…", truncated)
+    } else {
+        truncated
+    }
 }
 
 #[cfg(test)]
