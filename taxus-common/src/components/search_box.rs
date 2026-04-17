@@ -1,6 +1,7 @@
 // common/src/components/search_box.rs
 
 // dependencies
+use crate::hooks::custom_hooks::use_click_outside;
 use gloo_timers::callback::Timeout;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -55,9 +56,23 @@ async fn perform_search(
 // A search component with async JS bindings for querying results
 #[component]
 pub fn SearchBox(props: &SearchBoxProps) -> Html {
+    let input_ref = use_node_ref();
     let results: UseStateHandle<Vec<SearchResult>> = use_state(Vec::new);
     let max_results = props.max_results;
     let timeout_handle = use_mut_ref(|| None::<Timeout>);
+
+    let on_outside_click = {
+        let results = results.clone();
+        let input_ref = input_ref.clone();
+        Callback::from(move |_| {
+            results.set(vec![]);
+            if let Some(input) = input_ref.cast::<web_sys::HtmlInputElement>() {
+            input.set_value("");
+        }
+        })
+    };
+
+    let node_ref = use_click_outside(on_outside_click);
 
     let on_input = {
         let results = results.clone();
@@ -85,8 +100,8 @@ pub fn SearchBox(props: &SearchBoxProps) -> Html {
     };
 
     html! {
-        <div class={class}>
-            <input class="search-input" type="text" oninput={on_input} placeholder={props.placeholder.clone()} />
+        <div ref={node_ref} class={class}>
+            <input ref={input_ref} class="search-input" type="text" oninput={on_input} placeholder={props.placeholder.clone()} />
             <ul class="search-results">
                 { for (*results).iter().map(|r| html! {
                     <li class="search-result">

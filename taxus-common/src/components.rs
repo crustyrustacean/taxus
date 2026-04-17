@@ -1,4 +1,4 @@
-// common/src/components/mod.rs
+// common/src/components/components.rs
 
 // module declarations
 pub mod counter;

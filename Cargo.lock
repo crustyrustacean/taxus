@@ -3416,7 +3416,7 @@ dependencies = [
 
 [[package]]
 name = "taxus"
-version = "0.1.81"
+version = "0.1.82"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3453,7 +3453,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-client"
-version = "0.1.81"
+version = "0.1.82"
 dependencies = [
  "js-sys",
  "serde-wasm-bindgen",
@@ -3467,7 +3467,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-common"
-version = "0.1.81"
+version = "0.1.82"
 dependencies = [
  "gloo-timers 0.4.0",
  "js-sys",

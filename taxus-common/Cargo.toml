@@ -16,6 +16,6 @@ serde = { workspace = true }
 rust-stemmers = "1.2.0"
 wasm-bindgen = "0.2.114"
 wasm-bindgen-futures = "0.4.68"
-web-sys = { version = "0.3.95", features = ["HtmlInputElement"] }
+web-sys = { version = "0.3.95", features = ["Document", "Event", "EventTarget", "HtmlInputElement", "Node"] }
 yew = "0.23.0"
 serde-wasm-bindgen = "0.6.5"
