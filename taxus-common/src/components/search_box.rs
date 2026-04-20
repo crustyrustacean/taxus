@@ -67,8 +67,8 @@ pub fn SearchBox(props: &SearchBoxProps) -> Html {
         Callback::from(move |_| {
             results.set(vec![]);
             if let Some(input) = input_ref.cast::<web_sys::HtmlInputElement>() {
-            input.set_value("");
-        }
+                input.set_value("");
+            }
         })
     };
 
