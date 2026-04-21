@@ -21,12 +21,11 @@ pub fn use_click_outside(on_outside_click: Callback<()>) -> NodeRef {
                 let node_ref = node_ref.clone();
                 let on_outside_click = on_outside_click.clone();
                 move |event: web_sys::Event| {
-                    if let Some(target) = event.target() {
-                        if let Some(node) = node_ref.cast::<web_sys::Node>() {
-                            if !node.contains(Some(&target.unchecked_into::<web_sys::Node>())) {
-                                on_outside_click.emit(());
-                            }
-                        }
+                    if let Some(target) = event.target()
+                        && let Some(node) = node_ref.cast::<web_sys::Node>()
+                        && !node.contains(Some(&target.unchecked_into::<web_sys::Node>()))
+                    {
+                        on_outside_click.emit(());
                     }
                 }
             });
