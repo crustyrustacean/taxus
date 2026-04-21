@@ -3421,7 +3421,7 @@ dependencies = [
 
 [[package]]
 name = "taxus"
-version = "0.1.85"
+version = "0.1.86"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3458,7 +3458,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-client"
-version = "0.1.85"
+version = "0.1.86"
 dependencies = [
  "js-sys",
  "serde-wasm-bindgen",
@@ -3472,7 +3472,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-common"
-version = "0.1.85"
+version = "0.1.86"
 dependencies = [
  "gloo-timers 0.4.0",
  "js-sys",
@@ -4712,6 +4712,10 @@ name = "writeable"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
+
+[[package]]
+name = "xtask"
+version = "0.1.86"
 
 [[package]]
 name = "y4m"

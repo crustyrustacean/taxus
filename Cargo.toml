@@ -1,10 +1,10 @@
 [workspace]
-members = ["taxus-client", "taxus-common", "taxus-generator"]
+members = ["taxus-client", "taxus-common", "taxus-generator", "xtask"]
 default-members = ["taxus-generator"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.85"
+version = "0.1.86"
 edition = "2024"
 authors = ["Jeff Mitchell"]
 description = "A Rust based static site generator, founded in Tera and Yew."
