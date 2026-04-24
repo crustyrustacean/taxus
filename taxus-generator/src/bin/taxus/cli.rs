@@ -118,7 +118,7 @@ pub enum Commands {
     /// Examples:
     ///   taxus init
     ///   taxus init my-site
-    ///   taxus init my-site --name "My Blog" --base-url "https://myblog.com"
+    ///   taxus init my-site --name "My Blog" --base-url `<https://myblog.com>`
     ///   taxus init my-site --force
     Init {
         /// Directory to initialize (defaults to the current directory).
@@ -137,7 +137,7 @@ pub enum Commands {
         /// Base URL for the site (must start with http:// or https://).
         ///
         /// Used in site.toml and available as `{{ site.base_url }}` in templates.
-        /// Defaults to https://example.com.
+        /// Defaults to <https://example.com>.
         #[arg(short = 'u', long, value_name = "URL")]
         base_url: Option<String>,
 

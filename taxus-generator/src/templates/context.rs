@@ -62,7 +62,7 @@ pub struct PageContext {
     pub path: String,
 
     /// Pre-computed absolute URL combining base_url and path
-    /// (e.g., "https://example.com/about/")
+    /// (e.g., `<https://example.com/about/>`)
     pub permalink: String,
 
     /// Rendered HTML content
@@ -278,7 +278,7 @@ pub struct SiteContext {
     /// Site name
     pub name: String,
 
-    /// Base URL (e.g., "https://example.com")
+    /// Base URL (e.g., `<https://example.com>`)
     pub base_url: String,
 
     /// Site description

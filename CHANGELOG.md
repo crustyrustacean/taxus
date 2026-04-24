@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.87] - 2026-04-24
+
+### Changed
+
+- **Dev server static file serving** (`taxus-generator/src/serve/server.rs`): Replaced the hand-rolled `HtmlInjectService` (~130 lines reimplementing static file serving with a 17-entry MIME type map) with `tower_http::services::ServeDir`. The new implementation provides proper MIME type detection via `mime_guess`, `Content-Length`, `Last-Modified` caching headers, path traversal protection, `index.html` resolution, and `404.html` fallback support via `not_found_service`.
+
+- **Clean-URL rewriting and live-reload injection** (`taxus-generator/src/serve/server.rs`): A new axum middleware (`rewrite_and_inject_middleware`) handles the two remaining pieces of custom dev-server logic: rewriting extensionless paths to their `.html` equivalents and injecting the live-reload WebSocket `<script>` into HTML responses.
+
+### Removed
+
+- **`HtmlInjectService`** struct and its `impl tower::Service`: Dead code eliminated — file serving is now handled entirely by `ServeDir`.
+- **`DevServer::reload_sender()`**: Always returned `None`; removed along with the unused `reload_tx` field on `HtmlInjectService`.
+
+### Added
+
+- **`http-body-util`** dependency (`taxus-generator/Cargo.toml`): Required for the new middleware implementation.
+- **31 integration tests** (`taxus-generator/src/serve/server.rs`): Cover clean-URL resolution, live-reload injection, MIME type handling, status code preservation, caching headers, and 404 fallback behavior.
+
+## [0.1.86] - 2026-04-24
+
+### Added
+
+- **`xtask` workspace member**: Initial setup for project maintenance tasks.
+  - `xtask/Cargo.toml`: New crate using workspace package metadata.
+  - `xtask/src/main.rs`: Stub entry point.
+  - `.cargo/config.toml`: Added `xtask` cargo alias (`cargo xtask` → `run --package xtask --`).
+
+## [0.1.85] - 2026-04-24
+
+### Fixed
+
+- **Clippy lints** (`taxus-common/src/hooks/custom_hooks.rs`): Resolved clippy warnings in the `use_click_outside` hook.
+
+## [0.1.84] - 2026-04-24
+
+### Fixed
+
+- **Clippy lints** (`taxus-common/src/components/search_box.rs`): Resolved clippy warnings.
+
+## [0.1.83] - 2026-04-24
+
+### Changed
+
+- **Workspace dependencies** (`Cargo.toml`, `Cargo.lock`): Updated dependencies across the workspace.
+
+## [0.1.82] - 2026-04-24
+
+### Improved
+
+- **SearchBox click-outside clearing** (`taxus-common/src/components/search_box.rs`): The search box now clears its results and input field when the user clicks outside the component, providing a cleaner dismissal UX.
+
+### Added
+
+- **Custom hooks module** (`taxus-common/src/hooks/`): New module for reusable Yew hooks.
+  - `use_click_outside`: Custom hook that invokes a callback when a click event occurs outside the referenced DOM node. Uses `use_effect_with` to attach/detach a document-level click listener.
+  - `taxus-common/src/hooks.rs`: Module declaration and re-exports.
+  - `taxus-common/src/hooks/custom_hooks.rs`: Hook implementations.
+
 ## [0.1.81] - 2026-04-16
 
 ### Improved

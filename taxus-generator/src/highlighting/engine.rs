@@ -32,7 +32,7 @@ pub const HIGHLIGHT_NAMES: &[&str] = &[
 ];
 
 pub enum HighlightResult {
-    /// Successfully highlighted, contains HTML with <span> tags
+    /// Successfully highlighted, contains HTML with `<span>` tags
     Highlighted(String),
     /// Language not in registry, contains HTML-escaped plain text
     Unsupported(String),

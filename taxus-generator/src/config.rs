@@ -31,7 +31,7 @@ pub struct SiteConfig {
     pub base_dir: PathBuf,
 }
 
-/// Site metadata from the [site] section.
+/// Site metadata from the `[site]` section.
 #[derive(Debug, Clone, Deserialize)]
 pub struct SiteMeta {
     /// Site name/title
@@ -44,7 +44,7 @@ pub struct SiteMeta {
     pub author: Option<String>,
 }
 
-/// Build configuration from the [build] section.
+/// Build configuration from the `[build]` section.
 #[derive(Debug, Clone, Deserialize)]
 pub struct BuildConfig {
     /// Content directory path
@@ -96,7 +96,7 @@ impl Default for BuildConfig {
     }
 }
 
-/// Feed configuration from the [feed] section.
+/// Feed configuration from the `[feed]` section.
 #[derive(Debug, Clone, Deserialize)]
 pub struct FeedConfig {
     /// Enable RSS feed generation
@@ -151,7 +151,7 @@ impl Default for FeedConfig {
     }
 }
 
-/// Highlight configuration from the [highlight] section.
+/// Highlight configuration from the `[highlight]` section.
 #[derive(Debug, Clone, Deserialize)]
 pub struct HighlightConfig {
     /// Enable syntax highlighting
@@ -180,7 +180,7 @@ impl Default for HighlightConfig {
     }
 }
 
-/// Image processing configuration from the [images] section.
+/// Image processing configuration from the `[images]` section.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ImageConfig {
     /// Responsive width breakpoints for generated variants

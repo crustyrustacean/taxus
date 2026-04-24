@@ -57,7 +57,7 @@ pub struct FeedConfig {
     /// Feed description
     pub description: String,
 
-    /// Base URL for the site (e.g., "https://example.com")
+    /// Base URL for the site (e.g., `<https://example.com>`)
     pub base_url: String,
 
     /// Feed author name
