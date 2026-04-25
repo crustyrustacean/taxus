@@ -27,7 +27,8 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
     let server_config = DevServerConfig::default()
         .with_port(args.port)
         .with_output_dir(config.build.output_dir.clone())
-        .with_site_dir(args.dir.clone());
+        .with_site_dir(args.dir.clone())
+        .with_open(args.open);
 
     // Capture what the rebuild needs in the closure
     let site_dir = args.dir.clone();
@@ -55,14 +56,6 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
     if !args.quiet {
         tracing::info!("\n  Static site: http://localhost:{}", args.port);
         tracing::info!("  Press Ctrl+C to stop\n");
-    }
-
-    // Open browser if requested
-    if args.open {
-        let url = format!("http://localhost:{}", args.port);
-        if let Err(e) = webbrowser::open(&url) {
-            tracing::error!("Warning: Failed to open browser: {}", e);
-        }
     }
 
     server.run().await?;

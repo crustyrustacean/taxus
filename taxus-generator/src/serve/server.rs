@@ -21,6 +21,7 @@ use std::future::Future;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 /// A function that rebuilds the site. Returns Ok(()) on success or
@@ -62,6 +63,8 @@ pub struct DevServerConfig {
     pub site_dir: PathBuf,
     /// Include draft pages in build.
     pub include_drafts: bool,
+    /// Open the site in the browser after the initial build completes.
+    pub open: bool,
 }
 
 impl Default for DevServerConfig {
@@ -71,6 +74,7 @@ impl Default for DevServerConfig {
             output_dir: PathBuf::from("dist"),
             site_dir: PathBuf::from("."),
             include_drafts: false,
+            open: false,
         }
     }
 }
@@ -99,6 +103,12 @@ impl DevServerConfig {
         self.include_drafts = include;
         self
     }
+
+    /// Create a new configuration that opens the browser after the initial build.
+    pub fn with_open(mut self, open: bool) -> Self {
+        self.open = open;
+        self
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +122,10 @@ pub struct ServerState {
     pub reload_tx: broadcast::Sender<WebSocketMessage>,
     /// The output directory being served.
     pub output_dir: PathBuf,
+    /// Set to `true` once the initial build has completed.
+    /// While `false`, the middleware serves a "Building…" page (503)
+    /// instead of a bare 404.
+    pub build_ready: Arc<AtomicBool>,
 }
 
 // ---------------------------------------------------------------------------
@@ -153,40 +167,34 @@ impl DevServer {
     }
 
     /// Run the development server with graceful shutdown.
+    ///
+    /// The TCP listener is bound **before** the initial build so that the
+    /// server is reachable immediately.  Requests that arrive while the
+    /// initial build is still running receive a "Building…" page (HTTP 503)
+    /// that includes the live-reload WebSocket script and auto-reloads once
+    /// the build completes.
     pub async fn run(self) -> Result<(), ServeError> {
         let addr: SocketAddr = ([0, 0, 0, 0], self.config.port).into();
 
         // Create broadcast channel for reload events
         let (reload_tx, _) = broadcast::channel(16);
 
-        // Perform initial build (in blocking thread pool to not block async runtime)
-        info!("Performing initial build...");
-        let rebuild_clone = self.rebuild.clone();
-        let initial_result = tokio::task::spawn_blocking(move || (rebuild_clone)())
-            .await
-            .unwrap_or_else(|e| Err(format!("Initial build task failed: {}", e)));
-
-        match initial_result {
-            Ok(_) => info!("Initial build complete"),
-            Err(e) => {
-                warn!("Initial build failed: {}", e);
-                let _ = reload_tx.send(WebSocketMessage::Error {
-                    message: format!("Build failed: {}", e),
-                });
-            }
-        }
-
         // Start file watcher
         let mut watcher = FileWatcher::new(self.config.site_dir.clone())?;
         watcher.start()?;
 
+        // Shared state — build_ready starts false so the middleware can
+        // serve a "Building…" page until the initial build finishes.
+        let build_ready = Arc::new(AtomicBool::new(false));
         let state = Arc::new(ServerState {
             reload_tx: reload_tx.clone(),
             output_dir: self.config.output_dir.clone(),
+            build_ready: build_ready.clone(),
         });
 
         let app = self.build_router(state);
 
+        // ── Bind FIRST — the server is reachable from this point ────────
         let listener =
             tokio::net::TcpListener::bind(addr)
                 .await
@@ -197,13 +205,11 @@ impl DevServer {
         info!("Development server listening on http://{}", addr);
         info!("Press Ctrl+C to stop");
 
-        // Create shutdown signal
-        let shutdown_signal = shutdown_signal();
-
-        // Spawn the watcher task with shutdown awareness
+        // ── Spawn watcher task (unchanged logic) ────────────────────────
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
         let rebuild = self.rebuild.clone();
+        let reload_tx_for_watcher = reload_tx.clone();
 
         let watcher_handle = tokio::spawn(async move {
             loop {
@@ -230,11 +236,11 @@ impl DevServer {
                                             .map(|p| p.to_string_lossy().to_string())
                                             .collect();
                                         let reload_event = ReloadEvent::new(event.change_type, files);
-                                        let _ = reload_tx.send(WebSocketMessage::Reload(reload_event));
+                                        let _ = reload_tx_for_watcher.send(WebSocketMessage::Reload(reload_event));
                                     }
                                     Err(e) => {
                                         error!("Build failed: {}", e);
-                                        let _ = reload_tx.send(WebSocketMessage::Error {
+                                        let _ = reload_tx_for_watcher.send(WebSocketMessage::Error {
                                             message: format!("Build failed: {}", e),
                                         });
                                     }
@@ -249,7 +255,45 @@ impl DevServer {
             }
         });
 
-        // Run server with graceful shutdown
+        // ── Spawn initial build (runs concurrently with the server) ─────
+        let rebuild_for_build = self.rebuild.clone();
+        let reload_tx_for_build = reload_tx.clone();
+        let build_ready_for_build = build_ready.clone();
+        let open_browser = self.config.open;
+        let port = self.config.port;
+
+        tokio::spawn(async move {
+            info!("Performing initial build...");
+            let result = tokio::task::spawn_blocking(move || (rebuild_for_build)())
+                .await
+                .unwrap_or_else(|e| Err(format!("Initial build task failed: {}", e)));
+
+            match result {
+                Ok(_) => info!("Initial build complete"),
+                Err(e) => {
+                    warn!("Initial build failed: {}", e);
+                    let _ = reload_tx_for_build.send(WebSocketMessage::Error {
+                        message: format!("Build failed: {}", e),
+                    });
+                }
+            }
+
+            // Mark build as ready regardless of outcome so the "Building…"
+            // page is no longer served (real 404.html takes over on error).
+            build_ready_for_build.store(true, Ordering::Release);
+
+            // Open browser now that the build is done and files are on disk.
+            if open_browser {
+                let url = format!("http://localhost:{}", port);
+                if let Err(e) = webbrowser::open(&url) {
+                    warn!("Failed to open browser: {}", e);
+                }
+            }
+        });
+
+        // ── Serve (blocking) ────────────────────────────────────────────
+        let shutdown_signal = shutdown_signal();
+
         axum::serve(
             listener,
             app.into_make_service_with_connect_info::<SocketAddr>(),
@@ -312,6 +356,17 @@ async fn rewrite_and_inject_middleware(
 
     let response = next.run(req).await;
 
+    // ── Building-page intercept ──────────────────────────────────────────
+    // If the initial build hasn't completed yet, ServeDir has no files to
+    // serve and returns 404.  Replace that with a styled "Building…" page
+    // (503) that includes the live-reload script so the browser reloads
+    // automatically once the build finishes.
+    if response.status() == StatusCode::NOT_FOUND
+        && !state.build_ready.load(Ordering::Relaxed)
+    {
+        return building_page();
+    }
+
     // ── Live-reload injection ────────────────────────────────────────────
     inject_if_html(response).await
 }
@@ -352,6 +407,46 @@ async fn inject_if_html(response: Response) -> Response {
         .status(status)
         .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
         .header(header::CONTENT_LENGTH, injected.len())
+        .body(Body::from(injected))
+        .unwrap()
+}
+
+// ---------------------------------------------------------------------------
+// Building page
+// ---------------------------------------------------------------------------
+
+/// Return a styled "Building…" page (503) that includes the live-reload
+/// WebSocket script.  Served while the initial build is in progress.
+fn building_page() -> Response {
+    let html = r#"<!DOCTYPE html>
+<html>
+<head>
+<title>Building… – taxus</title>
+<style>
+  body {
+    margin: 0; display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; font-family: system-ui, sans-serif;
+    background: #1a1a2e; color: #e0e0e0;
+  }
+  .wrap { text-align: center; }
+  h1 { font-size: 1.5rem; margin-bottom: .5rem; }
+  p { color: #888; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Building…</h1>
+  <p>This page will reload automatically when the build completes.</p>
+</div>
+</body>
+</html>"#
+    .to_string();
+    let injected = inject_live_reload_script(&html);
+    Response::builder()
+        .status(StatusCode::SERVICE_UNAVAILABLE)
+        .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+        .header(header::CONTENT_LENGTH, injected.len())
+        .header("retry-after", "2")
         .body(Body::from(injected))
         .unwrap()
 }
@@ -554,12 +649,19 @@ mod tests {
     }
 
     /// Build a test router (no WebSocket, no file watcher) that serves from
-    /// the given output directory.
+    /// the given output directory.  The build is assumed to be complete
+    /// (`build_ready = true`).
     fn test_router(output_dir: &Path) -> Router {
+        test_router_with_build_state(output_dir, true)
+    }
+
+    /// Build a test router with an explicit build-ready state.
+    fn test_router_with_build_state(output_dir: &Path, build_ready: bool) -> Router {
         let (reload_tx, _) = broadcast::channel(16);
         let state = Arc::new(ServerState {
             reload_tx,
             output_dir: output_dir.to_path_buf(),
+            build_ready: Arc::new(AtomicBool::new(build_ready)),
         });
 
         let serve_dir = ServeDir::new(output_dir)
@@ -633,6 +735,7 @@ mod tests {
         let state = ServerState {
             reload_tx: tx,
             output_dir: PathBuf::from("dist"),
+            build_ready: Arc::new(AtomicBool::new(true)),
         };
 
         let msg = WebSocketMessage::Connected {
@@ -904,6 +1007,7 @@ mod tests {
         let state = Arc::new(ServerState {
             reload_tx,
             output_dir: dir.path().to_path_buf(),
+            build_ready: Arc::new(AtomicBool::new(true)),
         });
         // ServeDir without a 404.html fallback — uses DefaultServeDirFallback.
         // For a missing file, ServeDir returns 404 with an empty body.
@@ -1017,6 +1121,7 @@ mod tests {
         let state = Arc::new(ServerState {
             reload_tx,
             output_dir: dir.path().to_path_buf(),
+            build_ready: Arc::new(AtomicBool::new(true)),
         });
         let router: Router = Router::new()
             .fallback_service(ServeDir::new(dir.path()))
@@ -1027,8 +1132,7 @@ mod tests {
             .with_state(state);
 
         // The favicon route is not registered, so it falls through to ServeDir
-        // which will 404. But actually we didn't register the route, so let's
-        // test without the favicon handler explicitly.
+        // which will 404.
         let (status, _headers, _body) = send_get(&router, "/favicon.ico").await;
         assert_eq!(status, StatusCode::NOT_FOUND);
     }
@@ -1058,5 +1162,53 @@ mod tests {
         // The middleware should NOT rewrite; ServeDir handles the 404.
         let (status, _headers, _body) = send_get(&router, "/styles/main").await;
         assert_eq!(status, StatusCode::NOT_FOUND);
+    }
+
+    // =========================================================================
+    // Integration tests: building-page behavior
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_building_page_served_when_build_not_ready() {
+        let dir = TempDir::new().unwrap();
+        // Empty directory — no files at all.
+        let router = test_router_with_build_state(dir.path(), false);
+
+        let (status, headers, body) = send_get(&router, "/").await;
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        let html = body_string(&body);
+        assert!(
+            html.contains("Building"),
+            "building page should contain 'Building'"
+        );
+        assert!(
+            html.contains("__ws__"),
+            "building page should include live-reload script"
+        );
+        assert_eq!(
+            headers.get("retry-after").unwrap().to_str().unwrap(),
+            "2"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_building_page_intercepts_nonexistent_path() {
+        let dir = TempDir::new().unwrap();
+        let router = test_router_with_build_state(dir.path(), false);
+
+        let (status, _headers, body) = send_get(&router, "/any/path").await;
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        assert!(body_string(&body).contains("Building"));
+    }
+
+    #[tokio::test]
+    async fn test_normal_404_after_build_ready() {
+        let dir = create_test_output_dir();
+        // build_ready = true → normal ServeDir behavior, no building-page intercept
+        let router = test_router_with_build_state(dir.path(), true);
+
+        let (status, _headers, body) = send_get(&router, "/nonexistent").await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+        assert!(body_string(&body).contains("Not Found"));
     }
 }
