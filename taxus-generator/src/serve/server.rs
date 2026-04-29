@@ -21,8 +21,8 @@ use std::future::Future;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// A function that rebuilds the site. Returns Ok(()) on success or
 /// an error message on failure
@@ -361,9 +361,7 @@ async fn rewrite_and_inject_middleware(
     // serve and returns 404.  Replace that with a styled "Building…" page
     // (503) that includes the live-reload script so the browser reloads
     // automatically once the build finishes.
-    if response.status() == StatusCode::NOT_FOUND
-        && !state.build_ready.load(Ordering::Relaxed)
-    {
+    if response.status() == StatusCode::NOT_FOUND && !state.build_ready.load(Ordering::Relaxed) {
         return building_page();
     }
 
@@ -440,7 +438,7 @@ fn building_page() -> Response {
 </div>
 </body>
 </html>"#
-    .to_string();
+        .to_string();
     let injected = inject_live_reload_script(&html);
     Response::builder()
         .status(StatusCode::SERVICE_UNAVAILABLE)
@@ -1185,10 +1183,7 @@ mod tests {
             html.contains("__ws__"),
             "building page should include live-reload script"
         );
-        assert_eq!(
-            headers.get("retry-after").unwrap().to_str().unwrap(),
-            "2"
-        );
+        assert_eq!(headers.get("retry-after").unwrap().to_str().unwrap(), "2");
     }
 
     #[tokio::test]
