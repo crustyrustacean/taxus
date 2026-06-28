@@ -54,7 +54,7 @@ The `generator` crate is organized into modules that each own a specific domain:
 | `content` | `Page`, `Section`, `Frontmatter`, `ContentSource` | Parse Markdown files with TOML frontmatter |
 | `routes` | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind` | Map content files to URL paths |
 | `templates` | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext` | Render HTML with Tera templates |
-| `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline (including WASM client writing with `islands` feature) |
+| `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline (including WASM client writing) |
 | `assets` | `ScssProcessor`, `StaticCopier`, `AssetReport` | Compile SCSS, copy static files |
 | `feed` | `FeedGenerator`, `FeedEntry`, `FeedConfig` | Generate RSS/Atom feeds |
 | `init` | `InitScaffolder`, `InitOptions`, `InitReport` | Scaffold new site directories |
@@ -96,7 +96,7 @@ The `generator` crate is organized into modules that each own a specific domain:
 
 ## Build Pipeline
 
-The `SiteBuilder` orchestrates a 15-stage build pipeline (13 stages without the `islands` feature):
+The `SiteBuilder` orchestrates a 15-stage build pipeline:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -149,11 +149,11 @@ The `SiteBuilder` orchestrates a 15-stage build pipeline (13 stages without the 
 │          └──▶ Compile SCSS → CSS (styles/**/*.scss)              │
 │          └──▶ Copy static/ files to dist/static/                 │
 │                                                                  │
-│  [12/13] Generate search index (islands feature only)            │
+│  [12/13] Generate search index                                   │
 │          └──▶ Build TF-IDF index from page content               │
 │          └──▶ Write dist/search_index.bin                        │
 │                                                                  │
-│  [13/13] Write WASM client (islands feature only)                │
+│  [13/13] Write WASM client                                       │
 │          └──▶ Write embedded client.js to dist/wasm/              │
 │          └──▶ Write embedded client_bg.wasm to dist/wasm/         │
 │                                                                  │
@@ -209,7 +209,7 @@ RenderedPage {
 
 ## Islands Architecture
 
-When the `islands` feature is enabled, the generator can pre-render Yew components at build time:
+The generator pre-renders Yew components at build time:
 
 ### Build-Time (SSR)
 
@@ -237,19 +237,14 @@ See [Islands Architecture](./islands.md) for the full guide.
 
 | Feature | Default | Effect |
 |---------|---------|--------|
-| `islands` | off | Enables Yew SSR, tokio, common crate compilation, and WASM client build/embedding; `island()` Tera function renders components; WASM client is compiled by `build.rs` and embedded in the binary |
+| `lang-rust` | on | Rust syntax highlighting via tree-sitter |
 
-Without the `islands` feature:
-
-- Generator is a plain Tera + Markdown SSG
-- `island()` function is a no-op (returns empty string)
-- No Yew or WASM dependencies compiled
-- No WASM client embedded or written
+Islands (Yew SSR + WASM hydration) are always enabled. The WASM client
+(`taxus-client`) is compiled by `build.rs` at Cargo build time and embedded
+in the binary via `include_bytes!`; at site build time it is written to
+`dist/wasm/`. No feature flag is required.
 
 ```bash
-# Plain SSG — no Yew
+# Build the site (islands are always compiled in)
 cargo run -- build --dir my-site
-
-# Islands SSG — Yew SSR at build time
-cargo run --features islands -- build --dir my-site
 ```

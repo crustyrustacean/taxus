@@ -34,11 +34,8 @@ cargo test --test config_loading
 ## Building
 
 ```bash
-# Build static site (plain SSG)
+# Build the site (islands and the WASM client are compiled and embedded automatically)
 cargo run -- build --dir my-site
-
-# Build with islands support (WASM client is compiled and embedded automatically)
-cargo run --features islands -- build --dir my-site
 
 # Build release binary
 cargo build --release

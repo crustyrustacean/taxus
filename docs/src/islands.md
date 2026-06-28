@@ -147,7 +147,6 @@ Two registries must be updated in sync:
 In `generator/src/templates/renderer.rs`, add a match arm to the `island()` Tera function:
 
 ```rust
-#[cfg(feature = "islands")]
 tera.register_function("island", |args: &HashMap<String, tera::Value>| {
     use tera::Value;
     
@@ -249,39 +248,50 @@ A production-ready search component with debounced input and async results. See 
 
 ## Initializing a Site with Islands
 
-Use the `--islands` flag when creating a new site:
+Islands are enabled by default. Initializing a new site includes the WASM
+hydration script in the generated `templates/base.html` and a `Counter`
+island demo in `templates/section.html`:
 
 ```bash
-cargo run -- init my-site --islands
+cargo run -- init my-site
 ```
 
-This includes the WASM hydration script in the generated `templates/base.html`:
+The generated `base.html` includes the WASM hydration script:
 
 ```html
 <script type="module">
-  import init from '/wasm/client.js';
-  init();
+  import init, * as bindings from '/wasm/client.js';
+  const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
+  window.wasmBindings = bindings;
+  bindings.hydrate_islands();
 </script>
+```
+
+To generate a plain Tera/Markdown scaffold with no WASM hydration, pass
+`--no-islands`:
+
+```bash
+cargo run -- init my-site --no-islands
 ```
 
 ## Building the WASM Client
 
-The WASM client is compiled automatically when building with the `islands` feature. A Cargo build script (`taxus-generator/build.rs`) compiles the `taxus-client` crate to `wasm32-unknown-unknown`, runs `wasm-bindgen` to generate JS bindings, and embeds the resulting `client.js` and `client_bg.wasm` into the generator binary via `include_bytes!`. At site build time, these embedded files are written to `dist/wasm/`.
+The WASM client is compiled automatically as part of every Cargo build. A Cargo build script (`taxus-generator/build.rs`) compiles the `taxus-client` crate to `wasm32-unknown-unknown`, runs `wasm-bindgen` to generate JS bindings, and embeds the resulting `client.js` and `client_bg.wasm` into the generator binary via `include_bytes!`. At site build time, these embedded files are written to `dist/wasm/`.
 
 No separate build step or external tooling (such as Trunk) is required.
 
 ## Development Workflow
 
-### 1. Create a Site with Islands
+### 1. Create a Site
 
 ```bash
-cargo run -- init my-site --islands --name "My Site" --base-url "https://example.com"
+cargo run -- init my-site --name "My Site" --base-url "https://example.com"
 ```
 
 ### 2. Build the Static Site (includes WASM client)
 
 ```bash
-cargo run --features islands -- build --dir my-site --verbose
+cargo run -- build --dir my-site --verbose
 ```
 
 The WASM client is compiled as part of the Cargo build and embedded in the binary. During the `taxus build` pipeline, the embedded `client.js` and `client_bg.wasm` are written to `dist/wasm/` automatically — no separate build step needed.
@@ -297,30 +307,6 @@ The page should:
 - Show the counter with the initial value
 - After WASM loads (~1s), the button becomes interactive
 
-## Feature Flag
-
-The `islands` Cargo feature controls whether Yew SSR and the WASM client are compiled in:
-
-```bash
-# Plain SSG — no Yew, fastest compile, smallest binary
-cargo run -- build --dir my-site
-
-# Islands SSG — Yew SSR pre-renders components at build time;
-# WASM client is compiled and embedded in the binary automatically
-cargo run --features islands -- build --dir my-site
-```
-
-Without the feature:
-- `island()` function returns empty string (no error)
-- No Yew or WASM dependencies compiled
-- Templates that use `{{ island(...) | safe }}` still render without output
-
-With the feature:
-- The WASM client (`taxus-client`) is compiled to `wasm32-unknown-unknown` by `taxus-generator/build.rs`
-- `wasm-bindgen` JS bindings are generated at Cargo build time
-- The resulting `client.js` and `client_bg.wasm` are embedded in the generator binary via `include_bytes!`
-- At site build time, these files are written to `dist/wasm/` automatically
-
 ## Search
 
-The `islands` feature also enables search index generation. See [Search](./search.md) for details.
+The build pipeline also generates a search index. See [Search](./search.md) for details.

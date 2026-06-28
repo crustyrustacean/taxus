@@ -52,7 +52,7 @@ my-site/
 cargo run -- build --dir my-site --verbose
 ```
 
-This runs the 13-stage build pipeline and writes output to `my-site/dist/`.
+This runs the 15-stage build pipeline and writes output to `my-site/dist/`. The WASM client (`client.js` and `client_bg.wasm`) is compiled during the Cargo build, embedded in the binary, and written to `dist/wasm/` automatically — no separate build step is needed.
 
 ### Step 3: Serve and View
 
@@ -71,19 +71,14 @@ You should see the home page rendered from the Markdown content in `content/_ind
 - Explore [Templates](./templates.md) for customizing HTML output
 - Read the [CLI Reference](./cli.md) for all command options
 
-## For Islands Support
+## Opting Out of Islands
 
-If you want interactive Yew components:
+Islands (Yew/WASM hydration) are enabled by default. If you want a plain
+Tera/Markdown scaffold with no WASM hydration, pass `--no-islands` when
+initializing:
 
 ```bash
-# Initialize with islands support
-cargo run -- init my-site --islands
-
-# Build with islands feature enabled
-# The WASM client is compiled automatically and embedded in the binary
-cargo run --features islands -- build --dir my-site
+cargo run -- init my-site --no-islands
 ```
-
-The WASM client (`client.js` and `client_bg.wasm`) is compiled during the Cargo build and written to `dist/wasm/` automatically — no separate build step is needed.
 
 See [Islands Architecture](./islands.md) for the complete guide.

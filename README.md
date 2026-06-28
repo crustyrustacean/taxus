@@ -4,14 +4,14 @@
 [![Security Audit](https://github.com/crustyrustacean/taxus/actions/workflows/security.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/security.yml)
 [![Docs](https://github.com/crustyrustacean/taxus/actions/workflows/doc.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/doc.yml)
 
-A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring optional WebAssembly "islands" for interactive components.
+A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring WebAssembly "islands" for interactive components.
 
 ## Features
 
 - **Static Site Generation** — Pre-rendered HTML for optimal performance and SEO
 - **Markdown + TOML Frontmatter** — Write content with familiar syntax
-- **Islands Architecture** — Optional Yew/WASM components that hydrate client-side
-- **Full-Text Search** — TF-IDF search index for client-side search (with `islands` feature)
+- **Islands Architecture** — Yew/WASM components that hydrate client-side
+- **Full-Text Search** — TF-IDF search index for client-side search
 - **Hot-Reloading Dev Server** — WebSocket-based live reload during development
 - **RSS/Atom Feeds** — Automatic feed generation
 - **Taxonomies** — Tags, categories, and series with automatic archive pages (list + term templates included in scaffold)
@@ -62,15 +62,9 @@ Common options:
 
 | Feature | Default | Description |
 |---------|---------|-------------|
-| `islands` | off | Enable Yew SSR and WASM hydration |
+| `lang-rust` | on | Rust syntax highlighting via tree-sitter |
 
-```bash
-# Standard SSG build
-cargo run -- build
-
-# With islands support (Yew SSR)
-cargo run --features islands -- build
-```
+Islands (Yew SSR + WASM hydration) are always enabled — they are a first-class part of the generator. No feature flag is required.
 
 ## Hero Images
 

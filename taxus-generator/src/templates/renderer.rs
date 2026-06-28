@@ -136,12 +136,8 @@ impl TeraRenderer {
 
         // Register the island() Tera function.
         //
-        // When the `islands` feature is enabled, this calls Yew SSR to pre-render
-        // the component and wraps the output in a hydration mount point div.
-        //
-        // Without the `islands` feature, this registers a no-op that returns an empty
-        // string, so templates using {{ island(...) | safe }} still render without error.
-        #[cfg(feature = "islands")]
+        // This calls Yew SSR to pre-render the component and wraps the output
+        // in a hydration mount point div.
         renderer
             .tera
             .register_function("island", |args: &HashMap<String, tera::Value>| {
@@ -191,15 +187,6 @@ impl TeraRenderer {
                 };
 
                 Ok(Value::String(html))
-            });
-
-        // No-op island() function when the `islands` feature is not enabled.
-        // Returns an empty string so {{ island(...) | safe }} in templates is a silent no-op.
-        #[cfg(not(feature = "islands"))]
-        renderer
-            .tera
-            .register_function("island", |_args: &HashMap<String, tera::Value>| {
-                Ok(tera::Value::String(String::new()))
             });
 
         Ok(renderer)

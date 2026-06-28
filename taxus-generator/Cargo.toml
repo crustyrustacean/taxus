@@ -17,14 +17,8 @@ name = "taxus_lib"
 path = "src/lib.rs"
 
 [features]
-# Enable Yew SSR island support.
-# When enabled: the `island()` Tera function renders Yew components server-side
-# and the `common` crate and `yew/ssr` are compiled in.
-# Without this feature the generator is a plain Tera + Markdown SSG with no
-# Yew/WASM dependency, and `island()` calls in templates produce empty output.
-islands = ["dep:taxus-common", "dep:yew", "dep:wasm-bindgen-cli-support"]
 lang-rust = ["dep:tree-sitter-rust"]
-default = ["islands", "lang-rust"]
+default = ["lang-rust"]
 
 [dependencies]
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
@@ -46,6 +40,10 @@ tree-sitter-rust = { version = "0.24.2", optional = true }
 walkdir = "2.5"
 image = "0.25"
 
+# ── Islands (Yew SSR + WASM client) ───────────────────────────────────────────
+taxus-common = { path = "../taxus-common" }
+yew = { version = "0.23.0", features = ["ssr"] }
+
 # ── Dev server dependencies ───────────────────────────────────────────────────
 axum = { version = "0.8.8", features = ["ws"] }
 axum-extra = { version = "0.12.5", features = ["typed-header"] }
@@ -57,12 +55,8 @@ tower-http = { version = "0.6", features = ["fs", "set-header"] }
 tokio-stream = "0.1"
 webbrowser = "1.0"
 
-# ── Islands feature dependencies (compiled only with --features islands) ──────
-taxus-common = { path = "../taxus-common", optional = true }
-yew = { version = "0.23.0", features = ["ssr"], optional = true }
-
 [build-dependencies]
-wasm-bindgen-cli-support = { version = "=0.2.118", optional = true }
+wasm-bindgen-cli-support = "=0.2.118"
 
 [dev-dependencies]
 tempfile = "3.10"

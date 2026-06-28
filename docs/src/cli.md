@@ -64,8 +64,8 @@ taxus build --output /tmp/preview
 9. Build and render taxonomy pages
 10. Generate feeds (RSS/Atom)
 11. Process assets (SCSS, static files)
-12. Generate search index (islands feature only)
-13. Write WASM client (islands feature only)
+12. Generate search index
+13. Write WASM client
 14. Write output files
 
 ## `taxus clean`
@@ -104,7 +104,7 @@ Options:
   -n, --name <NAME>       Site name used in templates and site.toml
   -u, --base-url <URL>    Base URL (must start with http:// or https://)
   -f, --force             Initialize even if directory is not empty
-  -i, --islands           Include WASM hydration script in templates
+      --no-islands        Disable WASM islands hydration (enabled by default)
   -h, --help              Print help
 ```
 
@@ -133,8 +133,8 @@ taxus init my-site
 # Initialize with custom options
 taxus init my-site --name "My Blog" --base-url "https://myblog.com"
 
-# Initialize with islands support
-taxus init my-site --islands
+# Initialize a plain site without islands
+taxus init my-site --no-islands
 
 # Force initialization in non-empty directory
 taxus init my-site --force

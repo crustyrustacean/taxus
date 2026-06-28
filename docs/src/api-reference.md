@@ -434,7 +434,7 @@ pub struct SiteBuilder {
 | `build(self) -> Result<BuildReport>` | Run build pipeline |
 | `clean(self) -> Result<()>` | Clean output directory |
 
-### `build::pipeline::search` Module (islands feature only)
+### `build::pipeline::search` Module
 
 #### `GeneratedSearch`
 
@@ -451,7 +451,7 @@ Container for the serialized search index.
 | `generate_search(pages: &[ProcessedPage]) -> Result<GeneratedSearch>` | Create search index from processed pages |
 | `write_search_index(generated: &GeneratedSearch, output_dir: &Path, dry_run: bool) -> Result<()>` | Write `search_index.bin` to output |
 
-### `build::pipeline::wasm` Module (islands feature only)
+### `build::pipeline::wasm` Module
 
 The WASM client is compiled at Cargo build time by `taxus-generator/build.rs` and embedded into the binary. At site build time, the embedded files are written to the output directory.
 

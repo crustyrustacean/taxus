@@ -282,7 +282,6 @@ impl SiteBuilder {
         debug!(files_processed = assets.files_processed, "Assets processed");
         drop(_assets_span);
 
-        #[cfg(feature = "islands")]
         {
             let _search_index_span = info_span!("generate_search").entered();
             info!("[13/15] Generating search index...");
@@ -291,7 +290,6 @@ impl SiteBuilder {
             drop(_search_index_span);
         }
 
-        #[cfg(feature = "islands")]
         {
             let _wasm_span = info_span!("build_wasm").entered();
             info!("[14/15] Writing WASM client...");

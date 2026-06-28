@@ -3,9 +3,7 @@
 use crate::error::GeneratorError;
 use std::path::{Path, PathBuf};
 
-#[cfg(feature = "islands")]
 const CLIENT_JS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/client.js"));
-#[cfg(feature = "islands")]
 const CLIENT_WASM: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/client_bg.wasm"));
 
 /// Result of a successful WASM client build.

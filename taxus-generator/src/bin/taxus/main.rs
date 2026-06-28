@@ -83,14 +83,14 @@ async fn main() {
             name,
             base_url,
             force,
-            islands,
+            no_islands,
         } => {
             match run_init(&InitArgs {
                 path,
                 name,
                 base_url,
                 force,
-                islands,
+                islands: !no_islands,
             }) {
                 Ok(report) => {
                     report.print_summary();

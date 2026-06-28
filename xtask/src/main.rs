@@ -38,7 +38,7 @@ enum Command {
         /// Build in release mode.
         #[arg(long)]
         release: bool,
-        /// Space-separated cargo feature flags (e.g. "islands").
+        /// Space-separated cargo feature flags (e.g. "lang-rust").
         #[arg(long)]
         features: Option<String>,
     },
@@ -363,51 +363,35 @@ fn cmd_clean() -> i32 {
     cargo("clean", &[])
 }
 
-/// Run the full CI pipeline locally (mirrors `.github/workflows/ci.yml`).
+/// Run the full CI pipeline locally (fmt, lint, test, WASM check).
 fn cmd_ci() -> i32 {
     eprintln!("\n━━━ CI pipeline ━━━\n");
 
-    eprintln!("[1/6] Format check");
+    eprintln!("[1/5] Format check");
     let rc = cmd_fmt(true);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[2/6] Clippy (default features)");
+    eprintln!("[2/5] Clippy");
     let rc = cmd_lint(None, false);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[3/6] Build (default features)");
+    eprintln!("[3/5] Build");
     let rc = cmd_build(false, None);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[4/6] Test (default features)");
+    eprintln!("[4/5] Test");
     let rc = cmd_test(false, None, false);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[5/6] Clippy (islands features)");
-    let rc = cmd_lint(Some("islands".into()), false);
-    if rc != 0 {
-        return rc;
-    }
-
-    eprintln!("[6/6] Build + Test (islands features)");
-    let rc = cmd_build(false, Some("islands".into()));
-    if rc != 0 {
-        return rc;
-    }
-    let rc = cmd_test(false, Some("islands".into()), false);
-    if rc != 0 {
-        return rc;
-    }
-
-    eprintln!("[+] WASM check");
+    eprintln!("[5/5] WASM check");
     let rc = cmd_wasm(false);
     if rc != 0 {
         return rc;

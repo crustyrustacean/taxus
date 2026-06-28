@@ -149,12 +149,14 @@ pub enum Commands {
         #[arg(short, long)]
         force: bool,
 
-        /// Initialize with islands support (Yew/WASM hydration).
+        /// Disable islands support for a plain Tera/Markdown scaffold.
         ///
-        /// When set, the generated templates will include WASM hydration
-        /// script tags for interactive Yew components.
+        /// By default, taxus initializes a site with WASM islands enabled: the
+        /// generated `base.html` includes the WASM hydration script and the
+        /// section template demonstrates a `Counter` island. Pass this flag to
+        /// generate a plain scaffold with no Yew/WASM hydration.
         #[arg(long)]
-        islands: bool,
+        no_islands: bool,
     },
 
     /// List all routes that would be discovered from the content directory.

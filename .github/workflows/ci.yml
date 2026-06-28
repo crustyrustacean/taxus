@@ -13,14 +13,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        feature-set:
-          - name: default
-            flags: ""
-          - name: islands
-            flags: "--features islands"
 
     steps:
       - uses: actions/checkout@v4
@@ -32,20 +24,18 @@ jobs:
 
       - name: Cache Cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.feature-set.name }}
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
       - name: Run Clippy
-        run: cargo clippy --all-targets ${{ matrix.feature-set.flags }} -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Build
-        run: cargo build ${{ matrix.feature-set.flags }}
+        run: cargo build
 
       - name: Run unit and integration tests
-        run: cargo test ${{ matrix.feature-set.flags }}
+        run: cargo test
 
   wasm-check:
     name: WASM Check

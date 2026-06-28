@@ -4,7 +4,7 @@ Taxus provides a built-in search component with client-side full-text search. Th
 
 ## Overview
 
-When the `islands` feature is enabled, the build pipeline:
+The build pipeline:
 
 1. Generates a search index at `dist/search_index.bin`
 2. The `SearchBox` component is available for use in templates
@@ -18,10 +18,10 @@ The index is serialized with `postcard` for compact storage and fast deserializa
 
 ## Enabling Search
 
-Search requires the `islands` feature:
+Search is always available. Build the site and the index is generated automatically:
 
 ```bash
-cargo run --features islands -- build --dir my-site
+cargo run -- build --dir my-site
 ```
 
 This generates `dist/search_index.bin` alongside your static files.

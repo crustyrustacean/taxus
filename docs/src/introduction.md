@@ -1,6 +1,6 @@
 # Introduction
 
-Welcome to **Taxus**, a Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring optional WebAssembly "islands" for interactive components.
+Welcome to **Taxus**, a Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring WebAssembly "islands" for interactive components.
 
 ## What is Taxus?
 
@@ -9,7 +9,7 @@ Taxus is a static site generator that combines:
 - **Tera templates** for the static "sea of HTML" — page layout, content, navigation
 - **Markdown content** with TOML frontmatter for writing pages and posts
 - **SCSS** for modern styling
-- **Optional Yew components** — pre-rendered server-side at build time, hydrated by WASM in the browser for interactivity
+- **Yew components** — pre-rendered server-side at build time, hydrated by WASM in the browser for interactivity
 
 The key insight: pages are immediately visible with no JavaScript required. Interactive components load asynchronously and attach without re-rendering.
 

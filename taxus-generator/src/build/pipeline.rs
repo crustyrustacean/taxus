@@ -11,11 +11,9 @@ pub mod markdown;
 pub mod not_found;
 pub mod pages;
 pub mod robots;
-#[cfg(feature = "islands")]
 pub mod search;
 pub mod sitemap;
 pub mod taxonomy;
-#[cfg(feature = "islands")]
 pub mod wasm;
 
 use crate::CodeHighlighter;
@@ -31,12 +29,8 @@ use std::fs;
 use std::path::Path;
 use tracing::{debug, debug_span, info};
 
-// Island-specific imports — only compiled when the `islands` feature is enabled.
-#[cfg(feature = "islands")]
 use taxus_common::components::counter::{Counter, CounterProps};
-#[cfg(feature = "islands")]
 use taxus_common::components::search_box::SearchBoxProps;
-#[cfg(feature = "islands")]
 use yew::ServerRenderer;
 
 /// Processed page ready for rendering.
@@ -339,9 +333,6 @@ pub fn clean_output(output_dir: &Path) -> Result<()> {
 }
 
 /// SSR a Yew island component and wrap it in the hydration mount div.
-///
-/// Only compiled when the `islands` feature is enabled.
-#[cfg(feature = "islands")]
 pub fn render_island_counter(props: CounterProps) -> String {
     // Serialize props to JSON for the data attribute
     let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
@@ -359,7 +350,6 @@ pub fn render_island_counter(props: CounterProps) -> String {
     format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)
 }
 
-#[cfg(feature = "islands")]
 pub fn render_search_box(props: SearchBoxProps) -> String {
     use taxus_common::components::search_box::SearchBox;
 

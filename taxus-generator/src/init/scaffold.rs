@@ -255,6 +255,16 @@ This is your new static site. Start editing this file to add your content.
         // Create section.html
         let section_path = path.join("templates/section.html");
         if !section_path.exists() {
+            // Include a Counter island only when islands support is enabled.
+            let island_demo = if self.options.islands {
+                r#"
+{# Place a Counter island on the page #}
+{{ island(component="Counter", initial=3) | safe }}
+"#
+            } else {
+                ""
+            };
+
             let content = r#"{% extends "base.html" %}
 
 {% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
@@ -283,9 +293,10 @@ This is your new static site. Start editing this file to add your content.
     
     {{ section.content | safe }}
 </section>
-{# Place a Counter island on the page #}
-{{ island(component="Counter", initial=3) | safe }}
-{% endblock %}
+"#
+                .to_string()
+                + island_demo
+                + r#"{% endblock %}
 "#;
             std::fs::write(&section_path, content).map_err(|e| InitError::FileWrite {
                 path: section_path.clone(),
