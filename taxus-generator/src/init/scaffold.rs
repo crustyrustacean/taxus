@@ -294,7 +294,7 @@ This is your new static site. Start editing this file to add your content.
     {{ section.content | safe }}
 </section>
 "#
-                .to_string()
+            .to_string()
                 + island_demo
                 + r#"{% endblock %}
 "#;
