@@ -23,6 +23,9 @@ docs/book/
 dist/
 target/
 
+# Deployment tooling (wrangler local state)
+.wrangler/
+
 # Test Site
 test-site/
 

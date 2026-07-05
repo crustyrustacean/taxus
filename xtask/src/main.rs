@@ -9,6 +9,7 @@
 //! — every tunable is a named flag — so that they compose well in scripts and
 //! Makefiles.
 
+use std::path::Path;
 use std::time::Instant;
 
 use clap::{Parser, Subcommand};
@@ -119,6 +120,23 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
+
+    /// Deploy the product site (get-taxus-org) to Cloudflare Pages.
+    Deploy {
+        /// Cloudflare Pages project name.
+        #[arg(long, default_value = "get-taxus-org")]
+        project: String,
+        /// Deploy to a specific branch. Defaults to the production branch.
+        /// Use a different name (e.g. "preview") for a preview deployment.
+        #[arg(long)]
+        branch: Option<String>,
+        /// The Cloudflare Pages production branch name.
+        #[arg(long, default_value = "main")]
+        prod_branch: String,
+        /// Skip the build step and deploy the existing dist/ directory.
+        #[arg(long)]
+        no_build: bool,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +163,12 @@ fn main() {
         Command::Clean => cmd_clean(),
         Command::Ci => cmd_ci(),
         Command::Release { bump, dry_run } => cmd_release(&bump, dry_run),
+        Command::Deploy {
+            project,
+            branch,
+            prod_branch,
+            no_build,
+        } => cmd_deploy(&project, branch.as_deref(), &prod_branch, no_build),
     };
 
     std::process::exit(exit);
@@ -162,14 +186,19 @@ fn workspace_root() -> std::path::PathBuf {
         .to_path_buf()
 }
 
-/// Run a command, print a summary line, and return its exit code.
+/// Run a command in the workspace root, print a summary line, and return its exit code.
 fn run(label: &str, cmd: &str, args: &[&str]) -> i32 {
+    run_in(label, &workspace_root(), cmd, args)
+}
+
+/// Run a command in a specific directory, print a summary line, and return its exit code.
+fn run_in(label: &str, dir: &Path, cmd: &str, args: &[&str]) -> i32 {
     eprintln!("  {label}");
     let start = Instant::now();
 
     let mut child = std::process::Command::new(cmd)
         .args(args)
-        .current_dir(workspace_root())
+        .current_dir(dir)
         .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
@@ -221,7 +250,7 @@ fn require_tool(name: &str, install_hint: &str) {
         .status();
 
     match result {
-        Ok(s) if s.success() => return,
+        Ok(s) if s.success() => (),
         _ => {
             eprintln!("error: `{name}` not found. {install_hint}");
             std::process::exit(1);
@@ -304,25 +333,24 @@ fn cmd_doc(open: bool) -> i32 {
     if open {
         args.push("--open");
     }
-    let code = cargo("doc", &args);
-    code
+    cargo("doc", &args)
 }
 
 fn cmd_book(serve: bool) -> i32 {
     require_tool("mdbook", "Install with: cargo install mdbook");
     if serve {
         let label = "mdbook serve";
-        run(&label, "mdbook", &["serve", "docs/"])
+        run(label, "mdbook", &["serve", "docs/"])
     } else {
         let label = "mdbook build";
-        run(&label, "mdbook", &["build", "docs/"])
+        run(label, "mdbook", &["build", "docs/"])
     }
 }
 
 fn cmd_audit() -> i32 {
     require_tool("cargo-audit", "Install with: cargo install cargo-audit");
     let label = "cargo audit";
-    run(&label, "cargo", &["audit"])
+    run(label, "cargo", &["audit"])
 }
 
 fn cmd_wasm(release: bool) -> i32 {
@@ -405,13 +433,14 @@ fn cmd_release(bump: &str, dry_run: bool) -> i32 {
     require_tool("git-cliff", "Install with: cargo install git-cliff");
 
     let tag = format!("v{bump}");
-    let mut args: Vec<&str> = Vec::new();
-    args.push("cliff");
-    args.push("--unreleased");
-    args.push("--tag");
-    args.push(&tag);
-    args.push("--prepend");
-    args.push("CHANGELOG.md");
+    let args: Vec<&str> = vec![
+        "cliff",
+        "--unreleased",
+        "--tag",
+        tag.as_str(),
+        "--prepend",
+        "CHANGELOG.md",
+    ];
 
     let label = if dry_run {
         "git-cliff (dry run)"
@@ -438,4 +467,70 @@ fn cmd_release(bump: &str, dry_run: bool) -> i32 {
     }
 
     status.code().unwrap_or(1)
+}
+
+/// Deploy the get-taxus-org product site to Cloudflare Pages via `wrangler`.
+///
+/// Builds the site with `taxus build` (unless `--no-build` is given), then
+/// uploads `get-taxus-org/dist` with `npx wrangler pages deploy`. Production is
+/// the default (wrangler is invoked with `--branch <prod_branch>`); pass
+/// `--branch <name>` for a preview deployment on a different branch.
+fn cmd_deploy(project: &str, branch: Option<&str>, prod_branch: &str, no_build: bool) -> i32 {
+    let site_dir = workspace_root().join("get-taxus-org");
+    let dist_dir = site_dir.join("dist");
+
+    if !site_dir.is_dir() {
+        eprintln!("error: get-taxus-org/ not found at {}", site_dir.display());
+        return 1;
+    }
+
+    require_tool(
+        "taxus",
+        "Install with: cargo install --path taxus-generator --root ~/.local",
+    );
+    require_tool("npx", "Install Node.js from https://nodejs.org");
+
+    if !no_build {
+        eprintln!("\n━━━ Build product site ━━━\n");
+        let rc = run_in("taxus build", &site_dir, "taxus", &["build"]);
+        if rc != 0 {
+            return rc;
+        }
+    }
+
+    if !dist_dir.is_dir() {
+        eprintln!(
+            "error: {} does not exist. Run without --no-build first.",
+            dist_dir.display()
+        );
+        return 1;
+    }
+
+    let resolved_branch = branch.unwrap_or(prod_branch);
+    let is_prod = resolved_branch == prod_branch;
+    let target = if is_prod {
+        "production".to_string()
+    } else {
+        format!("preview branch '{resolved_branch}'")
+    };
+
+    eprintln!("\n━━━ Deploy to Cloudflare Pages ━━━\n");
+    eprintln!("  project : {project}");
+    eprintln!("  target  : {target}");
+    eprintln!("  dist    : {}\n", dist_dir.display());
+
+    let args: Vec<&str> = vec![
+        "--yes",
+        "wrangler@latest",
+        "pages",
+        "deploy",
+        "dist",
+        "--project-name",
+        project,
+        "--branch",
+        resolved_branch,
+        "--commit-dirty=true",
+    ];
+
+    run_in("wrangler pages deploy", &site_dir, "npx", &args)
 }
