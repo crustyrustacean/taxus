@@ -19,6 +19,12 @@ docs/book/
 # Environment variables
 .env
 
+# Secrets — never commit
+*.pem
+*.key
+*_deploy
+*_deploy.pub
+
 # Build Artifacts
 dist/
 target/
