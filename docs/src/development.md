@@ -6,10 +6,6 @@ This guide covers development workflows for contributing to Taxus.
 
 - **Rust** — [Install Rust](https://rustup.rs/)
 - **mdbook** ≥ 0.5.0 — Documentation: `cargo install mdbook --locked`
-  - The canonical build version is pinned in `.woodpecker.yml`
-    (currently v0.5.3). mdBook 0.5.x emits hashed asset names and uses a
-    newer theme than 0.4.x, so local and CI versions must match to keep
-    the deployed output consistent.
 
 ## Setup
 
