@@ -18,4 +18,4 @@ Taxus compiles SCSS using [grass](https://github.com/connorskees/grass). Write s
 
 ### Documentation
 
-For complete styling reference, see the [Styling documentation](https://crustyrustacean.github.io/taxus/styling.html).
+For complete styling reference, see the [Styling documentation](https://crustyrustacean.codeberg.page/taxus/styling.html).

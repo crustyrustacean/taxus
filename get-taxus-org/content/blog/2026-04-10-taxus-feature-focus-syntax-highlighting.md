@@ -126,7 +126,7 @@ Ready to see it in action?
 
 ```bash
 # Clone and build
-git clone https://github.com/crusty-rustacean/taxus
+git clone https://codeberg.org/crustyrustacean/taxus
 cd taxus
 
 # Initialize a new site

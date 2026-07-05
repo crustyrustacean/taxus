@@ -26,4 +26,4 @@ Here's a counter widget to demonstrate:
 
 ### Documentation
 
-For complete islands reference, see the [Islands Architecture documentation](https://crustyrustacean.github.io/taxus/islands.html).
+For complete islands reference, see the [Islands Architecture documentation](https://crustyrustacean.codeberg.page/taxus/islands.html).
