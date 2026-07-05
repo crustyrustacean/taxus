@@ -56,17 +56,18 @@ taxus build --output /tmp/preview
 1. Discover routes from `content/`
 2. Load Tera templates from `templates/`
 3. Parse Markdown + frontmatter
-4. Copy co-located assets
-5. Render pages with templates
-6. Generate `robots.txt`
-7. Generate `sitemap.xml`
-8. Generate `404.html`
-9. Build and render taxonomy pages
-10. Generate feeds (RSS/Atom)
-11. Process assets (SCSS, static files)
-12. Generate search index
-13. Write WASM client
-14. Write output files
+4. Process hero images (responsive variants, WebP conversion, srcset)
+5. Copy co-located assets
+6. Render pages with templates
+7. Generate `robots.txt`
+8. Generate `sitemap.xml`
+9. Generate `404.html`
+10. Build and render taxonomy pages
+11. Generate feeds (RSS/Atom)
+12. Process assets (SCSS, static files)
+13. Generate search index
+14. Write WASM client
+15. Write output files
 
 ## `taxus clean`
 
@@ -180,12 +181,10 @@ taxus routes --dir ./my-site
 Start a development server with live reload.
 
 ```
-taxus serve [OPTIONS] [DIR]
-
-Arguments:
-  [DIR]               Root directory (must contain site.toml) [default: .]
+taxus serve [OPTIONS]
 
 Options:
+  -d, --dir <PATH>    Root directory (must contain site.toml) [default: .]
   -p, --port <PORT>   Port to listen on [default: 3000]
   -v, --verbose       Print detailed progress for each build stage
   -q, --quiet         Suppress all output except errors
@@ -208,10 +207,10 @@ taxus serve --port 8080
 taxus serve --open
 
 # Serve from specific directory
-taxus serve ./my-site
+taxus serve --dir ./my-site
 
 # Combined options
-taxus serve ./my-site --port 8080 --open --verbose
+taxus serve --dir ./my-site --port 8080 --open --verbose
 ```
 
 ## Error Hints

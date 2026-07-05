@@ -15,7 +15,7 @@ taxus serve --port 8080
 taxus serve --open
 
 # Serve from a different directory
-taxus serve ./my-site
+taxus serve --dir ./my-site
 ```
 
 The serve command performs an initial build automatically before starting the server.

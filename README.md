@@ -1,9 +1,5 @@
 # Taxus
 
-[![CI](https://github.com/crustyrustacean/taxus/actions/workflows/ci.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/ci.yml)
-[![Security Audit](https://github.com/crustyrustacean/taxus/actions/workflows/security.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/security.yml)
-[![Docs](https://github.com/crustyrustacean/taxus/actions/workflows/doc.yml/badge.svg)](https://github.com/crustyrustacean/taxus/actions/workflows/doc.yml)
-
 A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring WebAssembly "islands" for interactive components.
 
 ## Features
@@ -21,7 +17,7 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 ## Installation
 
 ```bash
-git clone https://github.com/crustyrustacean/taxus.git
+git clone https://codeberg.org/crustyrustacean/taxus.git
 cd taxus
 cargo build --release
 ```
@@ -46,17 +42,42 @@ cargo run -- serve --dir my-site
 
 | Command | Description |
 |---------|-------------|
-| `init [dir]` | Create a new site structure |
+| `init [PATH]` | Scaffold a new site structure |
 | `build` | Generate static files |
 | `serve` | Start dev server with live reload |
 | `clean` | Remove output directory |
 | `routes` | List discovered routes |
 
-Common options:
-- `--dir <path>` — Site directory (default: current)
-- `--verbose` — Debug output
-- `--quiet` — Errors only
+### Notable options
+
+**`init`**
+
+- `-n, --name <NAME>` — Site name
+- `-u, --base-url <URL>` — Base URL
+- `-f, --force` — Initialize even if directory is not empty
+- `--no-islands` — Disable WASM islands hydration (enabled by default)
+
+**`build`**
+
 - `--include-drafts` — Include draft content
+- `--dry-run` — Simulate without writing files
+- `--clean` — Remove output directory before building
+- `-o, --output <PATH>` — Override the output directory
+
+**`serve`**
+
+- `-p, --port <PORT>` — Port to listen on (default: 3000)
+- `-o, --open` — Open browser automatically
+
+**Common**
+
+- `-d, --dir <path>` — Site directory (default: current)
+- `-v, --verbose` — Debug output
+- `-q, --quiet` — Errors only
+
+The workspace also ships an `xtask` task runner (`cargo xtask`) wrapping
+build, test, lint, doc, and release workflows — see
+[Development](docs/src/development.md).
 
 ## Feature Flags
 
@@ -139,6 +160,7 @@ cd docs && mdbook serve
 | `taxus-generator` | SSG library and `taxus` CLI binary |
 | `taxus-client` | WASM hydration client (built into the generator binary at compile time) |
 | `taxus-common` | Shared Yew components for SSR and hydration, search index |
+| `xtask` | Workspace task runner (`cargo xtask`) for build, test, lint, release, … |
 
 ## License
 

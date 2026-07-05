@@ -4,13 +4,14 @@ This page provides a technical overview of Taxus's architecture, including the w
 
 ## Workspace Structure
 
-Taxus is organized as a multi-crate Cargo workspace with three crates:
+Taxus is organized as a multi-crate Cargo workspace with four crates:
 
 ```
 taxus/
 ├── taxus-client/    # WASM hydration client
 ├── taxus-common/    # Shared Yew components
 └── taxus-generator/ # SSG library and CLI binary
+└── xtask/           # Workspace task runner (cargo xtask)
 ```
 
 ### Crate Responsibilities
@@ -20,6 +21,7 @@ taxus/
 | `taxus-common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
 | `taxus-generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`taxus`) |
 | `taxus-client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (embedded in generator binary at compile time) |
+| `xtask` | Workspace task runner wrapping common developer workflows (build, test, lint, release, …) | Binary (`cargo xtask`) |
 
 ### Data Flow Between Crates
 
@@ -50,12 +52,13 @@ The `generator` crate is organized into modules that each own a specific domain:
 
 | Module | Types | Responsibility |
 |--------|-------|----------------|
-| `config` | `SiteConfig`, `SiteMeta`, `BuildConfig`, `FeedConfig` | Load and validate `site.toml` configuration |
+| `config` | `SiteConfig`, `SiteMeta`, `BuildConfig`, `FeedConfig`, `ImageConfig` | Load and validate `site.toml` configuration |
 | `content` | `Page`, `Section`, `Frontmatter`, `ContentSource` | Parse Markdown files with TOML frontmatter |
 | `routes` | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind` | Map content files to URL paths |
 | `templates` | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext` | Render HTML with Tera templates |
 | `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline (including WASM client writing) |
 | `assets` | `ScssProcessor`, `StaticCopier`, `AssetReport` | Compile SCSS, copy static files |
+| `images` | `ImageProcessor`, `ImageRegistry`, `ProcessedImage`, `render_picture` | Hero image processing: responsive variants, WebP conversion, `<picture>`/srcset |
 | `feed` | `FeedGenerator`, `FeedEntry`, `FeedConfig` | Generate RSS/Atom feeds |
 | `init` | `InitScaffolder`, `InitOptions`, `InitReport` | Scaffold new site directories |
 | `serve` | `DevServer`, `FileWatcher`, WebSocket live reload | Development server with hot reload |
@@ -103,8 +106,71 @@ The `SiteBuilder` orchestrates a 15-stage build pipeline:
 │                      SiteBuilder.build()                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [1/13] Discover routes                                          │
+│  [1/15] Discover routes                                          │
 │          └──▶ Walk content/ directory                            │
+│          └──▶ Create RouteRegistry (path → content file mapping) │
+│                                                                  │
+│  [2/15] Load templates                                           │
+│          └──▶ Read templates/**/*.html                           │
+│          └──▶ Register with Tera (inheritance, island() fn)      │
+│                                                                  │
+│  [3/15] Process content                                          │
+│          └──▶ Parse frontmatter (TOML)                           │
+│          └──▶ Convert Markdown → HTML                            │
+│          └──▶ Resolve internal links (@/file.md)                 │
+│          └──▶ Produce ProcessedPage for each route               │
+│                                                                  │
+│  [4/15] Process images                                           │
+│          └──▶ Generate responsive variants for hero images       │
+│          └──▶ Convert to WebP and build <picture> srcset         │
+│                                                                  │
+│  [5/15] Copy co-located assets                                   │
+│          └──▶ Non-.md files in content/ → dist/                  │
+│          └──▶ Preserve directory structure                       │
+│                                                                  │
+│  [6/15] Render pages                                             │
+│          └──▶ Apply Tera templates to ProcessedPage              │
+│          └──▶ Handle pagination for sections                     │
+│          └──▶ Produce RenderedPage (final HTML)                  │
+│                                                                  │
+│  [7/15] Generate robots.txt                                      │
+│          └──▶ If no static/robots.txt exists                     │
+│          └──▶ Write default with sitemap reference               │
+│                                                                  │
+│  [8/15] Generate sitemap.xml                                     │
+│          └──▶ List all routes with lastmod dates                 │
+│          └──▶ Assign priorities (home: 1.0, sections: 0.8, etc)  │
+│                                                                  │
+│  [9/15] Generate 404.html                                        │
+│          └──▶ Render 404 template if present                     │
+│                                                                  │
+│  [10/15] Build and render taxonomy pages                         │
+│          └──▶ Extract tags, categories, series from pages        │
+│          └──▶ Generate /tags/, /tags/slug/, etc                  │
+│                                                                  │
+│  [11/15] Generate feeds                                          │
+│          └──▶ RSS 2.0 (rss_enabled)                              │
+│          └──▶ Atom (atom_enabled)                                │
+│                                                                  │
+│  [12/15] Process assets                                          │
+│          └──▶ Compile SCSS → CSS (styles/**/*.scss)              │
+│          └──▶ Copy static/ files to dist/static/                 │
+│                                                                  │
+│  [13/15] Generate search index                                   │
+│          └──▶ Build TF-IDF index from page content               │
+│          └──▶ Write dist/search_index.bin                        │
+│                                                                  │
+│  [14/15] Write WASM client                                       │
+│          └──▶ Write embedded client.js to dist/wasm/             │
+│          └──▶ Write embedded client_bg.wasm to dist/wasm/        │
+│                                                                  │
+│  [15/15] Write output                                            │
+│          └──▶ Write RenderedPage HTML files                      │
+│          └──▶ Write taxonomy pages                               │
+│          └──▶ Write feed XML files                               │
+│          └──▶ Write alias redirects (HTML meta refresh)          │
+│                                                                  │
+└──▶ Walk content/ directory                            │
 │          └──▶ Create RouteRegistry (path → content file mapping) │
 │                                                                  │
 │  [2/13] Load templates                                           │

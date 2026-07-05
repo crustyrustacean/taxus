@@ -14,7 +14,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/crustyrustacean/taxus.git
+git clone https://codeberg.org/crustyrustacean/taxus.git
 cd taxus
 
 # Create a new site

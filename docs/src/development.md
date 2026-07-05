@@ -5,13 +5,18 @@ This guide covers development workflows for contributing to Taxus.
 ## Prerequisites
 
 - **Rust** — [Install Rust](https://rustup.rs/)
-- **mdbook** — Documentation: `cargo install mdbook`
+- **mdbook** ≥ 0.5.0 — Documentation: `cargo install mdbook --locked`
+  - The canonical build version is pinned in `.woodpecker.yml`
+    (currently v0.5.3). mdBook 0.5.x emits hashed asset names and uses a
+    newer theme than 0.4.x, so local and CI versions must match to keep
+    the deployed output consistent.
 
 ## Setup
 
 ```bash
-git clone https://github.com/crustyrustacean/taxus.git
+git clone https://codeberg.org/crustyrustacean/taxus.git
 cd taxus
+
 cargo build
 ```
 
@@ -69,6 +74,26 @@ Open `http://localhost:3000` to view.
 | `cargo clippy` | Run linter |
 | `cargo fmt` | Format code |
 
+## `xtask` Task Runner
+
+The workspace includes an `xtask` crate (aliased as `cargo xtask` via
+`.cargo/config.toml`) that wraps common developer workflows:
+
+| Command | Description |
+|---------|-------------|
+| `cargo xtask build [--release] [--features ...]` | Build the project |
+| `cargo xtask test [--release] [--nextest] [--features ...]` | Run unit and integration tests |
+| `cargo xtask check [--features ...]` | Fast compile check (no codegen) |
+| `cargo xtask lint [--features ...] [--fix]` | Lint with Clippy |
+| `cargo xtask fmt [--check]` | Check formatting with rustfmt |
+| `cargo xtask doc [--open]` | Build Rust documentation |
+| `cargo xtask book [--serve]` | Build the mdBook documentation in `docs/` |
+| `cargo xtask audit` | Run `cargo audit` security scan (requires `cargo-audit`) |
+| `cargo xtask wasm [--release]` | Build WASM artifacts |
+| `cargo xtask clean` | Clean build artifacts |
+| `cargo xtask ci` | Run the full local CI pipeline (fmt, lint, test) |
+| `cargo xtask release --bump <major|minor|patch> [--dry-run]` | Prepare a release: changelog, tag, verify build |
+
 ## Logging
 
 Control log output with CLI flags or `RUST_LOG`:
@@ -109,6 +134,7 @@ taxus/
 ├── taxus-client/    # WASM hydration client
 ├── taxus-common/    # Shared Yew components
 ├── taxus-generator/ # SSG library and CLI
+├── xtask/           # Workspace task runner (`cargo xtask`)
 └── docs/            # mdBook documentation
 ```
 
