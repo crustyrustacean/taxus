@@ -8,6 +8,7 @@
 
 # LLM settings
 
+logs/
 # LLM Plans and Context
 .brainstorming/
 .context/
