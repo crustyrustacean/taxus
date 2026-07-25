@@ -317,6 +317,7 @@ fn register_island_function(tera: &mut Tera) {
 fn register_contrib_filters(tera: &mut Tera) {
     tera.register_filter("slug", tera_contrib::slug::slug);
     tera.register_filter("slugify", tera_contrib::slug::slug);
+    tera.register_filter("date", tera_contrib::dates::date);
 }
 
 

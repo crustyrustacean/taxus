@@ -54,7 +54,7 @@ tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "set-header"] }
 tokio-stream = "0.1"
 webbrowser = "1.0"
-tera-contrib = { version = "0.2.0", features = ["slug"] }
+tera-contrib = { version = "0.2.0", features = ["date", "slug"] }
 
 [build-dependencies]
 wasm-bindgen-cli-support = "=0.2.126"
