@@ -28,7 +28,7 @@ grass = "0.13.4"
 pulldown-cmark = "0.13.1"
 serde = { workspace = true, features = ["derive"] }
 serde_json = "1.0"
-tera = "1.20"
+tera = "2.1"
 thiserror = "2.0"
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "signal"] }
 toml = "1.0.6"
@@ -51,12 +51,13 @@ futures-util = "0.3"
 http-body-util = "0.1"
 notify = "8.2.0"
 tower = "0.5"
-tower-http = { version = "0.6", features = ["fs", "set-header"] }
+tower-http = { version = "0.7", features = ["fs", "set-header"] }
 tokio-stream = "0.1"
 webbrowser = "1.0"
+tera-contrib = { version = "0.2.0", features = ["slug"] }
 
 [build-dependencies]
-wasm-bindgen-cli-support = "=0.2.118"
+wasm-bindgen-cli-support = "=0.2.126"
 
 [dev-dependencies]
 tempfile = "3.10"

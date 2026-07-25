@@ -6,9 +6,8 @@
 
 use crate::error::TemplateError;
 use crate::templates::context::TemplateContext;
-use std::collections::HashMap;
 use std::path::Path;
-use tera::{Context, Tera};
+use tera::{Context, Kwargs, State, Tera, TeraResult, Value};
 
 /// Trait for template rendering backends.
 ///
@@ -133,62 +132,6 @@ impl TeraRenderer {
     pub fn from_dir<P: AsRef<Path>>(dir: P) -> Result<Self, TemplateError> {
         let mut renderer = Self::new()?;
         renderer.load_templates(dir.as_ref())?;
-
-        // Register the island() Tera function.
-        //
-        // This calls Yew SSR to pre-render the component and wraps the output
-        // in a hydration mount point div.
-        renderer
-            .tera
-            .register_function("island", |args: &HashMap<String, tera::Value>| {
-                use tera::Value;
-
-                let component = args.get("component").and_then(Value::as_str).unwrap_or("");
-
-                let html = match component {
-                    "Counter" => {
-                        use crate::build::pipeline::render_island_counter;
-                        use taxus_common::components::counter::CounterProps;
-
-                        let initial =
-                            args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
-
-                        let class = args
-                            .get("class")
-                            .and_then(Value::as_str)
-                            .unwrap_or("")
-                            .to_string();
-
-                        render_island_counter(CounterProps { initial, class })
-                    }
-                    "SearchBox" => {
-                        use crate::build::pipeline::render_search_box;
-                        use taxus_common::components::search_box::SearchBoxProps;
-
-                        let placeholder = args
-                            .get("placeholder")
-                            .and_then(Value::as_str)
-                            .unwrap_or("Search...")
-                            .to_string();
-
-                        let class = args
-                            .get("class")
-                            .and_then(Value::as_str)
-                            .unwrap_or("")
-                            .to_string();
-
-                        render_search_box(SearchBoxProps {
-                            placeholder,
-                            max_results: 5,
-                            class,
-                        })
-                    }
-                    other => format!("<!-- unknown island: {other} -->"),
-                };
-
-                Ok(Value::String(html))
-            });
-
         Ok(renderer)
     }
 
@@ -246,7 +189,7 @@ impl TemplateRenderer for TeraRenderer {
     }
 
     fn has_template(&self, name: &str) -> bool {
-        self.tera.get_template(name).is_ok()
+        self.tera.get_template_names().any(|n| n == name)
     }
 
     fn load_templates(&mut self, dir: &Path) -> Result<(), TemplateError> {
@@ -257,8 +200,14 @@ impl TemplateRenderer for TeraRenderer {
         use std::fs;
         use walkdir::WalkDir;
 
-        // Create a new empty Tera instance
+        // Create a new empty Tera instance.
+        //
+        // Tera v2 checks at template-add time that every function/filter/test
+        // referenced by a template exists, so the island() function must be
+        // registered before any templates are added.
         let mut tera = Tera::default();
+        register_island_function(&mut tera);
+        register_contrib_filters(&mut tera);
 
         // Collect all templates first (name -> content)
         let mut templates: Vec<(String, String)> = Vec::new();
@@ -291,24 +240,17 @@ impl TemplateRenderer for TeraRenderer {
             }
         }
 
-        // Sort templates so that base templates are registered before their children.
-        // Templates with no {% extends %} come first, then templates that extend them, etc.
-        // We use a simple heuristic: templates without "extends" in their content come first.
-        // This works because base templates don't extend anything, while child templates do.
-        templates.sort_by(|a, b| {
-            let a_extends = a.1.contains("{% extends");
-            let b_extends = b.1.contains("{% extends");
+        // Sort templates topologically so every template is registered before
+        // the templates that reference it. Tera v2 resolves `{% extends %}`
+        // and `{% include %}` targets at template-add time, so a template must
+        // be added after everything it references. We parse each template's
+        // references out of its content, then repeatedly emit templates whose
+        // references are all already emitted (Kahn's algorithm). Any leftover
+        // templates form a cycle; they fall back to the original order.
+        let ordered = order_templates_by_dependency(templates);
 
-            // Templates without extends come first
-            match (a_extends, b_extends) {
-                (false, true) => std::cmp::Ordering::Less,
-                (true, false) => std::cmp::Ordering::Greater,
-                _ => std::cmp::Ordering::Equal,
-            }
-        });
-
-        // Register templates in sorted order
-        for (name, content) in templates {
+        // Register templates in dependency order
+        for (name, content) in ordered {
             tera.add_raw_template(&name, &content)
                 .map_err(|e| TemplateError::Syntax {
                     template: name.clone(),
@@ -319,6 +261,142 @@ impl TemplateRenderer for TeraRenderer {
         self.tera = tera;
         Ok(())
     }
+}
+/// The `island()` Tera function (Tera v2 signature).
+///
+/// Calls Yew SSR to pre-render an island component and wraps the output in a
+/// hydration mount point div carrying the serialized props. Templates should
+/// apply `| safe` to the call so the HTML is emitted unescaped.
+fn island(kwargs: Kwargs, _state: &State) -> TeraResult<Value> {
+    let component = kwargs.get::<String>("component")?.unwrap_or_default();
+
+    let html = match component.as_str() {
+        "Counter" => {
+            use crate::build::pipeline::render_island_counter;
+            use taxus_common::components::counter::CounterProps;
+
+            let initial = kwargs.get::<i64>("initial")?.unwrap_or(0) as i32;
+            let class = kwargs.get::<String>("class")?.unwrap_or_default();
+
+            render_island_counter(CounterProps { initial, class })
+        }
+        "SearchBox" => {
+            use crate::build::pipeline::render_search_box;
+            use taxus_common::components::search_box::SearchBoxProps;
+
+            let placeholder = kwargs
+                .get::<String>("placeholder")?
+                .unwrap_or_else(|| "Search...".to_string());
+            let class = kwargs.get::<String>("class")?.unwrap_or_default();
+
+            render_search_box(SearchBoxProps {
+                placeholder,
+                max_results: 5,
+                class,
+            })
+        }
+        other => format!("<!-- unknown island: {other} -->"),
+    };
+
+    Ok(Value::from(html))
+}
+
+/// Register the `island()` Tera function on a Tera instance.
+///
+/// Must be called before any templates referencing `island()` are added —
+/// Tera v2 validates function existence at template-add time.
+fn register_island_function(tera: &mut Tera) {
+    tera.register_function("island", island);
+}
+
+/// Register the tera-contrib filters taxus templates rely on.
+///
+/// Tera v1 shipped `slugify` as a built-in; in v2 it moved to the
+/// `tera-contrib` crate as `slug`. We register it under both names so that
+/// templates written for either convention keep working.
+fn register_contrib_filters(tera: &mut Tera) {
+    tera.register_filter("slug", tera_contrib::slug::slug);
+    tera.register_filter("slugify", tera_contrib::slug::slug);
+}
+
+
+/// Extract the names of templates that `content` references via
+/// `{% extends "..." %}` and `{% include "..." %}`.
+fn template_references(content: &str) -> Vec<String> {
+    let mut refs = Vec::new();
+    for tag_open in ["{% extends", "{% include"] {
+        let mut search_from = 0;
+        while let Some(rel_pos) = content[search_from..].find(tag_open) {
+            let tag_start = search_from + rel_pos + tag_open.len();
+            // Find the first quote-delimited path in the tag.
+            let after_tag = &content[tag_start..];
+            let quote_start = match after_tag.find(|c| c == '"' || c == '\'') {
+                Some(p) => tag_start + p,
+                None => break,
+            };
+            let quote_char = content.as_bytes()[quote_start] as char;
+            let path_start = quote_start + 1;
+            if let Some(rel_end) = content[path_start..].find(quote_char) {
+                refs.push(content[path_start..path_start + rel_end].to_string());
+                search_from = path_start + rel_end;
+            } else {
+                break;
+            }
+        }
+    }
+    refs
+}
+
+/// Order templates so that each template appears after every template it
+/// references via `{% extends %}` or `{% include %}`.
+///
+/// Tera v2 resolves `extends`/`include` targets at template-add time, so a
+/// template must be added after everything it references. This performs a
+/// topological sort (Kahn's algorithm); if the dependency graph has a cycle,
+/// the remaining templates keep their original relative order.
+fn order_templates_by_dependency(templates: Vec<(String, String)>) -> Vec<(String, String)> {
+    // Map template name -> names of templates it references (deps within the set).
+    let refs: std::collections::HashMap<String, Vec<String>> = templates
+        .iter()
+        .map(|(name, content)| (name.clone(), template_references(content)))
+        .collect();
+
+    let mut emitted: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut result: Vec<(String, String)> = Vec::with_capacity(templates.len());
+    let mut pending: Vec<(String, String)> = templates;
+
+    // Repeatedly emit templates whose references are all satisfied.
+    while !pending.is_empty() {
+        let mut progressed = false;
+        let mut still_pending = Vec::with_capacity(pending.len());
+
+        for (name, content) in pending {
+            let deps = refs.get(&name).cloned().unwrap_or_default();
+            // A dependency is satisfied if it's already emitted OR it's not a
+            // template we know about (e.g. a built-in or missing one — in that
+            // case Tera will report the real error at add time).
+            let unsatisfied = deps.iter().any(|d| refs.contains_key(d) && !emitted.contains(d));
+
+            if unsatisfied {
+                still_pending.push((name, content));
+            } else {
+                emitted.insert(name.clone());
+                result.push((name, content));
+                progressed = true;
+            }
+        }
+
+        if !progressed {
+            // Cycle (or self-reference): append the rest in original order so
+            // we still register everything and let Tera surface the error.
+            result.extend(still_pending);
+            break;
+        }
+
+        pending = still_pending;
+    }
+
+    result
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@
 .vscode
 
 # LLM settings
-
+.rho/
 logs/
 # LLM Plans and Context
 .brainstorming/

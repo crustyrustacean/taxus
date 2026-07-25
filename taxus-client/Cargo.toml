@@ -13,11 +13,11 @@ name = "client"
 path = "src/main.rs"
 
 [dependencies]
-js-sys = "0.3.95"
+js-sys = "0.3.103"
 taxus-common = { path = "../taxus-common" }
 serde_json = "1.0.149"
 serde-wasm-bindgen = "0.6.5"
-wasm-bindgen = "0.2.118"
-wasm-bindgen-futures = "0.4.68"
-web-sys = { version = "0.3.91", features = ["console", "Document", "Window", "HtmlElement", "DomStringMap", "NodeList", "Element"] }
+wasm-bindgen = "0.2.126"
+wasm-bindgen-futures = "0.4.76"
+web-sys = { version = "0.3.103", features = ["console", "Document", "Window", "HtmlElement", "DomStringMap", "NodeList", "Element"] }
 yew = { version = "0.23", features = [ "hydration" ] }

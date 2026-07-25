@@ -5,25 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ site.name }}{% endblock %}</title>
     
-    {% if page.description %}
+    {% if page?.description %}
     <meta name="description" content="{{ page.description }}">
-    {% elif section.description %}
+    {% elif section?.description %}
     <meta name="description" content="{{ section.description }}">
     {% else %}
     <meta name="description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
     {% endif %}
     
-    <link rel="canonical" href="{{ site.base_url }}{{ page.path | default(value='/') }}">
+    <link rel="canonical" href="{{ site.base_url }}{{ page?.path | default(value='/') }}">
     
     <meta name="robots" content="index, follow">
     <meta name="author" content="Jeffery D. Mitchell">
     
-    <meta property="og:type" content="{% if page.date %}article{% else %}website{% endif %}">
+    <meta property="og:type" content="{% if page?.date %}article{% else %}website{% endif %}">
     <meta property="og:site_name" content="{{ site.name }}">
-    <meta property="og:url" content="{{ site.base_url }}{{ page.path | default(value='/') }}">
+    <meta property="og:url" content="{{ site.base_url }}{{ page?.path | default(value='/') }}">
     {% block opengraph %}
-    <meta property="og:title" content="{{ page.title | default(value=site.name) }}">
-    {% if page.description %}
+    <meta property="og:title" content="{{ page?.title | default(value=site.name) }}">
+    {% if page?.description %}
     <meta property="og:description" content="{{ page.description }}">
     {% else %}
     <meta property="og:description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
@@ -31,8 +31,8 @@
     {% endblock %}
     
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{{ page.title | default(value=site.name) }}">
-    {% if page.description %}
+    <meta name="twitter:title" content="{{ page?.title | default(value=site.name) }}">
+    {% if page?.description %}
     <meta name="twitter:description" content="{{ page.description }}">
     {% else %}
     <meta name="twitter:description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
