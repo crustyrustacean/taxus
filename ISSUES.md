@@ -2,18 +2,18 @@
 
 Snapshot of the 22 open issues from the original GitHub repo
 (<https://github.com/crustyrustacean/taxus>), captured during the
-Codeberg migration on **2026-07-04**. All issues were opened by
+Codeberg migration on **2026-07-04** and now migrated back to GitHub.
+All issues were opened by
 `crustyrustacean` on **2026-04-29**, none had comments, and all were open
 at migration time.
 
 Labels: `bug`, `enhancement`, `documentation`.
 
 This file is a faithful record so nothing is lost across the move. The
-originals remain on GitHub; if/when these are recreated as live Codeberg
-tracker issues they will get **new numbers** there (Codeberg assigns its
+originals remain on GitHub. If/when these are recreated as live GitHub
+tracker issues they will get **new numbers** there (GitHub assigns its
 own), so the `#N` numbers below always refer back to the GitHub issue
 linked in each entry.
-
 ---
 
 ## #1 — escape_xml() in feed.rs produces literal Unicode chars instead of XML entity references

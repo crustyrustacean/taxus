@@ -17,7 +17,7 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 ## Installation
 
 ```bash
-git clone https://codeberg.org/crustyrustacean/taxus.git
+git clone https://github.com/crustyrustacean/taxus.git
 cd taxus
 cargo build --release
 ```

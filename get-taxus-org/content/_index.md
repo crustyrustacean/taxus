@@ -21,16 +21,16 @@ Taxus stands on the following pillars:
 
 ## Documentation
 
-Comprehensive documentation is available at [crustyrustacean.codeberg.page/taxus](https://crustyrustacean.codeberg.page/taxus):
+Comprehensive documentation is available at [crustyrustacean.github.io/taxus](https://crustyrustacean.github.io/taxus):
 
-- [Introduction](https://crustyrustacean.codeberg.page/taxus/introduction.html)
-- [Getting Started](https://crustyrustacean.codeberg.page/taxus/getting-started.html)
-- [Architecture](https://crustyrustacean.codeberg.page/taxus/architecture.html)
-- [Configuration](https://crustyrustacean.codeberg.page/taxus/configuration.html)
-- [Content](https://crustyrustacean.codeberg.page/taxus/content.html)
-- [Templates](https://crustyrustacean.codeberg.page/taxus/templates.html)
-- [Islands Architecture](https://crustyrustacean.codeberg.page/taxus/islands.html)
-- [CLI Reference](https://crustyrustacean.codeberg.page/taxus/cli.html)
+- [Introduction](https://crustyrustacean.github.io/taxus/introduction.html)
+- [Getting Started](https://crustyrustacean.github.io/taxus/getting-started.html)
+- [Architecture](https://crustyrustacean.github.io/taxus/architecture.html)
+- [Configuration](https://crustyrustacean.github.io/taxus/configuration.html)
+- [Content](https://crustyrustacean.github.io/taxus/content.html)
+- [Templates](https://crustyrustacean.github.io/taxus/templates.html)
+- [Islands Architecture](https://crustyrustacean.github.io/taxus/islands.html)
+- [CLI Reference](https://crustyrustacean.github.io/taxus/cli.html)
 
 ## Foundations
 

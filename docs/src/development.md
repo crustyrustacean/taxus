@@ -10,7 +10,7 @@ This guide covers development workflows for contributing to Taxus.
 ## Setup
 
 ```bash
-git clone https://codeberg.org/crustyrustacean/taxus.git
+git clone https://github.com/crustyrustacean/taxus.git
 cd taxus
 
 cargo build

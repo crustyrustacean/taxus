@@ -10,7 +10,7 @@ authors = ["Jeff Mitchell"]
 description = "A Rust based static site generator, founded in Tera and Yew."
 license = "MIT"
 readme = "README.md"
-repository = "https://codeberg.org/crustyrustacean/taxus.git"
+repository = "https://github.com/crustyrustacean/taxus.git"
 publish = false
 
 [workspace.dependencies]
