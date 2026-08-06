@@ -96,7 +96,7 @@ impl SearchIndex {
     pub fn finalize(&mut self) {
         let total_docs = self.documents.len() as f32;
 
-        for (_term, entries) in self.index.iter_mut() {
+        for entries in self.index.values_mut() {
             let docs_with_term = entries.len() as f32;
             let idf = (total_docs / docs_with_term).ln();
 

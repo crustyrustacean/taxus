@@ -330,7 +330,7 @@ fn template_references(content: &str) -> Vec<String> {
             let tag_start = search_from + rel_pos + tag_open.len();
             // Find the first quote-delimited path in the tag.
             let after_tag = &content[tag_start..];
-            let quote_start = match after_tag.find(|c| c == '"' || c == '\'') {
+            let quote_start = match after_tag.find(['"', '\'']) {
                 Some(p) => tag_start + p,
                 None => break,
             };
