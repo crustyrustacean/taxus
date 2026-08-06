@@ -1,0 +1,424 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Search - Taxus Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for the Taxus Static Site Generator">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="getting-started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">4.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="content.html"><strong aria-hidden="true">5.</strong> Content</a></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">6.</strong> Templates</a></li><li class="chapter-item expanded "><a href="images.html"><strong aria-hidden="true">7.</strong> Images</a></li><li class="chapter-item expanded "><a href="syntax-highlighting.html"><strong aria-hidden="true">8.</strong> Syntax Highlighting</a></li><li class="chapter-item expanded "><a href="islands.html"><strong aria-hidden="true">9.</strong> Islands Architecture</a></li><li class="chapter-item expanded "><a href="search.html" class="active"><strong aria-hidden="true">10.</strong> Search</a></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">11.</strong> CLI Reference</a></li><li class="chapter-item expanded "><a href="serve.html"><strong aria-hidden="true">12.</strong> Development Server</a></li><li class="chapter-item expanded "><a href="styling.html"><strong aria-hidden="true">13.</strong> Styling</a></li><li class="chapter-item expanded "><a href="development.html"><strong aria-hidden="true">14.</strong> Development</a></li><li class="chapter-item expanded "><a href="api-reference.html"><strong aria-hidden="true">15.</strong> API Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Taxus Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus/edit/trunk/docs/src/search.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="search"><a class="header" href="#search">Search</a></h1>
+<p>Taxus provides a built-in search component with client-side full-text search. The <code>SearchBox</code> island component uses TF-IDF (Term Frequency-Inverse Document Frequency) ranking with English stemming.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>The build pipeline:</p>
+<ol>
+<li>Generates a search index at <code>dist/search_index.bin</code></li>
+<li>The <code>SearchBox</code> component is available for use in templates</li>
+</ol>
+<p>The binary index contains:</p>
+<ul>
+<li><strong>Document metadata</strong> — Title, path, summary, tags, and categories for each page</li>
+<li><strong>Inverted index</strong> — Mapping from word stems to document IDs with TF-IDF scores</li>
+</ul>
+<p>The index is serialized with <code>postcard</code> for compact storage and fast deserialization in the browser.</p>
+<h2 id="enabling-search"><a class="header" href="#enabling-search">Enabling Search</a></h2>
+<p>Search is always available. Build the site and the index is generated automatically:</p>
+<pre><code class="language-bash">cargo run -- build --dir my-site
+</code></pre>
+<p>This generates <code>dist/search_index.bin</code> alongside your static files.</p>
+<h2 id="using-the-searchbox-component"><a class="header" href="#using-the-searchbox-component">Using the SearchBox Component</a></h2>
+<p>The <code>SearchBox</code> island component provides a ready-to-use search interface. Add it to any template:</p>
+<pre><code class="language-html">&lt;div class="search-container"&gt;
+  {{ island(component="SearchBox") | safe }}
+&lt;/div&gt;
+</code></pre>
+<h3 id="props"><a class="header" href="#props">Props</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>placeholder</code></td><td>string</td><td><code>"Search..."</code></td><td>Placeholder text for the input</td></tr>
+<tr><td><code>max_results</code></td><td>number</td><td><code>5</code></td><td>Maximum number of results to display</td></tr>
+<tr><td><code>class</code></td><td>string</td><td><code>""</code></td><td>Custom CSS classes to append to the outer container</td></tr>
+</tbody></table>
+</div>
+<p>Example with custom props:</p>
+<pre><code class="language-html">{{ island(component="SearchBox", placeholder="Find content...", max_results=10, class="docs-search") | safe }}
+</code></pre>
+<h3 id="styling"><a class="header" href="#styling">Styling</a></h3>
+<p>The component uses these CSS classes that you can style:</p>
+<div class="table-wrapper"><table><thead><tr><th>Class</th><th>Element</th></tr></thead><tbody>
+<tr><td><code>.search-box</code></td><td>Container div</td></tr>
+<tr><td><code>.search-input</code></td><td>Text input field</td></tr>
+<tr><td><code>.search-results</code></td><td>Results list (<code>&lt;ul&gt;</code>)</td></tr>
+<tr><td><code>.search-result</code></td><td>Individual result item (<code>&lt;li&gt;</code>)</td></tr>
+<tr><td><code>.search-result-link</code></td><td>Result title link</td></tr>
+<tr><td><code>.search-result-summary</code></td><td>Result summary text</td></tr>
+</tbody></table>
+</div>
+<p>Use the <code>class</code> prop to add custom classes for styling hooks:</p>
+<pre><code class="language-html">{{ island(component="SearchBox", class="docs-search") | safe }}
+</code></pre>
+<p>Then target the custom class in your SCSS:</p>
+<pre><code class="language-scss">.docs-search .search-input {
+  // Custom styles for docs search input
+}
+</code></pre>
+<p>Example SCSS:</p>
+<pre><code class="language-scss">.search-container {
+  max-inline-size: 48rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+.search-input {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  color: var(--text);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.search-result {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.search-result-link {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.search-result-summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+</code></pre>
+<h2 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h2>
+<h3 id="indexing-pipeline"><a class="header" href="#indexing-pipeline">Indexing Pipeline</a></h3>
+<ol>
+<li><strong>Tokenization</strong> — Content is split into lowercase words, filtering out words shorter than 3 characters</li>
+<li><strong>Stemming</strong> — Words are reduced to their root form using the Porter stemmer (e.g., "programming" → "program")</li>
+<li><strong>TF-IDF Scoring</strong> — Each term gets a weight based on:
+<ul>
+<li><strong>Term Frequency (TF)</strong> — How often the term appears in a document</li>
+<li><strong>Inverse Document Frequency (IDF)</strong> — How rare the term is across all documents</li>
+</ul>
+</li>
+</ol>
+<h3 id="search-query-processing"><a class="header" href="#search-query-processing">Search Query Processing</a></h3>
+<p>When a user searches:</p>
+<ol>
+<li>The query is tokenized and stemmed using the same process</li>
+<li>Each stem's postings are retrieved from the index</li>
+<li>TF-IDF scores are summed for matching documents</li>
+<li>Results are returned sorted by relevance score</li>
+</ol>
+<h3 id="component-architecture"><a class="header" href="#component-architecture">Component Architecture</a></h3>
+<p>The <code>SearchBox</code> component:</p>
+<ol>
+<li>Uses a 200ms debounce on input to avoid excessive queries</li>
+<li>Requires at least 2 characters before searching</li>
+<li>Calls the <code>window.wasmBindings.search()</code> function exposed by the WASM client</li>
+<li>The WASM client lazily loads the search index on first use</li>
+<li>Results are truncated to <code>max_results</code> and displayed in a list</li>
+</ol>
+<h2 id="output-format"><a class="header" href="#output-format">Output Format</a></h2>
+<p>The search index is written to <code>dist/search_index.bin</code> in <code>postcard</code> binary format.</p>
+<p>Each <code>SearchDocument</code> in the results contains:</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>Unique document identifier</td></tr>
+<tr><td><code>title</code></td><td>Page title from frontmatter</td></tr>
+<tr><td><code>path</code></td><td>URL path (e.g., <code>/blog/my-post/</code>)</td></tr>
+<tr><td><code>summary</code></td><td>Page summary for display</td></tr>
+<tr><td><code>tags</code></td><td>Tags from frontmatter</td></tr>
+<tr><td><code>categories</code></td><td>Categories from frontmatter</td></tr>
+</tbody></table>
+</div>
+<h2 id="api-reference"><a class="header" href="#api-reference">API Reference</a></h2>
+<h3 id="searchdocument"><a class="header" href="#searchdocument"><code>SearchDocument</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchDocument {
+    pub id: u32,
+    pub title: String,
+    pub path: String,
+    pub summary: String,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="searchindex"><a class="header" href="#searchindex"><code>SearchIndex</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchIndex {
+    pub documents: Vec&lt;SearchDocument&gt;,
+    pub index: HashMap&lt;String, Vec&lt;(u32, f32)&gt;&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create an empty index</td></tr>
+<tr><td><code>add_document(doc, content)</code></td><td>Add a document with its content</td></tr>
+<tr><td><code>search(query) -&gt; Vec&lt;&amp;SearchDocument&gt;</code></td><td>Search and return ranked results</td></tr>
+<tr><td><code>finalize()</code></td><td>Apply IDF weighting (call after all documents added)</td></tr>
+<tr><td><code>to_bytes() -&gt; Vec&lt;u8&gt;</code></td><td>Serialize to binary</td></tr>
+<tr><td><code>from_bytes(bytes) -&gt; Self</code></td><td>Deserialize from binary</td></tr>
+</tbody></table>
+</div>
+<h3 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn tokenize(text: &amp;str) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Splits text into lowercase tokens, filtering words shorter than 3 characters.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn stem(tokens: &amp;[String]) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Applies English Porter stemmer to tokens.</p>
+<h2 id="performance"><a class="header" href="#performance">Performance</a></h2>
+<ul>
+<li><strong>Index size</strong> — Typically 10-30% of total content size</li>
+<li><strong>Deserialization</strong> — Near-instant with postcard format</li>
+<li><strong>Search latency</strong> — Sub-millisecond for typical queries</li>
+<li><strong>Lazy loading</strong> — Index is loaded only when first search is performed</li>
+</ul>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<ul>
+<li><strong>English only</strong> — Stemming is currently English-only</li>
+<li><strong>No phrase search</strong> — Queries are treated as bag-of-words</li>
+<li><strong>No highlighting</strong> — Results don't include matched snippets</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="islands.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="cli.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="islands.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="cli.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Templates - Taxus Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for the Taxus Static Site Generator">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="getting-started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">4.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="content.html"><strong aria-hidden="true">5.</strong> Content</a></li><li class="chapter-item expanded "><a href="templates.html" class="active"><strong aria-hidden="true">6.</strong> Templates</a></li><li class="chapter-item expanded "><a href="images.html"><strong aria-hidden="true">7.</strong> Images</a></li><li class="chapter-item expanded "><a href="syntax-highlighting.html"><strong aria-hidden="true">8.</strong> Syntax Highlighting</a></li><li class="chapter-item expanded "><a href="islands.html"><strong aria-hidden="true">9.</strong> Islands Architecture</a></li><li class="chapter-item expanded "><a href="search.html"><strong aria-hidden="true">10.</strong> Search</a></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">11.</strong> CLI Reference</a></li><li class="chapter-item expanded "><a href="serve.html"><strong aria-hidden="true">12.</strong> Development Server</a></li><li class="chapter-item expanded "><a href="styling.html"><strong aria-hidden="true">13.</strong> Styling</a></li><li class="chapter-item expanded "><a href="development.html"><strong aria-hidden="true">14.</strong> Development</a></li><li class="chapter-item expanded "><a href="api-reference.html"><strong aria-hidden="true">15.</strong> API Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Taxus Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus/edit/trunk/docs/src/templates.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="templates"><a class="header" href="#templates">Templates</a></h1>
+<p>Templates define the HTML structure for rendered pages using the <a href="https://tera.netlify.app/">Tera</a> template engine.</p>
+<h2 id="template-location"><a class="header" href="#template-location">Template Location</a></h2>
+<p>Templates are stored in the <code>templates/</code> directory:</p>
+<pre><code>templates/
+├── base.html              # Base template with common structure
+├── page.html              # Single page template
+├── section.html           # Section/list template (e.g., blog)
+├── tags.html              # Tag listing page (all tags)
+├── tags_term.html         # Individual tag page (e.g., /tags/rust/)
+├── categories.html        # Category listing page (all categories)
+├── categories_term.html   # Individual category page (e.g., /categories/tutorial/)
+├── series.html            # Series listing page (all series)
+├── series_term.html       # Individual series page (e.g., /series/learning-rust/)
+└── 404.html               # Not found page
+</code></pre>
+<h2 id="template-engine"><a class="header" href="#template-engine">Template Engine</a></h2>
+<p>Taxus uses <a href="https://tera.netlify.app/">Tera</a>, a Jinja2-like template engine for Rust:</p>
+<ul>
+<li><strong>Variables</strong>: <code>{{ variable }}</code> syntax</li>
+<li><strong>Filters</strong>: <code>{{ content | safe }}</code> for unescaped HTML</li>
+<li><strong>Conditionals</strong>: <code>{% if condition %}...{% endif %}</code></li>
+<li><strong>Loops</strong>: <code>{% for item in items %}...{% endfor %}</code></li>
+<li><strong>Template Inheritance</strong>: <code>{% extends "base.html" %}</code> and <code>{% block name %}</code></li>
+<li><strong>Includes</strong>: <code>{% include "partial.html" %}</code></li>
+</ul>
+<h2 id="base-template"><a class="header" href="#base-template">Base Template</a></h2>
+<p>The base template defines the common HTML structure:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+    &lt;title&gt;{% block title %}{{ site.name }}{% endblock %}&lt;/title&gt;
+
+    {% if page.permalink %}
+    &lt;link rel="canonical" href="{{ page.permalink }}" /&gt;
+    &lt;meta property="og:url" content="{{ page.permalink }}" /&gt;
+    {% endif %}
+
+    &lt;link rel="stylesheet" href="/css/main.css" /&gt;
+    &lt;link rel="icon" href="/static/favicon.png" /&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;header&gt;
+      &lt;nav&gt;
+        &lt;a href="/"&gt;Home&lt;/a&gt;
+        &lt;a href="/about/"&gt;About&lt;/a&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;{% block content %}{% endblock %}&lt;/main&gt;
+
+    &lt;footer&gt;
+      &lt;p&gt;&amp;copy; {{ now.year }} {{ site.author | default(value="") }}&lt;/p&gt;
+    &lt;/footer&gt;
+
+    &lt;script src="/static/scripts.js"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2 id="page-template"><a class="header" href="#page-template">Page Template</a></h2>
+<p>Page templates extend the base template:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;article&gt;
+  {% if page.hero %}
+  &lt;picture&gt;
+    &lt;source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}"&gt;
+    &lt;img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+         width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+         loading="eager" decoding="async"&gt;
+  &lt;/picture&gt;
+  {% endif %}
+
+  &lt;h1&gt;{{ page.title }}&lt;/h1&gt;
+
+  {% if page.description %}
+  &lt;p class="description"&gt;{{ page.description }}&lt;/p&gt;
+  {% endif %}
+
+  {% if page.date %}
+  &lt;time datetime="{{ page.date }}"&gt;{{ page.date }}&lt;/time&gt;
+  {% endif %}
+
+  {% if page.tags %}
+  &lt;div class="tags"&gt;
+    {% for tag in page.tags %}
+    &lt;a href="/tags/{{ tag | slugify }}/"&gt;{{ tag }}&lt;/a&gt;
+    {% endfor %}
+  &lt;/div&gt;
+  {% endif %}
+
+  &lt;div class="content"&gt;{{ page.content | safe }}&lt;/div&gt;
+&lt;/article&gt;
+{% endblock %}
+</code></pre>
+<h2 id="section-template"><a class="header" href="#section-template">Section Template</a></h2>
+<p>Section templates render lists of pages:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;section&gt;
+  &lt;h1&gt;{{ section.title }}&lt;/h1&gt;
+
+  {% if section.description %}
+  &lt;p class="description"&gt;{{ section.description }}&lt;/p&gt;
+  {% endif %}
+
+  {% if section.content %}
+  &lt;div class="section-content"&gt;{{ section.content | safe }}&lt;/div&gt;
+  {% endif %}
+
+  &lt;ul class="page-list"&gt;
+    {% for page in section.pages %}
+    &lt;li&gt;
+      &lt;a href="{{ page.path }}"&gt;
+        &lt;span class="title"&gt;{{ page.title }}&lt;/span&gt;
+        {% if page.date %}
+        &lt;time datetime="{{ page.date }}"&gt;{{ page.date }}&lt;/time&gt;
+        {% endif %}
+        &lt;span class="reading-time"&gt;{{ page.reading_time }} min read&lt;/span&gt;
+      &lt;/a&gt;
+      {% if page.summary %}
+      &lt;p class="summary"&gt;{{ page.summary }}&lt;/p&gt;
+      {% endif %}
+    &lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+
+  {% if section.pagination %}
+  &lt;nav class="pagination"&gt;
+    {% if section.pagination.prev %}
+    &lt;a href="{{ section.pagination.prev }}"&gt;← Previous&lt;/a&gt;
+    {% endif %}
+    &lt;span&gt;Page {{ section.pagination.current }} of {{ section.pagination.total }}&lt;/span&gt;
+    {% if section.pagination.next %}
+    &lt;a href="{{ section.pagination.next }}"&gt;Next →&lt;/a&gt;
+    {% endif %}
+  &lt;/nav&gt;
+  {% endif %}
+&lt;/section&gt;
+{% endblock %}
+</code></pre>
+<h2 id="taxonomy-templates"><a class="header" href="#taxonomy-templates">Taxonomy Templates</a></h2>
+<p>Taxus generates taxonomy listing and term pages when the corresponding templates exist. The scaffold (<code>taxus init</code>) creates all six templates automatically.</p>
+<h3 id="taxonomy-list-templates"><a class="header" href="#taxonomy-list-templates">Taxonomy List Templates</a></h3>
+<p>List templates render all terms for a taxonomy kind:</p>
+<ul>
+<li><code>tags.html</code> — <code>/tags/</code></li>
+<li><code>categories.html</code> — <code>/categories/</code></li>
+<li><code>series.html</code> — <code>/series/</code></li>
+</ul>
+<p>Each receives <code>extra.taxonomy</code> with:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>extra.taxonomy.kind</code></td><td>String</td><td>Taxonomy kind: "Tags", "Categories", or "Series"</td></tr>
+<tr><td><code>extra.taxonomy.path</code></td><td>String</td><td>URL path (e.g., "/tags/")</td></tr>
+<tr><td><code>extra.taxonomy.terms</code></td><td>Array</td><td>List of term contexts</td></tr>
+</tbody></table>
+</div>
+<p>Example <code>tags.html</code>:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Tags - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;section&gt;
+  &lt;h1&gt;Tags&lt;/h1&gt;
+  {% if extra.taxonomy.terms %}
+  &lt;ul&gt;
+    {% for term in extra.taxonomy.terms %}
+    &lt;li&gt;
+      &lt;a href="{{ term.path }}"&gt;{{ term.name }} ({{ term.page_count }})&lt;/a&gt;
+    &lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+  {% endif %}
+&lt;/section&gt;
+{% endblock %}
+</code></pre>
+<h3 id="taxonomy-term-templates"><a class="header" href="#taxonomy-term-templates">Taxonomy Term Templates</a></h3>
+<p>Term templates render pages for a specific term:</p>
+<ul>
+<li><code>tags_term.html</code> — <code>/tags/rust/</code></li>
+<li><code>categories_term.html</code> — <code>/categories/tutorial/</code></li>
+<li><code>series_term.html</code> — <code>/series/learning-rust/</code></li>
+</ul>
+<p>Each receives <code>extra.taxonomy</code> with:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>extra.taxonomy.kind</code></td><td>String</td><td>Taxonomy kind: "Tags", "Categories", or "Series"</td></tr>
+<tr><td><code>extra.taxonomy.name</code></td><td>String</td><td>Display name (e.g., "Rust")</td></tr>
+<tr><td><code>extra.taxonomy.slug</code></td><td>String</td><td>URL-safe slug (e.g., "rust")</td></tr>
+<tr><td><code>extra.taxonomy.path</code></td><td>String</td><td>URL path (e.g., "/tags/rust/")</td></tr>
+<tr><td><code>extra.taxonomy.page_count</code></td><td>Number</td><td>Number of pages with this term</td></tr>
+<tr><td><code>extra.taxonomy.pages</code></td><td>Array</td><td>List of page objects with <code>title</code>, <code>path</code>, <code>description</code>, etc.</td></tr>
+</tbody></table>
+</div>
+<p>Example <code>tags_term.html</code>:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Tag: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;section&gt;
+  &lt;h1&gt;Tagged "{{ extra.taxonomy.name }}"&lt;/h1&gt;
+  &lt;p&gt;{{ extra.taxonomy.page_count }} post(s)&lt;/p&gt;
+  &lt;ul&gt;
+    {% for page in extra.taxonomy.pages %}
+    &lt;li&gt;&lt;a href="{{ page.path }}"&gt;{{ page.title }}&lt;/a&gt;&lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+&lt;/section&gt;
+{% endblock %}
+</code></pre>
+<h3 id="term-context-in-list-templates"><a class="header" href="#term-context-in-list-templates">Term Context in List Templates</a></h3>
+<p>When iterating <code>extra.taxonomy.terms</code>, each term has:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>term.name</code></td><td>String</td><td>Display name</td></tr>
+<tr><td><code>term.slug</code></td><td>String</td><td>URL-safe slug</td></tr>
+<tr><td><code>term.path</code></td><td>String</td><td>URL path</td></tr>
+<tr><td><code>term.page_count</code></td><td>Number</td><td>Number of pages</td></tr>
+</tbody></table>
+</div>
+<h2 id="available-variables"><a class="header" href="#available-variables">Available Variables</a></h2>
+<h3 id="site-context"><a class="header" href="#site-context">Site Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>site.name</code></td><td>String</td><td>Site name from configuration</td></tr>
+<tr><td><code>site.base_url</code></td><td>String</td><td>Base URL from configuration</td></tr>
+<tr><td><code>site.description</code></td><td>String?</td><td>Optional site description</td></tr>
+<tr><td><code>site.author</code></td><td>String?</td><td>Optional site author</td></tr>
+</tbody></table>
+</div>
+<h3 id="page-context"><a class="header" href="#page-context">Page Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>page.title</code></td><td>String</td><td>Page title from frontmatter</td></tr>
+<tr><td><code>page.description</code></td><td>String?</td><td>Optional page description</td></tr>
+<tr><td><code>page.path</code></td><td>String</td><td>URL path (e.g., <code>/about/</code>)</td></tr>
+<tr><td><code>page.permalink</code></td><td>String</td><td>Absolute URL (e.g., <code>https://example.com/about/</code>)</td></tr>
+<tr><td><code>page.content</code></td><td>String</td><td>Rendered HTML content</td></tr>
+<tr><td><code>page.raw_content</code></td><td>String</td><td>Raw markdown content</td></tr>
+<tr><td><code>page.date</code></td><td>String?</td><td>Publication date (ISO 8601)</td></tr>
+<tr><td><code>page.draft</code></td><td>Boolean</td><td>Whether page is a draft</td></tr>
+<tr><td><code>page.summary</code></td><td>String</td><td>Summary/excerpt for the page</td></tr>
+<tr><td><code>page.word_count</code></td><td>Number</td><td>Word count</td></tr>
+<tr><td><code>page.reading_time</code></td><td>Number</td><td>Estimated reading time in minutes</td></tr>
+<tr><td><code>page.tags</code></td><td>Array</td><td>Tags for the page</td></tr>
+<tr><td><code>page.categories</code></td><td>Array</td><td>Categories for the page</td></tr>
+<tr><td><code>page.series</code></td><td>String?</td><td>Series name</td></tr>
+<tr><td><code>page.hero</code></td><td>Object?</td><td>Hero image context (see below)</td></tr>
+</tbody></table>
+</div>
+<h3 id="hero-image-context"><a class="header" href="#hero-image-context">Hero Image Context</a></h3>
+<p>When a page has <code>hero_image</code> in its frontmatter, <code>page.hero</code> contains:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>page.hero.src</code></td><td>String</td><td>Fallback <code>&lt;img&gt;</code> src (middle variant)</td></tr>
+<tr><td><code>page.hero.srcset</code></td><td>String</td><td>Full srcset string for <code>&lt;source&gt;</code></td></tr>
+<tr><td><code>page.hero.width</code></td><td>Number</td><td>Original image width</td></tr>
+<tr><td><code>page.hero.height</code></td><td>Number</td><td>Original image height</td></tr>
+<tr><td><code>page.hero.alt</code></td><td>String</td><td>Alt text (from <code>hero_alt</code>, or page title)</td></tr>
+<tr><td><code>page.hero.mime_type</code></td><td>String</td><td>MIME type (e.g., <code>"image/webp"</code>)</td></tr>
+</tbody></table>
+</div>
+<p>Example usage:</p>
+<pre><code class="language-html">{% if page.hero %}
+&lt;picture&gt;
+  &lt;source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}"&gt;
+  &lt;img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+       width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+       loading="eager" decoding="async"&gt;
+&lt;/picture&gt;
+{% endif %}
+</code></pre>
+<p>See <a href="./images.html">Images</a> for the complete guide.</p>
+<h3 id="section-context"><a class="header" href="#section-context">Section Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>section.title</code></td><td>String</td><td>Section title</td></tr>
+<tr><td><code>section.description</code></td><td>String?</td><td>Optional section description</td></tr>
+<tr><td><code>section.path</code></td><td>String</td><td>Section URL path</td></tr>
+<tr><td><code>section.content</code></td><td>String?</td><td>Section HTML content</td></tr>
+<tr><td><code>section.pages</code></td><td>Array</td><td>List of pages in section</td></tr>
+<tr><td><code>section.pagination</code></td><td>Object?</td><td>Pagination information</td></tr>
+</tbody></table>
+</div>
+<h3 id="pagination-context"><a class="header" href="#pagination-context">Pagination Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>section.pagination.current</code></td><td>Number</td><td>Current page (1-indexed)</td></tr>
+<tr><td><code>section.pagination.total</code></td><td>Number</td><td>Total pages</td></tr>
+<tr><td><code>section.pagination.per_page</code></td><td>Number</td><td>Items per page</td></tr>
+<tr><td><code>section.pagination.total_items</code></td><td>Number</td><td>Total items across all pages</td></tr>
+<tr><td><code>section.pagination.prev</code></td><td>String?</td><td>URL to previous page</td></tr>
+<tr><td><code>section.pagination.next</code></td><td>String?</td><td>URL to next page</td></tr>
+<tr><td><code>section.pagination.first</code></td><td>String</td><td>URL to first page</td></tr>
+<tr><td><code>section.pagination.last</code></td><td>String</td><td>URL to last page</td></tr>
+</tbody></table>
+</div>
+<h3 id="current-date"><a class="header" href="#current-date">Current Date</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>now.year</code></td><td>Number</td><td>Current year (e.g., 2024)</td></tr>
+</tbody></table>
+</div>
+<p>Useful for copyright notices: <code>&amp;copy; {{ now.year }}</code></p>
+<h3 id="extra-variables"><a class="header" href="#extra-variables">Extra Variables</a></h3>
+<p>Custom variables from frontmatter <code>extra</code> field:</p>
+<pre><code class="language-markdown">+++
+title = "My Page"
+[extra]
+author = "John Doe"
+custom = "value"
++++
+</code></pre>
+<p>Access in templates:</p>
+<pre><code class="language-html">&lt;p&gt;Author: {{ extra.author }}&lt;/p&gt;
+&lt;p&gt;Custom: {{ extra.custom }}&lt;/p&gt;
+</code></pre>
+<h2 id="template-inheritance"><a class="header" href="#template-inheritance">Template Inheritance</a></h2>
+<p>Templates can extend other templates:</p>
+<p><strong>base.html</strong>:</p>
+<pre><code class="language-html">&lt;html&gt;
+  &lt;head&gt;{% block head %}{% endblock %}&lt;/head&gt;
+  &lt;body&gt;{% block body %}{% endblock %}&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<p><strong>page.html</strong>:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block head %}
+&lt;title&gt;{{ page.title }}&lt;/title&gt;
+{% endblock %}
+
+{% block body %}
+&lt;h1&gt;{{ page.title }}&lt;/h1&gt;
+{{ page.content | safe }}
+{% endblock %}
+</code></pre>
+<h2 id="filters"><a class="header" href="#filters">Filters</a></h2>
+<p>Commonly used filters:</p>
+<div class="table-wrapper"><table><thead><tr><th>Filter</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>safe</code></td><td>Output without HTML escaping</td></tr>
+<tr><td><code>default(value="...")</code></td><td>Provide default value</td></tr>
+<tr><td><code>upper</code></td><td>Convert to uppercase</td></tr>
+<tr><td><code>lower</code></td><td>Convert to lowercase</td></tr>
+<tr><td><code>trim</code></td><td>Remove leading/trailing whitespace</td></tr>
+<tr><td><code>first</code></td><td>Get first element of array</td></tr>
+<tr><td><code>last</code></td><td>Get last element of array</td></tr>
+<tr><td><code>length</code></td><td>Get length of string/array</td></tr>
+<tr><td><code>join(sep=", ")</code></td><td>Join array with separator</td></tr>
+<tr><td><code>slugify</code></td><td>Convert to URL-safe slug</td></tr>
+</tbody></table>
+</div>
+<h2 id="custom-templates"><a class="header" href="#custom-templates">Custom Templates</a></h2>
+<p>Pages can specify custom templates in frontmatter:</p>
+<pre><code class="language-markdown">+++
+title = "Special Page"
+template = "custom.html"
++++
+
+This page uses custom.html instead of page.html.
+</code></pre>
+<h2 id="island-components"><a class="header" href="#island-components">Island Components</a></h2>
+<p>Use the <code>island()</code> function to embed interactive Yew components:</p>
+<pre><code class="language-html">{% block content %}
+  {{ page.content | safe }}
+  {{ island(component="Counter", initial=5) | safe }}
+{% endblock %}
+</code></pre>
+<p><strong>Important</strong>: Always use <code>| safe</code> after <code>island()</code> to prevent HTML escaping.</p>
+<p>See <a href="./islands.html">Islands Architecture</a> for the complete guide.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="content.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="images.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="content.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="images.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

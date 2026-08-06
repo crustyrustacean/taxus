@@ -1,0 +1,3304 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Taxus Documentation</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for the Taxus Static Site Generator">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="getting-started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">4.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="content.html"><strong aria-hidden="true">5.</strong> Content</a></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">6.</strong> Templates</a></li><li class="chapter-item expanded "><a href="images.html"><strong aria-hidden="true">7.</strong> Images</a></li><li class="chapter-item expanded "><a href="syntax-highlighting.html"><strong aria-hidden="true">8.</strong> Syntax Highlighting</a></li><li class="chapter-item expanded "><a href="islands.html"><strong aria-hidden="true">9.</strong> Islands Architecture</a></li><li class="chapter-item expanded "><a href="search.html"><strong aria-hidden="true">10.</strong> Search</a></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">11.</strong> CLI Reference</a></li><li class="chapter-item expanded "><a href="serve.html"><strong aria-hidden="true">12.</strong> Development Server</a></li><li class="chapter-item expanded "><a href="styling.html"><strong aria-hidden="true">13.</strong> Styling</a></li><li class="chapter-item expanded "><a href="development.html"><strong aria-hidden="true">14.</strong> Development</a></li><li class="chapter-item expanded "><a href="api-reference.html"><strong aria-hidden="true">15.</strong> API Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Taxus Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Welcome to <strong>Taxus</strong>, a Rust-based static site generator built with <a href="https://keats.github.io/tera/">Tera</a>, featuring WebAssembly "islands" for interactive components.</p>
+<h2 id="what-is-taxus"><a class="header" href="#what-is-taxus">What is Taxus?</a></h2>
+<p>Taxus is a static site generator that combines:</p>
+<ul>
+<li><strong>Tera templates</strong> for the static "sea of HTML" — page layout, content, navigation</li>
+<li><strong>Markdown content</strong> with TOML frontmatter for writing pages and posts</li>
+<li><strong>SCSS</strong> for modern styling</li>
+<li><strong>Yew components</strong> — pre-rendered server-side at build time, hydrated by WASM in the browser for interactivity</li>
+</ul>
+<p>The key insight: pages are immediately visible with no JavaScript required. Interactive components load asynchronously and attach without re-rendering.</p>
+<h2 id="features"><a class="header" href="#features">Features</a></h2>
+<ul>
+<li><strong>Static-first</strong>: Pre-rendered HTML for optimal performance and SEO</li>
+<li><strong>Islands Architecture</strong>: Interactive Yew WASM components embedded within static pages</li>
+<li><strong>Markdown Content</strong>: Write content in Markdown files with TOML frontmatter</li>
+<li><strong>Co-located Assets</strong>: Images and files in the content directory are automatically copied to output</li>
+<li><strong>Internal Links</strong>: Reference other pages by content file path with build-time validation</li>
+<li><strong>Blog Features</strong>: Summary extraction, reading time, word count, custom slugs</li>
+<li><strong>Pagination</strong>: Split large collections across multiple pages</li>
+<li><strong>RSS/Atom Feeds</strong>: Automatic feed generation for content syndication</li>
+<li><strong>Sitemap</strong>: Automatic <code>sitemap.xml</code> generation with priorities and lastmod dates</li>
+<li><strong>Taxonomies</strong>: Tags, categories, and series for content organization</li>
+<li><strong>Development Server</strong>: Hot-reloading local server with WebSocket live reload</li>
+<li><strong>CLI Interface</strong>: <code>build</code>, <code>clean</code>, <code>init</code>, <code>routes</code>, and <code>serve</code> subcommands</li>
+</ul>
+<h2 id="who-is-this-for"><a class="header" href="#who-is-this-for">Who is this for?</a></h2>
+<p>Taxus is ideal for:</p>
+<ul>
+<li><strong>Rust developers</strong> who want to build websites without leaving their favorite language</li>
+<li><strong>Performance enthusiasts</strong> who want fast, optimized static sites with selective WASM interactivity</li>
+<li><strong>SEO-conscious developers</strong> who need pre-rendered content with no JavaScript dependency for initial render</li>
+<li><strong>Component lovers</strong> who prefer the Yew component model for interactive UI pieces</li>
+</ul>
+<h2 id="documentation-overview"><a class="header" href="#documentation-overview">Documentation Overview</a></h2>
+<ul>
+<li><a href="./getting-started.html">Getting Started</a> — Quick start guide</li>
+<li><a href="./architecture.html">Architecture</a> — Technical overview of the workspace, modules, and build pipeline</li>
+<li><a href="./configuration.html">Configuration</a> — <code>site.toml</code> format and options</li>
+<li><a href="./content.html">Content</a> — Markdown files, frontmatter, taxonomies, pagination</li>
+<li><a href="./templates.html">Templates</a> — Tera templates and context variables</li>
+<li><a href="./islands.html">Islands Architecture</a> — How to write and use Yew components</li>
+<li><a href="./cli.html">CLI Reference</a> — Command-line interface documentation</li>
+<li><a href="./serve.html">Development Server</a> — Hot reload and file watching</li>
+<li><a href="./api-reference.html">API Reference</a> — Library API documentation</li>
+</ul>
+<h2 id="license"><a class="header" href="#license">License</a></h2>
+<p>This project is licensed under the MIT License - see the <a href="../License.txt">License.txt</a> file for details.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
+<p>This guide will help you get up and running with Taxus quickly.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>Before you begin, ensure you have the following installed:</p>
+<ul>
+<li><strong>Rust</strong> (edition 2024) — <a href="https://www.rust-lang.org/tools/install">Install Rust</a></li>
+</ul>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
+<h3 id="step-1-clone-and-initialize"><a class="header" href="#step-1-clone-and-initialize">Step 1: Clone and Initialize</a></h3>
+<pre><code class="language-bash"># Clone the repository
+git clone https://codeberg.org/crustyrustacean/taxus.git
+cd taxus
+
+# Create a new site
+cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+</code></pre>
+<p>This creates the following structure:</p>
+<pre><code>my-site/
+├── site.toml               # Site configuration
+├── content/
+│   └── _index.md           # Home page
+├── templates/
+│   ├── base.html           # Base HTML layout
+│   ├── page.html           # Single-page template
+│   ├── section.html        # Section/listing template
+│   ├── tags.html           # Tag listing page
+│   ├── tags_term.html      # Individual tag page
+│   ├── categories.html     # Category listing page
+│   ├── categories_term.html # Individual category page
+│   ├── series.html         # Series listing page
+│   ├── series_term.html    # Individual series page
+│   └── 404.html            # Not found page
+├── static/
+│   ├── scripts.js          # Placeholder scripts
+│   └── favicon.png         # Placeholder favicon
+└── styles/
+    └── main.scss           # Starter stylesheet
+</code></pre>
+<h3 id="step-2-build-the-site"><a class="header" href="#step-2-build-the-site">Step 2: Build the Site</a></h3>
+<pre><code class="language-bash">cargo run -- build --dir my-site --verbose
+</code></pre>
+<p>This runs the 15-stage build pipeline and writes output to <code>my-site/dist/</code>. The WASM client (<code>client.js</code> and <code>client_bg.wasm</code>) is compiled during the Cargo build, embedded in the binary, and written to <code>dist/wasm/</code> automatically — no separate build step is needed.</p>
+<h3 id="step-3-serve-and-view"><a class="header" href="#step-3-serve-and-view">Step 3: Serve and View</a></h3>
+<pre><code class="language-bash">cargo run -- serve --dir my-site --open
+</code></pre>
+<p>This starts a development server at <code>http://localhost:3000</code> and opens it in your browser.</p>
+<p>You should see the home page rendered from the Markdown content in <code>content/_index.md</code>.</p>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<ul>
+<li>Learn about <a href="./configuration.html">Configuration</a> for customizing your site</li>
+<li>Understand <a href="./content.html">Content</a> for writing pages and posts</li>
+<li>Explore <a href="./templates.html">Templates</a> for customizing HTML output</li>
+<li>Read the <a href="./cli.html">CLI Reference</a> for all command options</li>
+</ul>
+<h2 id="opting-out-of-islands"><a class="header" href="#opting-out-of-islands">Opting Out of Islands</a></h2>
+<p>Islands (Yew/WASM hydration) are enabled by default. If you want a plain
+Tera/Markdown scaffold with no WASM hydration, pass <code>--no-islands</code> when
+initializing:</p>
+<pre><code class="language-bash">cargo run -- init my-site --no-islands
+</code></pre>
+<p>See <a href="./islands.html">Islands Architecture</a> for the complete guide.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
+<p>This page provides a technical overview of Taxus's architecture, including the workspace structure, module organization, build pipeline, and data flow.</p>
+<h2 id="workspace-structure"><a class="header" href="#workspace-structure">Workspace Structure</a></h2>
+<p>Taxus is organized as a multi-crate Cargo workspace with four crates:</p>
+<pre><code>taxus/
+├── taxus-client/    # WASM hydration client
+├── taxus-common/    # Shared Yew components
+└── taxus-generator/ # SSG library and CLI binary
+└── xtask/           # Workspace task runner (cargo xtask)
+</code></pre>
+<h3 id="crate-responsibilities"><a class="header" href="#crate-responsibilities">Crate Responsibilities</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Crate</th><th>Role</th><th>Output</th></tr></thead><tbody>
+<tr><td><code>taxus-common</code></td><td>Shared Yew components used by both SSR (generator) and hydration (client)</td><td>Library</td></tr>
+<tr><td><code>taxus-generator</code></td><td>Static site generation: config, content parsing, route discovery, Tera rendering, asset processing</td><td>Library (<code>taxus_lib</code>) + Binary (<code>taxus</code>)</td></tr>
+<tr><td><code>taxus-client</code></td><td>Browser-side WASM that finds island mount points and hydrates them</td><td>WASM bundle (embedded in generator binary at compile time)</td></tr>
+<tr><td><code>xtask</code></td><td>Workspace task runner wrapping common developer workflows (build, test, lint, release, …)</td><td>Binary (<code>cargo xtask</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="data-flow-between-crates"><a class="header" href="#data-flow-between-crates">Data Flow Between Crates</a></h3>
+<pre><code>┌─────────────┐     SSR at build time      ┌─────────────┐
+│   common    │ ──────────────────────────▶│  generator  │
+│ (components)│                            │  (CLI/lib)  │
+└─────────────┘                            └──────┬──────┘
+      │                                           │
+      │              Build output                 │
+      │         (HTML + props JSON)               │
+      │                                           ▼
+      │                                    ┌─────────────┐
+      │     Hydration at runtime           │   dist/     │
+      │ ──────────────────────────────────▶│  (output)   │
+      │                                    └─────────────┘
+      │                                           │
+      ▼                                           ▼
+┌─────────────┐                            ┌─────────────┐
+│   client    │ ◀─── WASM loads in browser ─│   Browser   │
+│   (WASM)    │                            │             │
+└─────────────┘                            └─────────────┘
+</code></pre>
+<h2 id="generator-module-map"><a class="header" href="#generator-module-map">Generator Module Map</a></h2>
+<p>The <code>generator</code> crate is organized into modules that each own a specific domain:</p>
+<div class="table-wrapper"><table><thead><tr><th>Module</th><th>Types</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><code>config</code></td><td><code>SiteConfig</code>, <code>SiteMeta</code>, <code>BuildConfig</code>, <code>FeedConfig</code>, <code>ImageConfig</code></td><td>Load and validate <code>site.toml</code> configuration</td></tr>
+<tr><td><code>content</code></td><td><code>Page</code>, <code>Section</code>, <code>Frontmatter</code>, <code>ContentSource</code></td><td>Parse Markdown files with TOML frontmatter</td></tr>
+<tr><td><code>routes</code></td><td><code>RouteDiscovery</code>, <code>RouteRegistry</code>, <code>RouteInfo</code>, <code>RouteKind</code></td><td>Map content files to URL paths</td></tr>
+<tr><td><code>templates</code></td><td><code>TeraRenderer</code>, <code>TemplateContext</code>, <code>PageContext</code>, <code>SectionContext</code>, <code>SiteContext</code></td><td>Render HTML with Tera templates</td></tr>
+<tr><td><code>build</code></td><td><code>SiteBuilder</code>, <code>BuildReport</code>, <code>ProcessedPage</code>, <code>RenderedPage</code></td><td>Orchestrate the build pipeline (including WASM client writing)</td></tr>
+<tr><td><code>assets</code></td><td><code>ScssProcessor</code>, <code>StaticCopier</code>, <code>AssetReport</code></td><td>Compile SCSS, copy static files</td></tr>
+<tr><td><code>images</code></td><td><code>ImageProcessor</code>, <code>ImageRegistry</code>, <code>ProcessedImage</code>, <code>render_picture</code></td><td>Hero image processing: responsive variants, WebP conversion, <code>&lt;picture&gt;</code>/srcset</td></tr>
+<tr><td><code>feed</code></td><td><code>FeedGenerator</code>, <code>FeedEntry</code>, <code>FeedConfig</code></td><td>Generate RSS/Atom feeds</td></tr>
+<tr><td><code>init</code></td><td><code>InitScaffolder</code>, <code>InitOptions</code>, <code>InitReport</code></td><td>Scaffold new site directories</td></tr>
+<tr><td><code>serve</code></td><td><code>DevServer</code>, <code>FileWatcher</code>, WebSocket live reload</td><td>Development server with hot reload</td></tr>
+<tr><td><code>error</code></td><td><code>GeneratorError</code> + domain sub-errors</td><td>Error handling hierarchy</td></tr>
+<tr><td><code>tracing</code></td><td><code>init()</code>, <code>init_with_level()</code></td><td>Structured logging setup</td></tr>
+</tbody></table>
+</div>
+<h3 id="module-dependencies"><a class="header" href="#module-dependencies">Module Dependencies</a></h3>
+<pre><code>                ┌──────────┐
+                │  config  │
+                └────┬─────┘
+                     │
+         ┌───────────┼───────────┐
+         ▼           ▼           ▼
+    ┌─────────┐ ┌─────────┐ ┌─────────┐
+    │ content │ │  routes │ │  error  │
+    └────┬────┘ └────┬────┘ └─────────┘
+         │           │
+         └─────┬─────┘
+               ▼
+         ┌───────────┐
+         │ templates │
+         └─────┬─────┘
+               │
+         ┌─────┼─────┐
+         ▼     ▼     ▼
+    ┌────────┐ ┌───────┐ ┌──────┐
+    │ assets │ │ build │ │ feed │
+    └────────┘ └───┬───┘ └──────┘
+                   │
+         ┌─────────┼─────────┐
+         ▼         ▼         ▼
+    ┌────────┐ ┌────────┐ ┌───────┐
+    │  init  │ │ serve  │ │tracing│
+    └────────┘ └────────┘ └───────┘
+</code></pre>
+<h2 id="build-pipeline"><a class="header" href="#build-pipeline">Build Pipeline</a></h2>
+<p>The <code>SiteBuilder</code> orchestrates a 15-stage build pipeline:</p>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                      SiteBuilder.build()                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [1/15] Discover routes                                          │
+│          └──▶ Walk content/ directory                            │
+│          └──▶ Create RouteRegistry (path → content file mapping) │
+│                                                                  │
+│  [2/15] Load templates                                           │
+│          └──▶ Read templates/**/*.html                           │
+│          └──▶ Register with Tera (inheritance, island() fn)      │
+│                                                                  │
+│  [3/15] Process content                                          │
+│          └──▶ Parse frontmatter (TOML)                           │
+│          └──▶ Convert Markdown → HTML                            │
+│          └──▶ Resolve internal links (@/file.md)                 │
+│          └──▶ Produce ProcessedPage for each route               │
+│                                                                  │
+│  [4/15] Process images                                           │
+│          └──▶ Generate responsive variants for hero images       │
+│          └──▶ Convert to WebP and build &lt;picture&gt; srcset         │
+│                                                                  │
+│  [5/15] Copy co-located assets                                   │
+│          └──▶ Non-.md files in content/ → dist/                  │
+│          └──▶ Preserve directory structure                       │
+│                                                                  │
+│  [6/15] Render pages                                             │
+│          └──▶ Apply Tera templates to ProcessedPage              │
+│          └──▶ Handle pagination for sections                     │
+│          └──▶ Produce RenderedPage (final HTML)                  │
+│                                                                  │
+│  [7/15] Generate robots.txt                                      │
+│          └──▶ If no static/robots.txt exists                     │
+│          └──▶ Write default with sitemap reference               │
+│                                                                  │
+│  [8/15] Generate sitemap.xml                                     │
+│          └──▶ List all routes with lastmod dates                 │
+│          └──▶ Assign priorities (home: 1.0, sections: 0.8, etc)  │
+│                                                                  │
+│  [9/15] Generate 404.html                                        │
+│          └──▶ Render 404 template if present                     │
+│                                                                  │
+│  [10/15] Build and render taxonomy pages                         │
+│          └──▶ Extract tags, categories, series from pages        │
+│          └──▶ Generate /tags/, /tags/slug/, etc                  │
+│                                                                  │
+│  [11/15] Generate feeds                                          │
+│          └──▶ RSS 2.0 (rss_enabled)                              │
+│          └──▶ Atom (atom_enabled)                                │
+│                                                                  │
+│  [12/15] Process assets                                          │
+│          └──▶ Compile SCSS → CSS (styles/**/*.scss)              │
+│          └──▶ Copy static/ files to dist/static/                 │
+│                                                                  │
+│  [13/15] Generate search index                                   │
+│          └──▶ Build TF-IDF index from page content               │
+│          └──▶ Write dist/search_index.bin                        │
+│                                                                  │
+│  [14/15] Write WASM client                                       │
+│          └──▶ Write embedded client.js to dist/wasm/             │
+│          └──▶ Write embedded client_bg.wasm to dist/wasm/        │
+│                                                                  │
+│  [15/15] Write output                                            │
+│          └──▶ Write RenderedPage HTML files                      │
+│          └──▶ Write taxonomy pages                               │
+│          └──▶ Write feed XML files                               │
+│          └──▶ Write alias redirects (HTML meta refresh)          │
+│                                                                  │
+└──▶ Walk content/ directory                            │
+│          └──▶ Create RouteRegistry (path → content file mapping) │
+│                                                                  │
+│  [2/13] Load templates                                           │
+│          └──▶ Read templates/**/*.html                           │
+│          └──▶ Register with Tera (inheritance, island() fn)      │
+│                                                                  │
+│  [3/13] Process content                                          │
+│          └──▶ Parse frontmatter (TOML)                           │
+│          └──▶ Convert Markdown → HTML                            │
+│          └──▶ Resolve internal links (@/file.md)                 │
+│          └──▶ Produce ProcessedPage for each route               │
+│                                                                  │
+│  [4/13] Copy co-located assets                                   │
+│          └──▶ Non-.md files in content/ → dist/                  │
+│          └──▶ Preserve directory structure                       │
+│                                                                  │
+│  [5/13] Render pages                                             │
+│          └──▶ Apply Tera templates to ProcessedPage              │
+│          └──▶ Handle pagination for sections                     │
+│          └──▶ Produce RenderedPage (final HTML)                  │
+│                                                                  │
+│  [6/13] Generate robots.txt                                      │
+│          └──▶ If no static/robots.txt exists                     │
+│          └──▶ Write default with sitemap reference               │
+│                                                                  │
+│  [7/13] Generate sitemap.xml                                     │
+│          └──▶ List all routes with lastmod dates                 │
+│          └──▶ Assign priorities (home: 1.0, sections: 0.8, etc)  │
+│                                                                  │
+│  [8/13] Generate 404.html                                        │
+│          └──▶ Render 404 template if present                     │
+│                                                                  │
+│  [9/13] Build and render taxonomy pages                          │
+│          └──▶ Extract tags, categories, series from pages        │
+│          └──▶ Generate /tags/, /tags/slug/, etc                  │
+│                                                                  │
+│  [10/13] Generate feeds                                          │
+│          └──▶ RSS 2.0 (rss_enabled)                              │
+│          └──▶ Atom (atom_enabled)                                │
+│                                                                  │
+│  [11/13] Process assets                                          │
+│          └──▶ Compile SCSS → CSS (styles/**/*.scss)              │
+│          └──▶ Copy static/ files to dist/static/                 │
+│                                                                  │
+│  [12/13] Generate search index                                   │
+│          └──▶ Build TF-IDF index from page content               │
+│          └──▶ Write dist/search_index.bin                        │
+│                                                                  │
+│  [13/13] Write WASM client                                       │
+│          └──▶ Write embedded client.js to dist/wasm/              │
+│          └──▶ Write embedded client_bg.wasm to dist/wasm/         │
+│                                                                  │
+│  [15/15] Write output                                            │
+│          └──▶ Write RenderedPage HTML files                      │
+│          └──▶ Write taxonomy pages                               │
+│          └──▶ Write feed XML files                               │
+│          └──▶ Write alias redirects (HTML meta refresh)          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h2 id="key-types-in-the-pipeline"><a class="header" href="#key-types-in-the-pipeline">Key Types in the Pipeline</a></h2>
+<h3 id="routeregistry"><a class="header" href="#routeregistry">RouteRegistry</a></h3>
+<p>The first major data structure created. Maps URL paths to content files:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>RouteRegistry {
+    "/":           RouteInfo { kind: Section, content_file: "_index.md", ... },
+    "/about/":     RouteInfo { kind: Page, content_file: "about.md", ... },
+    "/blog/":      RouteInfo { kind: Section, content_file: "blog/_index.md", ... },
+    "/blog/post/": RouteInfo { kind: Page, content_file: "blog/post.md", ... },
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="processedpage"><a class="header" href="#processedpage">ProcessedPage</a></h3>
+<p>The intermediate representation after content parsing:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>ProcessedPage {
+    route: RouteInfo,
+    page: Page {
+        frontmatter: Frontmatter { title, date, tags, ... },
+        content: "&lt;p&gt;Rendered HTML from markdown&lt;/p&gt;",
+        raw_content: "Original markdown text",
+    },
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="renderedpage"><a class="header" href="#renderedpage">RenderedPage</a></h3>
+<p>The final output after template rendering:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>RenderedPage {
+    route: RouteInfo,
+    html: "&lt;!DOCTYPE html&gt;&lt;html&gt;...&lt;/html&gt;",
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="islands-architecture"><a class="header" href="#islands-architecture">Islands Architecture</a></h2>
+<p>The generator pre-renders Yew components at build time:</p>
+<h3 id="build-time-ssr"><a class="header" href="#build-time-ssr">Build-Time (SSR)</a></h3>
+<ol>
+<li>Tera encounters <code>{{ island(component="Counter", initial=5) | safe }}</code> in a template</li>
+<li>The <code>island()</code> Tera function calls Yew SSR to render the component</li>
+<li>Output is wrapped in a mount point with props as JSON:</li>
+</ol>
+<pre><code class="language-html">&lt;div data-island="Counter" data-props='{"initial":5}'&gt;
+  &lt;!-- Pre-rendered HTML from Yew SSR --&gt;
+  &lt;div class="counter"&gt;&lt;span&gt;5&lt;/span&gt;&lt;button&gt;+&lt;/button&gt;&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<h3 id="browser-time-hydration"><a class="header" href="#browser-time-hydration">Browser-Time (Hydration)</a></h3>
+<ol>
+<li>Page loads immediately with pre-rendered HTML (no JavaScript required for initial render)</li>
+<li>WASM bundle (embedded in the generator binary at compile time) loads asynchronously from <code>/wasm/</code></li>
+<li>Client finds all <code>[data-island]</code> elements</li>
+<li>For each: deserialize <code>data-props</code>, call <code>yew::Renderer::hydrate()</code></li>
+</ol>
+<p>See <a href="./islands.html">Islands Architecture</a> for the full guide.</p>
+<h2 id="feature-flags"><a class="header" href="#feature-flags">Feature Flags</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Default</th><th>Effect</th></tr></thead><tbody>
+<tr><td><code>lang-rust</code></td><td>on</td><td>Rust syntax highlighting via tree-sitter</td></tr>
+</tbody></table>
+</div>
+<p>Islands (Yew SSR + WASM hydration) are always enabled. The WASM client
+(<code>taxus-client</code>) is compiled by <code>build.rs</code> at Cargo build time and embedded
+in the binary via <code>include_bytes!</code>; at site build time it is written to
+<code>dist/wasm/</code>. No feature flag is required.</p>
+<pre><code class="language-bash"># Build the site (islands are always compiled in)
+cargo run -- build --dir my-site
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<p>Taxus uses a <code>site.toml</code> configuration file to define site settings and build options.</p>
+<h2 id="configuration-file"><a class="header" href="#configuration-file">Configuration File</a></h2>
+<p>Create a <code>site.toml</code> file in your project root:</p>
+<pre><code class="language-toml">[site]
+name = "My Site"
+base_url = "https://example.com"
+description = "A description of my site"
+author = "Your Name"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+
+[feed]
+rss_enabled = true
+atom_enabled = false
+limit = 20
+full_content = false
+</code></pre>
+<h2 id="configuration-sections"><a class="header" href="#configuration-sections">Configuration Sections</a></h2>
+<h3 id="site-section"><a class="header" href="#site-section"><code>[site]</code> Section</a></h3>
+<p>Site metadata and information.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Site name/title</td></tr>
+<tr><td><code>base_url</code></td><td>string</td><td>Yes</td><td>Base URL for the site (used for absolute URLs)</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>No</td><td>Site description for SEO</td></tr>
+<tr><td><code>author</code></td><td>string</td><td>No</td><td>Site author name</td></tr>
+</tbody></table>
+</div>
+<h3 id="build-section"><a class="header" href="#build-section"><code>[build]</code> Section</a></h3>
+<p>Build configuration options. All fields have defaults.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>content_dir</code></td><td>string</td><td><code>"content"</code></td><td>Directory containing Markdown content</td></tr>
+<tr><td><code>output_dir</code></td><td>string</td><td><code>"dist"</code></td><td>Output directory for generated files</td></tr>
+<tr><td><code>static_dir</code></td><td>string</td><td><code>"static"</code></td><td>Directory containing static assets</td></tr>
+<tr><td><code>styles_dir</code></td><td>string</td><td><code>"styles"</code></td><td>Directory containing SCSS stylesheets</td></tr>
+<tr><td><code>templates_dir</code></td><td>string</td><td><code>"templates"</code></td><td>Directory containing HTML templates</td></tr>
+</tbody></table>
+</div>
+<h3 id="feed-section"><a class="header" href="#feed-section"><code>[feed]</code> Section</a></h3>
+<p>RSS/Atom feed configuration for content syndication.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>rss_enabled</code></td><td>bool</td><td><code>true</code></td><td>Enable RSS 2.0 feed generation</td></tr>
+<tr><td><code>atom_enabled</code></td><td>bool</td><td><code>false</code></td><td>Enable Atom feed generation</td></tr>
+<tr><td><code>limit</code></td><td>number</td><td><code>0</code></td><td>Maximum entries in feed (0 = all)</td></tr>
+<tr><td><code>full_content</code></td><td>bool</td><td><code>false</code></td><td>Include full content vs summary</td></tr>
+<tr><td><code>title</code></td><td>string</td><td><code>None</code></td><td>Custom feed title (defaults to site name)</td></tr>
+<tr><td><code>rss_path</code></td><td>string</td><td><code>None</code></td><td>RSS feed output path (default: <code>rss.xml</code>)</td></tr>
+<tr><td><code>atom_path</code></td><td>string</td><td><code>None</code></td><td>Atom feed output path (default: <code>atom.xml</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="highlight-section"><a class="header" href="#highlight-section"><code>[highlight]</code> Section</a></h3>
+<p>Syntax highlighting configuration for code blocks.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>Enable tree-sitter syntax highlighting</td></tr>
+<tr><td><code>class_prefix</code></td><td>string</td><td><code>"hl-"</code></td><td>CSS class prefix for highlight spans</td></tr>
+</tbody></table>
+</div>
+<p>See <a href="./syntax-highlighting.html">Syntax Highlighting</a> for details on styling and supported languages.</p>
+<h3 id="images-section"><a class="header" href="#images-section"><code>[images]</code> Section</a></h3>
+<p>Responsive image processing configuration for hero images.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>widths</code></td><td>array</td><td><code>[400, 800, 1200]</code></td><td>Responsive breakpoint widths in pixels</td></tr>
+<tr><td><code>quality</code></td><td>number</td><td><code>80</code></td><td>Output quality (1–100)</td></tr>
+<tr><td><code>format</code></td><td>string</td><td><code>"webp"</code></td><td>Output format: <code>"webp"</code>, <code>"jpeg"</code>, or <code>"png"</code></td></tr>
+<tr><td><code>output_dir</code></td><td>string</td><td><code>"images"</code></td><td>Subdirectory within <code>dist/</code> for processed images</td></tr>
+</tbody></table>
+</div>
+<p>See <a href="./images.html">Images</a> for details on hero images and template usage.</p>
+<h2 id="minimal-configuration"><a class="header" href="#minimal-configuration">Minimal Configuration</a></h2>
+<p>The minimal required configuration:</p>
+<pre><code class="language-toml">[site]
+name = "My Site"
+base_url = "https://example.com"
+</code></pre>
+<p>All <code>[build]</code> and <code>[feed]</code> settings use their default values.</p>
+<h2 id="full-configuration-example"><a class="header" href="#full-configuration-example">Full Configuration Example</a></h2>
+<pre><code class="language-toml">[site]
+name = "My Blog"
+base_url = "https://example.com"
+description = "A blog about Rust and web development"
+author = "Jane Doe"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+
+[feed]
+rss_enabled = true
+atom_enabled = true
+limit = 20
+full_content = false
+title = "My Blog Feed"
+rss_path = "rss.xml"
+atom_path = "atom.xml"
+
+[highlight]
+enabled = true
+class_prefix = "hl-"
+
+[images]
+widths = [400, 800, 1200]
+quality = 80
+format = "webp"
+output_dir = "images"
+</code></pre>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<p>Configuration is validated when loaded:</p>
+<ul>
+<li><code>site.name</code> must not be empty</li>
+<li><code>site.base_url</code> must not be empty</li>
+</ul>
+<h2 id="feed-urls"><a class="header" href="#feed-urls">Feed URLs</a></h2>
+<p>After generation, feeds are available at:</p>
+<ul>
+<li>RSS: <code>https://example.com/rss.xml</code> (or custom <code>rss_path</code>)</li>
+<li>Atom: <code>https://example.com/atom.xml</code> (or custom <code>atom_path</code>)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="content"><a class="header" href="#content">Content</a></h1>
+<p>Content in Taxus is written in Markdown files with TOML frontmatter.</p>
+<h2 id="content-files"><a class="header" href="#content-files">Content Files</a></h2>
+<p>Content files are stored in the <code>content/</code> directory:</p>
+<pre><code>content/
+├── _index.md      # Home page
+├── about.md       # About page
+└── blog/
+    ├── _index.md  # Blog section index
+    ├── first-post.md
+    └── second-post.md
+</code></pre>
+<h3 id="special-files"><a class="header" href="#special-files">Special Files</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>File</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>_index.md</code></td><td>Section index page (home page at root, section index in subdirectories)</td></tr>
+<tr><td><code>*.md</code></td><td>Regular pages</td></tr>
+</tbody></table>
+</div>
+<h3 id="co-located-assets"><a class="header" href="#co-located-assets">Co-located Assets</a></h3>
+<p>Non-Markdown files in the content directory are automatically copied to the output directory, preserving their relative paths. This allows you to keep images and other assets alongside the content that uses them.</p>
+<pre><code>content/
+├── blog/
+│   ├── first-post.md
+│   ├── photo.jpg          → dist/blog/photo.jpg
+│   └── diagrams/
+│       └── architecture.png  → dist/blog/diagrams/architecture.png
+└── about/
+    ├── about.md
+    └── headshot.png       → dist/about/headshot.png
+</code></pre>
+<p><strong>Referencing co-located assets:</strong></p>
+<pre><code class="language-markdown">![Photo](photo.jpg)
+![Diagram](diagrams/architecture.png)
+</code></pre>
+<p>Or use absolute paths from the site root:</p>
+<pre><code class="language-markdown">![Photo](/blog/photo.jpg)
+</code></pre>
+<p><strong>When to use co-located assets:</strong></p>
+<ul>
+<li>Blog post images and diagrams</li>
+<li>Page-specific downloads (PDFs, etc.)</li>
+<li>Content-specific data files</li>
+</ul>
+<p>For global assets (logos, favicons, shared images), use the <code>static/</code> directory instead.</p>
+<h2 id="hero-images"><a class="header" href="#hero-images">Hero Images</a></h2>
+<p>Pages can have a hero image — a prominent image displayed at the top of the page. Place the image file next to your markdown and reference it in frontmatter:</p>
+<pre><code class="language-markdown">+++
+title = "My Post"
+hero_image = "sunset.jpg"
+hero_alt = "A dramatic mountain sunset"
+date = 2024-03-15
++++
+
+# My Post
+</code></pre>
+<p>Taxus automatically:</p>
+<ul>
+<li>Generates responsive variants at multiple widths (default: 400, 800, 1200)</li>
+<li>Converts to WebP (or JPEG/PNG if configured)</li>
+<li>Produces a <code>&lt;picture&gt;</code> element with srcset for optimal browser delivery</li>
+<li>Falls back to the page title if <code>hero_alt</code> is not provided</li>
+</ul>
+<p>See <a href="./images.html">Images</a> for full configuration and template usage.</p>
+<h2 id="frontmatter"><a class="header" href="#frontmatter">Frontmatter</a></h2>
+<p>Each Markdown file can include TOML frontmatter enclosed in <code>+++</code>:</p>
+<pre><code class="language-markdown">+++
+title = "Page Title"
+description = "A brief description"
+date = 2024-01-15
+template = "custom.html"
+draft = false
+
+[extra]
+author = "John Doe"
+tags = ["rust", "web"]
++++
+
+# Page Content
+
+Your markdown content here.
+</code></pre>
+<h3 id="frontmatter-fields"><a class="header" href="#frontmatter-fields">Frontmatter Fields</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>title</code></td><td>string</td><td>No*</td><td><code>""</code></td><td>Page title</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Page description for SEO</td></tr>
+<tr><td><code>date</code></td><td>date</td><td>No</td><td><code>None</code></td><td>Publication date (YYYY-MM-DD)</td></tr>
+<tr><td><code>updated</code></td><td>date</td><td>No</td><td><code>None</code></td><td>Last updated date</td></tr>
+<tr><td><code>template</code></td><td>string</td><td>No</td><td><code>"page.html"</code></td><td>Template override</td></tr>
+<tr><td><code>draft</code></td><td>bool</td><td>No</td><td><code>false</code></td><td>Draft status</td></tr>
+<tr><td><code>summary</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Custom summary/excerpt</td></tr>
+<tr><td><code>slug</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Custom URL slug</td></tr>
+<tr><td><code>aliases</code></td><td>array</td><td>No</td><td><code>[]</code></td><td>Old URLs that redirect to this page</td></tr>
+<tr><td><code>tags</code></td><td>array</td><td>No</td><td><code>[]</code></td><td>Tags (e.g., <code>["rust", "web"]</code>)</td></tr>
+<tr><td><code>categories</code></td><td>array</td><td>No</td><td><code>[]</code></td><td>Categories (e.g., <code>["tutorial"]</code>)</td></tr>
+<tr><td><code>series</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Series name (e.g., <code>"Learning Rust"</code>)</td></tr>
+<tr><td><code>sort_by</code></td><td>string</td><td>No</td><td><code>"date"</code></td><td>Sort order for sections: <code>"date"</code>, <code>"title"</code>, <code>"weight"</code>, <code>"none"</code></td></tr>
+<tr><td><code>paginate_by</code></td><td>number</td><td>No</td><td><code>0</code></td><td>Items per page (0 = no pagination)</td></tr>
+<tr><td><code>paginate_template</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Template for paginated pages</td></tr>
+<tr><td><code>weight</code></td><td>number</td><td>No</td><td><code>0</code></td><td>Weight for manual ordering</td></tr>
+<tr><td><code>hero_image</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Relative path to a co-located hero image</td></tr>
+<tr><td><code>hero_alt</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Alt text for hero image (falls back to page title)</td></tr>
+<tr><td><code>extra</code></td><td>table</td><td>No</td><td><code>None</code></td><td>Custom metadata</td></tr>
+</tbody></table>
+</div>
+<p>*Title is recommended but not required by the library.</p>
+<h3 id="date-format"><a class="header" href="#date-format">Date Format</a></h3>
+<p>Dates use the TOML date format:</p>
+<pre><code class="language-toml">date = 2024-01-15
+updated = 2024-02-20
+</code></pre>
+<h3 id="extra-metadata"><a class="header" href="#extra-metadata">Extra Metadata</a></h3>
+<p>The <code>extra</code> field allows custom metadata:</p>
+<pre><code class="language-toml">[extra]
+author = "Jane Doe"
+custom_field = "any value"
+</code></pre>
+<p>Access extra metadata in templates through the <code>extra</code> variable.</p>
+<h2 id="url-path-generation"><a class="header" href="#url-path-generation">URL Path Generation</a></h2>
+<p>Content files are mapped to URL paths:</p>
+<div class="table-wrapper"><table><thead><tr><th>Content File</th><th>URL Path</th></tr></thead><tbody>
+<tr><td><code>content/_index.md</code></td><td><code>/</code></td></tr>
+<tr><td><code>content/about.md</code></td><td><code>/about/</code></td></tr>
+<tr><td><code>content/blog/_index.md</code></td><td><code>/blog/</code></td></tr>
+<tr><td><code>content/blog/my-post.md</code></td><td><code>/blog/my-post/</code></td></tr>
+</tbody></table>
+</div>
+<h3 id="custom-slugs"><a class="header" href="#custom-slugs">Custom Slugs</a></h3>
+<p>Override the default URL path using the <code>slug</code> frontmatter field:</p>
+<pre><code class="language-markdown">+++
+title = "My First Post"
+slug = "hello-world"
++++
+</code></pre>
+<p>This creates <code>/blog/hello-world/</code> instead of <code>/blog/my-first-post/</code>.</p>
+<h2 id="markdown-support"><a class="header" href="#markdown-support">Markdown Support</a></h2>
+<p>Taxus supports standard Markdown syntax:</p>
+<h3 id="headings"><a class="header" href="#headings">Headings</a></h3>
+<pre><code class="language-markdown"># Heading 1
+## Heading 2
+### Heading 3
+</code></pre>
+<h3 id="lists"><a class="header" href="#lists">Lists</a></h3>
+<pre><code class="language-markdown">- Unordered item
+- Another item
+
+1. Ordered item
+2. Another item
+</code></pre>
+<h3 id="links"><a class="header" href="#links">Links</a></h3>
+<pre><code class="language-markdown">[Link text](https://example.com)
+</code></pre>
+<h3 id="internal-links"><a class="header" href="#internal-links">Internal Links</a></h3>
+<p>Reference other pages by their content file path with build-time validation:</p>
+<pre><code class="language-markdown">See my [about page](@/about.md) for more details.
+Check out this [blog post](@/blog/first-post.md).
+</code></pre>
+<p>The <code>@/</code> prefix signals an internal link. Paths are relative to <code>content/</code>.</p>
+<div class="table-wrapper"><table><thead><tr><th>Markdown Link</th><th>Resolved HTML</th></tr></thead><tbody>
+<tr><td><code>[about page](@/about.md)</code></td><td><code>&lt;a href="/about/"&gt;about page&lt;/a&gt;</code></td></tr>
+<tr><td><code>[blog post](@/blog/post.md)</code></td><td><code>&lt;a href="/blog/post/"&gt;blog post&lt;/a&gt;</code></td></tr>
+</tbody></table>
+</div>
+<p>If an internal link references a non-existent file, the build fails with a clear error.</p>
+<h3 id="images"><a class="header" href="#images">Images</a></h3>
+<pre><code class="language-markdown">![Alt text](/images/photo.png)
+</code></pre>
+<h3 id="code"><a class="header" href="#code">Code</a></h3>
+<pre><code class="language-markdown">Inline `code` in text.
+
+```rust
+fn main() {
+    println!("Hello, world!");
+}
+```
+</code></pre>
+<p>Code blocks with a language identifier are highlighted using tree-sitter. See <a href="./syntax-highlighting.html">Syntax Highlighting</a> for configuration and supported languages.</p>
+<h3 id="blockquotes"><a class="header" href="#blockquotes">Blockquotes</a></h3>
+<pre><code class="language-markdown">&gt; This is a blockquote.
+</code></pre>
+<h2 id="blog-features"><a class="header" href="#blog-features">Blog Features</a></h2>
+<h3 id="summary-and-excerpt"><a class="header" href="#summary-and-excerpt">Summary and Excerpt</a></h3>
+<p>Taxus automatically extracts a summary for each page:</p>
+<ol>
+<li><strong>Automatic extraction</strong>: First paragraph of content</li>
+<li><strong>Manual marker</strong>: Use <code>&lt;!-- more --&gt;</code> to mark where summary ends</li>
+<li><strong>Frontmatter override</strong>: Set a custom summary in frontmatter</li>
+</ol>
+<pre><code class="language-markdown">+++
+title = "My Post"
+summary = "A custom summary for SEO"
++++
+
+This is the first paragraph.
+
+&lt;!-- more --&gt;
+
+The rest appears after the summary...
+</code></pre>
+<p>Access in templates: <code>{{ page.summary }}</code></p>
+<h3 id="reading-time-and-word-count"><a class="header" href="#reading-time-and-word-count">Reading Time and Word Count</a></h3>
+<p>Each page calculates reading time (200 words/minute) and word count:</p>
+<pre><code class="language-html">&lt;span class="reading-time"&gt;{{ page.reading_time }} min read&lt;/span&gt;
+&lt;span class="word-count"&gt;{{ page.word_count }} words&lt;/span&gt;
+</code></pre>
+<h2 id="taxonomies"><a class="header" href="#taxonomies">Taxonomies</a></h2>
+<p>Taxus supports three taxonomy types:</p>
+<h3 id="tags"><a class="header" href="#tags">Tags</a></h3>
+<p>Multiple keywords associated with a page:</p>
+<pre><code class="language-markdown">+++
+title = "Introduction to Rust"
+tags = ["rust", "programming", "tutorial"]
++++
+</code></pre>
+<h3 id="categories"><a class="header" href="#categories">Categories</a></h3>
+<p>Broader classifications (also multiple):</p>
+<pre><code class="language-markdown">+++
+title = "My Tutorial"
+categories = ["tutorial", "beginner"]
++++
+</code></pre>
+<h3 id="series"><a class="header" href="#series">Series</a></h3>
+<p>Groups related posts in a sequence (single value):</p>
+<pre><code class="language-markdown">+++
+title = "Part 1: Getting Started"
+series = "Learning Rust"
++++
+</code></pre>
+<h3 id="taxonomy-pages"><a class="header" href="#taxonomy-pages">Taxonomy Pages</a></h3>
+<p>Taxus generates taxonomy listing and term pages automatically when the corresponding templates exist. The scaffold (<code>taxus init</code>) creates all six templates:</p>
+<div class="table-wrapper"><table><thead><tr><th>Template</th><th>URL</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>tags.html</code></td><td><code>/tags/</code></td><td>Lists all tags</td></tr>
+<tr><td><code>tags_term.html</code></td><td><code>/tags/rust/</code></td><td>Lists pages with the "rust" tag</td></tr>
+<tr><td><code>categories.html</code></td><td><code>/categories/</code></td><td>Lists all categories</td></tr>
+<tr><td><code>categories_term.html</code></td><td><code>/categories/tutorial/</code></td><td>Lists pages in "tutorial" category</td></tr>
+<tr><td><code>series.html</code></td><td><code>/series/</code></td><td>Lists all series</td></tr>
+<tr><td><code>series_term.html</code></td><td><code>/series/learning-rust/</code></td><td>Lists pages in "Learning Rust" series</td></tr>
+</tbody></table>
+</div>
+<p>If a template is missing, that particular page is skipped silently. See <a href="./templates.html">Templates</a> for the full taxonomy template context and examples.</p>
+<h2 id="pagination"><a class="header" href="#pagination">Pagination</a></h2>
+<p>Enable pagination in a section's <code>_index.md</code>:</p>
+<pre><code class="language-markdown">+++
+title = "Blog"
+sort_by = "date"
+paginate_by = 10
++++
+
+# Blog
+
+Welcome to my blog!
+</code></pre>
+<h3 id="pagination-configuration"><a class="header" href="#pagination-configuration">Pagination Configuration</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>sort_by</code></td><td>string</td><td><code>"date"</code></td><td>Sort order: <code>"date"</code>, <code>"weight"</code>, <code>"title"</code>, <code>"none"</code></td></tr>
+<tr><td><code>paginate_by</code></td><td>number</td><td><code>0</code></td><td>Pages per slice (0 = no pagination)</td></tr>
+<tr><td><code>paginate_template</code></td><td>string</td><td><code>None</code></td><td>Template for paginated pages</td></tr>
+</tbody></table>
+</div>
+<h3 id="pagination-urls"><a class="header" href="#pagination-urls">Pagination URLs</a></h3>
+<ul>
+<li><code>/blog/</code> — First page</li>
+<li><code>/blog/page/2/</code> — Second page</li>
+<li><code>/blog/page/3/</code> — Third page</li>
+</ul>
+<h3 id="pagination-in-templates"><a class="header" href="#pagination-in-templates">Pagination in Templates</a></h3>
+<pre><code class="language-html">{% if section.pagination %}
+&lt;nav class="pagination"&gt;
+  {% if section.pagination.prev %}
+  &lt;a href="{{ section.pagination.prev }}"&gt;← Previous&lt;/a&gt;
+  {% endif %}
+  
+  &lt;span&gt;Page {{ section.pagination.current }} of {{ section.pagination.total }}&lt;/span&gt;
+  
+  {% if section.pagination.next %}
+  &lt;a href="{{ section.pagination.next }}"&gt;Next →&lt;/a&gt;
+  {% endif %}
+&lt;/nav&gt;
+{% endif %}
+</code></pre>
+<h2 id="rssatom-feeds"><a class="header" href="#rssatom-feeds">RSS/Atom Feeds</a></h2>
+<p>Configure feeds in <code>site.toml</code>:</p>
+<pre><code class="language-toml">[feed]
+rss_enabled = true
+atom_enabled = true
+limit = 20
+full_content = false
+</code></pre>
+<h3 id="feed-entry-fields"><a class="header" href="#feed-entry-fields">Feed Entry Fields</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Source</th></tr></thead><tbody>
+<tr><td>Title</td><td>Page <code>title</code></td></tr>
+<tr><td>Description</td><td>Page <code>description</code> or auto-extracted summary</td></tr>
+<tr><td>URL</td><td>Full page URL (<code>base_url</code> + path)</td></tr>
+<tr><td>Published</td><td>Page <code>date</code> field</td></tr>
+<tr><td>Updated</td><td>Page <code>updated</code> field (Atom only)</td></tr>
+</tbody></table>
+</div>
+<h3 id="feed-urls-1"><a class="header" href="#feed-urls-1">Feed URLs</a></h3>
+<ul>
+<li>RSS: <code>https://example.com/rss.xml</code></li>
+<li>Atom: <code>https://example.com/atom.xml</code></li>
+</ul>
+<h2 id="sitemap-generation"><a class="header" href="#sitemap-generation">Sitemap Generation</a></h2>
+<p>Taxus generates <code>sitemap.xml</code> automatically:</p>
+<ul>
+<li>All routes included (pages and sections)</li>
+<li>Draft pages excluded</li>
+<li>Last modification date from page <code>date</code> field</li>
+<li>Priorities: home <code>1.0</code>, sections <code>0.8</code>, pages <code>0.7</code></li>
+</ul>
+<h3 id="sitemap-url"><a class="header" href="#sitemap-url">Sitemap URL</a></h3>
+<p><code>https://example.com/sitemap.xml</code></p>
+<h2 id="robotstxt-generation"><a class="header" href="#robotstxt-generation">Robots.txt Generation</a></h2>
+<p>Taxus generates <code>robots.txt</code> automatically if no <code>static/robots.txt</code> exists:</p>
+<pre><code class="language-text">User-agent: *
+Allow: /
+
+Sitemap: https://example.com/sitemap.xml
+</code></pre>
+<p>To provide a custom <code>robots.txt</code>, create it in <code>static/</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="templates"><a class="header" href="#templates">Templates</a></h1>
+<p>Templates define the HTML structure for rendered pages using the <a href="https://tera.netlify.app/">Tera</a> template engine.</p>
+<h2 id="template-location"><a class="header" href="#template-location">Template Location</a></h2>
+<p>Templates are stored in the <code>templates/</code> directory:</p>
+<pre><code>templates/
+├── base.html              # Base template with common structure
+├── page.html              # Single page template
+├── section.html           # Section/list template (e.g., blog)
+├── tags.html              # Tag listing page (all tags)
+├── tags_term.html         # Individual tag page (e.g., /tags/rust/)
+├── categories.html        # Category listing page (all categories)
+├── categories_term.html   # Individual category page (e.g., /categories/tutorial/)
+├── series.html            # Series listing page (all series)
+├── series_term.html       # Individual series page (e.g., /series/learning-rust/)
+└── 404.html               # Not found page
+</code></pre>
+<h2 id="template-engine"><a class="header" href="#template-engine">Template Engine</a></h2>
+<p>Taxus uses <a href="https://tera.netlify.app/">Tera</a>, a Jinja2-like template engine for Rust:</p>
+<ul>
+<li><strong>Variables</strong>: <code>{{ variable }}</code> syntax</li>
+<li><strong>Filters</strong>: <code>{{ content | safe }}</code> for unescaped HTML</li>
+<li><strong>Conditionals</strong>: <code>{% if condition %}...{% endif %}</code></li>
+<li><strong>Loops</strong>: <code>{% for item in items %}...{% endfor %}</code></li>
+<li><strong>Template Inheritance</strong>: <code>{% extends "base.html" %}</code> and <code>{% block name %}</code></li>
+<li><strong>Includes</strong>: <code>{% include "partial.html" %}</code></li>
+</ul>
+<h2 id="base-template"><a class="header" href="#base-template">Base Template</a></h2>
+<p>The base template defines the common HTML structure:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+    &lt;title&gt;{% block title %}{{ site.name }}{% endblock %}&lt;/title&gt;
+
+    {% if page.permalink %}
+    &lt;link rel="canonical" href="{{ page.permalink }}" /&gt;
+    &lt;meta property="og:url" content="{{ page.permalink }}" /&gt;
+    {% endif %}
+
+    &lt;link rel="stylesheet" href="/css/main.css" /&gt;
+    &lt;link rel="icon" href="/static/favicon.png" /&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;header&gt;
+      &lt;nav&gt;
+        &lt;a href="/"&gt;Home&lt;/a&gt;
+        &lt;a href="/about/"&gt;About&lt;/a&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;{% block content %}{% endblock %}&lt;/main&gt;
+
+    &lt;footer&gt;
+      &lt;p&gt;&amp;copy; {{ now.year }} {{ site.author | default(value="") }}&lt;/p&gt;
+    &lt;/footer&gt;
+
+    &lt;script src="/static/scripts.js"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2 id="page-template"><a class="header" href="#page-template">Page Template</a></h2>
+<p>Page templates extend the base template:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;article&gt;
+  {% if page.hero %}
+  &lt;picture&gt;
+    &lt;source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}"&gt;
+    &lt;img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+         width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+         loading="eager" decoding="async"&gt;
+  &lt;/picture&gt;
+  {% endif %}
+
+  &lt;h1&gt;{{ page.title }}&lt;/h1&gt;
+
+  {% if page.description %}
+  &lt;p class="description"&gt;{{ page.description }}&lt;/p&gt;
+  {% endif %}
+
+  {% if page.date %}
+  &lt;time datetime="{{ page.date }}"&gt;{{ page.date }}&lt;/time&gt;
+  {% endif %}
+
+  {% if page.tags %}
+  &lt;div class="tags"&gt;
+    {% for tag in page.tags %}
+    &lt;a href="/tags/{{ tag | slugify }}/"&gt;{{ tag }}&lt;/a&gt;
+    {% endfor %}
+  &lt;/div&gt;
+  {% endif %}
+
+  &lt;div class="content"&gt;{{ page.content | safe }}&lt;/div&gt;
+&lt;/article&gt;
+{% endblock %}
+</code></pre>
+<h2 id="section-template"><a class="header" href="#section-template">Section Template</a></h2>
+<p>Section templates render lists of pages:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;section&gt;
+  &lt;h1&gt;{{ section.title }}&lt;/h1&gt;
+
+  {% if section.description %}
+  &lt;p class="description"&gt;{{ section.description }}&lt;/p&gt;
+  {% endif %}
+
+  {% if section.content %}
+  &lt;div class="section-content"&gt;{{ section.content | safe }}&lt;/div&gt;
+  {% endif %}
+
+  &lt;ul class="page-list"&gt;
+    {% for page in section.pages %}
+    &lt;li&gt;
+      &lt;a href="{{ page.path }}"&gt;
+        &lt;span class="title"&gt;{{ page.title }}&lt;/span&gt;
+        {% if page.date %}
+        &lt;time datetime="{{ page.date }}"&gt;{{ page.date }}&lt;/time&gt;
+        {% endif %}
+        &lt;span class="reading-time"&gt;{{ page.reading_time }} min read&lt;/span&gt;
+      &lt;/a&gt;
+      {% if page.summary %}
+      &lt;p class="summary"&gt;{{ page.summary }}&lt;/p&gt;
+      {% endif %}
+    &lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+
+  {% if section.pagination %}
+  &lt;nav class="pagination"&gt;
+    {% if section.pagination.prev %}
+    &lt;a href="{{ section.pagination.prev }}"&gt;← Previous&lt;/a&gt;
+    {% endif %}
+    &lt;span&gt;Page {{ section.pagination.current }} of {{ section.pagination.total }}&lt;/span&gt;
+    {% if section.pagination.next %}
+    &lt;a href="{{ section.pagination.next }}"&gt;Next →&lt;/a&gt;
+    {% endif %}
+  &lt;/nav&gt;
+  {% endif %}
+&lt;/section&gt;
+{% endblock %}
+</code></pre>
+<h2 id="taxonomy-templates"><a class="header" href="#taxonomy-templates">Taxonomy Templates</a></h2>
+<p>Taxus generates taxonomy listing and term pages when the corresponding templates exist. The scaffold (<code>taxus init</code>) creates all six templates automatically.</p>
+<h3 id="taxonomy-list-templates"><a class="header" href="#taxonomy-list-templates">Taxonomy List Templates</a></h3>
+<p>List templates render all terms for a taxonomy kind:</p>
+<ul>
+<li><code>tags.html</code> — <code>/tags/</code></li>
+<li><code>categories.html</code> — <code>/categories/</code></li>
+<li><code>series.html</code> — <code>/series/</code></li>
+</ul>
+<p>Each receives <code>extra.taxonomy</code> with:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>extra.taxonomy.kind</code></td><td>String</td><td>Taxonomy kind: "Tags", "Categories", or "Series"</td></tr>
+<tr><td><code>extra.taxonomy.path</code></td><td>String</td><td>URL path (e.g., "/tags/")</td></tr>
+<tr><td><code>extra.taxonomy.terms</code></td><td>Array</td><td>List of term contexts</td></tr>
+</tbody></table>
+</div>
+<p>Example <code>tags.html</code>:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Tags - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;section&gt;
+  &lt;h1&gt;Tags&lt;/h1&gt;
+  {% if extra.taxonomy.terms %}
+  &lt;ul&gt;
+    {% for term in extra.taxonomy.terms %}
+    &lt;li&gt;
+      &lt;a href="{{ term.path }}"&gt;{{ term.name }} ({{ term.page_count }})&lt;/a&gt;
+    &lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+  {% endif %}
+&lt;/section&gt;
+{% endblock %}
+</code></pre>
+<h3 id="taxonomy-term-templates"><a class="header" href="#taxonomy-term-templates">Taxonomy Term Templates</a></h3>
+<p>Term templates render pages for a specific term:</p>
+<ul>
+<li><code>tags_term.html</code> — <code>/tags/rust/</code></li>
+<li><code>categories_term.html</code> — <code>/categories/tutorial/</code></li>
+<li><code>series_term.html</code> — <code>/series/learning-rust/</code></li>
+</ul>
+<p>Each receives <code>extra.taxonomy</code> with:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>extra.taxonomy.kind</code></td><td>String</td><td>Taxonomy kind: "Tags", "Categories", or "Series"</td></tr>
+<tr><td><code>extra.taxonomy.name</code></td><td>String</td><td>Display name (e.g., "Rust")</td></tr>
+<tr><td><code>extra.taxonomy.slug</code></td><td>String</td><td>URL-safe slug (e.g., "rust")</td></tr>
+<tr><td><code>extra.taxonomy.path</code></td><td>String</td><td>URL path (e.g., "/tags/rust/")</td></tr>
+<tr><td><code>extra.taxonomy.page_count</code></td><td>Number</td><td>Number of pages with this term</td></tr>
+<tr><td><code>extra.taxonomy.pages</code></td><td>Array</td><td>List of page objects with <code>title</code>, <code>path</code>, <code>description</code>, etc.</td></tr>
+</tbody></table>
+</div>
+<p>Example <code>tags_term.html</code>:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Tag: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+&lt;section&gt;
+  &lt;h1&gt;Tagged "{{ extra.taxonomy.name }}"&lt;/h1&gt;
+  &lt;p&gt;{{ extra.taxonomy.page_count }} post(s)&lt;/p&gt;
+  &lt;ul&gt;
+    {% for page in extra.taxonomy.pages %}
+    &lt;li&gt;&lt;a href="{{ page.path }}"&gt;{{ page.title }}&lt;/a&gt;&lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+&lt;/section&gt;
+{% endblock %}
+</code></pre>
+<h3 id="term-context-in-list-templates"><a class="header" href="#term-context-in-list-templates">Term Context in List Templates</a></h3>
+<p>When iterating <code>extra.taxonomy.terms</code>, each term has:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>term.name</code></td><td>String</td><td>Display name</td></tr>
+<tr><td><code>term.slug</code></td><td>String</td><td>URL-safe slug</td></tr>
+<tr><td><code>term.path</code></td><td>String</td><td>URL path</td></tr>
+<tr><td><code>term.page_count</code></td><td>Number</td><td>Number of pages</td></tr>
+</tbody></table>
+</div>
+<h2 id="available-variables"><a class="header" href="#available-variables">Available Variables</a></h2>
+<h3 id="site-context"><a class="header" href="#site-context">Site Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>site.name</code></td><td>String</td><td>Site name from configuration</td></tr>
+<tr><td><code>site.base_url</code></td><td>String</td><td>Base URL from configuration</td></tr>
+<tr><td><code>site.description</code></td><td>String?</td><td>Optional site description</td></tr>
+<tr><td><code>site.author</code></td><td>String?</td><td>Optional site author</td></tr>
+</tbody></table>
+</div>
+<h3 id="page-context"><a class="header" href="#page-context">Page Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>page.title</code></td><td>String</td><td>Page title from frontmatter</td></tr>
+<tr><td><code>page.description</code></td><td>String?</td><td>Optional page description</td></tr>
+<tr><td><code>page.path</code></td><td>String</td><td>URL path (e.g., <code>/about/</code>)</td></tr>
+<tr><td><code>page.permalink</code></td><td>String</td><td>Absolute URL (e.g., <code>https://example.com/about/</code>)</td></tr>
+<tr><td><code>page.content</code></td><td>String</td><td>Rendered HTML content</td></tr>
+<tr><td><code>page.raw_content</code></td><td>String</td><td>Raw markdown content</td></tr>
+<tr><td><code>page.date</code></td><td>String?</td><td>Publication date (ISO 8601)</td></tr>
+<tr><td><code>page.draft</code></td><td>Boolean</td><td>Whether page is a draft</td></tr>
+<tr><td><code>page.summary</code></td><td>String</td><td>Summary/excerpt for the page</td></tr>
+<tr><td><code>page.word_count</code></td><td>Number</td><td>Word count</td></tr>
+<tr><td><code>page.reading_time</code></td><td>Number</td><td>Estimated reading time in minutes</td></tr>
+<tr><td><code>page.tags</code></td><td>Array</td><td>Tags for the page</td></tr>
+<tr><td><code>page.categories</code></td><td>Array</td><td>Categories for the page</td></tr>
+<tr><td><code>page.series</code></td><td>String?</td><td>Series name</td></tr>
+<tr><td><code>page.hero</code></td><td>Object?</td><td>Hero image context (see below)</td></tr>
+</tbody></table>
+</div>
+<h3 id="hero-image-context"><a class="header" href="#hero-image-context">Hero Image Context</a></h3>
+<p>When a page has <code>hero_image</code> in its frontmatter, <code>page.hero</code> contains:</p>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>page.hero.src</code></td><td>String</td><td>Fallback <code>&lt;img&gt;</code> src (middle variant)</td></tr>
+<tr><td><code>page.hero.srcset</code></td><td>String</td><td>Full srcset string for <code>&lt;source&gt;</code></td></tr>
+<tr><td><code>page.hero.width</code></td><td>Number</td><td>Original image width</td></tr>
+<tr><td><code>page.hero.height</code></td><td>Number</td><td>Original image height</td></tr>
+<tr><td><code>page.hero.alt</code></td><td>String</td><td>Alt text (from <code>hero_alt</code>, or page title)</td></tr>
+<tr><td><code>page.hero.mime_type</code></td><td>String</td><td>MIME type (e.g., <code>"image/webp"</code>)</td></tr>
+</tbody></table>
+</div>
+<p>Example usage:</p>
+<pre><code class="language-html">{% if page.hero %}
+&lt;picture&gt;
+  &lt;source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}"&gt;
+  &lt;img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+       width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+       loading="eager" decoding="async"&gt;
+&lt;/picture&gt;
+{% endif %}
+</code></pre>
+<p>See <a href="./images.html">Images</a> for the complete guide.</p>
+<h3 id="section-context"><a class="header" href="#section-context">Section Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>section.title</code></td><td>String</td><td>Section title</td></tr>
+<tr><td><code>section.description</code></td><td>String?</td><td>Optional section description</td></tr>
+<tr><td><code>section.path</code></td><td>String</td><td>Section URL path</td></tr>
+<tr><td><code>section.content</code></td><td>String?</td><td>Section HTML content</td></tr>
+<tr><td><code>section.pages</code></td><td>Array</td><td>List of pages in section</td></tr>
+<tr><td><code>section.pagination</code></td><td>Object?</td><td>Pagination information</td></tr>
+</tbody></table>
+</div>
+<h3 id="pagination-context"><a class="header" href="#pagination-context">Pagination Context</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>section.pagination.current</code></td><td>Number</td><td>Current page (1-indexed)</td></tr>
+<tr><td><code>section.pagination.total</code></td><td>Number</td><td>Total pages</td></tr>
+<tr><td><code>section.pagination.per_page</code></td><td>Number</td><td>Items per page</td></tr>
+<tr><td><code>section.pagination.total_items</code></td><td>Number</td><td>Total items across all pages</td></tr>
+<tr><td><code>section.pagination.prev</code></td><td>String?</td><td>URL to previous page</td></tr>
+<tr><td><code>section.pagination.next</code></td><td>String?</td><td>URL to next page</td></tr>
+<tr><td><code>section.pagination.first</code></td><td>String</td><td>URL to first page</td></tr>
+<tr><td><code>section.pagination.last</code></td><td>String</td><td>URL to last page</td></tr>
+</tbody></table>
+</div>
+<h3 id="current-date"><a class="header" href="#current-date">Current Date</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>now.year</code></td><td>Number</td><td>Current year (e.g., 2024)</td></tr>
+</tbody></table>
+</div>
+<p>Useful for copyright notices: <code>&amp;copy; {{ now.year }}</code></p>
+<h3 id="extra-variables"><a class="header" href="#extra-variables">Extra Variables</a></h3>
+<p>Custom variables from frontmatter <code>extra</code> field:</p>
+<pre><code class="language-markdown">+++
+title = "My Page"
+[extra]
+author = "John Doe"
+custom = "value"
++++
+</code></pre>
+<p>Access in templates:</p>
+<pre><code class="language-html">&lt;p&gt;Author: {{ extra.author }}&lt;/p&gt;
+&lt;p&gt;Custom: {{ extra.custom }}&lt;/p&gt;
+</code></pre>
+<h2 id="template-inheritance"><a class="header" href="#template-inheritance">Template Inheritance</a></h2>
+<p>Templates can extend other templates:</p>
+<p><strong>base.html</strong>:</p>
+<pre><code class="language-html">&lt;html&gt;
+  &lt;head&gt;{% block head %}{% endblock %}&lt;/head&gt;
+  &lt;body&gt;{% block body %}{% endblock %}&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<p><strong>page.html</strong>:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block head %}
+&lt;title&gt;{{ page.title }}&lt;/title&gt;
+{% endblock %}
+
+{% block body %}
+&lt;h1&gt;{{ page.title }}&lt;/h1&gt;
+{{ page.content | safe }}
+{% endblock %}
+</code></pre>
+<h2 id="filters"><a class="header" href="#filters">Filters</a></h2>
+<p>Commonly used filters:</p>
+<div class="table-wrapper"><table><thead><tr><th>Filter</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>safe</code></td><td>Output without HTML escaping</td></tr>
+<tr><td><code>default(value="...")</code></td><td>Provide default value</td></tr>
+<tr><td><code>upper</code></td><td>Convert to uppercase</td></tr>
+<tr><td><code>lower</code></td><td>Convert to lowercase</td></tr>
+<tr><td><code>trim</code></td><td>Remove leading/trailing whitespace</td></tr>
+<tr><td><code>first</code></td><td>Get first element of array</td></tr>
+<tr><td><code>last</code></td><td>Get last element of array</td></tr>
+<tr><td><code>length</code></td><td>Get length of string/array</td></tr>
+<tr><td><code>join(sep=", ")</code></td><td>Join array with separator</td></tr>
+<tr><td><code>slugify</code></td><td>Convert to URL-safe slug</td></tr>
+</tbody></table>
+</div>
+<h2 id="custom-templates"><a class="header" href="#custom-templates">Custom Templates</a></h2>
+<p>Pages can specify custom templates in frontmatter:</p>
+<pre><code class="language-markdown">+++
+title = "Special Page"
+template = "custom.html"
++++
+
+This page uses custom.html instead of page.html.
+</code></pre>
+<h2 id="island-components"><a class="header" href="#island-components">Island Components</a></h2>
+<p>Use the <code>island()</code> function to embed interactive Yew components:</p>
+<pre><code class="language-html">{% block content %}
+  {{ page.content | safe }}
+  {{ island(component="Counter", initial=5) | safe }}
+{% endblock %}
+</code></pre>
+<p><strong>Important</strong>: Always use <code>| safe</code> after <code>island()</code> to prevent HTML escaping.</p>
+<p>See <a href="./islands.html">Islands Architecture</a> for the complete guide.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="images-1"><a class="header" href="#images-1">Images</a></h1>
+<p>Taxus provides built-in responsive image processing for hero images — automatically generating multiple size variants, converting to modern formats, and producing the <code>&lt;picture&gt;</code> markup needed for optimal delivery.</p>
+<h2 id="hero-images-1"><a class="header" href="#hero-images-1">Hero Images</a></h2>
+<p>Hero images are large, prominent images displayed at the top of a page. Taxus handles resizing, format conversion, and responsive markup automatically.</p>
+<h3 id="adding-a-hero-image"><a class="header" href="#adding-a-hero-image">Adding a Hero Image</a></h3>
+<p>Place the image file alongside your markdown content (co-located), then reference it in frontmatter:</p>
+<pre><code class="language-markdown">+++
+title = "My Post"
+hero_image = "sunset.jpg"
+hero_alt = "A dramatic mountain sunset"
+date = 2024-03-15
++++
+
+# My Post
+
+Content goes here...
+</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>hero_image</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Relative path to a co-located image file</td></tr>
+<tr><td><code>hero_alt</code></td><td>string</td><td>No</td><td><code>None</code></td><td>Alt text; falls back to page title</td></tr>
+</tbody></table>
+</div>
+<p>The <code>hero_image</code> path is resolved relative to the content file's directory. If your markdown is at <code>content/blog/my-post.md</code>, then <code>hero_image = "photo.jpg"</code> looks for <code>content/blog/photo.jpg</code>.</p>
+<h3 id="what-taxus-does"><a class="header" href="#what-taxus-does">What Taxus Does</a></h3>
+<p>When a page has a <code>hero_image</code>, the build pipeline:</p>
+<ol>
+<li><strong>Reads</strong> the source image and records its dimensions</li>
+<li><strong>Generates</strong> responsive variants at each configured width (default: 400, 800, 1200)</li>
+<li><strong>Converts</strong> to the configured format (default: WebP)</li>
+<li><strong>Writes</strong> variant files to the output directory (default: <code>dist/images/</code>)</li>
+<li><strong>Attaches</strong> image metadata to the page's template context as <code>page.hero</code></li>
+</ol>
+<p>Variant filenames include a content hash for cache-busting:</p>
+<pre><code>dist/images/sunset-a3b2c1-400w.webp
+dist/images/sunset-a3b2c1-800w.webp
+dist/images/sunset-a3b2c1-1200w.webp
+</code></pre>
+<p>If all variants already exist on disk (same source file and hash), processing is skipped — no redundant re-encoding.</p>
+<h3 id="rendering-in-templates"><a class="header" href="#rendering-in-templates">Rendering in Templates</a></h3>
+<p>The <code>page.hero</code> object is available in page templates when a hero image is set:</p>
+<pre><code class="language-html">{% if page.hero %}
+&lt;picture&gt;
+  &lt;source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type }}"&gt;
+  &lt;img src="{{ page.hero.src | safe }}"
+       alt="{{ page.hero.alt }}"
+       width="{{ page.hero.width }}"
+       height="{{ page.hero.height }}"
+       loading="eager"
+       decoding="async"&gt;
+&lt;/picture&gt;
+{% endif %}
+</code></pre>
+<p><strong>Important</strong>: Use <code>| safe</code> on <code>srcset</code> and <code>src</code> to prevent Tera from HTML-escaping the URLs.</p>
+<h3 id="hero-context-variables"><a class="header" href="#hero-context-variables">Hero Context Variables</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>page.hero.src</code></td><td>String</td><td>Fallback <code>&lt;img&gt;</code> src (middle variant)</td></tr>
+<tr><td><code>page.hero.srcset</code></td><td>String</td><td>Full srcset string for <code>&lt;source&gt;</code> element</td></tr>
+<tr><td><code>page.hero.width</code></td><td>Number</td><td>Original image width (for layout shift prevention)</td></tr>
+<tr><td><code>page.hero.height</code></td><td>Number</td><td>Original image height (for layout shift prevention)</td></tr>
+<tr><td><code>page.hero.alt</code></td><td>String</td><td>Alt text (from <code>hero_alt</code>, or page title as fallback)</td></tr>
+<tr><td><code>page.hero.mime_type</code></td><td>String</td><td>MIME type (e.g., <code>"image/webp"</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="alt-text-fallback"><a class="header" href="#alt-text-fallback">Alt Text Fallback</a></h3>
+<p>If <code>hero_alt</code> is not set in frontmatter, Taxus falls back to the page <code>title</code>:</p>
+<pre><code class="language-markdown">+++
+title = "Announcing Taxus 1.0"
+hero_image = "banner.jpg"
++++
+</code></pre>
+<p>In this case, <code>page.hero.alt</code> will be <code>"Announcing Taxus 1.0"</code>.</p>
+<h2 id="image-configuration"><a class="header" href="#image-configuration">Image Configuration</a></h2>
+<p>Configure image processing in <code>site.toml</code> under the <code>[images]</code> section:</p>
+<pre><code class="language-toml">[images]
+widths = [400, 800, 1200]
+quality = 80
+format = "webp"
+output_dir = "images"
+</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>widths</code></td><td>array</td><td><code>[400, 800, 1200]</code></td><td>Responsive breakpoint widths in pixels</td></tr>
+<tr><td><code>quality</code></td><td>number</td><td><code>80</code></td><td>Output quality (1–100)</td></tr>
+<tr><td><code>format</code></td><td>string</td><td><code>"webp"</code></td><td>Output format: <code>"webp"</code>, <code>"jpeg"</code>, or <code>"png"</code></td></tr>
+<tr><td><code>output_dir</code></td><td>string</td><td><code>"images"</code></td><td>Subdirectory within <code>dist/</code> for processed images</td></tr>
+</tbody></table>
+</div>
+<h3 id="omitting-the-section"><a class="header" href="#omitting-the-section">Omitting the Section</a></h3>
+<p>If <code>[images]</code> is not present in <code>site.toml</code>, all defaults are used.</p>
+<h2 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h2>
+<h3 id="build-pipeline-1"><a class="header" href="#build-pipeline-1">Build Pipeline</a></h3>
+<p>Image processing runs as <strong>Stage 4</strong> of the build pipeline, between content processing and co-located asset copying:</p>
+<ol>
+<li><strong>Discover routes</strong> → 2. <strong>Load templates</strong> → 3. <strong>Process content</strong> → 4. <strong>Process images</strong> → 5. <strong>Copy co-located assets</strong> → ...</li>
+</ol>
+<p>This means hero image variants are generated before assets are copied and pages are rendered, ensuring the image metadata is available in template context.</p>
+<h3 id="caching"><a class="header" href="#caching">Caching</a></h3>
+<p>The image processor uses content-hash-based filenames. If all expected variant files already exist on disk with the correct hash, the processor skips re-encoding and rebuilds the metadata from the cache. This makes subsequent builds fast.</p>
+<h3 id="small-source-images"><a class="header" href="#small-source-images">Small Source Images</a></h3>
+<p>If the source image is smaller than a configured breakpoint width, Taxus does not upscale it. Instead, the original dimensions are used for that variant, preventing quality loss from upscaling.</p>
+<h3 id="dry-run"><a class="header" href="#dry-run">Dry Run</a></h3>
+<p>When running <code>taxus build --dry-run</code>, the image processor calculates metadata and variant paths without reading pixel data or writing files. This allows you to inspect what would be generated without the I/O cost.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="syntax-highlighting"><a class="header" href="#syntax-highlighting">Syntax Highlighting</a></h1>
+<p>Taxus provides syntax highlighting for code blocks using <a href="https://tree-sitter.github.io/tree-sitter/">tree-sitter</a>, a fast and accurate parsing library.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Code blocks in Markdown are automatically highlighted during the build process. Tree-sitter provides:</p>
+<ul>
+<li><strong>Accurate parsing</strong>: Uses real language grammars, not regex patterns</li>
+<li><strong>Fast performance</strong>: Incremental parsing for quick builds</li>
+<li><strong>Rich highlighting</strong>: Detailed semantic token classification</li>
+</ul>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>Add a language identifier to your fenced code blocks:</p>
+<pre><code class="language-markdown">```rust
+fn main() {
+    println!("Hello, world!");
+}
+```
+</code></pre>
+<p>This renders with syntax highlighting:</p>
+<pre><pre class="playground"><code class="language-rust">fn main() {
+    println!("Hello, world!");
+}</code></pre></pre>
+<h2 id="supported-languages"><a class="header" href="#supported-languages">Supported Languages</a></h2>
+<p>Languages are enabled via Cargo features when building Taxus:</p>
+<div class="table-wrapper"><table><thead><tr><th>Language</th><th>Identifier</th><th>Aliases</th></tr></thead><tbody>
+<tr><td>Rust</td><td><code>rust</code></td><td><code>rs</code></td></tr>
+</tbody></table>
+</div>
+<p>Additional languages can be added by enabling more tree-sitter grammar features.</p>
+<h2 id="configuration-1"><a class="header" href="#configuration-1">Configuration</a></h2>
+<p>Configure syntax highlighting in <code>site.toml</code>:</p>
+<pre><code class="language-toml">[highlight]
+enabled = true
+class_prefix = "hl-"
+</code></pre>
+<h3 id="configuration-options"><a class="header" href="#configuration-options">Configuration Options</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>Enable or disable syntax highlighting</td></tr>
+<tr><td><code>class_prefix</code></td><td>string</td><td><code>"hl-"</code></td><td>CSS class prefix for highlight spans</td></tr>
+</tbody></table>
+</div>
+<h3 id="disabling-highlighting"><a class="header" href="#disabling-highlighting">Disabling Highlighting</a></h3>
+<p>To disable highlighting globally:</p>
+<pre><code class="language-toml">[highlight]
+enabled = false
+</code></pre>
+<p>Code blocks will still render, but without syntax highlighting spans.</p>
+<h3 id="custom-class-prefix"><a class="header" href="#custom-class-prefix">Custom Class Prefix</a></h3>
+<p>Use a custom prefix for CSS classes:</p>
+<pre><code class="language-toml">[highlight]
+class_prefix = "syntax-"
+</code></pre>
+<p>This generates classes like <code>syntax-keyword</code>, <code>syntax-string</code>, etc.</p>
+<h2 id="highlight-classes"><a class="header" href="#highlight-classes">Highlight Classes</a></h2>
+<p>Taxus generates semantic CSS classes for each token type:</p>
+<div class="table-wrapper"><table><thead><tr><th>Class</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>hl-keyword</code></td><td>Keywords (fn, let, struct, impl, etc.)</td></tr>
+<tr><td><code>hl-string</code></td><td>String literals</td></tr>
+<tr><td><code>hl-string-special</code></td><td>Special strings (raw strings, format strings)</td></tr>
+<tr><td><code>hl-comment</code></td><td>Comments</td></tr>
+<tr><td><code>hl-function</code></td><td>Function names</td></tr>
+<tr><td><code>hl-function-builtin</code></td><td>Built-in functions</td></tr>
+<tr><td><code>hl-function-macro</code></td><td>Macro invocations</td></tr>
+<tr><td><code>hl-type</code></td><td>Type names</td></tr>
+<tr><td><code>hl-type-builtin</code></td><td>Built-in types (u32, str, etc.)</td></tr>
+<tr><td><code>hl-constant</code></td><td>Constants</td></tr>
+<tr><td><code>hl-constant-builtin</code></td><td>Built-in constants</td></tr>
+<tr><td><code>hl-number</code></td><td>Numeric literals</td></tr>
+<tr><td><code>hl-constructor</code></td><td>Constructors (Some, Ok, Err, etc.)</td></tr>
+<tr><td><code>hl-variable</code></td><td>Variables</td></tr>
+<tr><td><code>hl-variable-builtin</code></td><td>Built-in variables (self, Self)</td></tr>
+<tr><td><code>hl-variable-parameter</code></td><td>Function parameters</td></tr>
+<tr><td><code>hl-property</code></td><td>Struct fields/properties</td></tr>
+<tr><td><code>hl-label</code></td><td>Lifetimes and labels</td></tr>
+<tr><td><code>hl-attribute</code></td><td>Attributes (#[derive], #[cfg], etc.)</td></tr>
+<tr><td><code>hl-operator</code></td><td>Operators (=, +, -, etc.)</td></tr>
+<tr><td><code>hl-punctuation</code></td><td>General punctuation</td></tr>
+<tr><td><code>hl-punctuation-bracket</code></td><td>Brackets and braces</td></tr>
+<tr><td><code>hl-punctuation-delimiter</code></td><td>Commas, semicolons</td></tr>
+<tr><td><code>hl-tag</code></td><td>HTML/XML tags</td></tr>
+</tbody></table>
+</div>
+<h2 id="styling"><a class="header" href="#styling">Styling</a></h2>
+<h3 id="built-in-themes"><a class="header" href="#built-in-themes">Built-in Themes</a></h3>
+<p>Taxus includes two highlight themes:</p>
+<ul>
+<li><strong>Light theme</strong>: <code>_highlight-light.scss</code> — GitHub-inspired colors</li>
+<li><strong>Dark theme</strong>: <code>_highlight-dark.scss</code> — Catppuccin-inspired colors</li>
+</ul>
+<p>Import in your main stylesheet:</p>
+<pre><code class="language-scss">// Light theme (default)
+@use "highlight-light";
+
+// Or dark theme
+@use "highlight-dark";
+</code></pre>
+<h3 id="custom-themes"><a class="header" href="#custom-themes">Custom Themes</a></h3>
+<p>Create custom themes by styling the highlight classes:</p>
+<pre><code class="language-scss">// Custom syntax highlighting theme
+.hl-keyword { color: #ff79c6; }
+.hl-string { color: #f1fa8c; }
+.hl-comment { color: #6272a4; font-style: italic; }
+.hl-function { color: #50fa7b; }
+.hl-type { color: #8be9fd; }
+.hl-number { color: #bd93f9; }
+</code></pre>
+<h3 id="base-styles"><a class="header" href="#base-styles">Base Styles</a></h3>
+<p>Include base styles for code blocks:</p>
+<pre><code class="language-scss">pre.highlight {
+  background-color: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.45;
+
+  code {
+    background: none;
+    padding: 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+}
+</code></pre>
+<h2 id="unsupported-languages"><a class="header" href="#unsupported-languages">Unsupported Languages</a></h2>
+<p>When a language is not supported, the code block renders as plain text with HTML escaping:</p>
+<pre><code class="language-markdown">```brainfuck
+++++++++[&gt;++++[&gt;++&gt;+++&gt;+++&gt;+&lt;&lt;&lt;&lt;-]&gt;+&gt;+&gt;-&gt;&gt;+[&lt;]&lt;-]&gt;&gt;
+```
+</code></pre>
+<p>The code will display in a code block without syntax highlighting, but HTML special characters are properly escaped.</p>
+<h2 id="adding-new-languages"><a class="header" href="#adding-new-languages">Adding New Languages</a></h2>
+<p>To add support for additional languages:</p>
+<ol>
+<li>Add the tree-sitter grammar to <code>Cargo.toml</code> as an optional dependency</li>
+<li>Create a feature flag for the language</li>
+<li>Add <code>LanguageSpec</code> registration in <code>languages.rs</code></li>
+<li>Add highlight queries in <code>queries/&lt;lang&gt;/highlights.scm</code></li>
+</ol>
+<p>Example for adding JavaScript support:</p>
+<pre><code class="language-toml"># Cargo.toml
+[dependencies]
+tree-sitter-javascript = { version = "0.20", optional = true }
+
+[features]
+lang-javascript = ["tree-sitter-javascript"]
+</code></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// languages.rs
+#[cfg(feature = "lang-javascript")]
+fn register_javascript(&amp;mut self) {
+    let spec = LanguageSpec {
+        name: "javascript",
+        language: tree_sitter_javascript::LANGUAGE.into(),
+        highlight_query: include_str!("queries/javascript/highlights.scm"),
+        injection_query: None,
+        locals_query: None,
+    };
+    self.register(spec, &amp;["js", "javascript"]);
+}
+<span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="islands-architecture-1"><a class="header" href="#islands-architecture-1">Islands Architecture</a></h1>
+<p>Taxus implements the <strong>Islands Architecture</strong>: Tera templates render the static "sea" of HTML, while Yew components are pre-rendered server-side into "islands" and then hydrated by the WASM client in the browser.</p>
+<h2 id="how-it-works-1"><a class="header" href="#how-it-works-1">How It Works</a></h2>
+<pre><code>BUILD TIME (generator)                BROWSER
+─────────────────────                 ───────
+1. Tera renders page shell            4. HTML is immediately visible (no JS needed)
+2. island() calls Yew SSR             5. WASM loads asynchronously
+3. SSR HTML + props JSON emitted      6. Yew hydrates mount points → interactive
+</code></pre>
+<h3 id="build-time-server-side-rendering"><a class="header" href="#build-time-server-side-rendering">Build-Time: Server-Side Rendering</a></h3>
+<p>When you use <code>{{ island(component="Counter", initial=5) | safe }}</code> in a template:</p>
+<ol>
+<li>The <code>island()</code> Tera function is called during template rendering</li>
+<li>Yew SSR renders the component to HTML</li>
+<li>The output is wrapped in a mount point div with serialized props:</li>
+</ol>
+<pre><code class="language-html">&lt;div data-island="Counter" data-props='{"initial":5}'&gt;
+  &lt;!-- Pre-rendered by Yew SSR: --&gt;
+  &lt;div class="counter"&gt;&lt;span&gt;5&lt;/span&gt;&lt;button&gt;+&lt;/button&gt;&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<h3 id="browser-time-hydration-1"><a class="header" href="#browser-time-hydration-1">Browser-Time: Hydration</a></h3>
+<p>When the page loads:</p>
+<ol>
+<li>The pre-rendered HTML is immediately visible (no JavaScript required)</li>
+<li>The WASM bundle loads asynchronously</li>
+<li>The client finds all <code>[data-island]</code> elements in the DOM</li>
+<li>For each island: deserialize <code>data-props</code>, call <code>yew::Renderer::hydrate()</code></li>
+<li>The component becomes interactive without re-rendering</li>
+</ol>
+<h2 id="two-tier-interactivity"><a class="header" href="#two-tier-interactivity">Two-Tier Interactivity</a></h2>
+<p>taxus supports two layers of interactivity:</p>
+<div class="table-wrapper"><table><thead><tr><th>Tier</th><th>Technology</th><th>Use For</th></tr></thead><tbody>
+<tr><td>1 — General</td><td><code>static/scripts.js</code> (vanilla JS)</td><td>DOM manipulation, toggles, analytics, lightweight events</td></tr>
+<tr><td>2 — Performance</td><td>Yew WASM island</td><td>Heavy computation, complex reactive state, data-intensive UI</td></tr>
+</tbody></table>
+</div>
+<p>Use vanilla JS for simple interactions; reserve Yew islands for components that benefit from the Yew component model.</p>
+<h2 id="using-islands-in-templates"><a class="header" href="#using-islands-in-templates">Using Islands in Templates</a></h2>
+<h3 id="the-island-tera-function"><a class="header" href="#the-island-tera-function">The <code>island()</code> Tera Function</a></h3>
+<p>Use the <code>island()</code> function in any <code>.html</code> template:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block content %}
+  {{ page.content | safe }}
+  
+  &lt;h2&gt;Interactive Counter&lt;/h2&gt;
+  {{ island(component="Counter", initial=5) | safe }}
+{% endblock %}
+</code></pre>
+<p><strong>Important</strong>: Always use <code>| safe</code> after <code>island()</code> to prevent HTML escaping.</p>
+<h3 id="passing-props"><a class="header" href="#passing-props">Passing Props</a></h3>
+<p>Props are passed as keyword arguments to <code>island()</code>:</p>
+<pre><code class="language-html">{{ island(component="Counter", initial=5) | safe }}
+{{ island(component="MyWidget", label="Hello", count=3) | safe }}
+</code></pre>
+<p>The props are serialized to JSON and stored in <code>data-props</code>.</p>
+<h3 id="the-class-prop"><a class="header" href="#the-class-prop">The <code>class</code> Prop</a></h3>
+<p>All island components accept an optional <code>class</code> prop that appends custom CSS classes to the component's outer <code>&lt;div&gt;</code>:</p>
+<pre><code class="language-html">{{ island(component="SearchBox", class="docs-search") | safe }}
+</code></pre>
+<p>This renders as:</p>
+<pre><code class="language-html">&lt;div data-island="SearchBox" data-props='{"placeholder":"Search...","max_results":5,"class":"docs-search"}' class="search-box docs-search"&gt;
+  &lt;!-- component content --&gt;
+&lt;/div&gt;
+</code></pre>
+<p>This enables template authors to pass CSS styling hooks for targeting descendant elements without modifying component source.</p>
+<h2 id="writing-an-island-component"><a class="header" href="#writing-an-island-component">Writing an Island Component</a></h2>
+<p>Island components live in <code>common/src/components/</code>. Their props must implement <code>Serialize</code> and <code>Deserialize</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// common/src/components/counter.rs
+use serde::{Deserialize, Serialize};
+use yew::prelude::*;
+
+#[derive(Properties, PartialEq, Clone, Serialize, Deserialize)]
+pub struct CounterProps {
+    #[prop_or_default]
+    pub initial: i32,
+    #[prop_or_default]
+    pub class: String,
+}
+
+#[function_component(Counter)]
+pub fn counter(props: &amp;CounterProps) -&gt; Html {
+    let count = use_state(|| props.initial);
+    let on_click = {
+        let count = count.clone();
+        Callback::from(move |_| count.set(*count + 1))
+    };
+    
+    html! {
+        &lt;div class="counter"&gt;
+            &lt;span&gt;{ *count }&lt;/span&gt;
+            &lt;button onclick={on_click}&gt;{ "+" }&lt;/button&gt;
+        &lt;/div&gt;
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="export-the-component"><a class="header" href="#export-the-component">Export the Component</a></h3>
+<p>Add the component module to <code>common/src/components/mod.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub mod counter;
+<span class="boring">}</span></code></pre></pre>
+<h2 id="registering-a-new-island"><a class="header" href="#registering-a-new-island">Registering a New Island</a></h2>
+<p>Two registries must be updated in sync:</p>
+<h3 id="1-generator-ssr-registry"><a class="header" href="#1-generator-ssr-registry">1. Generator SSR Registry</a></h3>
+<p>In <code>generator/src/templates/renderer.rs</code>, add a match arm to the <code>island()</code> Tera function:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>tera.register_function("island", |args: &amp;HashMap&lt;String, tera::Value&gt;| {
+    use tera::Value;
+    
+    let component = args.get("component").and_then(Value::as_str).unwrap_or("");
+    
+    let html = match component {
+        "Counter" =&gt; {
+            use crate::build::pipeline::render_island_counter;
+            use common::components::counter::CounterProps;
+            
+            let initial = args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
+            
+            render_island_counter(CounterProps { initial })
+        }
+        "SearchBox" =&gt; {
+            use crate::build::pipeline::render_search_box;
+            use common::components::search_box::SearchBoxProps;
+            
+            let placeholder = args.get("placeholder")
+                .and_then(Value::as_str)
+                .unwrap_or("Search...")
+                .to_string();
+            let max_results = args.get("max_results")
+                .and_then(Value::as_i64)
+                .unwrap_or(5) as usize;
+            
+            render_search_box(SearchBoxProps { placeholder, max_results })
+        }
+        "MyWidget" =&gt; {
+            // Add your component here
+            use crate::build::pipeline::render_island_generic;
+            use common::components::my_widget::{MyWidget, MyWidgetProps};
+            
+            let label = args.get("label")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            let count = args.get("count")
+                .and_then(Value::as_i64)
+                .unwrap_or(0) as i32;
+            
+            render_island_generic::&lt;MyWidget&gt;(
+                MyWidgetProps { label, count },
+                "MyWidget"
+            )
+        }
+        other =&gt; format!("&lt;!-- unknown island: {other} --&gt;"),
+    };
+    
+    Ok(Value::String(html))
+});
+<span class="boring">}</span></code></pre></pre>
+<h3 id="2-client-hydration-registry"><a class="header" href="#2-client-hydration-registry">2. Client Hydration Registry</a></h3>
+<p>In <code>client/src/main.rs</code>, add a match arm to the hydration function:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn hydrate_island(name: &amp;str, el: HtmlElement, props_json: &amp;str) {
+    match name {
+        "Counter" =&gt; {
+            let props: CounterProps = serde_json::from_str(props_json)
+                .unwrap_or(CounterProps { initial: 0 });
+            yew::Renderer::&lt;Counter&gt;::with_root_and_props(el.into(), props).hydrate();
+        }
+        "SearchBox" =&gt; {
+            let props: SearchBoxProps = serde_json::from_str(props_json)
+                .unwrap_or(SearchBoxProps {
+                    placeholder: String::new(),
+                    max_results: 5,
+                });
+            yew::Renderer::&lt;SearchBox&gt;::with_root_and_props(el.into(), props).hydrate();
+        }
+        "MyWidget" =&gt; {
+            let props: MyWidgetProps = serde_json::from_str(props_json)
+                .unwrap_or(MyWidgetProps { label: String::new(), count: 0 });
+            yew::Renderer::&lt;MyWidget&gt;::with_root_and_props(el.into(), props).hydrate();
+        }
+        _ =&gt; { /* ignore unknown islands */ }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="built-in-islands"><a class="header" href="#built-in-islands">Built-in Islands</a></h2>
+<p>Taxus includes two built-in island components:</p>
+<h3 id="counter"><a class="header" href="#counter">Counter</a></h3>
+<p>A simple counter with increment button. This is an example component demonstrating the islands architecture — useful for testing and learning, but not intended for production use.</p>
+<h3 id="searchbox"><a class="header" href="#searchbox">SearchBox</a></h3>
+<p>A production-ready search component with debounced input and async results. See <a href="./search.html">Search</a> for full documentation.</p>
+<pre><code class="language-html">{{ island(component="SearchBox", placeholder="Search...", max_results=10, class="my-search") | safe }}
+</code></pre>
+<h2 id="initializing-a-site-with-islands"><a class="header" href="#initializing-a-site-with-islands">Initializing a Site with Islands</a></h2>
+<p>Islands are enabled by default. Initializing a new site includes the WASM
+hydration script in the generated <code>templates/base.html</code> and a <code>Counter</code>
+island demo in <code>templates/section.html</code>:</p>
+<pre><code class="language-bash">cargo run -- init my-site
+</code></pre>
+<p>The generated <code>base.html</code> includes the WASM hydration script:</p>
+<pre><code class="language-html">&lt;script type="module"&gt;
+  import init, * as bindings from '/wasm/client.js';
+  const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
+  window.wasmBindings = bindings;
+  bindings.hydrate_islands();
+&lt;/script&gt;
+</code></pre>
+<p>To generate a plain Tera/Markdown scaffold with no WASM hydration, pass
+<code>--no-islands</code>:</p>
+<pre><code class="language-bash">cargo run -- init my-site --no-islands
+</code></pre>
+<h2 id="building-the-wasm-client"><a class="header" href="#building-the-wasm-client">Building the WASM Client</a></h2>
+<p>The WASM client is compiled automatically as part of every Cargo build. A Cargo build script (<code>taxus-generator/build.rs</code>) compiles the <code>taxus-client</code> crate to <code>wasm32-unknown-unknown</code>, runs <code>wasm-bindgen</code> to generate JS bindings, and embeds the resulting <code>client.js</code> and <code>client_bg.wasm</code> into the generator binary via <code>include_bytes!</code>. At site build time, these embedded files are written to <code>dist/wasm/</code>.</p>
+<p>No separate build step or external tooling (such as Trunk) is required.</p>
+<h2 id="development-workflow"><a class="header" href="#development-workflow">Development Workflow</a></h2>
+<h3 id="1-create-a-site"><a class="header" href="#1-create-a-site">1. Create a Site</a></h3>
+<pre><code class="language-bash">cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+</code></pre>
+<h3 id="2-build-the-static-site-includes-wasm-client"><a class="header" href="#2-build-the-static-site-includes-wasm-client">2. Build the Static Site (includes WASM client)</a></h3>
+<pre><code class="language-bash">cargo run -- build --dir my-site --verbose
+</code></pre>
+<p>The WASM client is compiled as part of the Cargo build and embedded in the binary. During the <code>taxus build</code> pipeline, the embedded <code>client.js</code> and <code>client_bg.wasm</code> are written to <code>dist/wasm/</code> automatically — no separate build step needed.</p>
+<h3 id="3-serve-and-test"><a class="header" href="#3-serve-and-test">3. Serve and Test</a></h3>
+<pre><code class="language-bash">cargo run -- serve --dir my-site --open
+</code></pre>
+<p>The page should:</p>
+<ul>
+<li>Render immediately from the pre-rendered HTML</li>
+<li>Show the counter with the initial value</li>
+<li>After WASM loads (~1s), the button becomes interactive</li>
+</ul>
+<h2 id="search"><a class="header" href="#search">Search</a></h2>
+<p>The build pipeline also generates a search index. See <a href="./search.html">Search</a> for details.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="search-1"><a class="header" href="#search-1">Search</a></h1>
+<p>Taxus provides a built-in search component with client-side full-text search. The <code>SearchBox</code> island component uses TF-IDF (Term Frequency-Inverse Document Frequency) ranking with English stemming.</p>
+<h2 id="overview-1"><a class="header" href="#overview-1">Overview</a></h2>
+<p>The build pipeline:</p>
+<ol>
+<li>Generates a search index at <code>dist/search_index.bin</code></li>
+<li>The <code>SearchBox</code> component is available for use in templates</li>
+</ol>
+<p>The binary index contains:</p>
+<ul>
+<li><strong>Document metadata</strong> — Title, path, summary, tags, and categories for each page</li>
+<li><strong>Inverted index</strong> — Mapping from word stems to document IDs with TF-IDF scores</li>
+</ul>
+<p>The index is serialized with <code>postcard</code> for compact storage and fast deserialization in the browser.</p>
+<h2 id="enabling-search"><a class="header" href="#enabling-search">Enabling Search</a></h2>
+<p>Search is always available. Build the site and the index is generated automatically:</p>
+<pre><code class="language-bash">cargo run -- build --dir my-site
+</code></pre>
+<p>This generates <code>dist/search_index.bin</code> alongside your static files.</p>
+<h2 id="using-the-searchbox-component"><a class="header" href="#using-the-searchbox-component">Using the SearchBox Component</a></h2>
+<p>The <code>SearchBox</code> island component provides a ready-to-use search interface. Add it to any template:</p>
+<pre><code class="language-html">&lt;div class="search-container"&gt;
+  {{ island(component="SearchBox") | safe }}
+&lt;/div&gt;
+</code></pre>
+<h3 id="props"><a class="header" href="#props">Props</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>placeholder</code></td><td>string</td><td><code>"Search..."</code></td><td>Placeholder text for the input</td></tr>
+<tr><td><code>max_results</code></td><td>number</td><td><code>5</code></td><td>Maximum number of results to display</td></tr>
+<tr><td><code>class</code></td><td>string</td><td><code>""</code></td><td>Custom CSS classes to append to the outer container</td></tr>
+</tbody></table>
+</div>
+<p>Example with custom props:</p>
+<pre><code class="language-html">{{ island(component="SearchBox", placeholder="Find content...", max_results=10, class="docs-search") | safe }}
+</code></pre>
+<h3 id="styling-1"><a class="header" href="#styling-1">Styling</a></h3>
+<p>The component uses these CSS classes that you can style:</p>
+<div class="table-wrapper"><table><thead><tr><th>Class</th><th>Element</th></tr></thead><tbody>
+<tr><td><code>.search-box</code></td><td>Container div</td></tr>
+<tr><td><code>.search-input</code></td><td>Text input field</td></tr>
+<tr><td><code>.search-results</code></td><td>Results list (<code>&lt;ul&gt;</code>)</td></tr>
+<tr><td><code>.search-result</code></td><td>Individual result item (<code>&lt;li&gt;</code>)</td></tr>
+<tr><td><code>.search-result-link</code></td><td>Result title link</td></tr>
+<tr><td><code>.search-result-summary</code></td><td>Result summary text</td></tr>
+</tbody></table>
+</div>
+<p>Use the <code>class</code> prop to add custom classes for styling hooks:</p>
+<pre><code class="language-html">{{ island(component="SearchBox", class="docs-search") | safe }}
+</code></pre>
+<p>Then target the custom class in your SCSS:</p>
+<pre><code class="language-scss">.docs-search .search-input {
+  // Custom styles for docs search input
+}
+</code></pre>
+<p>Example SCSS:</p>
+<pre><code class="language-scss">.search-container {
+  max-inline-size: 48rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+.search-input {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  color: var(--text);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.search-result {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.search-result-link {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.search-result-summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+</code></pre>
+<h2 id="how-it-works-2"><a class="header" href="#how-it-works-2">How It Works</a></h2>
+<h3 id="indexing-pipeline"><a class="header" href="#indexing-pipeline">Indexing Pipeline</a></h3>
+<ol>
+<li><strong>Tokenization</strong> — Content is split into lowercase words, filtering out words shorter than 3 characters</li>
+<li><strong>Stemming</strong> — Words are reduced to their root form using the Porter stemmer (e.g., "programming" → "program")</li>
+<li><strong>TF-IDF Scoring</strong> — Each term gets a weight based on:
+<ul>
+<li><strong>Term Frequency (TF)</strong> — How often the term appears in a document</li>
+<li><strong>Inverse Document Frequency (IDF)</strong> — How rare the term is across all documents</li>
+</ul>
+</li>
+</ol>
+<h3 id="search-query-processing"><a class="header" href="#search-query-processing">Search Query Processing</a></h3>
+<p>When a user searches:</p>
+<ol>
+<li>The query is tokenized and stemmed using the same process</li>
+<li>Each stem's postings are retrieved from the index</li>
+<li>TF-IDF scores are summed for matching documents</li>
+<li>Results are returned sorted by relevance score</li>
+</ol>
+<h3 id="component-architecture"><a class="header" href="#component-architecture">Component Architecture</a></h3>
+<p>The <code>SearchBox</code> component:</p>
+<ol>
+<li>Uses a 200ms debounce on input to avoid excessive queries</li>
+<li>Requires at least 2 characters before searching</li>
+<li>Calls the <code>window.wasmBindings.search()</code> function exposed by the WASM client</li>
+<li>The WASM client lazily loads the search index on first use</li>
+<li>Results are truncated to <code>max_results</code> and displayed in a list</li>
+</ol>
+<h2 id="output-format"><a class="header" href="#output-format">Output Format</a></h2>
+<p>The search index is written to <code>dist/search_index.bin</code> in <code>postcard</code> binary format.</p>
+<p>Each <code>SearchDocument</code> in the results contains:</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>Unique document identifier</td></tr>
+<tr><td><code>title</code></td><td>Page title from frontmatter</td></tr>
+<tr><td><code>path</code></td><td>URL path (e.g., <code>/blog/my-post/</code>)</td></tr>
+<tr><td><code>summary</code></td><td>Page summary for display</td></tr>
+<tr><td><code>tags</code></td><td>Tags from frontmatter</td></tr>
+<tr><td><code>categories</code></td><td>Categories from frontmatter</td></tr>
+</tbody></table>
+</div>
+<h2 id="api-reference"><a class="header" href="#api-reference">API Reference</a></h2>
+<h3 id="searchdocument"><a class="header" href="#searchdocument"><code>SearchDocument</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchDocument {
+    pub id: u32,
+    pub title: String,
+    pub path: String,
+    pub summary: String,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="searchindex"><a class="header" href="#searchindex"><code>SearchIndex</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchIndex {
+    pub documents: Vec&lt;SearchDocument&gt;,
+    pub index: HashMap&lt;String, Vec&lt;(u32, f32)&gt;&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create an empty index</td></tr>
+<tr><td><code>add_document(doc, content)</code></td><td>Add a document with its content</td></tr>
+<tr><td><code>search(query) -&gt; Vec&lt;&amp;SearchDocument&gt;</code></td><td>Search and return ranked results</td></tr>
+<tr><td><code>finalize()</code></td><td>Apply IDF weighting (call after all documents added)</td></tr>
+<tr><td><code>to_bytes() -&gt; Vec&lt;u8&gt;</code></td><td>Serialize to binary</td></tr>
+<tr><td><code>from_bytes(bytes) -&gt; Self</code></td><td>Deserialize from binary</td></tr>
+</tbody></table>
+</div>
+<h3 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn tokenize(text: &amp;str) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Splits text into lowercase tokens, filtering words shorter than 3 characters.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn stem(tokens: &amp;[String]) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Applies English Porter stemmer to tokens.</p>
+<h2 id="performance"><a class="header" href="#performance">Performance</a></h2>
+<ul>
+<li><strong>Index size</strong> — Typically 10-30% of total content size</li>
+<li><strong>Deserialization</strong> — Near-instant with postcard format</li>
+<li><strong>Search latency</strong> — Sub-millisecond for typical queries</li>
+<li><strong>Lazy loading</strong> — Index is loaded only when first search is performed</li>
+</ul>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<ul>
+<li><strong>English only</strong> — Stemming is currently English-only</li>
+<li><strong>No phrase search</strong> — Queries are treated as bag-of-words</li>
+<li><strong>No highlighting</strong> — Results don't include matched snippets</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cli-reference"><a class="header" href="#cli-reference">CLI Reference</a></h1>
+<p>The <code>taxus</code> binary provides five subcommands for building and managing static sites.</p>
+<h2 id="global-usage"><a class="header" href="#global-usage">Global Usage</a></h2>
+<pre><code class="language-bash">taxus &lt;SUBCOMMAND&gt; [OPTIONS]
+</code></pre>
+<h2 id="taxus-build"><a class="header" href="#taxus-build"><code>taxus build</code></a></h2>
+<p>Build the static site from Markdown content and templates.</p>
+<pre><code>taxus build [OPTIONS]
+
+Options:
+  -d, --dir &lt;PATH&gt;         Root directory (must contain site.toml) [default: .]
+  -v, --verbose            Print detailed progress for each build stage
+  -q, --quiet              Suppress all output except errors
+      --include-drafts     Include pages marked draft = true
+      --dry-run            Simulate without writing files
+      --clean              Remove output directory before building
+  -o, --output &lt;PATH&gt;      Override the output directory from site.toml
+  -h, --help               Print help
+</code></pre>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<pre><code class="language-bash"># Build from current directory
+taxus build
+
+# Build with verbose output
+taxus build --verbose
+
+# Build from a specific directory
+taxus build --dir ./my-site
+
+# Build including drafts
+taxus build --include-drafts
+
+# Dry run (validate without writing)
+taxus build --dry-run
+
+# Clean and rebuild
+taxus build --clean
+
+# Override output directory
+taxus build --output /tmp/preview
+</code></pre>
+<h3 id="build-pipeline-stages"><a class="header" href="#build-pipeline-stages">Build Pipeline Stages</a></h3>
+<ol>
+<li>Discover routes from <code>content/</code></li>
+<li>Load Tera templates from <code>templates/</code></li>
+<li>Parse Markdown + frontmatter</li>
+<li>Process hero images (responsive variants, WebP conversion, srcset)</li>
+<li>Copy co-located assets</li>
+<li>Render pages with templates</li>
+<li>Generate <code>robots.txt</code></li>
+<li>Generate <code>sitemap.xml</code></li>
+<li>Generate <code>404.html</code></li>
+<li>Build and render taxonomy pages</li>
+<li>Generate feeds (RSS/Atom)</li>
+<li>Process assets (SCSS, static files)</li>
+<li>Generate search index</li>
+<li>Write WASM client</li>
+<li>Write output files</li>
+</ol>
+<h2 id="taxus-clean"><a class="header" href="#taxus-clean"><code>taxus clean</code></a></h2>
+<p>Remove all generated files from the output directory.</p>
+<pre><code>taxus clean [OPTIONS]
+
+Options:
+  -d, --dir &lt;PATH&gt;   Root directory (must contain site.toml) [default: .]
+  -h, --help         Print help
+</code></pre>
+<h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
+<pre><code class="language-bash"># Clean current site
+taxus clean
+
+# Clean a site in a different directory
+taxus clean --dir ./my-site
+</code></pre>
+<h2 id="taxus-init"><a class="header" href="#taxus-init"><code>taxus init</code></a></h2>
+<p>Initialize a new site with a default directory structure.</p>
+<pre><code>taxus init [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]               Directory to initialize [default: .]
+
+Options:
+  -n, --name &lt;NAME&gt;       Site name used in templates and site.toml
+  -u, --base-url &lt;URL&gt;    Base URL (must start with http:// or https://)
+  -f, --force             Initialize even if directory is not empty
+      --no-islands        Disable WASM islands hydration (enabled by default)
+  -h, --help              Print help
+</code></pre>
+<h3 id="files-created"><a class="header" href="#files-created">Files Created</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>File</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>site.toml</code></td><td>Site configuration</td></tr>
+<tr><td><code>content/_index.md</code></td><td>Home page content</td></tr>
+<tr><td><code>templates/base.html</code></td><td>Base HTML layout</td></tr>
+<tr><td><code>templates/page.html</code></td><td>Single-page template</td></tr>
+<tr><td><code>templates/section.html</code></td><td>Section/listing template</td></tr>
+<tr><td><code>styles/main.scss</code></td><td>Starter stylesheet</td></tr>
+<tr><td><code>static/scripts.js</code></td><td>Placeholder scripts file</td></tr>
+<tr><td><code>static/favicon.png</code></td><td>Placeholder favicon</td></tr>
+</tbody></table>
+</div>
+<h3 id="examples-2"><a class="header" href="#examples-2">Examples</a></h3>
+<pre><code class="language-bash"># Initialize in current directory
+taxus init
+
+# Initialize in a new directory
+taxus init my-site
+
+# Initialize with custom options
+taxus init my-site --name "My Blog" --base-url "https://myblog.com"
+
+# Initialize a plain site without islands
+taxus init my-site --no-islands
+
+# Force initialization in non-empty directory
+taxus init my-site --force
+</code></pre>
+<h2 id="taxus-routes"><a class="header" href="#taxus-routes"><code>taxus routes</code></a></h2>
+<p>List all routes that would be discovered from the content directory without building.</p>
+<pre><code>taxus routes [OPTIONS]
+
+Options:
+  -d, --dir &lt;PATH&gt;   Root directory (must contain site.toml) [default: .]
+  -h, --help         Print help
+</code></pre>
+<h3 id="example-output"><a class="header" href="#example-output">Example Output</a></h3>
+<pre><code>Routes for "My Site"
+────────────────────────────────────────────────────
+  [section]  /          →  _index.md            →  index.html
+  [page]     /about/    →  about.md             →  about/index.html
+  [section]  /blog/     →  blog/_index.md       →  blog/index.html
+  [page]     /blog/post/ → blog/post.md         →  blog/post/index.html
+────────────────────────────────────────────────────
+  Total: 4 routes (2 pages, 2 sections)
+</code></pre>
+<h3 id="examples-3"><a class="header" href="#examples-3">Examples</a></h3>
+<pre><code class="language-bash"># List routes for current site
+taxus routes
+
+# List routes for a specific site
+taxus routes --dir ./my-site
+</code></pre>
+<h2 id="taxus-serve"><a class="header" href="#taxus-serve"><code>taxus serve</code></a></h2>
+<p>Start a development server with live reload.</p>
+<pre><code>taxus serve [OPTIONS]
+
+Options:
+  -d, --dir &lt;PATH&gt;    Root directory (must contain site.toml) [default: .]
+  -p, --port &lt;PORT&gt;   Port to listen on [default: 3000]
+  -v, --verbose       Print detailed progress for each build stage
+  -q, --quiet         Suppress all output except errors
+  -o, --open          Open browser automatically
+  -h, --help          Print help
+</code></pre>
+<p>The serve command performs an initial build automatically, then watches for file changes.</p>
+<h3 id="examples-4"><a class="header" href="#examples-4">Examples</a></h3>
+<pre><code class="language-bash"># Start on default port
+taxus serve
+
+# Start with custom port
+taxus serve --port 8080
+
+# Start and open browser
+taxus serve --open
+
+# Serve from specific directory
+taxus serve --dir ./my-site
+
+# Combined options
+taxus serve --dir ./my-site --port 8080 --open --verbose
+</code></pre>
+<h2 id="error-hints"><a class="header" href="#error-hints">Error Hints</a></h2>
+<p>When a command fails, the CLI prints an actionable hint alongside the error:</p>
+<div class="table-wrapper"><table><thead><tr><th>Error</th><th>Hint</th></tr></thead><tbody>
+<tr><td><code>site.toml</code> not found</td><td>Run <code>taxus init</code> or use <code>--dir</code></td></tr>
+<tr><td>No content found</td><td>Add <code>.md</code> files to <code>content/</code>, start with <code>content/_index.md</code></td></tr>
+<tr><td>Template not found</td><td>Check that <code>templates/</code> contains <code>base.html</code> and <code>page.html</code></td></tr>
+</tbody></table>
+</div>
+<h2 id="logging"><a class="header" href="#logging">Logging</a></h2>
+<p>Control log output with CLI flags or the <code>RUST_LOG</code> environment variable:</p>
+<pre><code class="language-bash"># Default: info level (build progress)
+taxus build
+
+# Verbose: debug level (detailed stages)
+taxus build --verbose
+
+# Quiet: errors only
+taxus build --quiet
+
+# Custom via RUST_LOG
+RUST_LOG=debug taxus build
+RUST_LOG=taxus_lib=trace taxus build
+</code></pre>
+<p>Log levels:</p>
+<div class="table-wrapper"><table><thead><tr><th>Level</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>error</code></td><td>Build failures only</td></tr>
+<tr><td><code>warn</code></td><td>Warnings and errors</td></tr>
+<tr><td><code>info</code></td><td>Build progress (default)</td></tr>
+<tr><td><code>debug</code></td><td>Detailed stage information</td></tr>
+<tr><td><code>trace</code></td><td>Verbose internal diagnostics</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="development-server"><a class="header" href="#development-server">Development Server</a></h1>
+<p>The <code>serve</code> command provides a local development server with hot reloading.</p>
+<h2 id="basic-usage"><a class="header" href="#basic-usage">Basic Usage</a></h2>
+<pre><code class="language-bash"># Start server on default port (3000)
+taxus serve
+
+# Start with custom port
+taxus serve --port 8080
+
+# Start and open browser automatically
+taxus serve --open
+
+# Serve from a different directory
+taxus serve --dir ./my-site
+</code></pre>
+<p>The serve command performs an initial build automatically before starting the server.</p>
+<h2 id="command-options"><a class="header" href="#command-options">Command Options</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Option</th><th>Short</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>--port</code></td><td><code>-p</code></td><td>3000</td><td>Port to listen on</td></tr>
+<tr><td><code>--verbose</code></td><td><code>-v</code></td><td>false</td><td>Print detailed build progress</td></tr>
+<tr><td><code>--quiet</code></td><td><code>-q</code></td><td>false</td><td>Suppress all output except errors</td></tr>
+<tr><td><code>--open</code></td><td><code>-o</code></td><td>false</td><td>Open browser automatically</td></tr>
+</tbody></table>
+</div>
+<h2 id="features-1"><a class="header" href="#features-1">Features</a></h2>
+<h3 id="hot-reloading"><a class="header" href="#hot-reloading">Hot Reloading</a></h3>
+<p>The server watches for file changes and triggers a rebuild:</p>
+<ul>
+<li><strong>Content files</strong> (<code>.md</code> in <code>content/</code>)</li>
+<li><strong>Templates</strong> (<code>.html</code> in <code>templates/</code>)</li>
+<li><strong>Styles</strong> (<code>.scss</code>/<code>.sass</code> in <code>styles/</code>)</li>
+<li><strong>Static files</strong> (<code>static/</code>)</li>
+<li><strong>Configuration</strong> (<code>site.toml</code>)</li>
+</ul>
+<p>When a change is detected, the server rebuilds and sends a reload signal to connected browsers via WebSocket.</p>
+<h3 id="live-reload-protocol"><a class="header" href="#live-reload-protocol">Live Reload Protocol</a></h3>
+<ol>
+<li>Server starts on the specified port</li>
+<li>HTML pages are injected with a live reload script</li>
+<li>Browser connects to <code>/__ws__</code> WebSocket endpoint</li>
+<li>On file change, server broadcasts reload message</li>
+<li>Browser refreshes automatically</li>
+</ol>
+<h3 id="error-overlay"><a class="header" href="#error-overlay">Error Overlay</a></h3>
+<p>Build errors are displayed in the browser with:</p>
+<ul>
+<li>Error type and message</li>
+<li>File that caused the error</li>
+<li>Suggested fixes (when available)</li>
+</ul>
+<p>The overlay dismisses when the error is resolved.</p>
+<h3 id="graceful-shutdown"><a class="header" href="#graceful-shutdown">Graceful Shutdown</a></h3>
+<p>Press <code>Ctrl+C</code> to shut down cleanly:</p>
+<ul>
+<li>In-flight requests complete</li>
+<li>WebSocket connections close cleanly</li>
+<li>Build operations are cancelled safely</li>
+</ul>
+<h2 id="workflow"><a class="header" href="#workflow">Workflow</a></h2>
+<h3 id="after-init"><a class="header" href="#after-init">After <code>init</code></a></h3>
+<pre><code class="language-bash">taxus init my-site
+cd my-site
+taxus serve --open
+</code></pre>
+<h3 id="with-build"><a class="header" href="#with-build">With <code>build</code></a></h3>
+<p>The serve command runs <code>build</code> internally. For production:</p>
+<pre><code class="language-bash"># Development
+taxus serve
+
+# Production
+taxus build
+</code></pre>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="port-already-in-use"><a class="header" href="#port-already-in-use">Port Already in Use</a></h3>
+<pre><code class="language-bash">taxus serve --port 3001
+</code></pre>
+<p>Check what's using the port:</p>
+<pre><code class="language-bash"># Linux/macOS
+lsof -i :3000
+
+# Windows
+netstat -ano | findstr :3000
+</code></pre>
+<h3 id="files-not-being-watched"><a class="header" href="#files-not-being-watched">Files Not Being Watched</a></h3>
+<p>Ensure files are in correct directories:</p>
+<ul>
+<li>Content: <code>content/</code> with <code>.md</code> extension</li>
+<li>Templates: <code>templates/</code> with <code>.html</code> extension</li>
+<li>Styles: <code>styles/</code> with <code>.scss</code> or <code>.sass</code></li>
+<li>Static: <code>static/</code></li>
+</ul>
+<h3 id="browser-not-refreshing"><a class="header" href="#browser-not-refreshing">Browser Not Refreshing</a></h3>
+<ol>
+<li>Check WebSocket connection in dev tools (Network → WS)</li>
+<li>Ensure JavaScript is enabled</li>
+<li>Check for console errors</li>
+<li>Verify live reload script is injected (view source)</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="styling-2"><a class="header" href="#styling-2">Styling</a></h1>
+<p>Taxus supports SCSS for modern CSS authoring.</p>
+<h2 id="styles-directory"><a class="header" href="#styles-directory">Styles Directory</a></h2>
+<p>SCSS files are stored in the <code>styles/</code> directory:</p>
+<pre><code>styles/
+└── main.scss
+</code></pre>
+<h2 id="scss-compilation"><a class="header" href="#scss-compilation">SCSS Compilation</a></h2>
+<p>The generator compiles SCSS to CSS during the build process:</p>
+<ol>
+<li>Read SCSS files from <code>styles/</code></li>
+<li>Compile to CSS using <code>grass</code></li>
+<li>Write to <code>dist/css/</code></li>
+</ol>
+<h2 id="example-stylesheet"><a class="header" href="#example-stylesheet">Example Stylesheet</a></h2>
+<p><code>styles/main.scss</code>:</p>
+<pre><code class="language-scss">// Main stylesheet
+
+// Variables
+$primary-color: #0066cc;
+$text-color: #333;
+$background: #fff;
+
+// Base styles
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  color: $text-color;
+  background: $background;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+// Headings
+h1,
+h2,
+h3 {
+  margin-top: 1.5em;
+  color: darken($text-color, 10%);
+}
+
+// Links
+a {
+  color: $primary-color;
+  text-decoration: none;
+
+  &amp;:hover {
+    text-decoration: underline;
+  }
+}
+
+// Code blocks
+pre {
+  background: #f4f4f4;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+code {
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 0.9em;
+}
+</code></pre>
+<h2 id="scss-features"><a class="header" href="#scss-features">SCSS Features</a></h2>
+<h3 id="variables"><a class="header" href="#variables">Variables</a></h3>
+<pre><code class="language-scss">$primary: #0066cc;
+$spacing: 1rem;
+
+.button {
+  background: $primary;
+  padding: $spacing;
+}
+</code></pre>
+<h3 id="nesting"><a class="header" href="#nesting">Nesting</a></h3>
+<pre><code class="language-scss">nav {
+  ul {
+    list-style: none;
+  }
+
+  li {
+    display: inline-block;
+  }
+
+  a {
+    color: $primary;
+  }
+}
+</code></pre>
+<h3 id="partials"><a class="header" href="#partials">Partials</a></h3>
+<p>Split styles into multiple files:</p>
+<pre><code>styles/
+├── main.scss        # Main file
+├── _variables.scss  # Variables
+├── _base.scss       # Base styles
+├── _nav.scss        # Navigation
+└── _footer.scss     # Footer
+</code></pre>
+<p>Import in main file:</p>
+<pre><code class="language-scss">@use "variables";
+@use "base";
+@use "nav";
+@use "footer";
+</code></pre>
+<h3 id="mixins"><a class="header" href="#mixins">Mixins</a></h3>
+<pre><code class="language-scss">@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  @include flex-center;
+}
+</code></pre>
+<h2 id="output"><a class="header" href="#output">Output</a></h2>
+<p>Compiled CSS is written to:</p>
+<pre><code>dist/
+└── css/
+    └── main.css
+</code></pre>
+<h2 id="syntax-highlighting-styles"><a class="header" href="#syntax-highlighting-styles">Syntax Highlighting Styles</a></h2>
+<p>Taxus includes built-in themes for syntax highlighting. Import them in your main stylesheet:</p>
+<pre><code class="language-scss">// Light theme (GitHub-inspired)
+@use "highlight-light";
+
+// Or dark theme (Catppuccin-inspired)
+@use "highlight-dark";
+</code></pre>
+<p>These themes style the <code>hl-*</code> classes generated by tree-sitter syntax highlighting. See <a href="./syntax-highlighting.html">Syntax Highlighting</a> for the full list of highlight classes and customization options.</p>
+<h2 id="linking-styles"><a class="header" href="#linking-styles">Linking Styles</a></h2>
+<p>Include the stylesheet in your template:</p>
+<pre><code class="language-html">&lt;link rel="stylesheet" href="/css/main.css" /&gt;
+</code></pre>
+<h2 id="development"><a class="header" href="#development">Development</a></h2>
+<p>For development, you can use the <code>sass</code> CLI for live compilation:</p>
+<pre><code class="language-bash"># Install sass
+npm install -g sass
+
+# Watch for changes
+sass --watch styles/main.scss dist/css/main.css
+</code></pre>
+<h2 id="future-enhancements"><a class="header" href="#future-enhancements">Future Enhancements</a></h2>
+<p>Planned improvements for styling:</p>
+<ul>
+<li><strong>PostCSS</strong>: Autoprefixer and other transformations</li>
+<li><strong>CSS minification</strong>: Production-ready output</li>
+<li><strong>Source maps</strong>: Debug support</li>
+<li><strong>CSS modules</strong>: Scoped styles for components</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="development-1"><a class="header" href="#development-1">Development</a></h1>
+<p>This guide covers development workflows for contributing to Taxus.</p>
+<h2 id="prerequisites-1"><a class="header" href="#prerequisites-1">Prerequisites</a></h2>
+<ul>
+<li><strong>Rust</strong> — <a href="https://rustup.rs/">Install Rust</a></li>
+<li><strong>mdbook</strong> ≥ 0.5.0 — Documentation: <code>cargo install mdbook --locked</code></li>
+</ul>
+<h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
+<pre><code class="language-bash">git clone https://github.com/crustyrustacean/taxus.git
+cd taxus
+
+cargo build
+</code></pre>
+<h2 id="running-tests"><a class="header" href="#running-tests">Running Tests</a></h2>
+<pre><code class="language-bash"># Run all tests (238+ tests)
+cargo test
+
+# Run tests for a specific crate
+cargo test -p taxus
+
+# Run unit tests only
+cargo test --lib
+
+# Run integration tests only
+cargo test --test config_loading
+</code></pre>
+<h2 id="building"><a class="header" href="#building">Building</a></h2>
+<pre><code class="language-bash"># Build the site (islands and the WASM client are compiled and embedded automatically)
+cargo run -- build --dir my-site
+
+# Build release binary
+cargo build --release
+</code></pre>
+<h2 id="development-server-1"><a class="header" href="#development-server-1">Development Server</a></h2>
+<pre><code class="language-bash"># Start server with auto-reload
+cargo run -- serve --dir my-site --open
+</code></pre>
+<h2 id="documentation"><a class="header" href="#documentation">Documentation</a></h2>
+<pre><code class="language-bash">cd docs
+mdbook serve
+</code></pre>
+<p>Open <code>http://localhost:3000</code> to view.</p>
+<h2 id="code-commands"><a class="header" href="#code-commands">Code Commands</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>cargo build</code></td><td>Build all crates</td></tr>
+<tr><td><code>cargo test</code></td><td>Run all tests</td></tr>
+<tr><td><code>cargo run -- build</code></td><td>Build the static site</td></tr>
+<tr><td><code>cargo run -- serve</code></td><td>Start dev server</td></tr>
+<tr><td><code>cargo doc</code></td><td>Generate API docs</td></tr>
+<tr><td><code>cargo clippy</code></td><td>Run linter</td></tr>
+<tr><td><code>cargo fmt</code></td><td>Format code</td></tr>
+</tbody></table>
+</div>
+<h2 id="xtask-task-runner"><a class="header" href="#xtask-task-runner"><code>xtask</code> Task Runner</a></h2>
+<p>The workspace includes an <code>xtask</code> crate (aliased as <code>cargo xtask</code> via
+<code>.cargo/config.toml</code>) that wraps common developer workflows:</p>
+<div class="table-wrapper"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>cargo xtask build [--release] [--features ...]</code></td><td>Build the project</td></tr>
+<tr><td><code>cargo xtask test [--release] [--nextest] [--features ...]</code></td><td>Run unit and integration tests</td></tr>
+<tr><td><code>cargo xtask check [--features ...]</code></td><td>Fast compile check (no codegen)</td></tr>
+<tr><td><code>cargo xtask lint [--features ...] [--fix]</code></td><td>Lint with Clippy</td></tr>
+<tr><td><code>cargo xtask fmt [--check]</code></td><td>Check formatting with rustfmt</td></tr>
+<tr><td><code>cargo xtask doc [--open]</code></td><td>Build Rust documentation</td></tr>
+<tr><td><code>cargo xtask book [--serve]</code></td><td>Build the mdBook documentation in <code>docs/</code></td></tr>
+<tr><td><code>cargo xtask audit</code></td><td>Run <code>cargo audit</code> security scan (requires <code>cargo-audit</code>)</td></tr>
+<tr><td><code>cargo xtask wasm [--release]</code></td><td>Build WASM artifacts</td></tr>
+<tr><td><code>cargo xtask clean</code></td><td>Clean build artifacts</td></tr>
+<tr><td><code>cargo xtask ci</code></td><td>Run the full local CI pipeline (fmt, lint, test)</td></tr>
+<tr><td>`cargo xtask release --bump &lt;major</td><td>minor</td></tr>
+</tbody></table>
+</div>
+<h2 id="logging-1"><a class="header" href="#logging-1">Logging</a></h2>
+<p>Control log output with CLI flags or <code>RUST_LOG</code>:</p>
+<pre><code class="language-bash"># Default: info level
+cargo run -- build
+
+# Verbose: debug level
+cargo run -- build --verbose
+
+# Quiet: errors only
+cargo run -- build --quiet
+
+# Custom via RUST_LOG
+RUST_LOG=debug cargo run -- build
+RUST_LOG=taxus_lib=trace cargo run -- build
+</code></pre>
+<p>Add logging to code:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use tracing::{info, debug, warn, error};
+
+fn build_site() {
+    info!("Building site");
+    debug!("Processing content");
+    
+    // Structured fields
+    info!(pages = 5, sections = 2, "Build complete");
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="workspace-structure-1"><a class="header" href="#workspace-structure-1">Workspace Structure</a></h2>
+<pre><code>taxus/
+├── taxus-client/    # WASM hydration client
+├── taxus-common/    # Shared Yew components
+├── taxus-generator/ # SSG library and CLI
+├── xtask/           # Workspace task runner (`cargo xtask`)
+└── docs/            # mdBook documentation
+</code></pre>
+<h2 id="contributing"><a class="header" href="#contributing">Contributing</a></h2>
+<ol>
+<li>Fork the repository</li>
+<li>Create a feature branch</li>
+<li>Make changes</li>
+<li>Run tests: <code>cargo test</code></li>
+<li>Run linter: <code>cargo clippy</code></li>
+<li>Format: <code>cargo fmt</code></li>
+<li>Submit a pull request</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="api-reference-1"><a class="header" href="#api-reference-1">API Reference</a></h1>
+<p>This page documents the public API of the <code>taxus_lib</code> generator library and <code>taxus-common</code> shared library.</p>
+<h2 id="taxus-common-crate"><a class="header" href="#taxus-common-crate"><code>taxus-common</code> Crate</a></h2>
+<h3 id="search-module"><a class="header" href="#search-module"><code>search</code> Module</a></h3>
+<p>The search module provides full-text search with TF-IDF ranking.</p>
+<h4 id="searchdocument-1"><a class="header" href="#searchdocument-1"><code>SearchDocument</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchDocument {
+    pub id: u32,
+    pub title: String,
+    pub path: String,
+    pub summary: String,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Metadata record for each indexed page.</p>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(id, title, path, summary, tags, categories) -&gt; Self</code></td><td>Create a new document</td></tr>
+</tbody></table>
+</div>
+<h4 id="searchindex-1"><a class="header" href="#searchindex-1"><code>SearchIndex</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchIndex {
+    pub documents: Vec&lt;SearchDocument&gt;,
+    pub index: HashMap&lt;String, Vec&lt;(u32, f32)&gt;&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The main search index structure. The <code>index</code> maps word stems to <code>(document_id, tfidf_score)</code> pairs.</p>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create empty index</td></tr>
+<tr><td><code>add_document(&amp;mut self, doc: SearchDocument, content: &amp;str)</code></td><td>Add a document with its content for indexing</td></tr>
+<tr><td><code>search(&amp;self, query: &amp;str) -&gt; Vec&lt;&amp;SearchDocument&gt;</code></td><td>Search and return ranked results</td></tr>
+<tr><td><code>finalize(&amp;mut self)</code></td><td>Apply IDF weighting (call after all documents added)</td></tr>
+<tr><td><code>to_bytes(&amp;self) -&gt; Vec&lt;u8&gt;</code></td><td>Serialize to binary (postcard format)</td></tr>
+<tr><td><code>from_bytes(bytes: &amp;[u8]) -&gt; Self</code></td><td>Deserialize from binary</td></tr>
+</tbody></table>
+</div>
+<h4 id="helper-functions-1"><a class="header" href="#helper-functions-1">Helper Functions</a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn tokenize(text: &amp;str) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Split text into lowercase tokens. Filters words shorter than 3 characters.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn stem(tokens: &amp;[String]) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Apply English Porter stemmer to tokens.</p>
+<hr />
+<h2 id="taxus-generator-crate"><a class="header" href="#taxus-generator-crate"><code>taxus-generator</code> Crate</a></h2>
+<h2 id="re-exports"><a class="header" href="#re-exports">Re-exports</a></h2>
+<p>The library re-exports commonly used types from <code>lib.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Configuration
+pub use config::{BuildConfig, SiteConfig, SiteMeta};
+
+// Content
+pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+
+// Templates
+pub use templates::{
+    PageContext, SectionContext, SiteContext, TemplateContext,
+    TemplateRenderer, TeraRenderer,
+};
+
+// Assets
+pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+
+// Build
+pub use build::{BuildReport, ProcessedPage, RenderedPage, SiteBuilder};
+
+// Feed
+pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
+
+// Init
+pub use init::{InitOptions, InitReport, InitScaffolder};
+
+// Routes
+pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
+
+// Errors
+pub use error::{
+    AssetError, ContentError, FeedError, GeneratorError, InitError,
+    Result, RouteError, TemplateError,
+};
+<span class="boring">}</span></code></pre></pre>
+<h2 id="config-module"><a class="header" href="#config-module"><code>config</code> Module</a></h2>
+<h3 id="siteconfig"><a class="header" href="#siteconfig"><code>SiteConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteConfig {
+    pub site: SiteMeta,
+    pub build: BuildConfig,
+    pub feed: FeedConfig,
+    pub base_dir: PathBuf,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_file(path: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from file</td></tr>
+<tr><td><code>from_dir(dir: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from directory (looks for <code>site.toml</code>)</td></tr>
+<tr><td><code>new(name, base_url) -&gt; Self</code></td><td>Create programmatically</td></tr>
+<tr><td><code>validate(&amp;self) -&gt; Result&lt;()&gt;</code></td><td>Validate required fields</td></tr>
+</tbody></table>
+</div>
+<h3 id="sitemeta"><a class="header" href="#sitemeta"><code>SiteMeta</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteMeta {
+    pub name: String,
+    pub base_url: String,
+    pub description: Option&lt;String&gt;,
+    pub author: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="buildconfig"><a class="header" href="#buildconfig"><code>BuildConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct BuildConfig {
+    pub content_dir: PathBuf,    // default: "content"
+    pub output_dir: PathBuf,     // default: "dist"
+    pub static_dir: PathBuf,     // default: "static"
+    pub styles_dir: PathBuf,     // default: "styles"
+    pub templates_dir: PathBuf,  // default: "templates"
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="feedconfig"><a class="header" href="#feedconfig"><code>FeedConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct FeedConfig {
+    pub rss_enabled: bool,       // default: true
+    pub atom_enabled: bool,      // default: false
+    pub limit: usize,            // default: 0 (all)
+    pub full_content: bool,      // default: false
+    pub title: Option&lt;String&gt;,
+    pub rss_path: Option&lt;String&gt;,
+    pub atom_path: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="content-module"><a class="header" href="#content-module"><code>content</code> Module</a></h2>
+<h3 id="frontmatter-1"><a class="header" href="#frontmatter-1"><code>Frontmatter</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Frontmatter {
+    pub title: String,
+    pub description: Option&lt;String&gt;,
+    pub date: Option&lt;NaiveDate&gt;,
+    pub updated: Option&lt;NaiveDate&gt;,
+    pub template: Option&lt;String&gt;,
+    pub draft: bool,
+    pub summary: Option&lt;String&gt;,
+    pub slug: Option&lt;String&gt;,
+    pub aliases: Vec&lt;String&gt;,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+    pub series: Option&lt;String&gt;,
+    pub extra: Option&lt;toml::Value&gt;,
+    pub sort_by: SortBy,           // default: Date
+    pub paginate_by: usize,
+    pub paginate_template: Option&lt;String&gt;,
+    pub weight: i32,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_str(s: &amp;str) -&gt; Result&lt;Self, toml::de::Error&gt;</code></td><td>Parse from TOML</td></tr>
+<tr><td><code>template(&amp;self) -&gt; &amp;str</code></td><td>Get template (default: <code>"page.html"</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="page"><a class="header" href="#page"><code>Page</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Page {
+    pub frontmatter: Frontmatter,
+    pub path: String,
+    pub source: PathBuf,
+    pub raw_content: String,
+    pub content: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_file(path: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from Markdown file</td></tr>
+<tr><td><code>from_str(content: &amp;str, source: &amp;str) -&gt; Result&lt;Self&gt;</code></td><td>Parse from string</td></tr>
+<tr><td><code>is_draft(&amp;self) -&gt; bool</code></td><td>Check if draft</td></tr>
+<tr><td><code>url_path(&amp;self) -&gt; String</code></td><td>Get URL path</td></tr>
+<tr><td><code>aliases(&amp;self) -&gt; &amp;Vec&lt;String&gt;</code></td><td>Get redirect aliases</td></tr>
+</tbody></table>
+</div>
+<h3 id="section"><a class="header" href="#section"><code>Section</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Section {
+    pub frontmatter: Frontmatter,
+    pub path: String,
+    pub source: PathBuf,
+    pub content: Option&lt;String&gt;,
+    pub pages: Vec&lt;Page&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_dir(dir: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from directory</td></tr>
+<tr><td><code>add_page(&amp;mut self, page: Page)</code></td><td>Add a page</td></tr>
+<tr><td><code>sort_by_date(&amp;mut self)</code></td><td>Sort by date (newest first)</td></tr>
+</tbody></table>
+</div>
+<h3 id="contentsource-trait"><a class="header" href="#contentsource-trait"><code>ContentSource</code> Trait</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait ContentSource: Send + Sync {
+    fn load(&amp;self, path: &amp;Path) -&gt; Result&lt;String&gt;;
+    fn exists(&amp;self, path: &amp;Path) -&gt; bool;
+    fn list(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="filesystemcontentsource"><a class="header" href="#filesystemcontentsource"><code>FilesystemContentSource</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct FilesystemContentSource { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(root: P) -&gt; Self</code></td><td>Create with root directory</td></tr>
+</tbody></table>
+</div>
+<h2 id="routes-module"><a class="header" href="#routes-module"><code>routes</code> Module</a></h2>
+<h3 id="routekind"><a class="header" href="#routekind"><code>RouteKind</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum RouteKind {
+    Page,
+    Section,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="routeinfo"><a class="header" href="#routeinfo"><code>RouteInfo</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RouteInfo {
+    pub path: String,
+    pub content_file: PathBuf,
+    pub output_file: PathBuf,
+    pub kind: RouteKind,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="routeregistry-1"><a class="header" href="#routeregistry-1"><code>RouteRegistry</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RouteRegistry { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create empty registry</td></tr>
+<tr><td><code>register(&amp;mut self, route: RouteInfo)</code></td><td>Register a route</td></tr>
+<tr><td><code>get(&amp;self, path: &amp;str) -&gt; Option&lt;&amp;RouteInfo&gt;</code></td><td>Get by path</td></tr>
+<tr><td><code>contains(&amp;self, path: &amp;str) -&gt; bool</code></td><td>Check existence</td></tr>
+<tr><td><code>len(&amp;self) -&gt; usize</code></td><td>Count routes</td></tr>
+<tr><td><code>iter(&amp;self) -&gt; impl Iterator&lt;Item = &amp;RouteInfo&gt;</code></td><td>Iterate all</td></tr>
+<tr><td><code>pages(&amp;self) -&gt; impl Iterator&lt;Item = &amp;RouteInfo&gt;</code></td><td>Iterate pages</td></tr>
+<tr><td><code>sections(&amp;self) -&gt; impl Iterator&lt;Item = &amp;RouteInfo&gt;</code></td><td>Iterate sections</td></tr>
+</tbody></table>
+</div>
+<h3 id="routediscovery"><a class="header" href="#routediscovery"><code>RouteDiscovery</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RouteDiscovery { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(content_dir: P) -&gt; Self</code></td><td>Create with content directory</td></tr>
+<tr><td><code>discover(&amp;self) -&gt; Result&lt;RouteRegistry&gt;</code></td><td>Discover all routes</td></tr>
+</tbody></table>
+</div>
+<h2 id="templates-module"><a class="header" href="#templates-module"><code>templates</code> Module</a></h2>
+<h3 id="templaterenderer-trait"><a class="header" href="#templaterenderer-trait"><code>TemplateRenderer</code> Trait</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait TemplateRenderer: Send + Sync {
+    fn render(&amp;self, template: &amp;str, context: &amp;TemplateContext) -&gt; Result&lt;String&gt;;
+    fn register_template(&amp;mut self, name: &amp;str, content: &amp;str) -&gt; Result&lt;()&gt;;
+    fn has_template(&amp;self, name: &amp;str) -&gt; bool;
+    fn load_templates(&amp;mut self, dir: &amp;Path) -&gt; Result&lt;()&gt;;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="terarenderer"><a class="header" href="#terarenderer"><code>TeraRenderer</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct TeraRenderer { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Result&lt;Self&gt;</code></td><td>Create empty renderer</td></tr>
+<tr><td><code>from_dir(dir: P) -&gt; Result&lt;Self&gt;</code></td><td>Create and load from directory</td></tr>
+</tbody></table>
+</div>
+<h3 id="templatecontext"><a class="header" href="#templatecontext"><code>TemplateContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct TemplateContext {
+    pub page: Option&lt;PageContext&gt;,
+    pub section: Option&lt;SectionContext&gt;,
+    pub site: SiteContext,
+    pub now: NowContext,
+    pub extra: HashMap&lt;String, serde_json::Value&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(site: SiteContext) -&gt; Self</code></td><td>Create with site</td></tr>
+<tr><td><code>with_page(self, page: PageContext) -&gt; Self</code></td><td>Add page</td></tr>
+<tr><td><code>with_section(self, section: SectionContext) -&gt; Self</code></td><td>Add section</td></tr>
+<tr><td><code>with_extra(self, extra: HashMap) -&gt; Self</code></td><td>Add extra</td></tr>
+</tbody></table>
+</div>
+<h3 id="pagecontext"><a class="header" href="#pagecontext"><code>PageContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct PageContext {
+    pub title: String,
+    pub description: Option&lt;String&gt;,
+    pub path: String,
+    pub permalink: String,
+    pub content: String,
+    pub raw_content: String,
+    pub date: Option&lt;String&gt;,
+    pub draft: bool,
+    pub summary: String,
+    pub word_count: usize,
+    pub reading_time: usize,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+    pub series: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="sectioncontext"><a class="header" href="#sectioncontext"><code>SectionContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SectionContext {
+    pub title: String,
+    pub description: Option&lt;String&gt;,
+    pub path: String,
+    pub content: Option&lt;String&gt;,
+    pub pages: Vec&lt;PageContext&gt;,
+    pub pagination: Option&lt;PaginationContext&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="paginationcontext"><a class="header" href="#paginationcontext"><code>PaginationContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct PaginationContext {
+    pub current: usize,
+    pub total: usize,
+    pub per_page: usize,
+    pub total_items: usize,
+    pub prev: Option&lt;String&gt;,
+    pub next: Option&lt;String&gt;,
+    pub first: String,
+    pub last: String,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="sitecontext"><a class="header" href="#sitecontext"><code>SiteContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteContext {
+    pub name: String,
+    pub base_url: String,
+    pub description: Option&lt;String&gt;,
+    pub author: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="nowcontext"><a class="header" href="#nowcontext"><code>NowContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct NowContext {
+    pub year: i32,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="build-module"><a class="header" href="#build-module"><code>build</code> Module</a></h2>
+<h3 id="sitebuilder"><a class="header" href="#sitebuilder"><code>SiteBuilder</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteBuilder {
+    config: SiteConfig,
+    dry_run: bool,
+    verbose: bool,
+    include_drafts: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_dir(dir: &amp;Path) -&gt; Result&lt;Self&gt;</code></td><td>Create from directory</td></tr>
+<tr><td><code>new(config: SiteConfig) -&gt; Self</code></td><td>Create from config</td></tr>
+<tr><td><code>dry_run(self, bool) -&gt; Self</code></td><td>Set dry-run mode</td></tr>
+<tr><td><code>verbose(self, bool) -&gt; Self</code></td><td>Set verbose mode</td></tr>
+<tr><td><code>include_drafts(self, bool) -&gt; Self</code></td><td>Include drafts</td></tr>
+<tr><td><code>build(self) -&gt; Result&lt;BuildReport&gt;</code></td><td>Run build pipeline</td></tr>
+<tr><td><code>clean(self) -&gt; Result&lt;()&gt;</code></td><td>Clean output directory</td></tr>
+</tbody></table>
+</div>
+<h3 id="buildpipelinesearch-module"><a class="header" href="#buildpipelinesearch-module"><code>build::pipeline::search</code> Module</a></h3>
+<h4 id="generatedsearch"><a class="header" href="#generatedsearch"><code>GeneratedSearch</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct GeneratedSearch {
+    pub search_index: Vec&lt;u8&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Container for the serialized search index.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>generate_search(pages: &amp;[ProcessedPage]) -&gt; Result&lt;GeneratedSearch&gt;</code></td><td>Create search index from processed pages</td></tr>
+<tr><td><code>write_search_index(generated: &amp;GeneratedSearch, output_dir: &amp;Path, dry_run: bool) -&gt; Result&lt;()&gt;</code></td><td>Write <code>search_index.bin</code> to output</td></tr>
+</tbody></table>
+</div>
+<h3 id="buildpipelinewasm-module"><a class="header" href="#buildpipelinewasm-module"><code>build::pipeline::wasm</code> Module</a></h3>
+<p>The WASM client is compiled at Cargo build time by <code>taxus-generator/build.rs</code> and embedded into the binary. At site build time, the embedded files are written to the output directory.</p>
+<h4 id="wasmbuildoutput"><a class="header" href="#wasmbuildoutput"><code>WasmBuildOutput</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct WasmBuildOutput {
+    pub js_path: PathBuf,
+    pub wasm_path: PathBuf,
+    pub wasm_size: u64,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Result of writing the embedded WASM client files.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>build_wasm_client(output_dir: &amp;Path) -&gt; Result&lt;WasmBuildOutput&gt;</code></td><td>Write embedded <code>client.js</code> and <code>client_bg.wasm</code> to <code>dist/wasm/</code></td></tr>
+</tbody></table>
+</div>
+<h3 id="buildreport"><a class="header" href="#buildreport"><code>BuildReport</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct BuildReport {
+    pub output_dir: PathBuf,
+    pub pages_rendered: usize,
+    pub sections_rendered: usize,
+    pub drafts_skipped: usize,
+    pub sitemap_urls: usize,
+    pub assets: AssetReport,
+    pub duration: Duration,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>print_summary(&amp;self)</code></td><td>Print summary</td></tr>
+<tr><td><code>has_warnings(&amp;self) -&gt; bool</code></td><td>Check for warnings</td></tr>
+</tbody></table>
+</div>
+<h3 id="processedpage-1"><a class="header" href="#processedpage-1"><code>ProcessedPage</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ProcessedPage {
+    pub route: RouteInfo,
+    pub page: Page,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="renderedpage-1"><a class="header" href="#renderedpage-1"><code>RenderedPage</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RenderedPage {
+    pub route: RouteInfo,
+    pub html: String,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="assets-module"><a class="header" href="#assets-module"><code>assets</code> Module</a></h2>
+<h3 id="assetprocessor-trait"><a class="header" href="#assetprocessor-trait"><code>AssetProcessor</code> Trait</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait AssetProcessor: Send + Sync {
+    fn process(&amp;self, src: &amp;Path, dest: &amp;Path) -&gt; Result&lt;AssetReport&gt;;
+    fn handles(&amp;self, path: &amp;Path) -&gt; bool;
+    fn name(&amp;self) -&gt; &amp;'static str;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="scssprocessor"><a class="header" href="#scssprocessor"><code>ScssProcessor</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ScssProcessor {
+    include_paths: Vec&lt;PathBuf&gt;,
+    minify: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create with defaults</td></tr>
+<tr><td><code>with_include_paths(paths: Vec&lt;PathBuf&gt;) -&gt; Self</code></td><td>Set include paths</td></tr>
+<tr><td><code>with_minify(bool) -&gt; Self</code></td><td>Set minify</td></tr>
+</tbody></table>
+</div>
+<h3 id="staticcopier"><a class="header" href="#staticcopier"><code>StaticCopier</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct StaticCopier {
+    exclude_patterns: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create with defaults</td></tr>
+<tr><td><code>with_exclusions(patterns: Vec&lt;String&gt;) -&gt; Self</code></td><td>Set exclusions</td></tr>
+</tbody></table>
+</div>
+<h3 id="assetreport"><a class="header" href="#assetreport"><code>AssetReport</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct AssetReport {
+    pub files_processed: usize,
+    pub files_skipped: usize,
+    pub errors: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>merge(&amp;mut self, other: AssetReport)</code></td><td>Merge reports</td></tr>
+</tbody></table>
+</div>
+<h2 id="init-module"><a class="header" href="#init-module"><code>init</code> Module</a></h2>
+<h3 id="initoptions"><a class="header" href="#initoptions"><code>InitOptions</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct InitOptions {
+    pub name: String,
+    pub base_url: String,
+    pub force: bool,
+    pub islands: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(name, base_url) -&gt; Self</code></td><td>Create options</td></tr>
+<tr><td><code>with_force(bool) -&gt; Self</code></td><td>Set force</td></tr>
+<tr><td><code>with_islands(bool) -&gt; Self</code></td><td>Set islands</td></tr>
+</tbody></table>
+</div>
+<h3 id="initscaffolder"><a class="header" href="#initscaffolder"><code>InitScaffolder</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct InitScaffolder { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(options: InitOptions) -&gt; Self</code></td><td>Create scaffolder</td></tr>
+<tr><td><code>scaffold(&amp;self, path: &amp;Path) -&gt; Result&lt;InitReport&gt;</code></td><td>Scaffold site</td></tr>
+</tbody></table>
+</div>
+<h3 id="initreport"><a class="header" href="#initreport"><code>InitReport</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct InitReport {
+    pub path: PathBuf,
+    pub directories_created: usize,
+    pub files_created: usize,
+    pub created_dirs: Vec&lt;PathBuf&gt;,
+    pub created_files: Vec&lt;PathBuf&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="serve-module"><a class="header" href="#serve-module"><code>serve</code> Module</a></h2>
+<h3 id="devserver"><a class="header" href="#devserver"><code>DevServer</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct DevServer { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(config: DevServerConfig) -&gt; Self</code></td><td>Create server</td></tr>
+<tr><td><code>run(&amp;self) -&gt; Result&lt;()&gt;</code></td><td>Start server (async)</td></tr>
+</tbody></table>
+</div>
+<h3 id="devserverconfig"><a class="header" href="#devserverconfig"><code>DevServerConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct DevServerConfig {
+    pub site_dir: PathBuf,
+    pub port: u16,
+    pub output_dir: PathBuf,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>default() -&gt; Self</code></td><td>Create with defaults</td></tr>
+<tr><td><code>with_port(self, port: u16) -&gt; Self</code></td><td>Set port</td></tr>
+<tr><td><code>with_output_dir(self, dir: PathBuf) -&gt; Self</code></td><td>Set output dir</td></tr>
+<tr><td><code>with_site_dir(self, dir: PathBuf) -&gt; Self</code></td><td>Set site dir</td></tr>
+</tbody></table>
+</div>
+<h2 id="error-module"><a class="header" href="#error-module"><code>error</code> Module</a></h2>
+<h3 id="generatorerror"><a class="header" href="#generatorerror"><code>GeneratorError</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum GeneratorError {
+    Config(Box&lt;ConfigError&gt;),
+    Content(Box&lt;ContentError&gt;),
+    Template(Box&lt;TemplateError&gt;),
+    Asset(Box&lt;AssetError&gt;),
+    Route(Box&lt;RouteError&gt;),
+    Init(Box&lt;InitError&gt;),
+    Serve(Box&lt;ServeError&gt;),
+    Feed(Box&lt;FeedError&gt;),
+    Io { path: PathBuf, source: std::io::Error },
+    NoContent,
+    BrokenInternalLink { file: String, target: String },
+    PageRenderFailed { path: String, source: TemplateError },
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>ConfigError</code></td><td>Configuration errors (not found, parse, missing field)</td></tr>
+<tr><td><code>ContentError</code></td><td>Content errors (not found, frontmatter, IO)</td></tr>
+<tr><td><code>TemplateError</code></td><td>Template errors (not found, render, syntax)</td></tr>
+<tr><td><code>AssetError</code></td><td>Asset errors (SCSS, copy)</td></tr>
+<tr><td><code>RouteError</code></td><td>Route errors (not found, duplicate, invalid)</td></tr>
+<tr><td><code>FeedError</code></td><td>Feed generation errors</td></tr>
+<tr><td><code>ImageError</code></td><td>Image processing errors</td></tr>
+<tr><td><code>InitError</code></td><td>Initialization errors (cancelled)</td></tr>
+<tr><td><code>ServeError</code></td><td>Server errors (port in use, WebSocket)</td></tr>
+<tr><td><code>WasmError</code></td><td>WASM build errors (tool missing, build failed)</td></tr>
+</tbody></table>
+</div>
+<h3 id="result"><a class="header" href="#result"><code>Result</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub type Result&lt;T&gt; = std::result::Result&lt;T, GeneratorError&gt;;
+<span class="boring">}</span></code></pre></pre>
+<h2 id="tracing-module"><a class="header" href="#tracing-module"><code>tracing</code> Module</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>init()</code></td><td>Initialize with <code>RUST_LOG</code> env var</td></tr>
+<tr><td><code>init_with_level(level: &amp;str)</code></td><td>Initialize with specific level</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Configuration - Taxus Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for the Taxus Static Site Generator">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="getting-started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="configuration.html" class="active"><strong aria-hidden="true">4.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="content.html"><strong aria-hidden="true">5.</strong> Content</a></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">6.</strong> Templates</a></li><li class="chapter-item expanded "><a href="images.html"><strong aria-hidden="true">7.</strong> Images</a></li><li class="chapter-item expanded "><a href="syntax-highlighting.html"><strong aria-hidden="true">8.</strong> Syntax Highlighting</a></li><li class="chapter-item expanded "><a href="islands.html"><strong aria-hidden="true">9.</strong> Islands Architecture</a></li><li class="chapter-item expanded "><a href="search.html"><strong aria-hidden="true">10.</strong> Search</a></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">11.</strong> CLI Reference</a></li><li class="chapter-item expanded "><a href="serve.html"><strong aria-hidden="true">12.</strong> Development Server</a></li><li class="chapter-item expanded "><a href="styling.html"><strong aria-hidden="true">13.</strong> Styling</a></li><li class="chapter-item expanded "><a href="development.html"><strong aria-hidden="true">14.</strong> Development</a></li><li class="chapter-item expanded "><a href="api-reference.html"><strong aria-hidden="true">15.</strong> API Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Taxus Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus/edit/trunk/docs/src/configuration.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<p>Taxus uses a <code>site.toml</code> configuration file to define site settings and build options.</p>
+<h2 id="configuration-file"><a class="header" href="#configuration-file">Configuration File</a></h2>
+<p>Create a <code>site.toml</code> file in your project root:</p>
+<pre><code class="language-toml">[site]
+name = "My Site"
+base_url = "https://example.com"
+description = "A description of my site"
+author = "Your Name"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+
+[feed]
+rss_enabled = true
+atom_enabled = false
+limit = 20
+full_content = false
+</code></pre>
+<h2 id="configuration-sections"><a class="header" href="#configuration-sections">Configuration Sections</a></h2>
+<h3 id="site-section"><a class="header" href="#site-section"><code>[site]</code> Section</a></h3>
+<p>Site metadata and information.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Site name/title</td></tr>
+<tr><td><code>base_url</code></td><td>string</td><td>Yes</td><td>Base URL for the site (used for absolute URLs)</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>No</td><td>Site description for SEO</td></tr>
+<tr><td><code>author</code></td><td>string</td><td>No</td><td>Site author name</td></tr>
+</tbody></table>
+</div>
+<h3 id="build-section"><a class="header" href="#build-section"><code>[build]</code> Section</a></h3>
+<p>Build configuration options. All fields have defaults.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>content_dir</code></td><td>string</td><td><code>"content"</code></td><td>Directory containing Markdown content</td></tr>
+<tr><td><code>output_dir</code></td><td>string</td><td><code>"dist"</code></td><td>Output directory for generated files</td></tr>
+<tr><td><code>static_dir</code></td><td>string</td><td><code>"static"</code></td><td>Directory containing static assets</td></tr>
+<tr><td><code>styles_dir</code></td><td>string</td><td><code>"styles"</code></td><td>Directory containing SCSS stylesheets</td></tr>
+<tr><td><code>templates_dir</code></td><td>string</td><td><code>"templates"</code></td><td>Directory containing HTML templates</td></tr>
+</tbody></table>
+</div>
+<h3 id="feed-section"><a class="header" href="#feed-section"><code>[feed]</code> Section</a></h3>
+<p>RSS/Atom feed configuration for content syndication.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>rss_enabled</code></td><td>bool</td><td><code>true</code></td><td>Enable RSS 2.0 feed generation</td></tr>
+<tr><td><code>atom_enabled</code></td><td>bool</td><td><code>false</code></td><td>Enable Atom feed generation</td></tr>
+<tr><td><code>limit</code></td><td>number</td><td><code>0</code></td><td>Maximum entries in feed (0 = all)</td></tr>
+<tr><td><code>full_content</code></td><td>bool</td><td><code>false</code></td><td>Include full content vs summary</td></tr>
+<tr><td><code>title</code></td><td>string</td><td><code>None</code></td><td>Custom feed title (defaults to site name)</td></tr>
+<tr><td><code>rss_path</code></td><td>string</td><td><code>None</code></td><td>RSS feed output path (default: <code>rss.xml</code>)</td></tr>
+<tr><td><code>atom_path</code></td><td>string</td><td><code>None</code></td><td>Atom feed output path (default: <code>atom.xml</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="highlight-section"><a class="header" href="#highlight-section"><code>[highlight]</code> Section</a></h3>
+<p>Syntax highlighting configuration for code blocks.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>Enable tree-sitter syntax highlighting</td></tr>
+<tr><td><code>class_prefix</code></td><td>string</td><td><code>"hl-"</code></td><td>CSS class prefix for highlight spans</td></tr>
+</tbody></table>
+</div>
+<p>See <a href="./syntax-highlighting.html">Syntax Highlighting</a> for details on styling and supported languages.</p>
+<h3 id="images-section"><a class="header" href="#images-section"><code>[images]</code> Section</a></h3>
+<p>Responsive image processing configuration for hero images.</p>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>widths</code></td><td>array</td><td><code>[400, 800, 1200]</code></td><td>Responsive breakpoint widths in pixels</td></tr>
+<tr><td><code>quality</code></td><td>number</td><td><code>80</code></td><td>Output quality (1–100)</td></tr>
+<tr><td><code>format</code></td><td>string</td><td><code>"webp"</code></td><td>Output format: <code>"webp"</code>, <code>"jpeg"</code>, or <code>"png"</code></td></tr>
+<tr><td><code>output_dir</code></td><td>string</td><td><code>"images"</code></td><td>Subdirectory within <code>dist/</code> for processed images</td></tr>
+</tbody></table>
+</div>
+<p>See <a href="./images.html">Images</a> for details on hero images and template usage.</p>
+<h2 id="minimal-configuration"><a class="header" href="#minimal-configuration">Minimal Configuration</a></h2>
+<p>The minimal required configuration:</p>
+<pre><code class="language-toml">[site]
+name = "My Site"
+base_url = "https://example.com"
+</code></pre>
+<p>All <code>[build]</code> and <code>[feed]</code> settings use their default values.</p>
+<h2 id="full-configuration-example"><a class="header" href="#full-configuration-example">Full Configuration Example</a></h2>
+<pre><code class="language-toml">[site]
+name = "My Blog"
+base_url = "https://example.com"
+description = "A blog about Rust and web development"
+author = "Jane Doe"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+
+[feed]
+rss_enabled = true
+atom_enabled = true
+limit = 20
+full_content = false
+title = "My Blog Feed"
+rss_path = "rss.xml"
+atom_path = "atom.xml"
+
+[highlight]
+enabled = true
+class_prefix = "hl-"
+
+[images]
+widths = [400, 800, 1200]
+quality = 80
+format = "webp"
+output_dir = "images"
+</code></pre>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<p>Configuration is validated when loaded:</p>
+<ul>
+<li><code>site.name</code> must not be empty</li>
+<li><code>site.base_url</code> must not be empty</li>
+</ul>
+<h2 id="feed-urls"><a class="header" href="#feed-urls">Feed URLs</a></h2>
+<p>After generation, feeds are available at:</p>
+<ul>
+<li>RSS: <code>https://example.com/rss.xml</code> (or custom <code>rss_path</code>)</li>
+<li>Atom: <code>https://example.com/atom.xml</code> (or custom <code>atom_path</code>)</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="architecture.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="content.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="architecture.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="content.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

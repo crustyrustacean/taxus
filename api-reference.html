@@ -1,0 +1,840 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>API Reference - Taxus Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for the Taxus Static Site Generator">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="getting-started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">4.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="content.html"><strong aria-hidden="true">5.</strong> Content</a></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">6.</strong> Templates</a></li><li class="chapter-item expanded "><a href="images.html"><strong aria-hidden="true">7.</strong> Images</a></li><li class="chapter-item expanded "><a href="syntax-highlighting.html"><strong aria-hidden="true">8.</strong> Syntax Highlighting</a></li><li class="chapter-item expanded "><a href="islands.html"><strong aria-hidden="true">9.</strong> Islands Architecture</a></li><li class="chapter-item expanded "><a href="search.html"><strong aria-hidden="true">10.</strong> Search</a></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">11.</strong> CLI Reference</a></li><li class="chapter-item expanded "><a href="serve.html"><strong aria-hidden="true">12.</strong> Development Server</a></li><li class="chapter-item expanded "><a href="styling.html"><strong aria-hidden="true">13.</strong> Styling</a></li><li class="chapter-item expanded "><a href="development.html"><strong aria-hidden="true">14.</strong> Development</a></li><li class="chapter-item expanded "><a href="api-reference.html" class="active"><strong aria-hidden="true">15.</strong> API Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Taxus Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus/edit/trunk/docs/src/api-reference.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="api-reference"><a class="header" href="#api-reference">API Reference</a></h1>
+<p>This page documents the public API of the <code>taxus_lib</code> generator library and <code>taxus-common</code> shared library.</p>
+<h2 id="taxus-common-crate"><a class="header" href="#taxus-common-crate"><code>taxus-common</code> Crate</a></h2>
+<h3 id="search-module"><a class="header" href="#search-module"><code>search</code> Module</a></h3>
+<p>The search module provides full-text search with TF-IDF ranking.</p>
+<h4 id="searchdocument"><a class="header" href="#searchdocument"><code>SearchDocument</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchDocument {
+    pub id: u32,
+    pub title: String,
+    pub path: String,
+    pub summary: String,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Metadata record for each indexed page.</p>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(id, title, path, summary, tags, categories) -&gt; Self</code></td><td>Create a new document</td></tr>
+</tbody></table>
+</div>
+<h4 id="searchindex"><a class="header" href="#searchindex"><code>SearchIndex</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SearchIndex {
+    pub documents: Vec&lt;SearchDocument&gt;,
+    pub index: HashMap&lt;String, Vec&lt;(u32, f32)&gt;&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The main search index structure. The <code>index</code> maps word stems to <code>(document_id, tfidf_score)</code> pairs.</p>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create empty index</td></tr>
+<tr><td><code>add_document(&amp;mut self, doc: SearchDocument, content: &amp;str)</code></td><td>Add a document with its content for indexing</td></tr>
+<tr><td><code>search(&amp;self, query: &amp;str) -&gt; Vec&lt;&amp;SearchDocument&gt;</code></td><td>Search and return ranked results</td></tr>
+<tr><td><code>finalize(&amp;mut self)</code></td><td>Apply IDF weighting (call after all documents added)</td></tr>
+<tr><td><code>to_bytes(&amp;self) -&gt; Vec&lt;u8&gt;</code></td><td>Serialize to binary (postcard format)</td></tr>
+<tr><td><code>from_bytes(bytes: &amp;[u8]) -&gt; Self</code></td><td>Deserialize from binary</td></tr>
+</tbody></table>
+</div>
+<h4 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn tokenize(text: &amp;str) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Split text into lowercase tokens. Filters words shorter than 3 characters.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn stem(tokens: &amp;[String]) -&gt; Vec&lt;String&gt;
+<span class="boring">}</span></code></pre></pre>
+<p>Apply English Porter stemmer to tokens.</p>
+<hr />
+<h2 id="taxus-generator-crate"><a class="header" href="#taxus-generator-crate"><code>taxus-generator</code> Crate</a></h2>
+<h2 id="re-exports"><a class="header" href="#re-exports">Re-exports</a></h2>
+<p>The library re-exports commonly used types from <code>lib.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Configuration
+pub use config::{BuildConfig, SiteConfig, SiteMeta};
+
+// Content
+pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+
+// Templates
+pub use templates::{
+    PageContext, SectionContext, SiteContext, TemplateContext,
+    TemplateRenderer, TeraRenderer,
+};
+
+// Assets
+pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+
+// Build
+pub use build::{BuildReport, ProcessedPage, RenderedPage, SiteBuilder};
+
+// Feed
+pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
+
+// Init
+pub use init::{InitOptions, InitReport, InitScaffolder};
+
+// Routes
+pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
+
+// Errors
+pub use error::{
+    AssetError, ContentError, FeedError, GeneratorError, InitError,
+    Result, RouteError, TemplateError,
+};
+<span class="boring">}</span></code></pre></pre>
+<h2 id="config-module"><a class="header" href="#config-module"><code>config</code> Module</a></h2>
+<h3 id="siteconfig"><a class="header" href="#siteconfig"><code>SiteConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteConfig {
+    pub site: SiteMeta,
+    pub build: BuildConfig,
+    pub feed: FeedConfig,
+    pub base_dir: PathBuf,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_file(path: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from file</td></tr>
+<tr><td><code>from_dir(dir: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from directory (looks for <code>site.toml</code>)</td></tr>
+<tr><td><code>new(name, base_url) -&gt; Self</code></td><td>Create programmatically</td></tr>
+<tr><td><code>validate(&amp;self) -&gt; Result&lt;()&gt;</code></td><td>Validate required fields</td></tr>
+</tbody></table>
+</div>
+<h3 id="sitemeta"><a class="header" href="#sitemeta"><code>SiteMeta</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteMeta {
+    pub name: String,
+    pub base_url: String,
+    pub description: Option&lt;String&gt;,
+    pub author: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="buildconfig"><a class="header" href="#buildconfig"><code>BuildConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct BuildConfig {
+    pub content_dir: PathBuf,    // default: "content"
+    pub output_dir: PathBuf,     // default: "dist"
+    pub static_dir: PathBuf,     // default: "static"
+    pub styles_dir: PathBuf,     // default: "styles"
+    pub templates_dir: PathBuf,  // default: "templates"
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="feedconfig"><a class="header" href="#feedconfig"><code>FeedConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct FeedConfig {
+    pub rss_enabled: bool,       // default: true
+    pub atom_enabled: bool,      // default: false
+    pub limit: usize,            // default: 0 (all)
+    pub full_content: bool,      // default: false
+    pub title: Option&lt;String&gt;,
+    pub rss_path: Option&lt;String&gt;,
+    pub atom_path: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="content-module"><a class="header" href="#content-module"><code>content</code> Module</a></h2>
+<h3 id="frontmatter"><a class="header" href="#frontmatter"><code>Frontmatter</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Frontmatter {
+    pub title: String,
+    pub description: Option&lt;String&gt;,
+    pub date: Option&lt;NaiveDate&gt;,
+    pub updated: Option&lt;NaiveDate&gt;,
+    pub template: Option&lt;String&gt;,
+    pub draft: bool,
+    pub summary: Option&lt;String&gt;,
+    pub slug: Option&lt;String&gt;,
+    pub aliases: Vec&lt;String&gt;,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+    pub series: Option&lt;String&gt;,
+    pub extra: Option&lt;toml::Value&gt;,
+    pub sort_by: SortBy,           // default: Date
+    pub paginate_by: usize,
+    pub paginate_template: Option&lt;String&gt;,
+    pub weight: i32,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_str(s: &amp;str) -&gt; Result&lt;Self, toml::de::Error&gt;</code></td><td>Parse from TOML</td></tr>
+<tr><td><code>template(&amp;self) -&gt; &amp;str</code></td><td>Get template (default: <code>"page.html"</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="page"><a class="header" href="#page"><code>Page</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Page {
+    pub frontmatter: Frontmatter,
+    pub path: String,
+    pub source: PathBuf,
+    pub raw_content: String,
+    pub content: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_file(path: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from Markdown file</td></tr>
+<tr><td><code>from_str(content: &amp;str, source: &amp;str) -&gt; Result&lt;Self&gt;</code></td><td>Parse from string</td></tr>
+<tr><td><code>is_draft(&amp;self) -&gt; bool</code></td><td>Check if draft</td></tr>
+<tr><td><code>url_path(&amp;self) -&gt; String</code></td><td>Get URL path</td></tr>
+<tr><td><code>aliases(&amp;self) -&gt; &amp;Vec&lt;String&gt;</code></td><td>Get redirect aliases</td></tr>
+</tbody></table>
+</div>
+<h3 id="section"><a class="header" href="#section"><code>Section</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Section {
+    pub frontmatter: Frontmatter,
+    pub path: String,
+    pub source: PathBuf,
+    pub content: Option&lt;String&gt;,
+    pub pages: Vec&lt;Page&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_dir(dir: P) -&gt; Result&lt;Self&gt;</code></td><td>Load from directory</td></tr>
+<tr><td><code>add_page(&amp;mut self, page: Page)</code></td><td>Add a page</td></tr>
+<tr><td><code>sort_by_date(&amp;mut self)</code></td><td>Sort by date (newest first)</td></tr>
+</tbody></table>
+</div>
+<h3 id="contentsource-trait"><a class="header" href="#contentsource-trait"><code>ContentSource</code> Trait</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait ContentSource: Send + Sync {
+    fn load(&amp;self, path: &amp;Path) -&gt; Result&lt;String&gt;;
+    fn exists(&amp;self, path: &amp;Path) -&gt; bool;
+    fn list(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="filesystemcontentsource"><a class="header" href="#filesystemcontentsource"><code>FilesystemContentSource</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct FilesystemContentSource { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(root: P) -&gt; Self</code></td><td>Create with root directory</td></tr>
+</tbody></table>
+</div>
+<h2 id="routes-module"><a class="header" href="#routes-module"><code>routes</code> Module</a></h2>
+<h3 id="routekind"><a class="header" href="#routekind"><code>RouteKind</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum RouteKind {
+    Page,
+    Section,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="routeinfo"><a class="header" href="#routeinfo"><code>RouteInfo</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RouteInfo {
+    pub path: String,
+    pub content_file: PathBuf,
+    pub output_file: PathBuf,
+    pub kind: RouteKind,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="routeregistry"><a class="header" href="#routeregistry"><code>RouteRegistry</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RouteRegistry { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create empty registry</td></tr>
+<tr><td><code>register(&amp;mut self, route: RouteInfo)</code></td><td>Register a route</td></tr>
+<tr><td><code>get(&amp;self, path: &amp;str) -&gt; Option&lt;&amp;RouteInfo&gt;</code></td><td>Get by path</td></tr>
+<tr><td><code>contains(&amp;self, path: &amp;str) -&gt; bool</code></td><td>Check existence</td></tr>
+<tr><td><code>len(&amp;self) -&gt; usize</code></td><td>Count routes</td></tr>
+<tr><td><code>iter(&amp;self) -&gt; impl Iterator&lt;Item = &amp;RouteInfo&gt;</code></td><td>Iterate all</td></tr>
+<tr><td><code>pages(&amp;self) -&gt; impl Iterator&lt;Item = &amp;RouteInfo&gt;</code></td><td>Iterate pages</td></tr>
+<tr><td><code>sections(&amp;self) -&gt; impl Iterator&lt;Item = &amp;RouteInfo&gt;</code></td><td>Iterate sections</td></tr>
+</tbody></table>
+</div>
+<h3 id="routediscovery"><a class="header" href="#routediscovery"><code>RouteDiscovery</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RouteDiscovery { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(content_dir: P) -&gt; Self</code></td><td>Create with content directory</td></tr>
+<tr><td><code>discover(&amp;self) -&gt; Result&lt;RouteRegistry&gt;</code></td><td>Discover all routes</td></tr>
+</tbody></table>
+</div>
+<h2 id="templates-module"><a class="header" href="#templates-module"><code>templates</code> Module</a></h2>
+<h3 id="templaterenderer-trait"><a class="header" href="#templaterenderer-trait"><code>TemplateRenderer</code> Trait</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait TemplateRenderer: Send + Sync {
+    fn render(&amp;self, template: &amp;str, context: &amp;TemplateContext) -&gt; Result&lt;String&gt;;
+    fn register_template(&amp;mut self, name: &amp;str, content: &amp;str) -&gt; Result&lt;()&gt;;
+    fn has_template(&amp;self, name: &amp;str) -&gt; bool;
+    fn load_templates(&amp;mut self, dir: &amp;Path) -&gt; Result&lt;()&gt;;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="terarenderer"><a class="header" href="#terarenderer"><code>TeraRenderer</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct TeraRenderer { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Result&lt;Self&gt;</code></td><td>Create empty renderer</td></tr>
+<tr><td><code>from_dir(dir: P) -&gt; Result&lt;Self&gt;</code></td><td>Create and load from directory</td></tr>
+</tbody></table>
+</div>
+<h3 id="templatecontext"><a class="header" href="#templatecontext"><code>TemplateContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct TemplateContext {
+    pub page: Option&lt;PageContext&gt;,
+    pub section: Option&lt;SectionContext&gt;,
+    pub site: SiteContext,
+    pub now: NowContext,
+    pub extra: HashMap&lt;String, serde_json::Value&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(site: SiteContext) -&gt; Self</code></td><td>Create with site</td></tr>
+<tr><td><code>with_page(self, page: PageContext) -&gt; Self</code></td><td>Add page</td></tr>
+<tr><td><code>with_section(self, section: SectionContext) -&gt; Self</code></td><td>Add section</td></tr>
+<tr><td><code>with_extra(self, extra: HashMap) -&gt; Self</code></td><td>Add extra</td></tr>
+</tbody></table>
+</div>
+<h3 id="pagecontext"><a class="header" href="#pagecontext"><code>PageContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct PageContext {
+    pub title: String,
+    pub description: Option&lt;String&gt;,
+    pub path: String,
+    pub permalink: String,
+    pub content: String,
+    pub raw_content: String,
+    pub date: Option&lt;String&gt;,
+    pub draft: bool,
+    pub summary: String,
+    pub word_count: usize,
+    pub reading_time: usize,
+    pub tags: Vec&lt;String&gt;,
+    pub categories: Vec&lt;String&gt;,
+    pub series: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="sectioncontext"><a class="header" href="#sectioncontext"><code>SectionContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SectionContext {
+    pub title: String,
+    pub description: Option&lt;String&gt;,
+    pub path: String,
+    pub content: Option&lt;String&gt;,
+    pub pages: Vec&lt;PageContext&gt;,
+    pub pagination: Option&lt;PaginationContext&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="paginationcontext"><a class="header" href="#paginationcontext"><code>PaginationContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct PaginationContext {
+    pub current: usize,
+    pub total: usize,
+    pub per_page: usize,
+    pub total_items: usize,
+    pub prev: Option&lt;String&gt;,
+    pub next: Option&lt;String&gt;,
+    pub first: String,
+    pub last: String,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="sitecontext"><a class="header" href="#sitecontext"><code>SiteContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteContext {
+    pub name: String,
+    pub base_url: String,
+    pub description: Option&lt;String&gt;,
+    pub author: Option&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="nowcontext"><a class="header" href="#nowcontext"><code>NowContext</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct NowContext {
+    pub year: i32,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="build-module"><a class="header" href="#build-module"><code>build</code> Module</a></h2>
+<h3 id="sitebuilder"><a class="header" href="#sitebuilder"><code>SiteBuilder</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SiteBuilder {
+    config: SiteConfig,
+    dry_run: bool,
+    verbose: bool,
+    include_drafts: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>from_dir(dir: &amp;Path) -&gt; Result&lt;Self&gt;</code></td><td>Create from directory</td></tr>
+<tr><td><code>new(config: SiteConfig) -&gt; Self</code></td><td>Create from config</td></tr>
+<tr><td><code>dry_run(self, bool) -&gt; Self</code></td><td>Set dry-run mode</td></tr>
+<tr><td><code>verbose(self, bool) -&gt; Self</code></td><td>Set verbose mode</td></tr>
+<tr><td><code>include_drafts(self, bool) -&gt; Self</code></td><td>Include drafts</td></tr>
+<tr><td><code>build(self) -&gt; Result&lt;BuildReport&gt;</code></td><td>Run build pipeline</td></tr>
+<tr><td><code>clean(self) -&gt; Result&lt;()&gt;</code></td><td>Clean output directory</td></tr>
+</tbody></table>
+</div>
+<h3 id="buildpipelinesearch-module"><a class="header" href="#buildpipelinesearch-module"><code>build::pipeline::search</code> Module</a></h3>
+<h4 id="generatedsearch"><a class="header" href="#generatedsearch"><code>GeneratedSearch</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct GeneratedSearch {
+    pub search_index: Vec&lt;u8&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Container for the serialized search index.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>generate_search(pages: &amp;[ProcessedPage]) -&gt; Result&lt;GeneratedSearch&gt;</code></td><td>Create search index from processed pages</td></tr>
+<tr><td><code>write_search_index(generated: &amp;GeneratedSearch, output_dir: &amp;Path, dry_run: bool) -&gt; Result&lt;()&gt;</code></td><td>Write <code>search_index.bin</code> to output</td></tr>
+</tbody></table>
+</div>
+<h3 id="buildpipelinewasm-module"><a class="header" href="#buildpipelinewasm-module"><code>build::pipeline::wasm</code> Module</a></h3>
+<p>The WASM client is compiled at Cargo build time by <code>taxus-generator/build.rs</code> and embedded into the binary. At site build time, the embedded files are written to the output directory.</p>
+<h4 id="wasmbuildoutput"><a class="header" href="#wasmbuildoutput"><code>WasmBuildOutput</code></a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct WasmBuildOutput {
+    pub js_path: PathBuf,
+    pub wasm_path: PathBuf,
+    pub wasm_size: u64,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Result of writing the embedded WASM client files.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>build_wasm_client(output_dir: &amp;Path) -&gt; Result&lt;WasmBuildOutput&gt;</code></td><td>Write embedded <code>client.js</code> and <code>client_bg.wasm</code> to <code>dist/wasm/</code></td></tr>
+</tbody></table>
+</div>
+<h3 id="buildreport"><a class="header" href="#buildreport"><code>BuildReport</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct BuildReport {
+    pub output_dir: PathBuf,
+    pub pages_rendered: usize,
+    pub sections_rendered: usize,
+    pub drafts_skipped: usize,
+    pub sitemap_urls: usize,
+    pub assets: AssetReport,
+    pub duration: Duration,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>print_summary(&amp;self)</code></td><td>Print summary</td></tr>
+<tr><td><code>has_warnings(&amp;self) -&gt; bool</code></td><td>Check for warnings</td></tr>
+</tbody></table>
+</div>
+<h3 id="processedpage"><a class="header" href="#processedpage"><code>ProcessedPage</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ProcessedPage {
+    pub route: RouteInfo,
+    pub page: Page,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="renderedpage"><a class="header" href="#renderedpage"><code>RenderedPage</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct RenderedPage {
+    pub route: RouteInfo,
+    pub html: String,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="assets-module"><a class="header" href="#assets-module"><code>assets</code> Module</a></h2>
+<h3 id="assetprocessor-trait"><a class="header" href="#assetprocessor-trait"><code>AssetProcessor</code> Trait</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait AssetProcessor: Send + Sync {
+    fn process(&amp;self, src: &amp;Path, dest: &amp;Path) -&gt; Result&lt;AssetReport&gt;;
+    fn handles(&amp;self, path: &amp;Path) -&gt; bool;
+    fn name(&amp;self) -&gt; &amp;'static str;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="scssprocessor"><a class="header" href="#scssprocessor"><code>ScssProcessor</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ScssProcessor {
+    include_paths: Vec&lt;PathBuf&gt;,
+    minify: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create with defaults</td></tr>
+<tr><td><code>with_include_paths(paths: Vec&lt;PathBuf&gt;) -&gt; Self</code></td><td>Set include paths</td></tr>
+<tr><td><code>with_minify(bool) -&gt; Self</code></td><td>Set minify</td></tr>
+</tbody></table>
+</div>
+<h3 id="staticcopier"><a class="header" href="#staticcopier"><code>StaticCopier</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct StaticCopier {
+    exclude_patterns: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new() -&gt; Self</code></td><td>Create with defaults</td></tr>
+<tr><td><code>with_exclusions(patterns: Vec&lt;String&gt;) -&gt; Self</code></td><td>Set exclusions</td></tr>
+</tbody></table>
+</div>
+<h3 id="assetreport"><a class="header" href="#assetreport"><code>AssetReport</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct AssetReport {
+    pub files_processed: usize,
+    pub files_skipped: usize,
+    pub errors: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>merge(&amp;mut self, other: AssetReport)</code></td><td>Merge reports</td></tr>
+</tbody></table>
+</div>
+<h2 id="init-module"><a class="header" href="#init-module"><code>init</code> Module</a></h2>
+<h3 id="initoptions"><a class="header" href="#initoptions"><code>InitOptions</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct InitOptions {
+    pub name: String,
+    pub base_url: String,
+    pub force: bool,
+    pub islands: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(name, base_url) -&gt; Self</code></td><td>Create options</td></tr>
+<tr><td><code>with_force(bool) -&gt; Self</code></td><td>Set force</td></tr>
+<tr><td><code>with_islands(bool) -&gt; Self</code></td><td>Set islands</td></tr>
+</tbody></table>
+</div>
+<h3 id="initscaffolder"><a class="header" href="#initscaffolder"><code>InitScaffolder</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct InitScaffolder { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(options: InitOptions) -&gt; Self</code></td><td>Create scaffolder</td></tr>
+<tr><td><code>scaffold(&amp;self, path: &amp;Path) -&gt; Result&lt;InitReport&gt;</code></td><td>Scaffold site</td></tr>
+</tbody></table>
+</div>
+<h3 id="initreport"><a class="header" href="#initreport"><code>InitReport</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct InitReport {
+    pub path: PathBuf,
+    pub directories_created: usize,
+    pub files_created: usize,
+    pub created_dirs: Vec&lt;PathBuf&gt;,
+    pub created_files: Vec&lt;PathBuf&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="serve-module"><a class="header" href="#serve-module"><code>serve</code> Module</a></h2>
+<h3 id="devserver"><a class="header" href="#devserver"><code>DevServer</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct DevServer { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>new(config: DevServerConfig) -&gt; Self</code></td><td>Create server</td></tr>
+<tr><td><code>run(&amp;self) -&gt; Result&lt;()&gt;</code></td><td>Start server (async)</td></tr>
+</tbody></table>
+</div>
+<h3 id="devserverconfig"><a class="header" href="#devserverconfig"><code>DevServerConfig</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct DevServerConfig {
+    pub site_dir: PathBuf,
+    pub port: u16,
+    pub output_dir: PathBuf,
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>default() -&gt; Self</code></td><td>Create with defaults</td></tr>
+<tr><td><code>with_port(self, port: u16) -&gt; Self</code></td><td>Set port</td></tr>
+<tr><td><code>with_output_dir(self, dir: PathBuf) -&gt; Self</code></td><td>Set output dir</td></tr>
+<tr><td><code>with_site_dir(self, dir: PathBuf) -&gt; Self</code></td><td>Set site dir</td></tr>
+</tbody></table>
+</div>
+<h2 id="error-module"><a class="header" href="#error-module"><code>error</code> Module</a></h2>
+<h3 id="generatorerror"><a class="header" href="#generatorerror"><code>GeneratorError</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum GeneratorError {
+    Config(Box&lt;ConfigError&gt;),
+    Content(Box&lt;ContentError&gt;),
+    Template(Box&lt;TemplateError&gt;),
+    Asset(Box&lt;AssetError&gt;),
+    Route(Box&lt;RouteError&gt;),
+    Init(Box&lt;InitError&gt;),
+    Serve(Box&lt;ServeError&gt;),
+    Feed(Box&lt;FeedError&gt;),
+    Io { path: PathBuf, source: std::io::Error },
+    NoContent,
+    BrokenInternalLink { file: String, target: String },
+    PageRenderFailed { path: String, source: TemplateError },
+}
+<span class="boring">}</span></code></pre></pre>
+<div class="table-wrapper"><table><thead><tr><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>ConfigError</code></td><td>Configuration errors (not found, parse, missing field)</td></tr>
+<tr><td><code>ContentError</code></td><td>Content errors (not found, frontmatter, IO)</td></tr>
+<tr><td><code>TemplateError</code></td><td>Template errors (not found, render, syntax)</td></tr>
+<tr><td><code>AssetError</code></td><td>Asset errors (SCSS, copy)</td></tr>
+<tr><td><code>RouteError</code></td><td>Route errors (not found, duplicate, invalid)</td></tr>
+<tr><td><code>FeedError</code></td><td>Feed generation errors</td></tr>
+<tr><td><code>ImageError</code></td><td>Image processing errors</td></tr>
+<tr><td><code>InitError</code></td><td>Initialization errors (cancelled)</td></tr>
+<tr><td><code>ServeError</code></td><td>Server errors (port in use, WebSocket)</td></tr>
+<tr><td><code>WasmError</code></td><td>WASM build errors (tool missing, build failed)</td></tr>
+</tbody></table>
+</div>
+<h3 id="result"><a class="header" href="#result"><code>Result</code></a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub type Result&lt;T&gt; = std::result::Result&lt;T, GeneratorError&gt;;
+<span class="boring">}</span></code></pre></pre>
+<h2 id="tracing-module"><a class="header" href="#tracing-module"><code>tracing</code> Module</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>init()</code></td><td>Initialize with <code>RUST_LOG</code> env var</td></tr>
+<tr><td><code>init_with_level(level: &amp;str)</code></td><td>Initialize with specific level</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="development.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="development.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,472 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Islands Architecture - Taxus Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for the Taxus Static Site Generator">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="getting-started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">4.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="content.html"><strong aria-hidden="true">5.</strong> Content</a></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">6.</strong> Templates</a></li><li class="chapter-item expanded "><a href="images.html"><strong aria-hidden="true">7.</strong> Images</a></li><li class="chapter-item expanded "><a href="syntax-highlighting.html"><strong aria-hidden="true">8.</strong> Syntax Highlighting</a></li><li class="chapter-item expanded "><a href="islands.html" class="active"><strong aria-hidden="true">9.</strong> Islands Architecture</a></li><li class="chapter-item expanded "><a href="search.html"><strong aria-hidden="true">10.</strong> Search</a></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">11.</strong> CLI Reference</a></li><li class="chapter-item expanded "><a href="serve.html"><strong aria-hidden="true">12.</strong> Development Server</a></li><li class="chapter-item expanded "><a href="styling.html"><strong aria-hidden="true">13.</strong> Styling</a></li><li class="chapter-item expanded "><a href="development.html"><strong aria-hidden="true">14.</strong> Development</a></li><li class="chapter-item expanded "><a href="api-reference.html"><strong aria-hidden="true">15.</strong> API Reference</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Taxus Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://codeberg.org/crustyrustacean/taxus/edit/trunk/docs/src/islands.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="islands-architecture"><a class="header" href="#islands-architecture">Islands Architecture</a></h1>
+<p>Taxus implements the <strong>Islands Architecture</strong>: Tera templates render the static "sea" of HTML, while Yew components are pre-rendered server-side into "islands" and then hydrated by the WASM client in the browser.</p>
+<h2 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h2>
+<pre><code>BUILD TIME (generator)                BROWSER
+─────────────────────                 ───────
+1. Tera renders page shell            4. HTML is immediately visible (no JS needed)
+2. island() calls Yew SSR             5. WASM loads asynchronously
+3. SSR HTML + props JSON emitted      6. Yew hydrates mount points → interactive
+</code></pre>
+<h3 id="build-time-server-side-rendering"><a class="header" href="#build-time-server-side-rendering">Build-Time: Server-Side Rendering</a></h3>
+<p>When you use <code>{{ island(component="Counter", initial=5) | safe }}</code> in a template:</p>
+<ol>
+<li>The <code>island()</code> Tera function is called during template rendering</li>
+<li>Yew SSR renders the component to HTML</li>
+<li>The output is wrapped in a mount point div with serialized props:</li>
+</ol>
+<pre><code class="language-html">&lt;div data-island="Counter" data-props='{"initial":5}'&gt;
+  &lt;!-- Pre-rendered by Yew SSR: --&gt;
+  &lt;div class="counter"&gt;&lt;span&gt;5&lt;/span&gt;&lt;button&gt;+&lt;/button&gt;&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<h3 id="browser-time-hydration"><a class="header" href="#browser-time-hydration">Browser-Time: Hydration</a></h3>
+<p>When the page loads:</p>
+<ol>
+<li>The pre-rendered HTML is immediately visible (no JavaScript required)</li>
+<li>The WASM bundle loads asynchronously</li>
+<li>The client finds all <code>[data-island]</code> elements in the DOM</li>
+<li>For each island: deserialize <code>data-props</code>, call <code>yew::Renderer::hydrate()</code></li>
+<li>The component becomes interactive without re-rendering</li>
+</ol>
+<h2 id="two-tier-interactivity"><a class="header" href="#two-tier-interactivity">Two-Tier Interactivity</a></h2>
+<p>taxus supports two layers of interactivity:</p>
+<div class="table-wrapper"><table><thead><tr><th>Tier</th><th>Technology</th><th>Use For</th></tr></thead><tbody>
+<tr><td>1 — General</td><td><code>static/scripts.js</code> (vanilla JS)</td><td>DOM manipulation, toggles, analytics, lightweight events</td></tr>
+<tr><td>2 — Performance</td><td>Yew WASM island</td><td>Heavy computation, complex reactive state, data-intensive UI</td></tr>
+</tbody></table>
+</div>
+<p>Use vanilla JS for simple interactions; reserve Yew islands for components that benefit from the Yew component model.</p>
+<h2 id="using-islands-in-templates"><a class="header" href="#using-islands-in-templates">Using Islands in Templates</a></h2>
+<h3 id="the-island-tera-function"><a class="header" href="#the-island-tera-function">The <code>island()</code> Tera Function</a></h3>
+<p>Use the <code>island()</code> function in any <code>.html</code> template:</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block content %}
+  {{ page.content | safe }}
+  
+  &lt;h2&gt;Interactive Counter&lt;/h2&gt;
+  {{ island(component="Counter", initial=5) | safe }}
+{% endblock %}
+</code></pre>
+<p><strong>Important</strong>: Always use <code>| safe</code> after <code>island()</code> to prevent HTML escaping.</p>
+<h3 id="passing-props"><a class="header" href="#passing-props">Passing Props</a></h3>
+<p>Props are passed as keyword arguments to <code>island()</code>:</p>
+<pre><code class="language-html">{{ island(component="Counter", initial=5) | safe }}
+{{ island(component="MyWidget", label="Hello", count=3) | safe }}
+</code></pre>
+<p>The props are serialized to JSON and stored in <code>data-props</code>.</p>
+<h3 id="the-class-prop"><a class="header" href="#the-class-prop">The <code>class</code> Prop</a></h3>
+<p>All island components accept an optional <code>class</code> prop that appends custom CSS classes to the component's outer <code>&lt;div&gt;</code>:</p>
+<pre><code class="language-html">{{ island(component="SearchBox", class="docs-search") | safe }}
+</code></pre>
+<p>This renders as:</p>
+<pre><code class="language-html">&lt;div data-island="SearchBox" data-props='{"placeholder":"Search...","max_results":5,"class":"docs-search"}' class="search-box docs-search"&gt;
+  &lt;!-- component content --&gt;
+&lt;/div&gt;
+</code></pre>
+<p>This enables template authors to pass CSS styling hooks for targeting descendant elements without modifying component source.</p>
+<h2 id="writing-an-island-component"><a class="header" href="#writing-an-island-component">Writing an Island Component</a></h2>
+<p>Island components live in <code>common/src/components/</code>. Their props must implement <code>Serialize</code> and <code>Deserialize</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// common/src/components/counter.rs
+use serde::{Deserialize, Serialize};
+use yew::prelude::*;
+
+#[derive(Properties, PartialEq, Clone, Serialize, Deserialize)]
+pub struct CounterProps {
+    #[prop_or_default]
+    pub initial: i32,
+    #[prop_or_default]
+    pub class: String,
+}
+
+#[function_component(Counter)]
+pub fn counter(props: &amp;CounterProps) -&gt; Html {
+    let count = use_state(|| props.initial);
+    let on_click = {
+        let count = count.clone();
+        Callback::from(move |_| count.set(*count + 1))
+    };
+    
+    html! {
+        &lt;div class="counter"&gt;
+            &lt;span&gt;{ *count }&lt;/span&gt;
+            &lt;button onclick={on_click}&gt;{ "+" }&lt;/button&gt;
+        &lt;/div&gt;
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="export-the-component"><a class="header" href="#export-the-component">Export the Component</a></h3>
+<p>Add the component module to <code>common/src/components/mod.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub mod counter;
+<span class="boring">}</span></code></pre></pre>
+<h2 id="registering-a-new-island"><a class="header" href="#registering-a-new-island">Registering a New Island</a></h2>
+<p>Two registries must be updated in sync:</p>
+<h3 id="1-generator-ssr-registry"><a class="header" href="#1-generator-ssr-registry">1. Generator SSR Registry</a></h3>
+<p>In <code>generator/src/templates/renderer.rs</code>, add a match arm to the <code>island()</code> Tera function:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>tera.register_function("island", |args: &amp;HashMap&lt;String, tera::Value&gt;| {
+    use tera::Value;
+    
+    let component = args.get("component").and_then(Value::as_str).unwrap_or("");
+    
+    let html = match component {
+        "Counter" =&gt; {
+            use crate::build::pipeline::render_island_counter;
+            use common::components::counter::CounterProps;
+            
+            let initial = args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
+            
+            render_island_counter(CounterProps { initial })
+        }
+        "SearchBox" =&gt; {
+            use crate::build::pipeline::render_search_box;
+            use common::components::search_box::SearchBoxProps;
+            
+            let placeholder = args.get("placeholder")
+                .and_then(Value::as_str)
+                .unwrap_or("Search...")
+                .to_string();
+            let max_results = args.get("max_results")
+                .and_then(Value::as_i64)
+                .unwrap_or(5) as usize;
+            
+            render_search_box(SearchBoxProps { placeholder, max_results })
+        }
+        "MyWidget" =&gt; {
+            // Add your component here
+            use crate::build::pipeline::render_island_generic;
+            use common::components::my_widget::{MyWidget, MyWidgetProps};
+            
+            let label = args.get("label")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            let count = args.get("count")
+                .and_then(Value::as_i64)
+                .unwrap_or(0) as i32;
+            
+            render_island_generic::&lt;MyWidget&gt;(
+                MyWidgetProps { label, count },
+                "MyWidget"
+            )
+        }
+        other =&gt; format!("&lt;!-- unknown island: {other} --&gt;"),
+    };
+    
+    Ok(Value::String(html))
+});
+<span class="boring">}</span></code></pre></pre>
+<h3 id="2-client-hydration-registry"><a class="header" href="#2-client-hydration-registry">2. Client Hydration Registry</a></h3>
+<p>In <code>client/src/main.rs</code>, add a match arm to the hydration function:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn hydrate_island(name: &amp;str, el: HtmlElement, props_json: &amp;str) {
+    match name {
+        "Counter" =&gt; {
+            let props: CounterProps = serde_json::from_str(props_json)
+                .unwrap_or(CounterProps { initial: 0 });
+            yew::Renderer::&lt;Counter&gt;::with_root_and_props(el.into(), props).hydrate();
+        }
+        "SearchBox" =&gt; {
+            let props: SearchBoxProps = serde_json::from_str(props_json)
+                .unwrap_or(SearchBoxProps {
+                    placeholder: String::new(),
+                    max_results: 5,
+                });
+            yew::Renderer::&lt;SearchBox&gt;::with_root_and_props(el.into(), props).hydrate();
+        }
+        "MyWidget" =&gt; {
+            let props: MyWidgetProps = serde_json::from_str(props_json)
+                .unwrap_or(MyWidgetProps { label: String::new(), count: 0 });
+            yew::Renderer::&lt;MyWidget&gt;::with_root_and_props(el.into(), props).hydrate();
+        }
+        _ =&gt; { /* ignore unknown islands */ }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="built-in-islands"><a class="header" href="#built-in-islands">Built-in Islands</a></h2>
+<p>Taxus includes two built-in island components:</p>
+<h3 id="counter"><a class="header" href="#counter">Counter</a></h3>
+<p>A simple counter with increment button. This is an example component demonstrating the islands architecture — useful for testing and learning, but not intended for production use.</p>
+<h3 id="searchbox"><a class="header" href="#searchbox">SearchBox</a></h3>
+<p>A production-ready search component with debounced input and async results. See <a href="./search.html">Search</a> for full documentation.</p>
+<pre><code class="language-html">{{ island(component="SearchBox", placeholder="Search...", max_results=10, class="my-search") | safe }}
+</code></pre>
+<h2 id="initializing-a-site-with-islands"><a class="header" href="#initializing-a-site-with-islands">Initializing a Site with Islands</a></h2>
+<p>Islands are enabled by default. Initializing a new site includes the WASM
+hydration script in the generated <code>templates/base.html</code> and a <code>Counter</code>
+island demo in <code>templates/section.html</code>:</p>
+<pre><code class="language-bash">cargo run -- init my-site
+</code></pre>
+<p>The generated <code>base.html</code> includes the WASM hydration script:</p>
+<pre><code class="language-html">&lt;script type="module"&gt;
+  import init, * as bindings from '/wasm/client.js';
+  const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
+  window.wasmBindings = bindings;
+  bindings.hydrate_islands();
+&lt;/script&gt;
+</code></pre>
+<p>To generate a plain Tera/Markdown scaffold with no WASM hydration, pass
+<code>--no-islands</code>:</p>
+<pre><code class="language-bash">cargo run -- init my-site --no-islands
+</code></pre>
+<h2 id="building-the-wasm-client"><a class="header" href="#building-the-wasm-client">Building the WASM Client</a></h2>
+<p>The WASM client is compiled automatically as part of every Cargo build. A Cargo build script (<code>taxus-generator/build.rs</code>) compiles the <code>taxus-client</code> crate to <code>wasm32-unknown-unknown</code>, runs <code>wasm-bindgen</code> to generate JS bindings, and embeds the resulting <code>client.js</code> and <code>client_bg.wasm</code> into the generator binary via <code>include_bytes!</code>. At site build time, these embedded files are written to <code>dist/wasm/</code>.</p>
+<p>No separate build step or external tooling (such as Trunk) is required.</p>
+<h2 id="development-workflow"><a class="header" href="#development-workflow">Development Workflow</a></h2>
+<h3 id="1-create-a-site"><a class="header" href="#1-create-a-site">1. Create a Site</a></h3>
+<pre><code class="language-bash">cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+</code></pre>
+<h3 id="2-build-the-static-site-includes-wasm-client"><a class="header" href="#2-build-the-static-site-includes-wasm-client">2. Build the Static Site (includes WASM client)</a></h3>
+<pre><code class="language-bash">cargo run -- build --dir my-site --verbose
+</code></pre>
+<p>The WASM client is compiled as part of the Cargo build and embedded in the binary. During the <code>taxus build</code> pipeline, the embedded <code>client.js</code> and <code>client_bg.wasm</code> are written to <code>dist/wasm/</code> automatically — no separate build step needed.</p>
+<h3 id="3-serve-and-test"><a class="header" href="#3-serve-and-test">3. Serve and Test</a></h3>
+<pre><code class="language-bash">cargo run -- serve --dir my-site --open
+</code></pre>
+<p>The page should:</p>
+<ul>
+<li>Render immediately from the pre-rendered HTML</li>
+<li>Show the counter with the initial value</li>
+<li>After WASM loads (~1s), the button becomes interactive</li>
+</ul>
+<h2 id="search"><a class="header" href="#search">Search</a></h2>
+<p>The build pipeline also generates a search index. See <a href="./search.html">Search</a> for details.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="syntax-highlighting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="search.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="syntax-highlighting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="search.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
