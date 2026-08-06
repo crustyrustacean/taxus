@@ -320,7 +320,6 @@ fn register_contrib_filters(tera: &mut Tera) {
     tera.register_filter("date", tera_contrib::dates::date);
 }
 
-
 /// Extract the names of templates that `content` references via
 /// `{% extends "..." %}` and `{% include "..." %}`.
 fn template_references(content: &str) -> Vec<String> {
@@ -376,7 +375,9 @@ fn order_templates_by_dependency(templates: Vec<(String, String)>) -> Vec<(Strin
             // A dependency is satisfied if it's already emitted OR it's not a
             // template we know about (e.g. a built-in or missing one — in that
             // case Tera will report the real error at add time).
-            let unsatisfied = deps.iter().any(|d| refs.contains_key(d) && !emitted.contains(d));
+            let unsatisfied = deps
+                .iter()
+                .any(|d| refs.contains_key(d) && !emitted.contains(d));
 
             if unsatisfied {
                 still_pending.push((name, content));
