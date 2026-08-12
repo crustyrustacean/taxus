@@ -1,0 +1,43 @@
+name: Deploy get-taxus.org to Cloudflare Pages
+
+on:
+  push:
+    branches: [trunk]
+    paths:
+      - 'get-taxus-org/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cloudflare-pages-deploy
+      cancel-in-progress: true
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build taxus binary
+        run: cargo build --release -p taxus
+
+      - name: Build the site
+        working-directory: get-taxus-org
+        run: ../target/release/taxus build --dir .
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Deploy to Cloudflare Pages
+        working-directory: get-taxus-org
+        run: wrangler pages deploy dist/ --project-name=get-taxus-org --branch=${{ github.ref_name }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
