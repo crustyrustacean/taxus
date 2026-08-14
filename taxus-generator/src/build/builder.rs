@@ -274,7 +274,7 @@ impl SiteBuilder {
         // Stage 12: Process assets
         let _assets_span = info_span!("process_assets").entered();
         info!("[12/14] Processing assets...");
-        let mut assets = pipeline::process_assets(&self.config, &output_dir)?;
+        let mut assets = pipeline::process_assets(&self.config, &output_dir, self.dry_run)?;
 
         // Merge co-located assets report into main assets report
         assets.merge(colocated_assets);

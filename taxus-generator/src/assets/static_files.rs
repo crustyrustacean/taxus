@@ -26,7 +26,8 @@ use walkdir::WalkDir;
 /// let copier = StaticCopier::with_exclusions(vec!["*.scss".to_string()]);
 /// let report = copier.process(
 ///     Path::new("static"),
-///     Path::new("dist/static")
+///     Path::new("dist/static"),
+///     false
 /// ).unwrap();
 /// ```
 #[derive(Debug, Clone)]
@@ -88,7 +89,15 @@ impl StaticCopier {
     }
 
     /// Copy a single file from source to destination.
-    fn copy_file(&self, src: &Path, dest: &Path) -> Result<(), AssetError> {
+    ///
+    /// In dry-run mode the file is skipped entirely: no directories are
+    /// created and no data is copied.
+    fn copy_file(&self, src: &Path, dest: &Path, dry_run: bool) -> Result<(), AssetError> {
+        if dry_run {
+            debug!(src = %src.display(), dest = %dest.display(), "Dry run - would copy file");
+            return Ok(());
+        }
+
         // Create parent directories if needed
         if let Some(parent) = dest.parent() {
             fs::create_dir_all(parent).map_err(|e| AssetError::Io {
@@ -113,6 +122,7 @@ impl StaticCopier {
         src_dir: &Path,
         dest_dir: &Path,
         report: &mut AssetReport,
+        dry_run: bool,
     ) -> Result<(), AssetError> {
         debug!(src = %src_dir.display(), dest = %dest_dir.display(), "Processing directory");
 
@@ -143,7 +153,7 @@ impl StaticCopier {
             let dest_path = dest_dir.join(relative);
 
             // Copy the file
-            match self.copy_file(path, &dest_path) {
+            match self.copy_file(path, &dest_path, dry_run) {
                 Ok(()) => {
                     debug!(src = %path.display(), dest = %dest_path.display(), "Copied file");
                     report.add_processed();
@@ -158,7 +168,7 @@ impl StaticCopier {
 
 impl AssetProcessor for StaticCopier {
     #[instrument(skip(self), fields(processor = "static"))]
-    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError> {
+    fn process(&self, src: &Path, dest: &Path, dry_run: bool) -> Result<AssetReport, AssetError> {
         let span =
             debug_span!("static_asset_processing", src = %src.display(), dest = %dest.display());
         let _enter = span.enter();
@@ -172,13 +182,13 @@ impl AssetProcessor for StaticCopier {
 
         if src.is_dir() {
             // Process directory recursively
-            self.process_directory(src, dest, &mut report)?;
+            self.process_directory(src, dest, &mut report, dry_run)?;
         } else {
             // Process single file
             if self.is_excluded(src) {
                 report.add_skipped();
             } else {
-                self.copy_file(src, dest)?;
+                self.copy_file(src, dest, dry_run)?;
                 report.add_processed();
             }
         }
@@ -259,7 +269,7 @@ mod tests {
         fs::write(&src_path, "test content").unwrap();
 
         let copier = StaticCopier::new();
-        let result = copier.process(&src_path, &dest_path);
+        let result = copier.process(&src_path, &dest_path, false);
 
         assert!(result.is_ok());
         let report = result.unwrap();
@@ -286,7 +296,7 @@ mod tests {
         fs::write(src_dir.join("favicon.ico"), "ico data").unwrap();
 
         let copier = StaticCopier::new();
-        let result = copier.process(&src_dir, &dest_dir);
+        let result = copier.process(&src_dir, &dest_dir, false);
 
         assert!(result.is_ok());
         let report = result.unwrap();
@@ -311,7 +321,7 @@ mod tests {
         fs::write(src_dir.join("script.js"), "console.log('hi');").unwrap();
 
         let copier = StaticCopier::with_exclusions(vec!["*.scss".to_string()]);
-        let result = copier.process(&src_dir, &dest_dir);
+        let result = copier.process(&src_dir, &dest_dir, false);
 
         assert!(result.is_ok());
         let report = result.unwrap();
@@ -326,7 +336,7 @@ mod tests {
     #[test]
     fn test_static_copier_process_not_found() {
         let copier = StaticCopier::new();
-        let result = copier.process(Path::new("nonexistent"), Path::new("output"));
+        let result = copier.process(Path::new("nonexistent"), Path::new("output"), false);
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -346,7 +356,7 @@ mod tests {
         fs::write(&src_path, &binary_data).unwrap();
 
         let copier = StaticCopier::new();
-        let result = copier.process(&src_path, &dest_path);
+        let result = copier.process(&src_path, &dest_path, false);
 
         assert!(result.is_ok());
         let report = result.unwrap();
@@ -369,7 +379,7 @@ mod tests {
         fs::write(src_dir.join("a/top.txt"), "top file").unwrap();
 
         let copier = StaticCopier::new();
-        let result = copier.process(&src_dir, &dest_dir);
+        let result = copier.process(&src_dir, &dest_dir, false);
 
         assert!(result.is_ok());
         let report = result.unwrap();
@@ -384,5 +394,28 @@ mod tests {
     fn test_static_copier_name() {
         let copier = StaticCopier::new();
         assert_eq!(copier.name(), "static");
+    }
+
+    #[test]
+    fn test_static_copier_process_dry_run_writes_nothing() {
+        let temp_dir = TempDir::new().unwrap();
+        let src_dir = temp_dir.path().join("static");
+        let dest_dir = temp_dir.path().join("output");
+
+        fs::create_dir_all(src_dir.join("images")).unwrap();
+        fs::write(src_dir.join("images/logo.png"), "png data").unwrap();
+        fs::write(src_dir.join("favicon.ico"), "ico data").unwrap();
+
+        let copier = StaticCopier::new();
+        let result = copier.process(&src_dir, &dest_dir, true);
+
+        // Dry run reports files as processed...
+        assert!(result.is_ok());
+        let report = result.unwrap();
+        assert_eq!(report.files_processed, 2);
+        assert_eq!(report.files_skipped, 0);
+
+        // ...but copies nothing, not even the output directory itself
+        assert!(!dest_dir.exists());
     }
 }

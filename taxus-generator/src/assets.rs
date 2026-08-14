@@ -21,14 +21,16 @@
 //! let scss_processor = ScssProcessor::new();
 //! let report = scss_processor.process(
 //!     Path::new("styles/main.scss"),
-//!     Path::new("dist/styles/main.css")
+//!     Path::new("dist/styles/main.css"),
+//!     false
 //! ).unwrap();
 //!
 //! // Copy static files
 //! let static_copier = StaticCopier::new();
 //! let report = static_copier.process(
 //!     Path::new("static"),
-//!     Path::new("dist/static")
+//!     Path::new("dist/static"),
+//!     false
 //! ).unwrap();
 //! ```
 
@@ -52,11 +54,12 @@ pub trait AssetProcessor: Send + Sync {
     ///
     /// * `src` - Source path (file or directory)
     /// * `dest` - Destination path (file or directory)
+    /// * `dry_run` - If true, simulate processing without writing any files
     ///
     /// # Returns
     ///
     /// A report containing the number of files processed, skipped, and any errors.
-    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError>;
+    fn process(&self, src: &Path, dest: &Path, dry_run: bool) -> Result<AssetReport, AssetError>;
 
     /// Check if this processor handles the given file.
     ///

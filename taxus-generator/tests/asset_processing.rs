@@ -18,7 +18,7 @@ fn test_scss_processor_basic() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("main.css");
 
-    let result = processor.process(&src, &dest);
+    let result = processor.process(&src, &dest, false);
 
     assert!(result.is_ok());
     let report = result.unwrap();
@@ -44,7 +44,7 @@ fn test_scss_processor_with_imports() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("main.css");
 
-    let result = processor.process(&src, &dest);
+    let result = processor.process(&src, &dest, false);
 
     assert!(result.is_ok());
 
@@ -64,7 +64,7 @@ fn test_scss_processor_output_path() {
     // Pass a path with .scss extension - should be changed to .css
     let dest = temp_dir.path().join("output/styles/main.scss");
 
-    let result = processor.process(&src, &dest);
+    let result = processor.process(&src, &dest, false);
 
     assert!(result.is_ok());
 
@@ -82,7 +82,7 @@ fn test_scss_processor_minified() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("main.css");
 
-    let result = processor.process(&src, &dest);
+    let result = processor.process(&src, &dest, false);
 
     assert!(result.is_ok());
 
@@ -101,7 +101,7 @@ fn test_scss_processor_not_found() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("output.css");
 
-    let result = processor.process(&src, &dest);
+    let result = processor.process(&src, &dest, false);
 
     assert!(result.is_err());
     match result.unwrap_err() {
@@ -123,7 +123,7 @@ fn test_static_copier_basic() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("scripts.js");
 
-    let result = copier.process(&src, &dest);
+    let result = copier.process(&src, &dest, false);
 
     assert!(result.is_ok());
     let report = result.unwrap();
@@ -146,7 +146,7 @@ fn test_static_copier_preserves_structure() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("static");
 
-    let result = copier.process(&src, &dest);
+    let result = copier.process(&src, &dest, false);
 
     assert!(result.is_ok());
     let report = result.unwrap();
@@ -176,7 +176,7 @@ fn test_static_copier_exclusions() {
     fs::write(src_dir.join("script.js"), "console.log('hi');").unwrap();
 
     let dest_dir = temp_dir.path().join("dest");
-    let result = copier.process(&src_dir, &dest_dir);
+    let result = copier.process(&src_dir, &dest_dir, false);
 
     assert!(result.is_ok());
     let report = result.unwrap();
@@ -194,7 +194,7 @@ fn test_static_copier_not_found() {
     let temp_dir = TempDir::new().unwrap();
     let dest = temp_dir.path().join("output");
 
-    let result = copier.process(&src, &dest);
+    let result = copier.process(&src, &dest, false);
 
     assert!(result.is_err());
     match result.unwrap_err() {
@@ -219,14 +219,18 @@ fn test_combined_asset_processing() {
         ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let scss_src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let scss_dest = output_dir.join("styles/main.css");
-    let scss_report = scss_processor.process(&scss_src, &scss_dest).unwrap();
+    let scss_report = scss_processor
+        .process(&scss_src, &scss_dest, false)
+        .unwrap();
     assert_eq!(scss_report.files_processed, 1);
 
     // Process static files
     let static_copier = StaticCopier::new();
     let static_src = PathBuf::from("tests/fixtures/asset_site/static");
     let static_dest = output_dir.join("static");
-    let static_report = static_copier.process(&static_src, &static_dest).unwrap();
+    let static_report = static_copier
+        .process(&static_src, &static_dest, false)
+        .unwrap();
     assert!(static_report.files_processed >= 2);
 
     // Verify all outputs exist
@@ -247,19 +251,86 @@ fn test_asset_report_aggregation() {
         ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
     let scss_src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
     let scss_dest = temp_dir.path().join("main.css");
-    let scss_report = scss_processor.process(&scss_src, &scss_dest).unwrap();
+    let scss_report = scss_processor
+        .process(&scss_src, &scss_dest, false)
+        .unwrap();
     total_report.merge(scss_report);
 
     // Process static
     let static_copier = StaticCopier::new();
     let static_src = PathBuf::from("tests/fixtures/asset_site/static");
     let static_dest = temp_dir.path().join("static");
-    let static_report = static_copier.process(&static_src, &static_dest).unwrap();
+    let static_report = static_copier
+        .process(&static_src, &static_dest, false)
+        .unwrap();
     total_report.merge(static_report);
 
     // Check totals
     assert!(total_report.files_processed >= 3); // 1 SCSS + at least 2 static
     assert!(!total_report.has_errors());
+}
+
+// =============================================================================
+// Dry-Run Tests
+// =============================================================================
+
+#[test]
+fn test_scss_processor_dry_run_writes_nothing() {
+    let processor =
+        ScssProcessor::with_include_paths(vec![PathBuf::from("tests/fixtures/asset_site/styles")]);
+    let src = PathBuf::from("tests/fixtures/asset_site/styles/main.scss");
+    let temp_dir = TempDir::new().unwrap();
+    let dest_dir = temp_dir.path().join("css");
+
+    let result = processor.process(&src, &dest_dir, true);
+
+    assert!(result.is_ok());
+    let report = result.unwrap();
+    assert_eq!(report.files_processed, 1);
+    assert!(!report.has_errors());
+
+    // Nothing written
+    assert!(!dest_dir.exists());
+}
+
+#[test]
+fn test_static_copier_dry_run_writes_nothing() {
+    let copier = StaticCopier::new();
+    let src = PathBuf::from("tests/fixtures/asset_site/static");
+    let temp_dir = TempDir::new().unwrap();
+    let dest_dir = temp_dir.path().join("static");
+
+    let result = copier.process(&src, &dest_dir, true);
+
+    assert!(result.is_ok());
+    let report = result.unwrap();
+    assert!(report.files_processed >= 2);
+
+    // Nothing copied
+    assert!(!dest_dir.exists());
+}
+
+#[test]
+fn test_process_assets_dry_run_writes_nothing() {
+    use taxus_lib::build::pipeline;
+    use taxus_lib::config::SiteConfig;
+
+    let temp_dir = TempDir::new().unwrap();
+
+    // Base config from a fixture site, with asset dirs from the asset fixture
+    let mut config = SiteConfig::from_dir(Path::new("tests/fixtures/internal_links_site")).unwrap();
+    config.build.output_dir = temp_dir.path().join("dist");
+    config.build.styles_dir = PathBuf::from("tests/fixtures/asset_site/styles");
+    config.build.static_dir = PathBuf::from("tests/fixtures/asset_site/static");
+
+    let output_dir = config.build.output_dir.clone();
+    let report = pipeline::process_assets(&config, &output_dir, true).unwrap();
+
+    // All files are counted as processed...
+    assert!(report.files_processed >= 3); // 1 SCSS + at least 2 static files
+
+    // ...but the output directory is never created
+    assert!(!output_dir.exists());
 }
 
 // =============================================================================

@@ -25,7 +25,8 @@ use tracing::{debug, debug_span, info, instrument};
 ///     .with_minify(true);
 /// let report = processor.process(
 ///     Path::new("styles/main.scss"),
-///     Path::new("dist/styles/main.css")
+///     Path::new("dist/styles/main.css"),
+///     false
 /// ).unwrap();
 /// ```
 #[derive(Debug, Clone)]
@@ -122,11 +123,15 @@ impl ScssProcessor {
 
 impl ScssProcessor {
     /// Process a single SCSS file.
+    ///
+    /// In dry-run mode the file is still read and compiled so that SCSS
+    /// errors surface, but no output is written.
     fn process_file(
         &self,
         src: &Path,
         dest: &Path,
         report: &mut AssetReport,
+        dry_run: bool,
     ) -> Result<(), AssetError> {
         debug!(src = %src.display(), dest = %dest.display(), "Processing SCSS file");
 
@@ -141,6 +146,15 @@ impl ScssProcessor {
 
         // Determine output path (change .scss to .css)
         let output_path = Self::output_path(src, dest);
+
+        if dry_run {
+            debug!(
+                output = %output_path.display(),
+                "Dry run - would write compiled CSS"
+            );
+            report.add_processed();
+            return Ok(());
+        }
 
         // Create parent directories if needed
         if let Some(parent) = output_path.parent() {
@@ -167,6 +181,7 @@ impl ScssProcessor {
         src_dir: &Path,
         dest_dir: &Path,
         report: &mut AssetReport,
+        dry_run: bool,
     ) -> Result<(), AssetError> {
         use walkdir::WalkDir;
 
@@ -188,7 +203,7 @@ impl ScssProcessor {
             let dest_path = dest_dir.join(relative);
 
             // Process the file
-            match self.process_file(path, &dest_path, report) {
+            match self.process_file(path, &dest_path, report, dry_run) {
                 Ok(()) => {}
                 Err(e) => report.add_error(e),
             }
@@ -200,7 +215,7 @@ impl ScssProcessor {
 
 impl AssetProcessor for ScssProcessor {
     #[instrument(skip(self), fields(processor = "scss"))]
-    fn process(&self, src: &Path, dest: &Path) -> Result<AssetReport, AssetError> {
+    fn process(&self, src: &Path, dest: &Path, dry_run: bool) -> Result<AssetReport, AssetError> {
         let span =
             debug_span!("scss_asset_processing", src = %src.display(), dest = %dest.display());
         let _enter = span.enter();
@@ -214,10 +229,10 @@ impl AssetProcessor for ScssProcessor {
 
         if src.is_dir() {
             // Process directory recursively
-            self.process_directory(src, dest, &mut report)?;
+            self.process_directory(src, dest, &mut report, dry_run)?;
         } else {
             // Process single file
-            self.process_file(src, dest, &mut report)?;
+            self.process_file(src, dest, &mut report, dry_run)?;
         }
 
         info!(
@@ -284,7 +299,7 @@ body {
         fs::write(&src_path, scss_content).unwrap();
 
         let processor = ScssProcessor::new();
-        let result = processor.process(&src_path, &dest_path);
+        let result = processor.process(&src_path, &dest_path, false);
 
         assert!(result.is_ok());
         let report = result.unwrap();
@@ -314,7 +329,7 @@ body {
         fs::write(&src_path, scss_content).unwrap();
 
         let processor = ScssProcessor::new().with_minify(true);
-        let result = processor.process(&src_path, &dest_path);
+        let result = processor.process(&src_path, &dest_path, false);
 
         assert!(result.is_ok());
 
@@ -327,7 +342,11 @@ body {
     #[test]
     fn test_scss_processor_process_not_found() {
         let processor = ScssProcessor::new();
-        let result = processor.process(Path::new("nonexistent.scss"), Path::new("output.css"));
+        let result = processor.process(
+            Path::new("nonexistent.scss"),
+            Path::new("output.css"),
+            false,
+        );
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -347,7 +366,7 @@ body {
         fs::write(&src_path, scss_content).unwrap();
 
         let processor = ScssProcessor::new();
-        let result = processor.process(&src_path, &dest_path);
+        let result = processor.process(&src_path, &dest_path, false);
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -385,7 +404,7 @@ $secondary: #2ecc71;
         fs::write(&src_path, scss_content).unwrap();
 
         let processor = ScssProcessor::new();
-        let result = processor.process(&src_path, &dest_path);
+        let result = processor.process(&src_path, &dest_path, false);
 
         assert!(result.is_ok());
         let css = fs::read_to_string(temp_dir.path().join("vars.css")).unwrap();
@@ -397,5 +416,43 @@ $secondary: #2ecc71;
     fn test_scss_processor_name() {
         let processor = ScssProcessor::new();
         assert_eq!(processor.name(), "scss");
+    }
+
+    #[test]
+    fn test_scss_processor_process_dry_run_writes_nothing() {
+        let temp_dir = TempDir::new().unwrap();
+        let src_path = temp_dir.path().join("test.scss");
+        let dest_path = temp_dir.path().join("output/test.css");
+
+        let scss_content = "$color: blue;\nbody { color: $color; }";
+        fs::write(&src_path, scss_content).unwrap();
+
+        let processor = ScssProcessor::new();
+        let result = processor.process(&src_path, &dest_path, true);
+
+        // Dry run reports the file as processed...
+        assert!(result.is_ok());
+        let report = result.unwrap();
+        assert_eq!(report.files_processed, 1);
+
+        // ...but writes nothing
+        assert!(!dest_path.exists());
+        assert!(!temp_dir.path().join("output").exists());
+    }
+
+    #[test]
+    fn test_scss_processor_dry_run_still_compiles() {
+        let temp_dir = TempDir::new().unwrap();
+        let src_path = temp_dir.path().join("invalid.scss");
+        let dest_path = temp_dir.path().join("invalid.css");
+
+        // Invalid SCSS syntax must still fail in dry-run mode
+        fs::write(&src_path, "body { color: }").unwrap();
+
+        let processor = ScssProcessor::new();
+        let result = processor.process(&src_path, &dest_path, true);
+
+        assert!(result.is_err());
+        assert!(!dest_path.exists());
     }
 }

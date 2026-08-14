@@ -110,14 +110,21 @@ pub fn process_content(
 }
 
 /// Process assets (SCSS and static files).
-pub fn process_assets(config: &SiteConfig, output_dir: &Path) -> Result<AssetReport> {
+///
+/// In dry-run mode, SCSS is still compiled (so errors surface) but no
+/// output files are written and nothing is copied.
+pub fn process_assets(
+    config: &SiteConfig,
+    output_dir: &Path,
+    dry_run: bool,
+) -> Result<AssetReport> {
     let mut report = AssetReport::new();
 
     // Process SCSS files
     if config.build.styles_dir.exists() {
         let scss_processor = ScssProcessor::new();
         let css_output = output_dir.join("css");
-        let scss_report = scss_processor.process(&config.build.styles_dir, &css_output)?;
+        let scss_report = scss_processor.process(&config.build.styles_dir, &css_output, dry_run)?;
         report.merge(scss_report);
     }
 
@@ -125,7 +132,8 @@ pub fn process_assets(config: &SiteConfig, output_dir: &Path) -> Result<AssetRep
     if config.build.static_dir.exists() {
         let static_copier = StaticCopier::new();
         let static_output = output_dir.join("static");
-        let static_report = static_copier.process(&config.build.static_dir, &static_output)?;
+        let static_report =
+            static_copier.process(&config.build.static_dir, &static_output, dry_run)?;
         report.merge(static_report);
     }
 
