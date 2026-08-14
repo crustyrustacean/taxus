@@ -293,7 +293,7 @@ impl SiteBuilder {
         {
             let _wasm_span = info_span!("build_wasm").entered();
             info!("[14/15] Writing WASM client...");
-            let wasm_output = build::pipeline::wasm::build_wasm_client(&output_dir)?;
+            let wasm_output = build::pipeline::wasm::build_wasm_client(&output_dir, self.dry_run)?;
             info!("WASM client written ({} bytes)", wasm_output.wasm_size);
             drop(_wasm_span);
         }
