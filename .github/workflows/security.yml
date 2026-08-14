@@ -3,8 +3,12 @@ name: Security Audit
 on:
   push:
     branches: [trunk]
+  pull_request:
+    branches: [trunk]
   schedule:
+    # Every Monday 08:00 UTC
     - cron: '0 8 * * 1'
+  workflow_dispatch:
 
 jobs:
   audit:
@@ -14,7 +18,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install cargo-audit
-        run: cargo install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
 
+      # --deny warnings fails on any advisory not ignored in .cargo/audit.toml
+      # (vulnerabilities always fail; unignored unmaintained crates fail too)
       - name: Run security audit
-        run: cargo audit
+        run: cargo audit --deny warnings

@@ -1,0 +1,38 @@
+# cargo-audit configuration
+# https://github.com/rustsec/cargo-audit/blob/main/audit.toml.example
+#
+# Known-unmaintained transitive dependencies, accepted as warnings.
+# Reviewed: 2026-08-14 (see Rust/Projects/taxus/cargo-audit-2026-08-14.md)
+#
+# CI runs `cargo audit --deny warnings`, so any advisory NOT in this list
+# (including new "unmaintained" findings) fails the build. When removing an
+# entry below, remove it because the dependency is gone or upstream fixed it.
+[advisories]
+ignore = [
+    # atomic-polyfill 1.0.3 — unmaintained
+    # via: postcard -> heapless 0.7 (postcard is a direct taxus-common dep)
+    # fixable in-tree: bump postcard / swap to serde_json (tracked in audit note)
+    "RUSTSEC-2023-0089",
+
+    # bincode 1.3.3 — unmaintained
+    # via: yew 0.23 -> gloo 0.11 -> gloo-worker 0.5
+    # upstream fix required (yew/gloo release)
+    "RUSTSEC-2025-0141",
+
+    # bincode 2.0.1 — unmaintained
+    # via: yew 0.23 (direct)
+    # upstream fix required (yew release)
+    # NOTE: same advisory ID as bincode 1 above — a single ignore covers both;
+    # remove this duplicate once one of the two bincode versions drops off.
+    # "RUSTSEC-2025-0141",
+
+    # paste 1.0.15 — no longer maintained
+    # via: image 0.25 -> exr -> pulp; also ravif -> rav1e
+    # upstream fix required (image/exr/ravif release)
+    "RUSTSEC-2024-0436",
+
+    # proc-macro-error 1.0.4 — unmaintained
+    # via: yew-macro 0.23 (compile-time only)
+    # upstream fix required (yew migration off proc-macro-error)
+    "RUSTSEC-2024-0370",
+]
