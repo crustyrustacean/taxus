@@ -18,13 +18,16 @@ The key insight: pages are immediately visible with no JavaScript required. Inte
 - **Static-first**: Pre-rendered HTML for optimal performance and SEO
 - **Islands Architecture**: Interactive Yew WASM components embedded within static pages
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
+- **Syntax Highlighting**: Tree-sitter based code highlighting (Rust built in)
 - **Co-located Assets**: Images and files in the content directory are automatically copied to output
+- **Hero Images**: Responsive variants, WebP conversion, and `<picture>`/srcset markup generated automatically
 - **Internal Links**: Reference other pages by content file path with build-time validation
 - **Blog Features**: Summary extraction, reading time, word count, custom slugs
 - **Pagination**: Split large collections across multiple pages
 - **RSS/Atom Feeds**: Automatic feed generation for content syndication
 - **Sitemap**: Automatic `sitemap.xml` generation with priorities and lastmod dates
 - **Taxonomies**: Tags, categories, and series for content organization
+- **Full-Text Search**: TF-IDF search index searched client-side by the WASM client
 - **Development Server**: Hot-reloading local server with WebSocket live reload
 - **CLI Interface**: `build`, `clean`, `init`, `routes`, and `serve` subcommands
 
@@ -44,9 +47,14 @@ Taxus is ideal for:
 - [Configuration](./configuration.md) — `site.toml` format and options
 - [Content](./content.md) — Markdown files, frontmatter, taxonomies, pagination
 - [Templates](./templates.md) — Tera templates and context variables
+- [Images](./images.md) — Hero image processing and responsive variants
+- [Syntax Highlighting](./syntax-highlighting.md) — Tree-sitter highlighting setup
 - [Islands Architecture](./islands.md) — How to write and use Yew components
+- [Search](./search.md) — Client-side full-text search
+- [Styling](./styling.md) — SCSS stylesheets
 - [CLI Reference](./cli.md) — Command-line interface documentation
 - [Development Server](./serve.md) — Hot reload and file watching
+- [Development](./development.md) — Building, testing, and `xtask` workflows
 - [API Reference](./api-reference.md) — Library API documentation
 
 ## License

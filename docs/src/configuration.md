@@ -63,8 +63,8 @@ RSS/Atom feed configuration for content syndication.
 | `limit` | number | `0` | Maximum entries in feed (0 = all) |
 | `full_content` | bool | `false` | Include full content vs summary |
 | `title` | string | `None` | Custom feed title (defaults to site name) |
-| `rss_path` | string | `None` | RSS feed output path (default: `rss.xml`) |
-| `atom_path` | string | `None` | Atom feed output path (default: `atom.xml`) |
+| `rss_path` | string | `None` | RSS feed output path (default: `feed.xml`) |
+| `atom_path` | string | `None` | Atom feed output path (default: `feed.atom`) |
 
 ### `[highlight]` Section
 
@@ -124,8 +124,8 @@ atom_enabled = true
 limit = 20
 full_content = false
 title = "My Blog Feed"
-rss_path = "rss.xml"
-atom_path = "atom.xml"
+rss_path = "feed.xml"
+atom_path = "feed.atom"
 
 [highlight]
 enabled = true
@@ -149,5 +149,5 @@ Configuration is validated when loaded:
 
 After generation, feeds are available at:
 
-- RSS: `https://example.com/rss.xml` (or custom `rss_path`)
-- Atom: `https://example.com/atom.xml` (or custom `atom_path`)
+- RSS: `https://example.com/feed.xml` (or custom `rss_path`)
+- Atom: `https://example.com/feed.atom` (or custom `atom_path`)

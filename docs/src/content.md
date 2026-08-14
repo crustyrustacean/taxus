@@ -407,8 +407,8 @@ full_content = false
 
 ### Feed URLs
 
-- RSS: `https://example.com/rss.xml`
-- Atom: `https://example.com/atom.xml`
+- RSS: `https://example.com/feed.xml` (or custom `rss_path`)
+- Atom: `https://example.com/feed.atom` (or custom `atom_path`)
 
 ## Sitemap Generation
 

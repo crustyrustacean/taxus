@@ -118,7 +118,16 @@ Options:
 | `templates/base.html` | Base HTML layout |
 | `templates/page.html` | Single-page template |
 | `templates/section.html` | Section/listing template |
+| `templates/tags.html` | Tag listing page |
+| `templates/tags_term.html` | Individual tag page |
+| `templates/categories.html` | Category listing page |
+| `templates/categories_term.html` | Individual category page |
+| `templates/series.html` | Series listing page |
+| `templates/series_term.html` | Individual series page |
+| `templates/404.html` | Not-found page |
 | `styles/main.scss` | Starter stylesheet |
+| `styles/_main.scss` | SCSS partials imported by `main.scss` |
+| `styles/_highlight-dark.scss`, `styles/_highlight-light.scss` | Code highlighting theme partials |
 | `static/scripts.js` | Placeholder scripts file |
 | `static/favicon.png` | Placeholder favicon |
 

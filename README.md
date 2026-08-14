@@ -7,6 +7,7 @@ A Rust-based static site generator built with [Tera](https://keats.github.io/ter
 - **Static Site Generation** — Pre-rendered HTML for optimal performance and SEO
 - **Markdown + TOML Frontmatter** — Write content with familiar syntax
 - **Islands Architecture** — Yew/WASM components that hydrate client-side
+- **Syntax Highlighting** — Tree-sitter based code highlighting (Rust built in)
 - **Full-Text Search** — TF-IDF search index for client-side search
 - **Hot-Reloading Dev Server** — WebSocket-based live reload during development
 - **RSS/Atom Feeds** — Automatic feed generation
@@ -142,9 +143,13 @@ Comprehensive documentation is available in the `docs/` directory:
 - [Content](docs/src/content.md)
 - [Images](docs/src/images.md)
 - [Templates](docs/src/templates.md)
+- [Syntax Highlighting](docs/src/syntax-highlighting.md)
 - [Islands Architecture](docs/src/islands.md)
 - [Search](docs/src/search.md)
+- [Styling](docs/src/styling.md)
 - [CLI Reference](docs/src/cli.md)
+- [Development Server](docs/src/serve.md)
+- [Development](docs/src/development.md)
 - [API Reference](docs/src/api-reference.md)
 
 Build and serve docs locally:

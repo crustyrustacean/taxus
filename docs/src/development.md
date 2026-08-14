@@ -19,7 +19,7 @@ cargo build
 ## Running Tests
 
 ```bash
-# Run all tests (238+ tests)
+# Run all tests (600+)
 cargo test
 
 # Run tests for a specific crate
@@ -89,6 +89,7 @@ The workspace includes an `xtask` crate (aliased as `cargo xtask` via
 | `cargo xtask clean` | Clean build artifacts |
 | `cargo xtask ci` | Run the full local CI pipeline (fmt, lint, test) |
 | `cargo xtask release --bump <major|minor|patch> [--dry-run]` | Prepare a release: changelog, tag, verify build |
+| `cargo xtask deploy [--project <name>] [--branch <name>] [--prod-branch <name>] [--no-build]` | Build `get-taxus-org/` and deploy to Cloudflare Pages via wrangler (workspace tool; requires Cloudflare credentials) |
 
 ## Logging
 
