@@ -31,4 +31,4 @@ The full Tera syntax is available—inheritance with `{% extends %}` and `{% blo
 
 ### Documentation
 
-For complete template reference, see the [Templates documentation](https://crustyrustacean.codeberg.page/taxus/templates.html).
+For complete template reference, see the [Templates documentation](https://crustyrustacean.github.io/taxus/templates.html).

@@ -85,6 +85,6 @@ The goal isn't to compete with every feature of every other SSG. The goal is to 
 
 ### Next Steps
 
-If this resonates with how you think about web development, I encourage you to explore the [documentation](https://crustyrustacean.codeberg.page/taxus) and give Taxus a try.
+If this resonates with how you think about web development, I encourage you to explore the [documentation](https://crustyrustacean.github.io/taxus) and give Taxus a try.
 
 Static site generation doesn't have to be complicated. With the right foundation, it's simply a matter of writing content and letting the tool handle the rest.

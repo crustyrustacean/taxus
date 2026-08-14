@@ -15,7 +15,7 @@ Taxus now ships a built-in alternative: a **Search Island** powered by Yew and W
 
 If you've read the earlier posts in this series, you know Taxus supports *islands* — interactive WebAssembly components that hydrate pre-rendered HTML. The search island follows this same pattern:
 
-1. **Build time**: Taxus indexes all non-draft pages into a compact JSON search index
+1. **Build time**: Taxus indexes all non-draft pages into a compact binary search index
 2. **Serve time**: The index is embedded in the page as a static asset
 3. **Run time**: A Yew WASM component loads the index and provides instant client-side search
 
@@ -32,7 +32,7 @@ During the build pipeline, Taxus walks every processed page and extracts:
 - **Content** — the rendered HTML, stripped of markup
 - **URL path** — for linking to results
 
-The index is serialized to JSON and written to the output directory alongside your other static assets. For a typical blog with a few hundred posts, the index is surprisingly small — usually under 100 KB, and gzip brings it well below that.
+The index is serialized with [postcard](https://docs.rs/postcard) into `search_index.bin` and written to the output directory alongside your other static assets. For a typical blog with a few hundred posts, the index is surprisingly small — usually under 100 KB, and gzip brings it well below that.
 
 ### The Yew Component
 
@@ -51,9 +51,9 @@ When the WASM module hydrates, the search box becomes interactive. Typing a quer
 The search engine uses a simple but effective tokenization strategy:
 
 - Queries are lowercased and split on whitespace
-- Each token is matched against page titles, descriptions, and content
-- Results are ranked by the number of matching tokens and the weight of the field they appear in
-- Partial matches are supported — typing "synt" will find the syntax highlighting post
+- Each token is looked up in the TF-IDF index built at build time: terms that are common across all pages count for less, distinctive terms count for more
+- Results are ranked by summed TF-IDF scores across the matched tokens
+- Whole-word matches only — the index is token-based, so type the full word you're looking for
 
 This isn't meant to compete with Elasticsearch. It's meant to give your readers a fast, reliable way to find content without leaving the page.
 
@@ -92,7 +92,7 @@ You could. A Lunr.js integration would work fine. But the island approach has re
 
 Client-side search has a reputation for being slow on large sites. The reality is more nuanced:
 
-- **Index load**: The JSON index loads once, on page load, as a static asset. The browser caches it.
+- **Index load**: The binary index loads once, on page load, as a static asset. The browser caches it.
 - **Query speed**: Filtering a few hundred entries in WASM is effectively instant — sub-millisecond on modern hardware.
 - **Bundle size**: The WASM module adds ~50 KB gzipped to your page. That's less than most analytics scripts.
 

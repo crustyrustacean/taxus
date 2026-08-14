@@ -46,4 +46,4 @@ See the [other page](@/path/to/page.md) for details.
 ### References
 
 - [pulldown-cmark guide](https://pulldown-cmark.github.io/pulldown-cmark/)
-- [Content documentation](https://crustyrustacean.codeberg.page/taxus/content.html)
+- [Content documentation](https://crustyrustacean.github.io/taxus/content.html)
