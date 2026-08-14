@@ -10,12 +10,12 @@ repository.workspace = true
 
 [dependencies]
 gloo-timers = "0.4.0"
-js-sys = "0.3.103"
-postcard = { version = "1.1.3", features = [ "alloc" ] }
+js-sys = "0.3"
+postcard = { version = "1", features = [ "alloc" ] }
 serde = { workspace = true }
-rust-stemmers = "1.2.0"
-wasm-bindgen = "0.2.126"
-wasm-bindgen-futures = "0.4.76"
-web-sys = { version = "0.3.103", features = ["Document", "Event", "EventTarget", "HtmlInputElement", "Node"] }
-yew = "0.23.0"
-serde-wasm-bindgen = "0.6.5"
+rust-stemmers = "1.2"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Document", "Event", "EventTarget", "HtmlInputElement", "Node"] }
+yew = "0.23"
+serde-wasm-bindgen = "0.6"

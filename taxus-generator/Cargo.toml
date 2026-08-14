@@ -24,32 +24,32 @@ default = ["lang-rust"]
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }
-grass = "0.13.4"
-pulldown-cmark = "0.13.1"
+grass = "0.13"
+pulldown-cmark = "0.13"
 serde = { workspace = true, features = ["derive"] }
-serde_json = "1.0"
-tera = "2.1"
-thiserror = "2.0"
-tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "signal"] }
-toml = "1.0.6"
+serde_json = "1"
+tera = "2"
+thiserror = "2"
+tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "signal"] }
+toml = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tree-sitter = "0.26.8"
-tree-sitter-highlight = "0.26.8"
-tree-sitter-rust = { version = "0.24.2", optional = true }
+tree-sitter = "0.26"
+tree-sitter-highlight = "0.26"
+tree-sitter-rust = { version = "0.24", optional = true }
 walkdir = "2.5"
 image = "0.25"
 
 # ── Islands (Yew SSR + WASM client) ───────────────────────────────────────────
 taxus-common = { path = "../taxus-common" }
-yew = { version = "0.23.0", features = ["ssr"] }
+yew = { version = "0.23", features = ["ssr"] }
 
 # ── Dev server dependencies ───────────────────────────────────────────────────
-axum = { version = "0.8.8", features = ["ws"] }
-axum-extra = { version = "0.12.5", features = ["typed-header"] }
+axum = { version = "0.8", features = ["ws"] }
+axum-extra = { version = "0.12", features = ["typed-header"] }
 futures-util = "0.3"
 http-body-util = "0.1"
-notify = "8.2.0"
+notify = "8.2"
 tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "set-header"] }
 tokio-stream = "0.1"
@@ -60,6 +60,6 @@ tera-contrib = { version = "0.2.0", features = ["date", "slug"] }
 wasm-bindgen-cli-support = "=0.2.126"
 
 [dev-dependencies]
-tempfile = "3.10"
-reqwest = { version = "0.13.2", features = ["json"] }
+tempfile = "3"
+reqwest = { version = "0.13", features = ["json"] }
 tokio-tungstenite = "0.29"
