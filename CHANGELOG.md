@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-08-25
+
+### Added
+
+- Make islands first-class and enabled by default
+- **islands**: Enable islands feature by default
+
+### Changed
+
+- Fix rustfmt indentation in section template concat
+
+### Fixed
+
+- **telemetry**: Always install a tracing subscriber; flags beat RUST_LOG
+- **build**: Respect --dry-run when writing WASM client output
+- **assets**: Respect --dry-run in SCSS compilation and static file copying
+- **templates**: Register tera-contrib date filter for v2 parity
+
+### Miscellaneous
+
+- Update dependencies
+- Fix clippy lints
+- **deps**: Upgrade tera to v2, tower-http to 0.7, wasm-bindgen to 0.2.126
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [0.1.87] - 2026-04-24
 
 ### Changed
