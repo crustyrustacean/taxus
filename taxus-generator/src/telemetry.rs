@@ -18,6 +18,10 @@
 //!
 //! # Environment Variable
 //!
+//! The `RUST_LOG` environment variable controls the level for commands that
+//! don't take `--verbose`/`--quiet` flags (or when neither flag is given).
+//! CLI flags take precedence over the environment when present.
+//!
 //! ```bash
 //! # Default (info and above)
 //! RUST_LOG=info taxus build
@@ -59,28 +63,33 @@ pub fn init() {
 
 /// Initialize tracing based on CLI flags.
 ///
-/// Maps `--verbose` to debug level and `--quiet` to error level.
-/// Respects `RUST_LOG` environment variable if set.
+/// Precedence (highest wins):
+///
+/// 1. `--quiet`   → error level
+/// 2. `--verbose` → debug level
+/// 3. `RUST_LOG` environment variable (module directives honored)
+/// 4. `info` (default)
+///
+/// A subscriber is always installed; flags never cause logging to be
+/// silently disabled.
 pub fn init_tracing(verbose: bool, quiet: bool) {
-    let level = if quiet {
-        "error"
+    if quiet {
+        init_with_level("error");
     } else if verbose {
-        "debug"
+        init_with_level("debug");
     } else {
-        // Respect RUST_LOG if set, otherwise use info
-        if std::env::var("RUST_LOG").is_ok() {
-            return; // init() will use RUST_LOG
-        }
-        "info"
-    };
-
-    init_with_level(level);
+        // No flags: honor RUST_LOG if present, else default to info.
+        init();
+    }
 }
 
 /// Initialize tracing with a specific level override.
 ///
 /// This is useful for CLI flags like `--verbose` or `--quiet`.
-/// The environment variable `RUST_LOG` takes precedence if set.
+/// The given level always applies — CLI flags take precedence over the
+/// `RUST_LOG` environment variable (explicit user intent on the command
+/// line wins over ambient environment). Callers wanting `RUST_LOG` to be
+/// honored should use [`init`] instead.
 ///
 /// # Arguments
 ///
@@ -96,7 +105,7 @@ pub fn init_tracing(verbose: bool, quiet: bool) {
 /// taxus_lib::telemetry::init_with_level("debug");
 /// ```
 pub fn init_with_level(level: &str) {
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level));
+    let filter = EnvFilter::new(level);
 
     tracing_subscriber::registry()
         .with(filter)
