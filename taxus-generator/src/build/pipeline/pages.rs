@@ -17,11 +17,7 @@ use tracing::{debug, debug_span, info};
 /// uses the slug-derived URL path; otherwise uses the discovered route path.
 /// Computes the permalink from the base URL and resolved path.
 fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
-    let url_path = if processed.page.frontmatter.slug.is_some() {
-        processed.page.url_path()
-    } else {
-        processed.route.path.clone()
-    };
+    let url_path = processed.effective_url_path();
     let permalink = compute_permalink(base_url, &url_path);
     let hero = processed.hero_image.as_ref().map(|img| HeroContext {
         src: img.fallback_src(),
@@ -207,11 +203,7 @@ pub fn render_pages(
             processed_page.page.template()
         };
 
-        let url_path = if processed_page.page.frontmatter.slug.is_some() {
-            processed_page.page.url_path()
-        } else {
-            processed_page.route.path.clone()
-        };
+        let url_path = processed_page.effective_url_path();
 
         debug!(path = %url_path, template = %template_name, "Rendering page");
 

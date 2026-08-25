@@ -63,7 +63,11 @@ pub fn resolve_internal_links(
             });
         };
 
-        result.push_str(&format!("[{}]({})", link_text, route.path));
+        result.push_str(&format!(
+            "[{}]({})",
+            link_text,
+            encode_destination(&route.path)
+        ));
 
         remaining = &remaining[end_paren + 1..];
     }
@@ -71,6 +75,33 @@ pub fn resolve_internal_links(
     result.push_str(remaining);
 
     Ok(result)
+}
+
+/// Encode a URL path so the emitted markdown link destination is always
+/// parseable by CommonMark (#33).
+///
+/// Destinations containing raw spaces are not valid CommonMark link
+/// targets, so pulldown-cmark refuses to parse them and renders the
+/// entire `[text](dest)` construct as literal text — a silent failure
+/// with no warning. CommonMark's escaping rules: wrap the destination in
+/// `<...>` when it contains whitespace (angle brackets allow spaces
+/// except unescaped `<`, `>`, and line breaks), and percent-encode any
+/// literal `<`/`>` within.
+fn encode_destination(path: &str) -> String {
+    if !path.chars().any(|c| c.is_whitespace()) {
+        // No spaces: valid as a bare destination. Escape backslashes so
+        // pulldown-cmark does not treat them as markdown escapes.
+        return path.replace('\\', "\\\\");
+    }
+
+    let encoded = path
+        .replace('\\', "\\\\")
+        .replace('<', "%3C")
+        .replace('>', "%3E")
+        .replace('\n', "%0A")
+        .replace('\r', "%0D");
+
+    format!("<{encoded}>")
 }
 
 fn is_inside_code_block(full_content: &str, remaining: &str, pos: usize) -> bool {
@@ -295,5 +326,42 @@ No other links.
         );
         let result = result.unwrap();
         assert!(result.contains("](@/path/to/page.md)"));
+    }
+
+    #[test]
+    fn test_resolve_internal_links_spaced_target_emits_parseable_markdown() {
+        use crate::routes::{RouteInfo, RouteKind};
+
+        // #33: a route path containing spaces must still parse as a link
+        // after rewriting. Before the fix, the emitted
+        // [text](/My Post/) was invalid CommonMark and rendered as
+        // literal text with no warning.
+        let mut registry = RouteRegistry::new();
+        registry
+            .register(
+                RouteInfo::new(
+                    "/My Creative Post/".to_string(),
+                    PathBuf::from("My Creative Post.md"),
+                    PathBuf::from("My Creative Post/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+
+        let content = "See my [post](@/My Creative Post.md).";
+        let source_file = Path::new("index.md");
+        let rewritten = resolve_internal_links(content, source_file, &registry).unwrap();
+
+        // The rewritten markdown must actually parse as a link — this is
+        // the destination-first assertion: not "contains the path" but
+        // "renders as an <a> to the path". Spaces in the angle-bracketed
+        // destination are percent-encoded by pulldown-cmark, which is the
+        // correct URL form.
+        let html = crate::build::pipeline::markdown::markdown_to_html(&rewritten, None);
+        assert!(
+            html.contains(r#"href="/My%20Creative%20Post/""#),
+            "rewritten markdown must render as an anchor to the route; got: {html}"
+        );
     }
 }

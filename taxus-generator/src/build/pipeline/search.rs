@@ -22,7 +22,10 @@ pub fn generate_search(processed_pages: &[ProcessedPage]) -> Result<GeneratedSea
         let new_search_document = SearchDocument::new(
             id as u32,
             processed.page.frontmatter.title.clone(),
-            processed.route.path.clone(),
+            // #25: the effective URL, not route.path — a custom slug
+            // moves the page, and search results must follow it or they
+            // navigate to a 404.
+            processed.effective_url_path(),
             truncate(&processed.page.summary(), TRUNCATION_LIMIT),
             processed.page.frontmatter.tags.clone(),
             processed.page.frontmatter.categories.clone(),

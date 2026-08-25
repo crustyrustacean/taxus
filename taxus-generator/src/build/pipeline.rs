@@ -46,6 +46,23 @@ pub struct ProcessedPage {
     pub hero_image: Option<ProcessedImage>,
 }
 
+impl ProcessedPage {
+    /// The URL path this page is actually served at (#25).
+    ///
+    /// A custom `slug` in frontmatter overrides the discovered route path
+    /// — the page is served at the slug URL, and `route.path` is stale for
+    /// linking purposes. Every consumer that emits a URL (feeds, sitemap,
+    /// search index, templates) must use this method, never `route.path`
+    /// directly; callers that got this wrong produced links to 404s.
+    pub fn effective_url_path(&self) -> String {
+        if self.page.frontmatter.slug.is_some() {
+            self.page.url_path()
+        } else {
+            self.route.path.clone()
+        }
+    }
+}
+
 /// Rendered page ready for writing.
 #[derive(Debug, Clone)]
 pub struct RenderedPage {

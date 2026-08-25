@@ -317,11 +317,7 @@ impl SiteBuilder {
         let aliases: Vec<AliasPage> = processed
             .iter()
             .filter_map(|p| {
-                let target_path = if p.page.frontmatter.slug.is_some() {
-                    p.page.url_path()
-                } else {
-                    p.route.path.clone()
-                };
+                let target_path = p.effective_url_path();
 
                 if p.page.aliases().is_empty() {
                     None

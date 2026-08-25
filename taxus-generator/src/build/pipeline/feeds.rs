@@ -36,12 +36,10 @@ pub fn generate_feeds(
         .filter(|p| !p.page.is_draft()) // Exclude drafts from feeds
         .map(|p| {
             let mut page = p.page.clone();
-            // Update the page path to use the correct URL path
-            let url_path = if p.page.frontmatter.slug.is_some() {
-                p.page.url_path()
-            } else {
-                p.route.path.clone()
-            };
+            // Update the page path to the effective URL (custom slug
+            // overrides the discovered route path) so the feed entry
+            // links where the page actually lives.
+            let url_path = p.effective_url_path();
             page.path = url_path;
             // Set content for full-content feeds
             if config.feed.full_content {

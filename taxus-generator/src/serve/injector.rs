@@ -52,12 +52,14 @@ pub const LIVE_RELOAD_SCRIPT: &str = r#"
     }
 
     function showErrorOverlay(message) {
-        // Remove existing overlay if present
+        // Remove existing overlay if present — the lookup id MUST match
+        // the id assigned below, otherwise consecutive build errors stack
+        // overlays instead of replacing (issue #20).
         const existing = document.getElementById('__taxus_error__');
         if (existing) existing.remove();
-        
+
         const overlay = document.createElement('div');
-        overlay.id = '__yew_ssg_error__';
+        overlay.id = '__taxus_error__';
         overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);color:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;padding:20px;';
         
         const title = document.createElement('h1');
@@ -190,6 +192,14 @@ mod tests {
     #[test]
     fn test_script_contains_error_overlay() {
         assert!(LIVE_RELOAD_SCRIPT.contains("showErrorOverlay"));
-        assert!(LIVE_RELOAD_SCRIPT.contains("__taxus_error__"));
+        // The remove-id and create-id must be the same string (#20): count
+        // occurrences — exactly two uses of __taxus_error__ (getElementById
+        // + assignment) and zero uses of the old __yew_ssg_error__ id.
+        assert_eq!(
+            LIVE_RELOAD_SCRIPT.matches("__taxus_error__").count(),
+            2,
+            "expected exactly one lookup + one assignment of the overlay id"
+        );
+        assert!(!LIVE_RELOAD_SCRIPT.contains("__yew_ssg_error__"));
     }
 }

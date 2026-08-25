@@ -1,0 +1,7 @@
+[site]
+name = "Search Slug Fixture"
+base_url = "https://example.com"
+
+[build]
+content_dir = "content"
+output_dir = "dist"

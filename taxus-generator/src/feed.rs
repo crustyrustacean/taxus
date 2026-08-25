@@ -148,16 +148,19 @@ impl FeedEntry {
         use crate::templates::compute_permalink;
         let url = compute_permalink(base_url, &page.path);
 
-        // Use summary if available, otherwise generate from content
-        let summary = page.frontmatter.summary.clone().unwrap_or_else(|| {
-            // Generate a summary from the first 200 characters of content
-            let text = page.raw_content.chars().take(200).collect::<String>();
-            if text.len() < page.raw_content.len() {
-                format!("{}...", text)
-            } else {
-                text
-            }
-        });
+        // #28: use the page's summary machinery — frontmatter.summary,
+        // `<!-- more -->` split, or first paragraph with markdown
+        // stripped — instead of truncating raw markdown into the feed.
+        // `frontmatter.description` is the fallback among authored fields
+        // when no explicit summary exists.
+        let summary = match (
+            page.frontmatter.summary.as_ref(),
+            page.frontmatter.description.as_ref(),
+        ) {
+            (Some(explicit), _) => explicit.clone(),
+            (None, Some(description)) => description.clone(),
+            (None, None) => page.summary(),
+        };
 
         // Convert date to DateTime<Utc>
         let date = page
@@ -295,6 +298,63 @@ mod tests {
         assert_eq!(entry.title, "Test Post");
         assert_eq!(entry.url, "https://example.com/test-post/");
         assert!(!entry.summary.is_empty());
+    }
+
+    #[test]
+    fn test_feed_entry_summary_strips_markdown() {
+        // #28: feed summaries must not leak raw markdown into <description>
+        let mut page = create_test_page("Md Post", "2024-01-15");
+        page.raw_content = "# A Heading\n\nSome *emphasized* prose here.".to_string();
+
+        let entry = FeedEntry::from_page(&page, "https://example.com");
+
+        assert!(
+            !entry.summary.contains('#'),
+            "summary must not contain raw heading syntax: {}",
+            entry.summary
+        );
+        assert!(
+            !entry.summary.contains('*'),
+            "summary must not contain raw emphasis syntax: {}",
+            entry.summary
+        );
+    }
+
+    #[test]
+    fn test_feed_entry_summary_respects_more_marker() {
+        let mut page = create_test_page("More Post", "2024-01-15");
+        page.raw_content = "Intro text only.\n\n<!-- more -->\n\nRest of the article.".to_string();
+
+        let entry = FeedEntry::from_page(&page, "https://example.com");
+
+        assert_eq!(entry.summary, "Intro text only.");
+    }
+
+    #[test]
+    fn test_feed_entry_summary_prefers_description() {
+        // description is user-authored prose for exactly this purpose;
+        // it should outrank content-derived summaries
+        let mut page = create_test_page("Desc Post", "2024-01-15");
+        page.raw_content = "# Heading\n\nBody content.".to_string();
+        page.frontmatter.description = Some("An authored description.".to_string());
+
+        let entry = FeedEntry::from_page(&page, "https://example.com");
+
+        assert_eq!(entry.summary, "An authored description.");
+    }
+
+    #[test]
+    fn test_feed_entry_summary_prefers_explicit_summary_over_description() {
+        // frontmatter.summary is the most specific signal; description
+        // is the fallback among authored fields
+        let mut page = create_test_page("Both Post", "2024-01-15");
+        page.raw_content = "Body.".to_string();
+        page.frontmatter.description = Some("The description.".to_string());
+        page.frontmatter.summary = Some("The summary.".to_string());
+
+        let entry = FeedEntry::from_page(&page, "https://example.com");
+
+        assert_eq!(entry.summary, "The summary.");
     }
 
     #[test]

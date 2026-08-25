@@ -146,11 +146,7 @@ pub fn render_taxonomy_pages(
                 let mut page_contexts: Vec<PageContext> = Vec::new();
                 for page_path in &term.page_paths {
                     if let Some(proc_page) = page_lookup.get(page_path) {
-                        let url_path = if proc_page.page.frontmatter.slug.is_some() {
-                            proc_page.page.url_path()
-                        } else {
-                            proc_page.route.path.clone()
-                        };
+                        let url_path = proc_page.effective_url_path();
 
                         let permalink = compute_permalink(&site_context.base_url, &url_path);
                         let page_context = PageContext {

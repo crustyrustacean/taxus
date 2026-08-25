@@ -51,11 +51,7 @@ pub fn generate_sitemap(
         }
 
         // Get the URL path (respecting custom slugs)
-        let url_path = if processed_page.page.frontmatter.slug.is_some() {
-            processed_page.page.url_path()
-        } else {
-            processed_page.route.path.clone()
-        };
+        let url_path = processed_page.effective_url_path();
 
         // Build full URL using compute_permalink for proper slash handling
         let loc = compute_permalink(base_url, &url_path);
