@@ -7,4 +7,11 @@ tag = true
 pre-release-commit-message = "chore: release v{{version}}"
 tag-message = "v{{version}}"
 tag-name = "v{{version}}"
-pre-release-hook = ["git", "cliff", "--unreleased", "--tag", "v{{version}}", "--prepend", "CHANGELOG.md"]
+# cargo-release runs pre-release hooks from the CRATE directory
+# (taxus-generator/), so relative paths resolve against the wrong dir:
+# a bare "CHANGELOG.md" made git-cliff abort every release with
+# "IO error: file not found". {{workspace_root}} is not a recognized
+# placeholder in this cargo-release version (verified: it is passed
+# through literally). Since the hook CWD is reliably the crate dir,
+# ../CHANGELOG.md reaches the workspace root on every platform.
+pre-release-hook = ["git", "cliff", "--unreleased", "--tag", "v{{version}}", "--prepend", "../CHANGELOG.md"]
