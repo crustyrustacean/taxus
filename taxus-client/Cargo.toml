@@ -11,6 +11,16 @@ repository.workspace = true
 [[bin]]
 name = "client"
 path = "src/main.rs"
+# This crate is a wasm32-only artifact (see build.rs in taxus-generator):
+# its entry point is #[wasm_bindgen] hydrate_islands(), invoked by the JS
+# shim — not a host `main`. Building a host test harness for it fails at
+# link time on Windows (LNK1561: entry point must be defined) because
+# #![no_main] leaves the generated harness exe without an entry point.
+# Host correctness is covered by `cargo check` and the wasm-check CI job
+# (wasm32-unknown-unknown); the crate's logic is unit-tested in
+# taxus-common, which is host-testable.
+test = false
+bench = false
 
 [dependencies]
 js-sys = "0.3"
