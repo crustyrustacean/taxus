@@ -609,12 +609,42 @@ footer p + p {
     padding-block: 2.5rem 1.5rem;
   }
 
+  /* Nav buttons: wrap into a compact grid instead of stacking six
+     full-width bars. Two per row fits all labels without truncation;
+     grid handles equal sizing without stretch-to-full-width, which
+     made each button span the entire 48rem container on phones. */
   header nav {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    justify-content: center;
   }
 
   header nav a {
     text-align: center;
+    padding: 0.5em 0.75em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Odd items (e.g. a lone 7th link) span both columns rather than
+     stretching to full width alone. */
+  header nav a:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  /* Prose tables overflow the 1.5rem-padded column on phones; scroll
+     them inside their own box instead of breaking the page layout. */
+  .section-content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* Search input inherits page padding plus its own; trim the doubled
+     padding so the field aligns with surrounding content edges. */
+  .search-container.search-box {
+    padding-inline: 0;
   }
 }
