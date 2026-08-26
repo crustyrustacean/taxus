@@ -432,6 +432,7 @@ impl TemplateContext {
     ///     path: "/blog/".to_string(),
     ///     permalink: "https://example.com/blog/".to_string(),
     ///     content: None,
+    ///     toc: vec![],
     ///     pages: vec![],
     ///     pagination: None,
     /// };
