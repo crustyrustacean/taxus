@@ -197,6 +197,22 @@ main {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  /* Flex/grid children default to min-width: auto and refuse to shrink
+     below their content's intrinsic width — the classic cause of
+     invisible horizontal page overflow when markdown content contains
+     a long token. Force shrinkability so containment below can work. */
+  min-width: 0;
+}
+
+/* Any long unbreakable sequence in prose (URLs pasted as text, long
+   code spans, hyphenless compounds) breaks instead of pushing the
+   layout wider than the viewport. */
+.section-content p,
+.section-content h1,
+.section-content h2,
+.section-content h3,
+.section-content li {
+  overflow-wrap: break-word;
 }
 
 .section-content h1 {
