@@ -3446,6 +3446,7 @@ dependencies = [
  "axum-extra",
  "chrono",
  "clap",
+ "deunicode",
  "futures-util",
  "grass",
  "http-body-util",

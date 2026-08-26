@@ -21,6 +21,7 @@ lang-rust = ["dep:tree-sitter-rust"]
 default = ["lang-rust"]
 
 [dependencies]
+deunicode = "1"
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }

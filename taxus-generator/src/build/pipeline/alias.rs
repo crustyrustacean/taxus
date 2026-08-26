@@ -18,13 +18,28 @@ pub struct AliasPage {
 
 impl AliasPage {
     /// Create a new alias page.
+    ///
+    /// The alias path is normalized to end with `/` (#9): every other
+    /// route form in taxus is slash-terminated, and hosts that
+    /// distinguish `/old-url` from `/old-url/` would otherwise serve a
+    /// redirect loop against the generated redirect page. `"/old-url"`
+    /// in frontmatter therefore behaves identically to `"/old-url/"`.
     pub fn new(alias_path: String, target_path: String) -> Self {
+        // Normalize: ensure a single leading slash and a trailing slash.
+        let mut normalized = alias_path.trim().to_string();
+        if !normalized.starts_with('/') {
+            normalized.insert(0, '/');
+        }
+        if normalized != "/" && !normalized.ends_with('/') {
+            normalized.push('/');
+        }
+
         // Convert alias path to output file path
         // "/old-url/" -> "old-url/index.html"
-        let output_file = if alias_path == "/" {
+        let output_file = if normalized == "/" {
             PathBuf::from("index.html")
         } else {
-            let trimmed = alias_path.trim_start_matches('/').trim_end_matches('/');
+            let trimmed = normalized.trim_start_matches('/').trim_end_matches('/');
             if trimmed.is_empty() {
                 PathBuf::from("index.html")
             } else {
@@ -33,7 +48,7 @@ impl AliasPage {
         };
 
         Self {
-            alias_path,
+            alias_path: normalized,
             target_path,
             output_file,
         }

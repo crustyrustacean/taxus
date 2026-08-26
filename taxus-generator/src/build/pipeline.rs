@@ -23,7 +23,7 @@ use crate::config::SiteConfig;
 use crate::content::Page;
 use crate::error::{GeneratorError, Result};
 use crate::images::{ImageProcessor, ImageRegistry, ProcessedImage};
-use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
+use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry, SlugMode};
 use crate::templates::TeraRenderer;
 use std::fs;
 use std::path::Path;
@@ -79,7 +79,8 @@ pub fn load_config(dir: &Path) -> std::result::Result<SiteConfig, GeneratorError
 
 /// Discover routes from the content directory.
 pub fn discover_routes(config: &SiteConfig) -> Result<RouteRegistry> {
-    let discovery = RouteDiscovery::new(&config.build.content_dir);
+    let discovery = RouteDiscovery::new(&config.build.content_dir)
+        .with_slug_mode(SlugMode::from_config(&config.build.slugify));
     Ok(discovery.discover()?)
 }
 

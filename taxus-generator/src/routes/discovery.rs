@@ -5,6 +5,7 @@
 
 use crate::content::ContentSource;
 use crate::error::RouteError;
+use crate::routes::slugify::{SlugMode, slugify_path};
 use crate::routes::{RouteInfo, RouteKind, RouteRegistry};
 use std::path::{Path, PathBuf};
 use tracing::{debug, debug_span, info, instrument};
@@ -13,6 +14,7 @@ use walkdir::WalkDir;
 /// Discovers routes from content directory structure.
 pub struct RouteDiscovery {
     content_dir: PathBuf,
+    slug_mode: SlugMode,
 }
 
 impl RouteDiscovery {
@@ -20,7 +22,20 @@ impl RouteDiscovery {
     pub fn new<P: Into<PathBuf>>(content_dir: P) -> Self {
         Self {
             content_dir: content_dir.into(),
+            slug_mode: SlugMode::default(),
         }
+    }
+
+    /// Set the slugification mode (#27).
+    ///
+    /// Controls how filenames become URL path segments. Defaults to `On`
+    /// (lowercase, transliterate, strip punctuation) so URLs contain no
+    /// raw spaces or non-ASCII bytes; `Safe` preserves non-ASCII for
+    /// languages where transliteration destroys meaning; `Off` uses
+    /// filenames verbatim.
+    pub fn with_slug_mode(mut self, mode: SlugMode) -> Self {
+        self.slug_mode = mode;
+        self
     }
 
     /// Discover all routes from the content directory.
@@ -151,11 +166,16 @@ impl RouteDiscovery {
     /// - "" -> "/"
     /// - "blog" -> "/blog/"
     /// - "blog/tech" -> "/blog/tech/"
+    ///
+    /// Each directory segment is slugified per the configured mode.
     fn parent_to_url_path(&self, parent: &Path) -> String {
         if parent.as_os_str().is_empty() {
             "/".to_string()
         } else {
-            format!("/{}/", parent.display())
+            format!(
+                "/{}/",
+                slugify_path(&parent.display().to_string(), self.slug_mode)
+            )
         }
     }
 
@@ -169,7 +189,8 @@ impl RouteDiscovery {
         if parent.as_os_str().is_empty() {
             PathBuf::from("index.html")
         } else {
-            parent.join("index.html")
+            PathBuf::from(slugify_path(&parent.display().to_string(), self.slug_mode))
+                .join("index.html")
         }
     }
 
@@ -177,12 +198,18 @@ impl RouteDiscovery {
     ///
     /// Examples:
     /// - ("", "about") -> "/about/"
-    /// - ("blog", "first-post") -> "/blog/first-post/"
+    /// - ("blog", "First Post") -> "/blog/first-post/" (mode On)
+    ///
+    /// Both the parent directory segments and the page stem are
+    /// slugified per the configured mode (#27).
     fn page_to_url_path(&self, parent: &Path, stem: &str) -> String {
         if parent.as_os_str().is_empty() {
-            format!("/{}/", stem)
+            format!("/{}/", slugify_path(stem, self.slug_mode))
         } else {
-            format!("/{}/{}/", parent.display(), stem)
+            format!(
+                "/{}/",
+                slugify_path(&format!("{}/{}", parent.display(), stem), self.slug_mode)
+            )
         }
     }
 
@@ -193,9 +220,13 @@ impl RouteDiscovery {
     /// - ("blog", "first-post") -> "blog/first-post/index.html"
     fn page_to_output_file(&self, parent: &Path, stem: &str) -> PathBuf {
         if parent.as_os_str().is_empty() {
-            PathBuf::from(stem).join("index.html")
+            PathBuf::from(slugify_path(stem, self.slug_mode)).join("index.html")
         } else {
-            parent.join(stem).join("index.html")
+            PathBuf::from(slugify_path(
+                &format!("{}/{}", parent.display(), stem),
+                self.slug_mode,
+            ))
+            .join("index.html")
         }
     }
 }
