@@ -44,7 +44,7 @@ fn create_test_section_context() -> SectionContext {
         title: "Blog".to_string(),
         description: Some("Blog section description".to_string()),
         path: "/blog/".to_string(),
-            permalink: "https://example.com/blog/".to_string(),
+        permalink: "https://example.com/blog/".to_string(),
         content: Some("<p>Welcome to the blog.</p>".to_string()),
         pages: vec![
             PageContext {
