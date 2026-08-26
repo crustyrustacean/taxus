@@ -190,6 +190,7 @@ This is your new static site. Start editing this file to add your content.
         <title>{{% block title %}}{{{{ site.name }}}}{{% endblock %}}</title>
         <link rel="icon" type="image/png" href="/static/favicon.png">
         <link rel="stylesheet" href="/css/main.css">
+        {{% block meta %}}{{% endblock meta %}}
     </head>
 <body>
     <header>
@@ -226,6 +227,15 @@ This is your new static site. Start editing this file to add your content.
 
 {% block title %}{{ page.title }} - {{ site.name }}{% endblock %}
 
+{% block meta %}
+    {% if page.description %}<meta name="description" content="{{ page.description }}">{% endif %}
+    <meta property="og:title" content="{{ page.title }}">
+    {% if page.description %}<meta property="og:description" content="{{ page.description }}">{% endif %}
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ page.permalink }}">
+    {% if page.hero %}{% set origin = page.permalink | trim_end(pat=page.path) %}<meta property="og:image" content="{{ origin }}{{ page.hero.src }}">{% endif %}
+{% endblock meta %}
+
 {% block content %}
 <article>
     {% if page.hero %}
@@ -237,6 +247,9 @@ This is your new static site. Start editing this file to add your content.
     </picture>
     {% endif %}
     <h1>{{ page.title }}</h1>
+    {% if page.date %}
+    <time datetime="{{ page.date }}">{{ page.date }}</time>
+    {% endif %}
     {% if page.description %}
     <p class="description">{{ page.description }}</p>
     {% endif %}

@@ -26,6 +26,9 @@ pub struct SiteConfig {
     /// Image processing configuration
     #[serde(default)]
     pub images: ImageConfig,
+    /// Markdown rendering configuration
+    #[serde(default)]
+    pub markdown: MarkdownConfig,
     /// Base directory containing site.toml (not serialized)
     #[serde(skip)]
     pub base_dir: PathBuf,
@@ -213,6 +216,16 @@ pub struct ImageConfig {
     pub output_dir: PathBuf,
 }
 
+/// Markdown rendering configuration from the `[markdown]` section.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MarkdownConfig {
+    /// Insert a visible anchor link (`#`) into each heading for
+    /// deep-linking. Defaults to false.
+    #[serde(default)]
+    pub insert_anchor_links: bool,
+}
+
 fn default_image_widths() -> Vec<u32> {
     vec![400, 800, 1200]
 }
@@ -337,6 +350,7 @@ impl SiteConfig {
             feed: FeedConfig::default(),
             highlight: HighlightConfig::default(),
             images: ImageConfig::default(),
+            markdown: MarkdownConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

@@ -43,7 +43,7 @@
 
 mod discovery;
 mod registry;
-mod slugify;
+pub mod slugify;
 
 pub use discovery::RouteDiscovery;
 pub use registry::{RouteInfo, RouteKind, RouteRegistry};

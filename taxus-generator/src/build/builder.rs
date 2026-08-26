@@ -375,7 +375,9 @@ impl SiteBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{BuildConfig, FeedConfig, HighlightConfig, ImageConfig, SiteMeta};
+    use crate::config::{
+        BuildConfig, FeedConfig, HighlightConfig, ImageConfig, MarkdownConfig, SiteMeta,
+    };
     use std::path::PathBuf;
 
     fn test_config() -> SiteConfig {
@@ -397,6 +399,7 @@ mod tests {
             feed: FeedConfig::default(),
             highlight: HighlightConfig::default(),
             images: ImageConfig::default(),
+            markdown: MarkdownConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

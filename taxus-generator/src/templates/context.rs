@@ -6,6 +6,7 @@
 //! to templates during rendering. These types are serialized to JSON
 //! and passed to the template engine.
 
+use crate::build::pipeline::markdown::TocEntry;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -85,6 +86,11 @@ pub struct PageContext {
 
     /// Estimated reading time in minutes
     pub reading_time: usize,
+
+    /// Table of contents extracted from the page's headings.
+    /// Empty unless the page contains headings.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub toc: Vec<TocEntry>,
 
     /// Tags for the page
     #[serde(default)]
@@ -177,6 +183,10 @@ pub struct SectionContext {
     /// Section HTML content (rendered from markdown)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+
+    /// Table of contents extracted from the section's headings.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub toc: Vec<TocEntry>,
 
     /// Pages in this section
     pub pages: Vec<PageContext>,
@@ -377,6 +387,7 @@ impl TemplateContext {
     ///     tagline: None,
     ///     path: "/test/".to_string(),
     ///     permalink: "https://example.com/test/".to_string(),
+    ///     toc: Vec::new(),
     ///     content: String::new(),
     ///     raw_content: String::new(),
     ///     date: None,
@@ -471,6 +482,7 @@ mod tests {
 
     fn create_test_page() -> PageContext {
         PageContext {
+            toc: Vec::new(),
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
             tagline: Some("This is a tagline.".to_string()),
@@ -492,6 +504,7 @@ mod tests {
 
     fn create_test_section() -> SectionContext {
         SectionContext {
+            toc: Vec::new(),
             title: "Blog".to_string(),
             description: Some("Blog section description".to_string()),
             path: "/blog/".to_string(),

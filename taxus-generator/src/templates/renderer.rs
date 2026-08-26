@@ -417,6 +417,7 @@ mod tests {
 
     fn create_test_page_context() -> PageContext {
         PageContext {
+            toc: Vec::new(),
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
             tagline: Some("This is a tagline".to_string()),
@@ -438,6 +439,7 @@ mod tests {
 
     fn create_test_section_context() -> SectionContext {
         SectionContext {
+            toc: Vec::new(),
             title: "Blog".to_string(),
             description: Some("Blog section description".to_string()),
             path: "/blog/".to_string(),

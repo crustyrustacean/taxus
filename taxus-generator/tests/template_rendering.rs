@@ -18,6 +18,7 @@ fn create_test_site_context() -> SiteContext {
 
 fn create_test_page_context() -> PageContext {
     PageContext {
+        toc: Vec::new(),
         title: "Test Page".to_string(),
         description: Some("A test page".to_string()),
         tagline: Some("A test tagline".to_string()),
@@ -39,12 +40,14 @@ fn create_test_page_context() -> PageContext {
 
 fn create_test_section_context() -> SectionContext {
     SectionContext {
+        toc: Vec::new(),
         title: "Blog".to_string(),
         description: Some("Blog section description".to_string()),
         path: "/blog/".to_string(),
         content: Some("<p>Welcome to the blog.</p>".to_string()),
         pages: vec![
             PageContext {
+                toc: Vec::new(),
                 title: "First Post".to_string(),
                 description: Some("My first post".to_string()),
                 tagline: Some("A test tagline".to_string()),
@@ -63,6 +66,7 @@ fn create_test_section_context() -> SectionContext {
                 hero: None,
             },
             PageContext {
+                toc: Vec::new(),
                 title: "Second Post".to_string(),
                 description: Some("My second post".to_string()),
                 tagline: Some("A test tagline".to_string()),
@@ -395,6 +399,7 @@ fn test_render_with_optional_fields() {
 
     // Page without optional fields
     let minimal_page = PageContext {
+        toc: Vec::new(),
         title: "Minimal".to_string(),
         description: None,
         tagline: None,

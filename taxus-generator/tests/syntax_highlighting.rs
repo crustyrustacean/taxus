@@ -103,7 +103,7 @@ fn test_non_code_content_renders_normally() {
     let (_dir, html) = build_highlight_site();
 
     assert!(
-        html.contains("<h1>Syntax Highlighting Test</h1>"),
+        html.contains("<h1 id=\"syntax-highlighting-test\">Syntax Highlighting Test</h1>"),
         "Non-code content should render as normal HTML"
     );
 }

@@ -156,6 +156,7 @@ pub fn render_taxonomy_pages(
                             path: url_path,
                             permalink,
                             content: proc_page.html_content.clone(),
+                            toc: proc_page.toc.clone(),
                             raw_content: proc_page.page.raw_content.clone(),
                             date: proc_page.page.frontmatter.date.map(|d| d.to_string()),
                             draft: proc_page.page.is_draft(),
@@ -300,12 +301,14 @@ Content 2
 
         let processed = vec![
             ProcessedPage {
+                toc: Vec::new(),
                 route: route1,
                 page: page1,
                 html_content: "<p>Content 1</p>".to_string(),
                 hero_image: None,
             },
             ProcessedPage {
+                toc: Vec::new(),
                 route: route2,
                 page: page2,
                 html_content: "<p>Content 2</p>".to_string(),
@@ -349,6 +352,7 @@ Content
         .unwrap();
 
         let processed = vec![ProcessedPage {
+            toc: Vec::new(),
             route,
             page,
             html_content: "<p>Content</p>".to_string(),
@@ -431,12 +435,14 @@ Content 2
 
         let processed = vec![
             ProcessedPage {
+                toc: Vec::new(),
                 route: route1,
                 page: page1,
                 html_content: "<p>Content 1</p>".to_string(),
                 hero_image: None,
             },
             ProcessedPage {
+                toc: Vec::new(),
                 route: route2,
                 page: page2,
                 html_content: "<p>Content 2</p>".to_string(),

@@ -111,3 +111,73 @@ footer {
         color: #0066cc;
     }
 }
+/* ── GFM task lists ── */
+ul.task-list {
+    list-style: none;
+    padding-left: 0;
+
+    li {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+    }
+
+    input[type="checkbox"] {
+        accent-color: currentColor;
+        margin: 0;
+    }
+}
+
+/* ── Footnotes ── */
+.footnote-definition,
+section.footnotes {
+    font-size: 0.9em;
+    border-top: 1px solid #eee;
+    margin-top: 2rem;
+    padding-top: 1rem;
+}
+
+sup > a.footnote-reference {
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ── Heading anchors ── */
+/* Anchor links are visually hidden until the heading is hovered or
+   focused via keyboard, so they don't clutter scanning but are always
+   discoverable. */
+h1[id], h2[id], h3[id], h4[id], h5[id], h6[id] {
+    position: relative;
+
+    > a.anchor {
+        opacity: 0;
+        position: absolute;
+        left: -1.25em;
+        text-decoration: none;
+        font-weight: 400;
+        transition: opacity 150ms ease;
+    }
+
+    &:hover > a.anchor,
+    > a.anchor:focus-visible {
+        opacity: 1;
+    }
+}
+
+/* ── Table of contents ── */
+.toc {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    background: #fafafa;
+
+    ul {
+        padding-left: 1.25rem;
+        margin: 0.25rem 0;
+    }
+
+    li {
+        margin: 0.15rem 0;
+    }
+}

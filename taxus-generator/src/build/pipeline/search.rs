@@ -127,6 +127,7 @@ mod tests {
         };
 
         ProcessedPage {
+            toc: Vec::new(),
             route,
             page,
             html_content: format!("<p>{}</p>", content),

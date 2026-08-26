@@ -42,6 +42,8 @@ pub struct ProcessedPage {
     pub page: Page,
     /// Rendered HTML content
     pub html_content: String,
+    /// Table of contents extracted from the page's headings (#31)
+    pub toc: Vec<markdown::TocEntry>,
     /// Processed hero image metadata (if page has hero_image)
     pub hero_image: Option<ProcessedImage>,
 }
@@ -112,14 +114,22 @@ pub fn process_content(
         let resolved_content =
             resolve_internal_links(&page.raw_content, &route.content_file, registry)?;
 
-        // Convert markdown to HTML
-        let html_content =
-            markdown::markdown_to_html(&resolved_content, highlighter.as_deref_mut());
+        // Convert markdown to HTML (collecting heading TOC at the same time)
+        let md_options = markdown::MarkdownOptions {
+            insert_anchor_links: config.markdown.insert_anchor_links,
+            slug_mode: crate::routes::SlugMode::from_config(&config.build.slugify),
+        };
+        let (html_content, toc) = markdown::markdown_to_html_with_toc(
+            &resolved_content,
+            highlighter.as_deref_mut(),
+            &md_options,
+        );
 
         pages.push(ProcessedPage {
             route: route.clone(),
             page,
             html_content,
+            toc,
             hero_image: None,
         });
     }

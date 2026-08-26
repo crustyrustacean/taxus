@@ -3,7 +3,7 @@
 use std::fs;
 use taxus_lib::build::SiteBuilder;
 use taxus_lib::config::{
-    BuildConfig, FeedConfig, HighlightConfig, ImageConfig, SiteConfig, SiteMeta,
+    BuildConfig, FeedConfig, HighlightConfig, ImageConfig, MarkdownConfig, SiteConfig, SiteMeta,
 };
 use taxus_lib::images::{ImageProcessor, ImageRegistry, render_picture};
 use tempfile::TempDir;
@@ -138,6 +138,7 @@ This post has a hero image.
         feed: FeedConfig::default(),
         highlight: HighlightConfig::default(),
         images: ImageConfig::default(),
+        markdown: MarkdownConfig::default(),
         base_dir: temp.path().to_path_buf(),
     }
 }
@@ -321,6 +322,7 @@ Content without hero_alt.
         feed: FeedConfig::default(),
         highlight: HighlightConfig::default(),
         images: ImageConfig::default(),
+        markdown: MarkdownConfig::default(),
         base_dir: temp.path().to_path_buf(),
     };
 

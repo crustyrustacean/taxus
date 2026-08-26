@@ -34,6 +34,7 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
         path: url_path,
         permalink,
         content: processed.html_content.clone(),
+        toc: processed.toc.clone(),
         raw_content: processed.page.raw_content.clone(),
         date: processed.page.frontmatter.date.map(|d| d.to_string()),
         draft: processed.page.is_draft(),
@@ -134,6 +135,7 @@ fn render_paginated_section(
             description: processed_page.page.frontmatter.description.clone(),
             path: page_url(page_num),
             content: Some(processed_page.html_content.clone()),
+            toc: processed_page.toc.clone(),
             pages: slice,
             pagination: Some(pagination_context),
         };
@@ -231,6 +233,7 @@ pub fn render_pages(
                 description: processed_page.page.frontmatter.description.clone(),
                 path: url_path.clone(),
                 content: Some(processed_page.html_content.clone()),
+                toc: processed_page.toc.clone(),
                 pages: child_pages,
                 pagination: None,
             };
@@ -336,6 +339,7 @@ This is the content.
             route,
             page,
             html_content: "<p>This is the content.</p>".to_string(),
+            toc: Vec::new(),
             hero_image: None,
         };
 
@@ -376,6 +380,7 @@ This is the content.
             route,
             page,
             html_content: "<p>This is the content.</p>".to_string(),
+            toc: Vec::new(),
             hero_image: None,
         };
 
@@ -423,6 +428,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -449,6 +455,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -475,6 +482,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -535,6 +543,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -602,6 +611,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -645,6 +655,7 @@ This is the content.
                     content: None,
                 },
                 html_content: format!("<p>Content {}</p>", i),
+                toc: Vec::new(),
                 hero_image: None,
             });
         }
@@ -713,6 +724,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -740,6 +752,7 @@ This is the content.
             )
             .unwrap();
             ProcessedPage {
+                toc: Vec::new(),
                 route,
                 page: Page {
                     frontmatter: Frontmatter {
@@ -793,6 +806,7 @@ Content here.
         .unwrap();
 
         let processed = ProcessedPage {
+            toc: Vec::new(),
             route,
             page,
             html_content: "<p>Content here.</p>".to_string(),

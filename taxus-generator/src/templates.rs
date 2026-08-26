@@ -43,6 +43,7 @@
 //!     summary: String::new(),
 //!     word_count: 1,
 //!     reading_time: 1,
+//!     toc: vec![],
 //!     tags: vec![],
 //!     categories: vec![],
 //!     series: None,
