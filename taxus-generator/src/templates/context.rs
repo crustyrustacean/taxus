@@ -180,6 +180,10 @@ pub struct SectionContext {
     /// Section URL path (e.g., "/blog/")
     pub path: String,
 
+    /// Pre-computed absolute URL combining base_url and path
+    /// (e.g., "https://example.com/blog/")
+    pub permalink: String,
+
     /// Section HTML content (rendered from markdown)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
@@ -426,6 +430,7 @@ impl TemplateContext {
     ///     title: "Blog".to_string(),
     ///     description: None,
     ///     path: "/blog/".to_string(),
+    ///     permalink: "https://example.com/blog/".to_string(),
     ///     content: None,
     ///     pages: vec![],
     ///     pagination: None,
@@ -508,6 +513,7 @@ mod tests {
             title: "Blog".to_string(),
             description: Some("Blog section description".to_string()),
             path: "/blog/".to_string(),
+            permalink: "https://example.com/blog/".to_string(),
             content: Some("<p>Welcome to the blog.</p>".to_string()),
             pages: vec![create_test_page()],
             pagination: None,

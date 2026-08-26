@@ -443,6 +443,7 @@ mod tests {
             title: "Blog".to_string(),
             description: Some("Blog section description".to_string()),
             path: "/blog/".to_string(),
+            permalink: "https://example.com/blog/".to_string(),
             content: Some("<p>Welcome to the blog.</p>".to_string()),
             pages: vec![create_test_page_context()],
             pagination: None,

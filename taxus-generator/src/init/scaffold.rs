@@ -282,6 +282,14 @@ This is your new static site. Start editing this file to add your content.
 
 {% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
 
+{% block meta %}
+    {% if section.description %}<meta name="description" content="{{ section.description }}">{% endif %}
+    <meta property="og:title" content="{{ section.title }}">
+    {% if section.description %}<meta property="og:description" content="{{ section.description }}">{% endif %}
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ section.permalink }}">
+{% endblock meta %}
+
 {% block content %}
 <section>
     <h1>{{ section.title }}</h1>
