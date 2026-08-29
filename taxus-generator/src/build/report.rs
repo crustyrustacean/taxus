@@ -48,9 +48,26 @@ impl BuildReport {
         self.pages_rendered + self.sections_rendered + self.assets.files_processed
     }
 
-    /// Check if the build had any warnings.
+    /// Check if the build had any warnings (advisory notices).
+    ///
+    /// Asset *errors* are not warnings — see [`has_errors`](Self::has_errors).
     pub fn has_warnings(&self) -> bool {
-        !self.warnings.is_empty() || self.assets.has_errors()
+        !self.warnings.is_empty()
+    }
+
+    /// Check if the build had any hard errors (e.g. asset failures).
+    ///
+    /// The CLI exits non-zero on errors **or** warnings; this method
+    /// exists so the summary can say which it was — a build with asset
+    /// errors is not "completed with warnings" (#24).
+    pub fn has_errors(&self) -> bool {
+        self.assets.has_errors()
+    }
+
+    /// Whether the build failed outright: any error, or any warning
+    /// (warnings are treated as exit-worthy per CLI policy).
+    pub fn is_failure(&self) -> bool {
+        self.has_warnings() || self.has_errors()
     }
 
     /// Add a warning to the report.
@@ -60,7 +77,9 @@ impl BuildReport {
 
     /// Print a summary of the build to stdout.
     pub fn print_summary(&self) {
-        let status = if self.has_warnings() {
+        let status = if self.has_errors() {
+            "completed_with_errors"
+        } else if self.has_warnings() {
             "completed_with_warnings"
         } else {
             "complete"
@@ -76,11 +95,22 @@ impl BuildReport {
             duration_ms = self.duration.as_millis() as u64,
             output_dir = %self.output_dir.display(),
             "Build {}",
-            if self.has_warnings() { "completed with warnings" } else { "complete" }
+            if self.has_errors() {
+                "completed with errors"
+            } else if self.has_warnings() {
+                "completed with warnings"
+            } else {
+                "complete"
+            }
         );
 
         // Human-readable output
-        let status_msg = if self.has_warnings() {
+        let status_msg = if self.has_errors() {
+            format!(
+                "✗  Build completed with errors  ({:.2}s)",
+                self.duration.as_secs_f64()
+            )
+        } else if self.has_warnings() {
             format!(
                 "⚠  Build completed with warnings  ({:.2}s)",
                 self.duration.as_secs_f64()
@@ -107,9 +137,12 @@ impl BuildReport {
                 warn!(warning = %warning, "Build warning");
                 println!("    ⚠  {warning}");
             }
+        }
+        if self.has_errors() {
+            println!("\n  Errors:");
             for error in &self.assets.errors {
                 warn!(error = %error, "Asset error");
-                println!("    ⚠  {error}");
+                println!("    ✗  {error}");
             }
         }
     }
@@ -170,10 +203,20 @@ mod tests {
     }
 
     #[test]
-    fn test_build_report_has_warnings_from_assets() {
+    fn test_build_report_asset_errors_are_errors_not_warnings() {
         let mut report = BuildReport::default();
         report.assets.errors.push("Asset error".to_string());
-        assert!(report.has_warnings());
+        // #24: an asset error is an ERROR — must not be reported as a warning.
+        assert!(report.has_errors());
+        assert!(!report.has_warnings());
+        assert!(report.is_failure());
+    }
+
+    #[test]
+    fn test_build_report_is_failure_on_warning() {
+        let mut report = BuildReport::default();
+        report.add_warning("w");
+        assert!(report.is_failure());
     }
 
     #[test]

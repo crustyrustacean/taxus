@@ -32,26 +32,35 @@ pub enum ChangeType {
 
 impl ChangeType {
     /// Determine the change type from a file path.
+    ///
+    /// Matches on path *components*, not substrings: `content/blog/...`
+    /// is Content, but a file at `my-content/notes.md` or one inside a
+    /// directory named `styles-archive/` must not misclassify (#11).
+    /// Substring matching also couldn't distinguish `content/static.md`
+    /// (a content file that happens to be named "static") from anything
+    /// under `static/`.
     pub fn from_path(path: &Path) -> Self {
-        let path_str = path.to_string_lossy();
-
         // Check for config file first (exact match)
         if path.ends_with("site.toml") {
             return ChangeType::Config;
         }
 
-        // Check directory prefixes
-        if path_str.contains("content/") || path_str.contains("content\\") {
-            return ChangeType::Content;
-        }
-        if path_str.contains("templates/") || path_str.contains("templates\\") {
-            return ChangeType::Template;
-        }
-        if path_str.contains("styles/") || path_str.contains("styles\\") {
-            return ChangeType::Style;
-        }
-        if path_str.contains("static/") || path_str.contains("static\\") {
-            return ChangeType::Static;
+        let mut components = path.components().peekable();
+        // Tolerate absolute paths (site-dir prefix) and "." segments by
+        // scanning for the FIRST recognized component. A recognized name
+        // only classifies when it is a directory (has a further component);
+        // a file merely *named* "content"/"static" is not a directory hit.
+        while let Some(comp) = components.next() {
+            let matched = match comp.as_os_str().to_str() {
+                Some("content") => ChangeType::Content,
+                Some("templates") => ChangeType::Template,
+                Some("styles") => ChangeType::Style,
+                Some("static") => ChangeType::Static,
+                _ => continue,
+            };
+            if components.peek().is_some() {
+                return matched;
+            }
         }
 
         ChangeType::Unknown

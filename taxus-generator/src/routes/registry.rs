@@ -167,49 +167,6 @@ impl RouteRegistry {
             .values()
             .find(|r| r.content_file == content_file)
     }
-
-    /// Generate Rust code for client routing (for future use).
-    ///
-    /// This is a stub implementation that will be expanded in a future phase
-    /// to generate code for the client-side router.
-    pub fn generate_rust_manifest(&self) -> String {
-        let mut output = String::new();
-        output.push_str("// Auto-generated route manifest\n");
-        output.push_str("use yew_router::Routable;\n\n");
-        output.push_str("#[derive(Routable, Clone, PartialEq)]\n");
-        output.push_str("pub enum Route {\n");
-
-        for route in self.routes.values() {
-            let route_path = if route.path == "/" {
-                "".to_string()
-            } else {
-                route.path.trim_end_matches('/').to_string()
-            };
-            let variant_name = if route.path == "/" {
-                "Home".to_string()
-            } else {
-                route
-                    .path
-                    .trim_matches('/')
-                    .trim_end_matches('/')
-                    .split('/')
-                    .map(|s| {
-                        let mut chars = s.chars();
-                        match chars.next() {
-                            None => String::new(),
-                            Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join("")
-            };
-            output.push_str(&format!("    #[at(\"{}\")]\n", route_path));
-            output.push_str(&format!("    {},\n", variant_name));
-        }
-
-        output.push_str("}\n");
-        output
-    }
 }
 
 #[cfg(test)]
@@ -490,40 +447,5 @@ mod tests {
         assert_eq!(paths.len(), 2);
         assert!(paths.contains(&"/about/"));
         assert!(paths.contains(&"/blog/"));
-    }
-
-    #[test]
-    fn test_registry_generate_rust_manifest() {
-        let mut registry = RouteRegistry::new();
-
-        registry
-            .register(
-                RouteInfo::new(
-                    "/".to_string(),
-                    PathBuf::from("_index.md"),
-                    PathBuf::from("index.html"),
-                    RouteKind::Section,
-                )
-                .unwrap(),
-            )
-            .unwrap();
-
-        registry
-            .register(
-                RouteInfo::new(
-                    "/about/".to_string(),
-                    PathBuf::from("about.md"),
-                    PathBuf::from("about/index.html"),
-                    RouteKind::Page,
-                )
-                .unwrap(),
-            )
-            .unwrap();
-
-        let manifest = registry.generate_rust_manifest();
-        assert!(manifest.contains("Auto-generated route manifest"));
-        assert!(manifest.contains("Route"));
-        assert!(manifest.contains("Home"));
-        assert!(manifest.contains("About"));
     }
 }

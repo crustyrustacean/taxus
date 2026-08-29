@@ -59,7 +59,7 @@ async fn main() {
                         report.print_summary();
                     }
 
-                    if report.has_warnings() {
+                    if report.is_failure() {
                         std::process::exit(1);
                     }
                 }

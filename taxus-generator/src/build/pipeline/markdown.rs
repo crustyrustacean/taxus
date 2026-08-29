@@ -1,5 +1,6 @@
 // taxus-generator/src/build/pipeline/markdown.rs
 
+use crate::highlighting::engine::escape_html;
 use crate::highlighting::{CodeHighlighter, HighlightResult};
 use crate::routes::slugify::{SlugMode, slugify_segment};
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
@@ -471,21 +472,8 @@ fn insert_toc_entry(toc: &mut Vec<TocEntry>, entry: TocEntry) {
     toc.push(entry);
 }
 
-/// Escape characters with special meaning in HTML text content.
-fn escape_html(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&#x27;"),
-            _ => out.push(c),
-        }
-    }
-    out
-}
+// escape_html was consolidated into highlighting::engine (#15) — the
+// duplicate lived here. Use the shared one below.
 
 // ============================================
 // Markdown Rendering Tests

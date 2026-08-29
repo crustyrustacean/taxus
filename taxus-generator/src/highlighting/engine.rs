@@ -115,7 +115,13 @@ impl CodeHighlighter {
     }
 }
 
-fn escape_html(text: &str) -> String {
+/// Escape characters with special meaning in HTML text content.
+///
+/// The single shared implementation for the crate (markdown.rs's copy was
+/// consolidated here, #15). The two former copies differed only in the
+/// apostrophe entity (`&#39;` vs `&#x27;`) — numerically identical
+/// codepoints, no behavioral difference.
+pub(crate) fn escape_html(text: &str) -> String {
     let mut escaped = String::with_capacity(text.len());
     for ch in text.chars() {
         match ch {
@@ -123,7 +129,7 @@ fn escape_html(text: &str) -> String {
             '<' => escaped.push_str("&lt;"),
             '>' => escaped.push_str("&gt;"),
             '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
+            '\'' => escaped.push_str("&#x27;"),
             _ => escaped.push(ch),
         }
     }

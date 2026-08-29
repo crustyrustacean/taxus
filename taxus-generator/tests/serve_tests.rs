@@ -322,3 +322,52 @@ mod config_tests {
         assert_eq!(config.site_dir, PathBuf::from("mysite"));
     }
 }
+
+// =============================================================================
+// #11: component-based classification must not substring-match
+// =============================================================================
+
+mod change_type_regression_tests {
+    use super::*;
+
+    #[test]
+    fn test_file_named_static_is_not_static_dir() {
+        // content/static.md is a CONTENT file whose name contains "static".
+        let path = PathBuf::from("content/static.md");
+        assert_eq!(ChangeType::from_path(&path), ChangeType::Content);
+    }
+
+    #[test]
+    fn test_dir_named_my_content_is_unknown() {
+        // Substring matching would have called this Content.
+        let path = PathBuf::from("my-content/notes.md");
+        assert_eq!(ChangeType::from_path(&path), ChangeType::Unknown);
+    }
+
+    #[test]
+    fn test_dir_named_styles_archive_is_unknown() {
+        let path = PathBuf::from("styles-archive/old.scss");
+        assert_eq!(ChangeType::from_path(&path), ChangeType::Unknown);
+    }
+
+    #[test]
+    fn test_static_named_content_md_is_static() {
+        let path = PathBuf::from("static/content.md");
+        assert_eq!(ChangeType::from_path(&path), ChangeType::Static);
+    }
+
+    #[test]
+    fn test_absolute_style_path() {
+        let path = PathBuf::from("/site/styles/main.scss");
+        assert_eq!(ChangeType::from_path(&path), ChangeType::Style);
+    }
+
+    #[test]
+    fn test_bare_directory_names_still_classify() {
+        // Relative paths where the dir is the only segment before the file.
+        assert_eq!(
+            ChangeType::from_path(&PathBuf::from("content/x.md")),
+            ChangeType::Content
+        );
+    }
+}

@@ -275,22 +275,22 @@ fn cmd_build(release: bool, features: Option<String>) -> i32 {
 }
 
 fn cmd_test(release: bool, features: Option<String>, nextest: bool) -> i32 {
-    let mut args = Vec::new();
+    // Build each subcommand's argv explicitly rather than inserting into a
+    // shared list — order-coupled insert(0)/insert(1) was fragile (#21).
+    let mut flags: Vec<String> = Vec::new();
     if release {
-        args.push("--release".into());
+        flags.push("--release".into());
     }
-    args.extend(feature_args(feature_flags(features)));
+    flags.extend(feature_args(feature_flags(features)));
+    let flag_refs: Vec<&str> = flags.iter().map(String::as_str).collect();
 
     if nextest {
         require_tool("cargo-nextest", "Install with: cargo install cargo-nextest");
-        args.insert(0, "nextest".into());
-        args.insert(1, "run".into());
-        cargo(
-            &args[0],
-            &args[1..].iter().map(String::as_str).collect::<Vec<_>>(),
-        )
+        let mut nextest_args: Vec<&str> = vec!["run"];
+        nextest_args.extend(flag_refs.iter().copied());
+        cargo("nextest", &nextest_args)
     } else {
-        cargo("test", &args.iter().map(String::as_str).collect::<Vec<_>>())
+        cargo("test", &flag_refs)
     }
 }
 
