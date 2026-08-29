@@ -161,7 +161,7 @@ Notes:
 - A plain `cargo release <level>` (no `--execute`) still modifies `Cargo.toml` and `CHANGELOG.md` before stopping — `git checkout -- .` to undo.
 - `push = false` and `publish = false` in `release.toml`: nothing leaves the machine until step 3.
 - If `cargo build`/`test` fails with `Access is denied (os error 5)` on Windows, a running `taxus.exe` (usually a leftover `serve`) is holding the binary: `taskkill /F /IM taxus.exe` and retry.
-- CI runs on the push: build/test/clippy, security audit, docs, and the get-taxus.org deploy. Check with `gh run list`.
+- CI runs on the push: build/test/clippy, security audit, docs, and the get-taxus.org deploy. Check with `gh run list`. The audit fails on **yanked** crates too, not just vulnerabilities — those appear unpredictably (they're other people's unpublish decisions, e.g. chacha20 0.10.1). If only the audit is red, run `cargo update -p <crate>` and push a lockfile-only follow-up.
 
 ## Workspace Structure
 
