@@ -41,12 +41,13 @@ use futures_util::{SinkExt, StreamExt};
 use http_body_util::BodyExt;
 use tokio::sync::broadcast;
 use tower_http::services::{ServeDir, ServeFile};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
+use super::coordinator::RebuildCoordinator;
 use super::error::ServeError;
 use super::injector::inject_live_reload_script;
 use super::watcher::FileWatcher;
-use super::websocket::{ReloadEvent, WebSocketMessage};
+use super::websocket::WebSocketMessage;
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -182,6 +183,7 @@ impl DevServer {
         // Start file watcher
         let mut watcher = FileWatcher::new(self.config.site_dir.clone())?;
         watcher.start()?;
+        let (watcher_guard, watch_events) = watcher.into_receiver();
 
         // Shared state — build_ready starts false so the middleware can
         // serve a "Building…" page until the initial build finishes.
@@ -205,77 +207,36 @@ impl DevServer {
         info!("Development server listening on http://{}", addr);
         info!("Press Ctrl+C to stop");
 
-        // ── Spawn watcher task (unchanged logic) ────────────────────────
-        let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+        // Every rebuild — the initial one and every watcher-triggered one —
+        // goes through this coordinator, which serialises them behind one
+        // mutex and coalesces change events that arrive mid-build (#36).
+        let coordinator = Arc::new(RebuildCoordinator::from_blocking(
+            self.rebuild.clone(),
+            reload_tx.clone(),
+        ));
 
-        let rebuild = self.rebuild.clone();
-        let reload_tx_for_watcher = reload_tx.clone();
+        // ── Spawn watcher task ──────────────────────────────────────────
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
+        let coordinator_for_watcher = coordinator.clone();
         let watcher_handle = tokio::spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = &mut shutdown_rx => {
-                        info!("File watcher shutting down...");
-                        break;
-                    }
-                    result = watcher.recv() => {
-                        match result {
-                            Some(event) => {
-                                info!("Change detected: {:?}", event.change_type);
-
-                                let rebuild_clone = rebuild.clone();
-                                let result = tokio::task::spawn_blocking(move || (rebuild_clone)())
-                                    .await
-                                    .unwrap_or_else(|e| Err(format!("Build task failed: {}", e)));
-
-                                match result {
-                                    Ok(_) => {
-                                        let files: Vec<String> = event
-                                            .paths
-                                            .iter()
-                                            .map(|p| p.to_string_lossy().to_string())
-                                            .collect();
-                                        let reload_event = ReloadEvent::new(event.change_type, files);
-                                        let _ = reload_tx_for_watcher.send(WebSocketMessage::Reload(reload_event));
-                                    }
-                                    Err(e) => {
-                                        error!("Build failed: {}", e);
-                                        let _ = reload_tx_for_watcher.send(WebSocketMessage::Error {
-                                            message: format!("Build failed: {}", e),
-                                        });
-                                    }
-                                }
-                            }
-                            None => {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            coordinator_for_watcher.run(watch_events, shutdown_rx).await;
+            // Keep the OS watcher registered for as long as the loop runs.
+            drop(watcher_guard);
         });
 
         // ── Spawn initial build (runs concurrently with the server) ─────
-        let rebuild_for_build = self.rebuild.clone();
-        let reload_tx_for_build = reload_tx.clone();
         let build_ready_for_build = build_ready.clone();
         let open_browser = self.config.open;
         let port = self.config.port;
 
         tokio::spawn(async move {
             info!("Performing initial build...");
-            let result = tokio::task::spawn_blocking(move || (rebuild_for_build)())
-                .await
-                .unwrap_or_else(|e| Err(format!("Initial build task failed: {}", e)));
-
-            match result {
+            // The coordinator broadcasts a failure to connected browsers;
+            // only the logging is done here.
+            match coordinator.build().await {
                 Ok(_) => info!("Initial build complete"),
-                Err(e) => {
-                    warn!("Initial build failed: {}", e);
-                    let _ = reload_tx_for_build.send(WebSocketMessage::Error {
-                        message: format!("Build failed: {}", e),
-                    });
-                }
+                Err(e) => warn!("Initial build failed: {}", e),
             }
 
             // Mark build as ready regardless of outcome so the "Building…"

@@ -207,6 +207,28 @@ impl FileWatcher {
     pub async fn recv(&mut self) -> Option<WatchEvent> {
         self.event_rx.recv().await
     }
+
+    /// Split the watcher into a [`WatcherGuard`] and the raw event receiver.
+    ///
+    /// The guard keeps the OS watcher registered; drop it to stop watching.
+    /// The receiver yields the same events [`FileWatcher::recv`] would, but
+    /// as a plain channel so a consumer can also `try_recv` to drain events
+    /// that queued up while it was busy.
+    pub fn into_receiver(self) -> (WatcherGuard, mpsc::Receiver<WatchEvent>) {
+        (
+            WatcherGuard {
+                _watcher: self.watcher,
+            },
+            self.event_rx,
+        )
+    }
+}
+
+/// Keeps the underlying OS watcher alive after [`FileWatcher::into_receiver`].
+///
+/// Dropping the guard unregisters the watcher and closes the event channel.
+pub struct WatcherGuard {
+    _watcher: RecommendedWatcher,
 }
 
 #[cfg(test)]
