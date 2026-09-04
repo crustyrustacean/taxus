@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **serve**: Serialize and coalesce dev-server rebuilds. The initial build and
+  watcher-triggered rebuilds now share one lock so two builds can never write
+  to the output directory at once, and change events that arrive while a build
+  is running are drained into a single follow-up rebuild instead of one per
+  event (#36)
+
 ## [0.5.1] - 2026-08-29
 
 ### Changed

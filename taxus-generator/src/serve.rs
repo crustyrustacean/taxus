@@ -33,6 +33,7 @@
 //! }
 //! ```
 
+mod coordinator;
 mod error;
 mod injector;
 mod server;
@@ -42,5 +43,5 @@ mod websocket;
 pub use error::ServeError;
 pub use injector::{LIVE_RELOAD_SCRIPT, inject_live_reload_script};
 pub use server::{DevServer, DevServerConfig, RebuildFn};
-pub use watcher::{ChangeType, FileWatcher, WatchEvent};
+pub use watcher::{ChangeType, FileWatcher, WatchEvent, WatcherGuard};
 pub use websocket::{ReloadEvent, WebSocketMessage};
