@@ -67,8 +67,14 @@ cargo run -- serve --dir my-site
 
 **`serve`**
 
+- `--host <ADDR>` — IP address to listen on (default: 127.0.0.1)
 - `-p, --port <PORT>` — Port to listen on (default: 3000)
 - `-o, --open` — Open browser automatically
+
+The dev server binds to loopback only, so it is reachable from your machine
+and nothing else. To test on another device on your network (a phone, say),
+opt in explicitly with `taxus serve --host 0.0.0.0` and open
+`http://<your-lan-ip>:3000` on that device.
 
 **Common**
 
