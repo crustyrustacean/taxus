@@ -11,6 +11,9 @@ taxus serve
 # Start with custom port
 taxus serve --port 8080
 
+# Expose on the local network (e.g. to test on a phone)
+taxus serve --host 0.0.0.0
+
 # Start and open browser automatically
 taxus serve --open
 
@@ -24,10 +27,29 @@ The serve command performs an initial build automatically before starting the se
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
+| `--host` | | 127.0.0.1 | IP address to listen on |
 | `--port` | `-p` | 3000 | Port to listen on |
 | `--verbose` | `-v` | false | Print detailed build progress |
 | `--quiet` | `-q` | false | Suppress all output except errors |
 | `--open` | `-o` | false | Open browser automatically |
+
+## Network Access
+
+By default the server listens on `127.0.0.1` only. That keeps both the
+site and the live-reload WebSocket private to your machine, which is what you
+want on a shared or public network.
+
+To reach the server from another device — a phone or tablet on the same
+Wi-Fi, for example — bind to all interfaces and connect using your machine's
+LAN address:
+
+```bash
+taxus serve --host 0.0.0.0
+# then on the other device: http://192.168.1.42:3000
+```
+
+Use `--host ::` for IPv6. The "listening on" line and `--open` always show a
+browsable address (`127.0.0.1` or `[::1]`) rather than the wildcard.
 
 ## Features
 

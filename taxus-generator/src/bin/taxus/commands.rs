@@ -1,6 +1,7 @@
 // generator/src/bin/taxus/commands.rs
 
 use std::io::{self, BufRead, Write};
+use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use taxus_lib::error::{GeneratorError, InitError};
@@ -12,19 +13,21 @@ use taxus_lib::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilde
 
 pub struct ServeArgs {
     pub dir: PathBuf,
+    pub host: IpAddr,
     pub port: u16,
     pub quiet: bool,
     pub open: bool,
 }
 
 pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
-    use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn};
+    use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn, browsable_url};
 
     // Load config to get output directory
     let config = taxus_lib::SiteConfig::from_dir(&args.dir)?;
 
     // Create server configuration
     let server_config = DevServerConfig::default()
+        .with_host(args.host)
         .with_port(args.port)
         .with_output_dir(config.build.output_dir.clone())
         .with_site_dir(args.dir.clone())
@@ -47,6 +50,7 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
         tracing::info!("Starting development server...");
         tracing::info!("Site: {}", args.dir.display());
         tracing::info!("Output: {}", config.build.output_dir.display());
+        tracing::info!("Host: {}", args.host);
         tracing::info!("Port: {}", args.port);
     }
 
@@ -54,7 +58,10 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
     let server = DevServer::new(server_config, rebuild);
 
     if !args.quiet {
-        tracing::info!("\n  Static site: http://localhost:{}", args.port);
+        tracing::info!(
+            "\n  Static site: {}",
+            browsable_url(SocketAddr::new(args.host, args.port))
+        );
         tracing::info!("  Press Ctrl+C to stop\n");
     }
 

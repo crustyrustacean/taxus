@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **serve**: `--host <ADDR>` flag (and `DevServerConfig::with_host`) to choose
+  the address the dev server listens on. Use `taxus serve --host 0.0.0.0` to
+  expose the server on your local network, e.g. to test on a phone (#35)
+
+### Changed
+
+- **serve**: The dev server now binds to `127.0.0.1` by default instead of
+  `0.0.0.0`. Previously `taxus serve` exposed the site and its live-reload
+  WebSocket to every device on the network without asking. **This is a
+  behaviour change**: if you relied on reaching the dev server from another
+  machine, pass `--host 0.0.0.0` to restore the old behaviour (#35)
+- **serve**: The "listening on" log line and the `--open` URL now reflect the
+  address actually bound, substituting `127.0.0.1` / `[::1]` for the
+  non-browsable wildcard addresses and bracketing IPv6 hosts
+
 ## [0.5.2] - 2026-09-05
 
 ### Documentation

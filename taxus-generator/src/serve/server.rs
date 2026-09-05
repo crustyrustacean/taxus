@@ -18,7 +18,7 @@
 //! - Injects the live-reload WebSocket `<script>` into HTML responses
 
 use std::future::Future;
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -56,6 +56,13 @@ use super::websocket::WebSocketMessage;
 /// Configuration for the development server.
 #[derive(Debug, Clone)]
 pub struct DevServerConfig {
+    /// The address to bind to.
+    ///
+    /// Defaults to IPv4 loopback (`127.0.0.1`) so the server — and the
+    /// live-reload WebSocket — is only reachable from this machine.  Use
+    /// [`with_host`](Self::with_host) with `0.0.0.0` (or `::`) to expose it
+    /// on the local network, e.g. for testing on a phone.
+    pub host: IpAddr,
     /// The port to listen on.
     pub port: u16,
     /// The output directory to serve.
@@ -71,6 +78,7 @@ pub struct DevServerConfig {
 impl Default for DevServerConfig {
     fn default() -> Self {
         Self {
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST),
             port: 3000,
             output_dir: PathBuf::from("dist"),
             site_dir: PathBuf::from("."),
@@ -81,6 +89,12 @@ impl Default for DevServerConfig {
 }
 
 impl DevServerConfig {
+    /// Create a new configuration bound to the specified address.
+    pub fn with_host(mut self, host: IpAddr) -> Self {
+        self.host = host;
+        self
+    }
+
     /// Create a new configuration with the specified port.
     pub fn with_port(mut self, port: u16) -> Self {
         self.port = port;
@@ -167,6 +181,19 @@ impl DevServer {
             .with_state(state)
     }
 
+    /// Bind the TCP listener on the configured host and port.
+    ///
+    /// Split out from [`run`](Self::run) so the bind address can be tested
+    /// without starting the watcher or the HTTP server.
+    async fn bind(&self) -> Result<tokio::net::TcpListener, ServeError> {
+        let addr = SocketAddr::new(self.config.host, self.config.port);
+        tokio::net::TcpListener::bind(addr)
+            .await
+            .map_err(|_| ServeError::PortInUse {
+                port: self.config.port,
+            })
+    }
+
     /// Run the development server with graceful shutdown.
     ///
     /// The TCP listener is bound **before** the initial build so that the
@@ -175,8 +202,6 @@ impl DevServer {
     /// that includes the live-reload WebSocket script and auto-reloads once
     /// the build completes.
     pub async fn run(self) -> Result<(), ServeError> {
-        let addr: SocketAddr = ([0, 0, 0, 0], self.config.port).into();
-
         // Create broadcast channel for reload events
         let (reload_tx, _) = broadcast::channel(16);
 
@@ -197,14 +222,22 @@ impl DevServer {
         let app = self.build_router(state);
 
         // ── Bind FIRST — the server is reachable from this point ────────
-        let listener =
-            tokio::net::TcpListener::bind(addr)
-                .await
-                .map_err(|_| ServeError::PortInUse {
-                    port: self.config.port,
-                })?;
+        let listener = self.bind().await?;
 
-        info!("Development server listening on http://{}", addr);
+        // Report the address the OS actually gave us (matters for port 0),
+        // rendered as something a browser can open.
+        let bound_addr = listener
+            .local_addr()
+            .map_err(|e| ServeError::Server(e.to_string()))?;
+        let url = browsable_url(bound_addr);
+
+        info!("Development server listening on {}", url);
+        if bound_addr.ip().is_unspecified() {
+            info!(
+                "Bound to {} — reachable from other machines on the network",
+                bound_addr
+            );
+        }
         info!("Press Ctrl+C to stop");
 
         // Every rebuild — the initial one and every watcher-triggered one —
@@ -228,7 +261,6 @@ impl DevServer {
         // ── Spawn initial build (runs concurrently with the server) ─────
         let build_ready_for_build = build_ready.clone();
         let open_browser = self.config.open;
-        let port = self.config.port;
 
         tokio::spawn(async move {
             info!("Performing initial build...");
@@ -244,11 +276,8 @@ impl DevServer {
             build_ready_for_build.store(true, Ordering::Release);
 
             // Open browser now that the build is done and files are on disk.
-            if open_browser {
-                let url = format!("http://localhost:{}", port);
-                if let Err(e) = webbrowser::open(&url) {
-                    warn!("Failed to open browser: {}", e);
-                }
+            if open_browser && let Err(e) = webbrowser::open(&url) {
+                warn!("Failed to open browser: {}", e);
             }
         });
 
@@ -272,10 +301,31 @@ impl DevServer {
         Ok(())
     }
 
+    /// Get the server's bind address.
+    pub fn host(&self) -> IpAddr {
+        self.config.host
+    }
+
     /// Get the server's port.
     pub fn port(&self) -> u16 {
         self.config.port
     }
+}
+
+/// Render a bound socket address as an `http://` URL a browser can open.
+///
+/// The unspecified addresses (`0.0.0.0` and `::`) accept connections on
+/// every interface but are not themselves browsable, so they are shown as
+/// the matching loopback address instead.  IPv6 hosts are bracketed as
+/// required by URL syntax.
+pub fn browsable_url(addr: SocketAddr) -> String {
+    let host = match addr.ip() {
+        IpAddr::V4(ip) if ip.is_unspecified() => Ipv4Addr::LOCALHOST.to_string(),
+        IpAddr::V4(ip) => ip.to_string(),
+        IpAddr::V6(ip) if ip.is_unspecified() => format!("[{}]", Ipv6Addr::LOCALHOST),
+        IpAddr::V6(ip) => format!("[{}]", ip),
+    };
+    format!("http://{}:{}", host, addr.port())
 }
 
 // ---------------------------------------------------------------------------
@@ -660,6 +710,87 @@ mod tests {
         let config = DevServerConfig::default();
         assert_eq!(config.port, 3000);
         assert_eq!(config.output_dir, PathBuf::from("dist"));
+        // Loopback by default: the dev server must not be reachable from
+        // the network unless explicitly asked for (#35).
+        assert_eq!(config.host, IpAddr::V4(Ipv4Addr::LOCALHOST));
+    }
+
+    #[test]
+    fn test_config_with_host() {
+        let config = DevServerConfig::default().with_host(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+        assert_eq!(config.host, IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+
+        let config = DevServerConfig::default().with_host(IpAddr::V6(Ipv6Addr::LOCALHOST));
+        assert_eq!(config.host, IpAddr::V6(Ipv6Addr::LOCALHOST));
+    }
+
+    /// Bind on port 0 with the given host and return the address the OS
+    /// actually gave us, or `None` if the host is not bindable in this
+    /// environment (e.g. no IPv6 loopback).
+    async fn bind_with_host(host: IpAddr) -> Option<SocketAddr> {
+        let config = DevServerConfig::default().with_host(host).with_port(0);
+        let rebuild: RebuildFn = Arc::new(|| Ok(()));
+        let server = DevServer::new(config, rebuild);
+        match server.bind().await {
+            Ok(listener) => Some(listener.local_addr().unwrap()),
+            Err(e) => {
+                eprintln!("skipping: cannot bind {host}: {e}");
+                None
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_bind_uses_configured_host_ipv4_loopback() {
+        let addr = bind_with_host(IpAddr::V4(Ipv4Addr::LOCALHOST))
+            .await
+            .expect("127.0.0.1 must always be bindable");
+        assert_eq!(addr.ip(), IpAddr::V4(Ipv4Addr::LOCALHOST));
+        assert_ne!(addr.port(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_bind_uses_configured_host_unspecified() {
+        let addr = bind_with_host(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
+            .await
+            .expect("0.0.0.0 must always be bindable");
+        assert_eq!(addr.ip(), IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+    }
+
+    #[tokio::test]
+    async fn test_bind_uses_configured_host_ipv6_loopback() {
+        // Skip gracefully when the environment has no IPv6 loopback.
+        if let Some(addr) = bind_with_host(IpAddr::V6(Ipv6Addr::LOCALHOST)).await {
+            assert_eq!(addr.ip(), IpAddr::V6(Ipv6Addr::LOCALHOST));
+        }
+    }
+
+    #[test]
+    fn test_browsable_url_ipv4() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
+        assert_eq!(browsable_url(addr), "http://127.0.0.1:3000");
+
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 10)), 8080);
+        assert_eq!(browsable_url(addr), "http://192.168.1.10:8080");
+    }
+
+    #[test]
+    fn test_browsable_url_unspecified_falls_back_to_loopback() {
+        // 0.0.0.0 and :: are bind-only addresses; a browser cannot open them.
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 3000);
+        assert_eq!(browsable_url(addr), "http://127.0.0.1:3000");
+
+        let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 3000);
+        assert_eq!(browsable_url(addr), "http://[::1]:3000");
+    }
+
+    #[test]
+    fn test_browsable_url_ipv6_is_bracketed() {
+        let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 3000);
+        assert_eq!(browsable_url(addr), "http://[::1]:3000");
+
+        let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1)), 4000);
+        assert_eq!(browsable_url(addr), "http://[fe80::1]:4000");
     }
 
     #[test]

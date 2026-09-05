@@ -1,6 +1,7 @@
 // generator/src/bin/taxus/cli.rs
 
 use clap::{Parser, Subcommand};
+use std::net::IpAddr;
 use std::path::PathBuf;
 
 /// A static site generator founded in Tera with WebAssembly islands.
@@ -180,15 +181,28 @@ pub enum Commands {
     /// templates, styles, or configuration files change, the site is rebuilt
     /// and connected browsers are automatically reloaded via WebSocket.
     ///
+    /// By default the server listens on 127.0.0.1 only, so it is reachable
+    /// from this machine and nothing else. Pass --host 0.0.0.0 to expose it
+    /// on your local network, e.g. to test the site on a phone.
+    ///
     /// Examples:
     ///   taxus serve
     ///   taxus serve --dir ./my-site
     ///   taxus serve --port 8080
+    ///   taxus serve --host 0.0.0.0
     ///   taxus serve --dir ./my-site --open
     Serve {
         /// Root directory of the site (must contain site.toml).
         #[arg(short, long, default_value = ".", value_name = "PATH")]
         dir: PathBuf,
+
+        /// IP address to listen on.
+        ///
+        /// Defaults to loopback (127.0.0.1) so the server is only reachable
+        /// from this machine. Use 0.0.0.0 (or :: for IPv6) to accept
+        /// connections from other devices on your network.
+        #[arg(long, default_value = "127.0.0.1", value_name = "ADDR")]
+        host: IpAddr,
 
         /// Port to listen on.
         #[arg(short, long, default_value = "3000")]
@@ -206,4 +220,42 @@ pub enum Commands {
         #[arg(short, long)]
         open: bool,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::Ipv4Addr;
+
+    fn parse_serve(args: &[&str]) -> Result<(IpAddr, u16), clap::Error> {
+        let cli = Cli::try_parse_from(args)?;
+        match cli.command {
+            Commands::Serve { host, port, .. } => Ok((host, port)),
+            _ => panic!("expected the serve subcommand"),
+        }
+    }
+
+    #[test]
+    fn serve_defaults_to_loopback_host() {
+        let (host, port) = parse_serve(&["taxus", "serve"]).unwrap();
+        assert_eq!(host, IpAddr::V4(Ipv4Addr::LOCALHOST));
+        assert_eq!(port, 3000);
+    }
+
+    #[test]
+    fn serve_accepts_explicit_host() {
+        let (host, _) = parse_serve(&["taxus", "serve", "--host", "0.0.0.0"]).unwrap();
+        assert_eq!(host, IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+
+        let (host, port) =
+            parse_serve(&["taxus", "serve", "--host", "::1", "--port", "8080"]).unwrap();
+        assert_eq!(host, "::1".parse::<IpAddr>().unwrap());
+        assert_eq!(port, 8080);
+    }
+
+    #[test]
+    fn serve_rejects_invalid_host() {
+        let err = parse_serve(&["taxus", "serve", "--host", "not-an-ip"]).unwrap_err();
+        assert_eq!(err.kind(), clap::error::ErrorKind::ValueValidation);
+    }
 }

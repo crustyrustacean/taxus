@@ -42,6 +42,6 @@ mod websocket;
 
 pub use error::ServeError;
 pub use injector::{LIVE_RELOAD_SCRIPT, inject_live_reload_script};
-pub use server::{DevServer, DevServerConfig, RebuildFn};
+pub use server::{DevServer, DevServerConfig, RebuildFn, browsable_url};
 pub use watcher::{ChangeType, FileWatcher, WatchEvent, WatcherGuard};
 pub use websocket::{ReloadEvent, WebSocketMessage};
