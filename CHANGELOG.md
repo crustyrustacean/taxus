@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.2] - 2026-09-05
+
+### Documentation
+
+- Note yanked-crate audit failures in the release procedure
 
 ### Fixed
 
@@ -14,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the output directory at once, and change events that arrive while a build
   is running are drained into a single follow-up rebuild instead of one per
   event (#36)
+
+### Miscellaneous
+
+- **deps**: Bump chacha20 to 0.10.2 (yanked 0.10.1)
 
 ## [0.5.1] - 2026-08-29
 
