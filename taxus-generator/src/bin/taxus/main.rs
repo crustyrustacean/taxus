@@ -110,6 +110,7 @@ async fn main() {
         },
         Commands::Serve {
             dir,
+            host,
             port,
             verbose: _,
             quiet,
@@ -117,6 +118,7 @@ async fn main() {
         } => {
             match run_serve(&ServeArgs {
                 dir,
+                host,
                 port,
                 quiet,
                 open,
