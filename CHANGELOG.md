@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **build**: `SiteBuilder::build()` no longer panics when a template calls
+  `island()` and the caller is not on a multi-thread tokio runtime. Island SSR
+  used `block_in_place` + `Handle::current().block_on`, which requires an
+  ambient *multi-thread* runtime: the documented library usage from a plain
+  `fn main` panicked with "there is no reactor running", and any
+  `#[tokio::test]` or other `current_thread` runtime panicked in
+  `block_in_place`. Only the `#[tokio::main]` CLI path worked. The earlier
+  per-call `current_thread` runtime (0.1.18) panicked in the opposite case,
+  "Cannot start a runtime from within a runtime". Island futures are now driven
+  on a dedicated scoped thread by a process-wide `current_thread` runtime
+  (`build/ssr.rs`), so island SSR works from sync code, from `current_thread`
+  and `multi_thread` runtimes, and from `spawn_blocking`, with identical HTML
+  output (#37)
+
 ## [0.6.0] - 2026-09-06
 
 ### Added

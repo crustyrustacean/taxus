@@ -103,6 +103,11 @@ impl SiteBuilder {
     /// 10. Process assets (SCSS, static files)
     /// 11. Write output files
     ///
+    /// This is a synchronous call with no runtime requirement: templates that
+    /// place islands are server-rendered on an internal thread, so `build()`
+    /// works from plain `fn main`, from inside any tokio runtime flavour, and
+    /// from `spawn_blocking` alike.
+    ///
     /// # Errors
     ///
     /// Returns an error if any stage of the build fails.

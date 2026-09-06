@@ -30,6 +30,7 @@
 mod builder;
 pub mod pipeline;
 mod report;
+mod ssr;
 
 pub use builder::SiteBuilder;
 pub use pipeline::{ProcessedPage, RenderedPage};
