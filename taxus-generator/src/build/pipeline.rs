@@ -19,6 +19,7 @@ pub mod wasm;
 use crate::CodeHighlighter;
 use crate::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 use crate::build::pipeline::internal_links::resolve_internal_links;
+use crate::build::ssr::block_on_ssr;
 use crate::config::SiteConfig;
 use crate::content::Page;
 use crate::error::{GeneratorError, Result};
@@ -373,14 +374,9 @@ pub fn render_island_counter(props: CounterProps) -> String {
     // Serialize props to JSON for the data attribute
     let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
 
-    // do a blocking call on this worker thread, move other tasks elsewhere
-    let ssr_html = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(async {
-            ServerRenderer::<Counter>::with_props(move || props)
-                .render()
-                .await
-        })
-    });
+    // Drive the SSR future on the dedicated island thread so this works from
+    // any calling context, with or without a tokio runtime (#37).
+    let ssr_html = block_on_ssr(ServerRenderer::<Counter>::with_props(move || props).render());
 
     // Emit the mount point wrapper around the SSR output
     format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)
@@ -391,13 +387,7 @@ pub fn render_search_box(props: SearchBoxProps) -> String {
 
     let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
 
-    let ssr_html = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(async {
-            ServerRenderer::<SearchBox>::with_props(move || props)
-                .render()
-                .await
-        })
-    });
+    let ssr_html = block_on_ssr(ServerRenderer::<SearchBox>::with_props(move || props).render());
 
     format!(r#"<div data-island="SearchBox" data-props='{props_json}'>{ssr_html}</div>"#)
 }
