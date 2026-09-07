@@ -153,7 +153,7 @@ pub struct BuildConfig {
 pub struct FeedConfig {
     pub rss_enabled: bool,       // default: true
     pub atom_enabled: bool,      // default: false
-    pub limit: usize,            // default: 0 (all)
+    pub limit: usize,            // default: 20 (0 is treated as 20)
     pub full_content: bool,      // default: false
     pub title: Option<String>,
     pub rss_path: Option<String>,

@@ -123,7 +123,7 @@ pub struct FeedConfig {
     #[serde(default = "default_atom_enabled")]
     pub atom_enabled: bool,
 
-    /// Number of entries to include in feeds (0 = all)
+    /// Number of entries to include in feeds (0 is treated as 20)
     #[serde(default)]
     pub limit: usize,
 
