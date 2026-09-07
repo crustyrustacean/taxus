@@ -1,6 +1,7 @@
 +++
 title = "Taxus Feature Focus: Hero Images"
 date = 2026-04-11
+updated = 2026-09-07
 description = "Responsive hero images with automatic WebP conversion and srcset generation."
 tags = ["rust", "images", "webp"]
 categories = ["features"]
@@ -96,21 +97,13 @@ Image processing is configurable in `site.toml`:
 
 ```toml
 [images]
-default_width = 800
-default_quality = 85
-
-[[images.variants]]
-width = 400
-suffix = "small"
-
-[[images.variants]]
-width = 800
-suffix = "medium"
-
-[[images.variants]]
-width = 1200
-suffix = "large"
+widths = [400, 800, 1200]   # responsive breakpoint widths in pixels
+quality = 80                # 1–100; applies to WebP and JPEG output
+format = "webp"             # "webp", "jpeg" ("jpg"), or "png"
+output_dir = "images"       # subdirectory within dist/
 ```
+
+Values outside these ranges are configuration errors: `quality` must be 1–100 and `format` must be one of the listed options.
 
 ## The Technical Details
 
@@ -126,6 +119,15 @@ Alt text falls back to the page title if not specified, ensuring accessibility e
 ## Performance Impact
 
 Hero images are processed at build time, not request time. The impact on your site's runtime performance is zero—only the optimized variants ship to users. The build-time cost is minimal thanks to efficient image processing.
+
+## Update — v0.7.0: Lossy WebP
+
+*September 7, 2026.* As of Taxus 0.7.0, the WebP variants described above are encoded as **lossy WebP with libwebp** at the configured `quality` — and `quality` is now genuinely applied. Earlier builds silently wrote every format with default encoder settings, and since the `image` crate's WebP encoder is lossless-only, hero variants shipped at full lossless size no matter what you configured. The new variants are substantially smaller at the same visual quality.
+
+Two details worth knowing:
+
+- The variant filename hash includes the effective `quality`, so changing `quality` in `site.toml` re-encodes your variants on the next build.
+- Lossy WebP lives behind the `webp-lossy` cargo feature (enabled by default). Building Taxus with `--no-default-features` drops the C dependency and falls back to lossless WebP, logging a warning that `quality` is ignored for WebP. JPEG always honours `quality`; PNG is always lossless.
 
 ## What's Next
 
