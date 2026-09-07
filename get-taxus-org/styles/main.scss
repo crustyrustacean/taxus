@@ -76,11 +76,21 @@ body {
 .page {
   min-height: 100vh;
   display: grid;
+  /* Explicit minmax(0, 1fr) column: the implicit `auto` track sizes to
+     the widest item min-content, so a single wide <pre> line silently
+     laid the whole page out wider than the viewport (540px on phones),
+     pushing the header nav and every paragraph off-screen. minmax(0, ..)
+     pins the track to the viewport and lets `pre` scroll internally. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
 }
 
 header, main, footer {
-  max-inline-size: 48rem;
+  /* min(48rem, 100%): the auto margins disable grid-item stretch, so each
+     of these sizes by shrink-to-fit — floored by its min-content width.
+     A wide <pre> gives main a ~540px min-content floor, laying the page
+     out wider than phones; the 100% cap pins width to the grid track. */
+  max-inline-size: min(48rem, 100%);
   margin-inline: auto;
   padding-inline: 1.5rem;
 }
