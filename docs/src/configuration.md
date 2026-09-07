@@ -51,6 +51,7 @@ Build configuration options. All fields have defaults.
 | `static_dir` | string | `"static"` | Directory containing static assets |
 | `styles_dir` | string | `"styles"` | Directory containing SCSS stylesheets |
 | `templates_dir` | string | `"templates"` | Directory containing HTML templates |
+| `slugify` | string | `"on"` | URL slug mode: `"on"` (lowercase, transliterate non-ASCII, strip punctuation), `"safe"` (preserve non-ASCII, normalize case/whitespace), or `"off"` (use filenames verbatim) |
 
 ### `[feed]` Section
 
@@ -90,6 +91,14 @@ Responsive image processing configuration for hero images.
 
 See [Images](./images.md) for details on hero images and template usage.
 
+### `[markdown]` Section
+
+Markdown rendering options.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `insert_anchor_links` | bool | `false` | Insert a visible anchor link (`#`) into each heading for deep-linking |
+
 ## Minimal Configuration
 
 The minimal required configuration:
@@ -100,7 +109,7 @@ name = "My Site"
 base_url = "https://example.com"
 ```
 
-All `[build]` and `[feed]` settings use their default values.
+All other sections (`[build]`, `[feed]`, `[highlight]`, `[images]`, `[markdown]`) use their default values.
 
 ## Full Configuration Example
 
@@ -136,6 +145,9 @@ widths = [400, 800, 1200]
 quality = 80
 format = "webp"
 output_dir = "images"
+
+[markdown]
+insert_anchor_links = false
 ```
 
 ## Validation

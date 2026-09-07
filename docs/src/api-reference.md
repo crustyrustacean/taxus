@@ -71,25 +71,31 @@ The library re-exports commonly used types from `lib.rs`:
 
 ```rust
 // Configuration
-pub use config::{BuildConfig, SiteConfig, SiteMeta};
+pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta};
 
 // Content
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
 
 // Templates
 pub use templates::{
-    PageContext, SectionContext, SiteContext, TemplateContext,
-    TemplateRenderer, TeraRenderer,
+    HeroContext, PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer,
+    TeraRenderer,
 };
 
 // Assets
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 
 // Build
-pub use build::{BuildReport, ProcessedPage, RenderedPage, SiteBuilder};
+pub use build::{BuildReport, SiteBuilder};
 
 // Feed
 pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
+
+// Highlighting
+pub use highlighting::{CodeHighlighter, LanguageRegistry};
+
+// Images
+pub use images::{ImageProcessor, ImageRegistry, ProcessedImage, render_picture};
 
 // Init
 pub use init::{InitOptions, InitReport, InitScaffolder};
@@ -99,8 +105,8 @@ pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 
 // Errors
 pub use error::{
-    AssetError, ContentError, FeedError, GeneratorError, InitError,
-    Result, RouteError, TemplateError,
+    AssetError, ContentError, FeedError, GeneratorError, ImageError, InitError, Result, RouteError,
+    TemplateError,
 };
 ```
 
@@ -113,6 +119,9 @@ pub struct SiteConfig {
     pub site: SiteMeta,
     pub build: BuildConfig,
     pub feed: FeedConfig,
+    pub highlight: HighlightConfig,
+    pub images: ImageConfig,
+    pub markdown: MarkdownConfig,
     pub base_dir: PathBuf,
 }
 ```
@@ -144,6 +153,7 @@ pub struct BuildConfig {
     pub static_dir: PathBuf,     // default: "static"
     pub styles_dir: PathBuf,     // default: "styles"
     pub templates_dir: PathBuf,  // default: "templates"
+    pub slugify: String,         // default: "on"
 }
 ```
 
@@ -169,8 +179,8 @@ pub struct FeedConfig {
 pub struct Frontmatter {
     pub title: String,
     pub description: Option<String>,
+    pub tagline: Option<String>,
     pub date: Option<NaiveDate>,
-    pub updated: Option<NaiveDate>,
     pub template: Option<String>,
     pub draft: bool,
     pub summary: Option<String>,
@@ -184,6 +194,9 @@ pub struct Frontmatter {
     pub paginate_by: usize,
     pub paginate_template: Option<String>,
     pub weight: i32,
+    pub updated: Option<NaiveDate>,
+    pub hero_image: Option<String>,
+    pub hero_alt: Option<String>,
 }
 ```
 
@@ -621,15 +634,17 @@ pub struct DevServer { /* ... */ }
 
 ```rust
 pub struct DevServerConfig {
-    pub site_dir: PathBuf,
-    pub port: u16,
+    pub host: IpAddr,            // default: 127.0.0.1
+    pub port: u16,               // default: 3000
     pub output_dir: PathBuf,
+    pub site_dir: PathBuf,
 }
 ```
 
 | Method | Description |
 |--------|-------------|
 | `default() -> Self` | Create with defaults |
+| `with_host(self, host: IpAddr) -> Self` | Set bind address |
 | `with_port(self, port: u16) -> Self` | Set port |
 | `with_output_dir(self, dir: PathBuf) -> Self` | Set output dir |
 | `with_site_dir(self, dir: PathBuf) -> Self` | Set site dir |

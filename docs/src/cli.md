@@ -193,15 +193,20 @@ Start a development server with live reload.
 taxus serve [OPTIONS]
 
 Options:
-  -d, --dir <PATH>    Root directory (must contain site.toml) [default: .]
-  -p, --port <PORT>   Port to listen on [default: 3000]
-  -v, --verbose       Print detailed progress for each build stage
-  -q, --quiet         Suppress all output except errors
-  -o, --open          Open browser automatically
-  -h, --help          Print help
+  -d, --dir <PATH>     Root directory (must contain site.toml) [default: .]
+      --host <ADDR>    IP address to bind to [default: 127.0.0.1]
+  -p, --port <PORT>    Port to listen on [default: 3000]
+  -v, --verbose        Print detailed progress for each build stage
+  -q, --quiet          Suppress all output except errors
+  -o, --open           Open browser automatically
+  -h, --help           Print help
 ```
 
 The serve command performs an initial build automatically, then watches for file changes.
+
+By default the server listens on `127.0.0.1` only, so nothing on your network can reach
+it. Pass `--host 0.0.0.0` (or `::` for IPv6) to expose it — for example, to test the site
+on a phone. See [Development Server](./serve.md) for details.
 
 ### Examples
 
@@ -211,6 +216,9 @@ taxus serve
 
 # Start with custom port
 taxus serve --port 8080
+
+# Expose on the local network (e.g. to test on a phone)
+taxus serve --host 0.0.0.0
 
 # Start and open browser
 taxus serve --open
