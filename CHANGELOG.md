@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-09-07
 
 ### Added
 
@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be `"webp"`, `"jpeg"`, `"jpg"` or `"png"`; `"jpg"` is normalised to
   `"jpeg"`. `SiteConfig::from_file` now calls `validate()` (#34)
 - **init**: The scaffolded `site.toml` includes a commented `[images]` section
+
+### Documentation
+
+- Document `--host`, `slugify`, and `[markdown]`; sync api-reference
+- Fix corrupted pipeline diagram and feed limit docs
 
 ### Fixed
 
