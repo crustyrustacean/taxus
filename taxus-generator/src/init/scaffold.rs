@@ -106,6 +106,15 @@ output_dir = "dist"
 static_dir = "static"
 styles_dir = "styles"
 templates_dir = "templates"
+
+[images]
+# Responsive hero image variants (widths in px).
+widths = [400, 800, 1200]
+# Output format: "webp", "jpeg" (or "jpg"), or "png".
+format = "webp"
+# Encoding quality 1-100. Applies to jpeg and webp only; png is lossless
+# and ignores it. Changing this re-encodes variants on the next build.
+quality = 80
 "#,
             self.options.name, self.options.base_url
         );

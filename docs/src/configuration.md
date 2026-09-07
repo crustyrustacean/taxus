@@ -85,8 +85,8 @@ Responsive image processing configuration for hero images.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `widths` | array | `[400, 800, 1200]` | Responsive breakpoint widths in pixels |
-| `quality` | number | `80` | Output quality (1–100) |
-| `format` | string | `"webp"` | Output format: `"webp"`, `"jpeg"`, or `"png"` |
+| `quality` | number | `80` | Output quality (1–100). Applies to `"jpeg"` and `"webp"` only; `"png"` ignores it |
+| `format` | string | `"webp"` | Output format: `"webp"`, `"jpeg"` (alias `"jpg"`), or `"png"` |
 | `output_dir` | string | `"images"` | Subdirectory within `dist/` for processed images |
 
 See [Images](./images.md) for details on hero images and template usage.
@@ -155,6 +155,8 @@ insert_anchor_links = false
 Configuration is validated when loaded:
 
 - `site.name` must not be empty
+- `images.quality` must be between 1 and 100
+- `images.format` must be `"webp"`, `"jpeg"`, `"jpg"`, or `"png"`
 - `site.base_url` must not be empty
 
 ## Feed URLs

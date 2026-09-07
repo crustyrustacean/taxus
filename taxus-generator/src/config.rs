@@ -197,17 +197,24 @@ impl Default for HighlightConfig {
 }
 
 /// Image processing configuration from the `[images]` section.
+///
+/// `quality` only affects lossy formats (`"jpeg"` and `"webp"`). PNG is
+/// lossless and ignores it. WebP is lossy only when taxus is built with the
+/// `webp-lossy` feature (on by default); without it WebP output is lossless
+/// and `quality` is ignored with a warning at build time.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ImageConfig {
     /// Responsive width breakpoints for generated variants
     #[serde(default = "default_image_widths")]
     pub widths: Vec<u32>,
 
-    /// Output quality (1-100)
+    /// Output quality (1-100). Applies to `"jpeg"` and `"webp"` only;
+    /// `"png"` ignores it. Validated by [`SiteConfig::validate`].
     #[serde(default = "default_image_quality")]
     pub quality: u8,
 
-    /// Output format: "webp", "jpeg", or "png"
+    /// Output format: `"webp"`, `"jpeg"` (alias `"jpg"`), or `"png"`.
+    /// `"jpg"` is normalised to `"jpeg"` when loaded from a file.
     #[serde(default = "default_image_format")]
     pub format: String,
 
@@ -247,6 +254,44 @@ impl Default for ImageConfig {
             format: default_image_format(),
             output_dir: default_image_output_dir(),
         }
+    }
+}
+
+impl ImageConfig {
+    /// Accepted values for `format`, after normalisation.
+    const FORMATS: [&str; 3] = ["webp", "jpeg", "png"];
+
+    /// Canonicalise aliases: `"jpg"` becomes `"jpeg"`.
+    pub fn normalize(&mut self) {
+        if self.format == "jpg" {
+            self.format = "jpeg".to_string();
+        }
+    }
+
+    /// Validate `quality` (1..=100) and `format` (`webp`, `jpeg`/`jpg`, `png`).
+    pub fn validate(&self) -> Result<()> {
+        if !(1..=100).contains(&self.quality) {
+            return Err(ConfigError::Invalid(format!(
+                "images.quality must be between 1 and 100, got {}",
+                self.quality
+            ))
+            .into());
+        }
+
+        let format = if self.format == "jpg" {
+            "jpeg"
+        } else {
+            self.format.as_str()
+        };
+        if !Self::FORMATS.contains(&format) {
+            return Err(ConfigError::Invalid(format!(
+                "images.format must be one of \"webp\", \"jpeg\", \"jpg\", or \"png\", got \"{}\"",
+                self.format
+            ))
+            .into());
+        }
+
+        Ok(())
     }
 }
 
@@ -315,6 +360,9 @@ impl SiteConfig {
         config.build.resolve_paths(&base_dir);
         config.base_dir = base_dir;
 
+        config.images.normalize();
+        config.validate()?;
+
         Ok(config)
     }
 
@@ -369,6 +417,8 @@ impl SiteConfig {
             }
             .into());
         }
+
+        self.images.validate()?;
 
         Ok(())
     }
@@ -556,4 +606,95 @@ base_url = "https://example.com"
     assert_eq!(config.images.widths, vec![400, 800, 1200]);
     assert_eq!(config.images.quality, 80);
     assert_eq!(config.images.format, "webp");
+}
+
+#[test]
+fn test_image_config_validate_rejects_quality_out_of_range() {
+    for quality in [0u8, 101] {
+        let mut config = SiteConfig::new("Test", "https://example.com");
+        config.images.quality = quality;
+        let err = config.validate().unwrap_err();
+        assert!(
+            matches!(&err, GeneratorError::Config(inner)
+                if matches!(**inner, ConfigError::Invalid(ref msg) if msg.contains("images.quality"))),
+            "quality {quality} should be rejected naming images.quality, got: {err}"
+        );
+    }
+    for quality in [1u8, 80, 100] {
+        let mut config = SiteConfig::new("Test", "https://example.com");
+        config.images.quality = quality;
+        assert!(
+            config.validate().is_ok(),
+            "quality {quality} should be valid"
+        );
+    }
+}
+
+#[test]
+fn test_image_config_validate_rejects_unknown_format() {
+    let mut config = SiteConfig::new("Test", "https://example.com");
+    config.images.format = "gif".to_string();
+    let err = config.validate().unwrap_err();
+    assert!(
+        matches!(&err, GeneratorError::Config(inner)
+            if matches!(**inner, ConfigError::Invalid(ref msg) if msg.contains("images.format"))),
+        "format gif should be rejected naming images.format, got: {err}"
+    );
+
+    for format in ["webp", "jpeg", "jpg", "png"] {
+        let mut config = SiteConfig::new("Test", "https://example.com");
+        config.images.format = format.to_string();
+        assert!(config.validate().is_ok(), "format {format} should be valid");
+    }
+}
+
+#[test]
+fn test_image_config_from_file_normalises_jpg_and_validates() {
+    let temp = tempfile::TempDir::new().unwrap();
+    let path = temp.path().join("site.toml");
+
+    std::fs::write(
+        &path,
+        r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[images]
+format = "jpg"
+"#,
+    )
+    .unwrap();
+    let config = SiteConfig::from_file(&path).unwrap();
+    assert_eq!(config.images.format, "jpeg", "jpg should normalise to jpeg");
+
+    std::fs::write(
+        &path,
+        r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[images]
+quality = 0
+"#,
+    )
+    .unwrap();
+    let err = SiteConfig::from_file(&path).unwrap_err();
+    assert!(err.to_string().contains("images.quality"), "got: {err}");
+
+    std::fs::write(
+        &path,
+        r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[images]
+format = "gif"
+"#,
+    )
+    .unwrap();
+    let err = SiteConfig::from_file(&path).unwrap_err();
+    assert!(err.to_string().contains("images.format"), "got: {err}");
 }

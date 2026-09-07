@@ -3,6 +3,12 @@ use crate::error::{ImageError, Result};
 use image::GenericImageView;
 use std::path::{Path, PathBuf};
 
+/// Whether lossy WebP encoding (libwebp via the `webp` crate) is compiled in.
+///
+/// When `false`, WebP variants are written with the `image` crate's
+/// lossless encoder and `images.quality` has no effect on them.
+pub const LOSSY_WEBP_AVAILABLE: bool = cfg!(feature = "webp-lossy");
+
 #[derive(Debug, Clone)]
 pub struct ImageVariant {
     pub path: PathBuf,
@@ -101,7 +107,7 @@ impl ImageProcessor {
         }
 
         let image_output_dir = self.output_dir.join(&self.config.output_dir);
-        let hash = Self::compute_hash(source);
+        let hash = self.compute_hash(source);
 
         let prefix = Self::compute_prefix(source);
 
@@ -229,7 +235,7 @@ impl ImageProcessor {
         let aspect_ratio = original_width as f64 / original_height as f64;
 
         let image_output_dir = self.output_dir.join(&self.config.output_dir);
-        let hash = Self::compute_hash(source);
+        let hash = self.compute_hash(source);
 
         let prefix = Self::compute_prefix(source);
 
@@ -276,25 +282,89 @@ impl ImageProcessor {
         })
     }
 
+    /// The quality the encoder will actually apply.
+    ///
+    /// `None` for lossless output: PNG always, and WebP when the
+    /// `webp-lossy` feature is disabled. Only an effective quality is folded
+    /// into the cache key, so changing `images.quality` never invalidates
+    /// variants it could not have changed.
+    fn effective_quality(&self) -> Option<u8> {
+        match self.config.format.as_str() {
+            "jpeg" | "jpg" => Some(self.config.quality),
+            "png" => None,
+            _ if LOSSY_WEBP_AVAILABLE => Some(self.config.quality),
+            _ => None,
+        }
+    }
+
+    /// Whether `images.quality` will be silently ignored for this
+    /// configuration because the output format is WebP and lossy WebP
+    /// support was compiled out.
+    pub fn quality_ignored_for_webp(&self) -> bool {
+        !LOSSY_WEBP_AVAILABLE && !matches!(self.config.format.as_str(), "jpeg" | "jpg" | "png")
+    }
+
     fn encode(&self, img: &image::DynamicImage, buf: &mut std::io::Cursor<Vec<u8>>) -> Result<()> {
         match self.config.format.as_str() {
-            "webp" => {
-                img.write_to(buf, image::ImageFormat::WebP)
-                    .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
-            }
             "jpeg" | "jpg" => {
-                img.write_to(buf, image::ImageFormat::Jpeg)
+                // JPEG has no alpha channel; drop it explicitly rather than
+                // relying on the encoder's handling of RGBA input.
+                let rgb;
+                let img = if img.color().has_alpha() {
+                    rgb = image::DynamicImage::ImageRgb8(img.to_rgb8());
+                    &rgb
+                } else {
+                    img
+                };
+                let encoder =
+                    image::codecs::jpeg::JpegEncoder::new_with_quality(buf, self.config.quality);
+                img.write_with_encoder(encoder)
                     .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
             }
+            // PNG is lossless; quality is ignored by design.
             "png" => {
                 img.write_to(buf, image::ImageFormat::Png)
                     .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
             }
-            _ => {
-                img.write_to(buf, image::ImageFormat::WebP)
-                    .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
-            }
+            _ => self.encode_webp(img, buf)?,
         }
+        Ok(())
+    }
+
+    /// Lossy WebP via libwebp at `config.quality`. Alpha is preserved for
+    /// RGBA sources; everything else is encoded as RGB.
+    #[cfg(feature = "webp-lossy")]
+    fn encode_webp(
+        &self,
+        img: &image::DynamicImage,
+        buf: &mut std::io::Cursor<Vec<u8>>,
+    ) -> Result<()> {
+        use std::io::Write;
+
+        let converted = if img.color().has_alpha() {
+            image::DynamicImage::ImageRgba8(img.to_rgba8())
+        } else {
+            image::DynamicImage::ImageRgb8(img.to_rgb8())
+        };
+        let encoder = webp::Encoder::from_image(&converted)
+            .map_err(|e| ImageError::EncodeFailed(format!("webp: {e}")))?;
+        let encoded = encoder
+            .encode_simple(false, f32::from(self.config.quality))
+            .map_err(|e| ImageError::EncodeFailed(format!("webp: {e:?}")))?;
+        buf.write_all(&encoded)
+            .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Lossless WebP via the `image` crate; `config.quality` is ignored.
+    #[cfg(not(feature = "webp-lossy"))]
+    fn encode_webp(
+        &self,
+        img: &image::DynamicImage,
+        buf: &mut std::io::Cursor<Vec<u8>>,
+    ) -> Result<()> {
+        img.write_to(buf, image::ImageFormat::WebP)
+            .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
         Ok(())
     }
 
@@ -382,7 +452,10 @@ impl ImageProcessor {
         stem.to_string()
     }
 
-    fn compute_hash(source: &Path) -> String {
+    /// Cache key for a source image: path, mtime, size, and the effective
+    /// encoding quality (see [`Self::effective_quality`]), so that changing
+    /// `images.quality` in site.toml re-encodes lossy variants.
+    fn compute_hash(&self, source: &Path) -> String {
         use std::hash::{Hash, Hasher};
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         source.hash(&mut hasher);
@@ -394,6 +467,7 @@ impl ImageProcessor {
             }
             metadata.len().hash(&mut hasher);
         }
+        self.effective_quality().hash(&mut hasher);
         let hash = hasher.finish();
         format!("{:x}", hash)[..6].to_string()
     }
@@ -413,6 +487,207 @@ mod tests {
 
     fn default_config() -> ImageConfig {
         ImageConfig::default()
+    }
+
+    /// Deterministic 1200x800 gradient with LCG noise. Flat-colour images
+    /// compress to almost nothing at any quality, so size comparisons need
+    /// real detail. Saved as PNG so the on-disk source is lossless.
+    fn noisy_image(width: u32, height: u32, alpha: bool) -> image::DynamicImage {
+        let mut seed: u32 = 0x1234_5678;
+        let mut next = move || {
+            seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            (seed >> 24) as u8
+        };
+        let mut img = image::RgbaImage::new(width, height);
+        for y in 0..height {
+            for x in 0..width {
+                let r = (x * 255 / width) as u8;
+                let g = (y * 255 / height) as u8;
+                let b = ((x + y) * 255 / (width + height)) as u8;
+                let noise = next() / 8;
+                let a = if alpha && x < width / 4 && y < height / 4 {
+                    0
+                } else {
+                    255
+                };
+                img.put_pixel(
+                    x,
+                    y,
+                    image::Rgba([
+                        r.saturating_add(noise),
+                        g.saturating_add(noise),
+                        b.saturating_add(noise),
+                        a,
+                    ]),
+                );
+            }
+        }
+        if alpha {
+            image::DynamicImage::ImageRgba8(img)
+        } else {
+            image::DynamicImage::ImageRgb8(image::DynamicImage::ImageRgba8(img).to_rgb8())
+        }
+    }
+
+    fn create_noisy_image(dir: &Path, name: &str, alpha: bool) -> PathBuf {
+        let path = dir.join(name);
+        noisy_image(1200, 800, alpha).save(&path).unwrap();
+        path
+    }
+
+    /// Encode `source` at full size (single 1200w variant) and return the
+    /// variant path and its bytes.
+    fn encode_full(source: &Path, out: &Path, format: &str, quality: u8) -> (PathBuf, Vec<u8>) {
+        let config = ImageConfig {
+            widths: vec![1200],
+            quality,
+            format: format.to_string(),
+            ..Default::default()
+        };
+        let processor = ImageProcessor::new(config, out.to_path_buf());
+        let result = processor.process(source, "alt").unwrap();
+        assert_eq!(result.meta.variants.len(), 1);
+        let path = result.meta.variants[0].path.clone();
+        let bytes = std::fs::read(&path).unwrap();
+        (path, bytes)
+    }
+
+    #[test]
+    fn test_jpeg_quality_affects_size() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", false);
+
+        let (_, low) = encode_full(&source, &temp.path().join("q40"), "jpeg", 40);
+        let (_, high) = encode_full(&source, &temp.path().join("q95"), "jpeg", 95);
+
+        assert!(
+            low.len() < high.len(),
+            "q40 ({}) should be smaller than q95 ({})",
+            low.len(),
+            high.len()
+        );
+        for bytes in [&low, &high] {
+            let decoded = image::load_from_memory(bytes).unwrap();
+            assert_eq!(decoded.dimensions(), (1200, 800));
+        }
+    }
+
+    #[cfg(feature = "webp-lossy")]
+    #[test]
+    fn test_webp_lossy_is_much_smaller_than_lossless() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", false);
+
+        // The pre-fix baseline: the `image` crate's lossless-only WebP encoder.
+        let img = image::open(&source).unwrap();
+        let mut lossless = std::io::Cursor::new(Vec::new());
+        img.write_to(&mut lossless, image::ImageFormat::WebP)
+            .unwrap();
+        let lossless = lossless.into_inner();
+
+        let (_, lossy) = encode_full(&source, &temp.path().join("dist"), "webp", 80);
+
+        assert!(
+            (lossy.len() as f64) <= (lossless.len() as f64) * 0.6,
+            "WebP q80 ({}) should be at least 40% smaller than lossless ({})",
+            lossy.len(),
+            lossless.len()
+        );
+        for bytes in [&lossy, &lossless] {
+            let decoded = image::load_from_memory(bytes).unwrap();
+            assert_eq!(decoded.dimensions(), (1200, 800));
+        }
+    }
+
+    #[cfg(feature = "webp-lossy")]
+    #[test]
+    fn test_webp_lossy_preserves_alpha() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", true);
+
+        let (_, bytes) = encode_full(&source, &temp.path().join("dist"), "webp", 80);
+        let decoded = image::load_from_memory(&bytes).unwrap();
+
+        assert!(
+            decoded.color().has_alpha(),
+            "decoded WebP should keep alpha"
+        );
+        let rgba = decoded.to_rgba8();
+        assert_eq!(rgba.get_pixel(10, 10)[3], 0, "transparent region lost");
+        assert_eq!(rgba.get_pixel(1100, 700)[3], 255, "opaque region changed");
+    }
+
+    #[cfg(not(feature = "webp-lossy"))]
+    #[test]
+    fn test_webp_without_feature_is_lossless_and_ignores_quality() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", false);
+
+        let img = image::open(&source).unwrap();
+        let mut lossless = std::io::Cursor::new(Vec::new());
+        img.write_to(&mut lossless, image::ImageFormat::WebP)
+            .unwrap();
+
+        let (path_a, a) = encode_full(&source, &temp.path().join("dist"), "webp", 10);
+        let (path_b, b) = encode_full(&source, &temp.path().join("dist"), "webp", 100);
+
+        assert_eq!(a, lossless.into_inner());
+        assert_eq!(a, b);
+        assert_eq!(
+            path_a, path_b,
+            "quality must not affect cache key when ignored"
+        );
+    }
+
+    #[test]
+    fn test_png_ignores_quality() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", false);
+
+        let (path_a, a) = encode_full(&source, &temp.path().join("dist"), "png", 10);
+        let (path_b, b) = encode_full(&source, &temp.path().join("dist"), "png", 100);
+
+        assert_eq!(
+            a, b,
+            "PNG output must be byte-identical regardless of quality"
+        );
+        assert_eq!(path_a, path_b, "quality must not affect PNG cache key");
+    }
+
+    #[test]
+    fn test_quality_changes_variant_filename() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", false);
+        let out = temp.path().join("dist");
+
+        let (q40, _) = encode_full(&source, &out, "jpeg", 40);
+        let (q40_again, _) = encode_full(&source, &out, "jpeg", 40);
+        let (q95, _) = encode_full(&source, &out, "jpeg", 95);
+
+        assert_eq!(q40, q40_again, "same quality must give a stable filename");
+        assert_ne!(q40, q95, "changing quality must change the filename");
+
+        #[cfg(feature = "webp-lossy")]
+        {
+            let (w40, _) = encode_full(&source, &out, "webp", 40);
+            let (w95, _) = encode_full(&source, &out, "webp", 95);
+            assert_ne!(w40, w95);
+        }
+    }
+
+    #[test]
+    fn test_cache_hit_skips_reencode_when_quality_unchanged() {
+        let temp = TempDir::new().unwrap();
+        let source = create_noisy_image(temp.path(), "hero.png", false);
+        let out = temp.path().join("dist");
+
+        let (path, _) = encode_full(&source, &out, "jpeg", 80);
+        // Poison the cached variant; a re-encode would overwrite it.
+        std::fs::write(&path, b"cached").unwrap();
+
+        let (path_again, bytes) = encode_full(&source, &out, "jpeg", 80);
+        assert_eq!(path, path_again);
+        assert_eq!(bytes, b"cached", "unchanged quality must hit the cache");
     }
 
     #[test]

@@ -28,7 +28,7 @@ use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry, SlugMode};
 use crate::templates::TeraRenderer;
 use std::fs;
 use std::path::Path;
-use tracing::{debug, debug_span, info};
+use tracing::{debug, debug_span, info, warn};
 
 use taxus_common::components::counter::{Counter, CounterProps};
 use taxus_common::components::search_box::SearchBoxProps;
@@ -181,6 +181,19 @@ pub fn process_images(
 ) -> Result<ImageRegistry> {
     let mut registry = ImageRegistry::new();
     let processor = ImageProcessor::new(config.images.clone(), config.build.output_dir.clone());
+
+    // Once per build, not per image (#34).
+    if processor.quality_ignored_for_webp()
+        && processed
+            .iter()
+            .any(|p| p.page.frontmatter.hero_image.is_some())
+    {
+        warn!(
+            quality = config.images.quality,
+            "images.quality is ignored: WebP variants are lossless because taxus was built \
+             without the `webp-lossy` feature"
+        );
+    }
 
     for page in processed.iter_mut() {
         if let Some(ref hero_image_path) = page.page.frontmatter.hero_image {
