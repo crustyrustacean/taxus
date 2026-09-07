@@ -18,7 +18,11 @@ path = "src/lib.rs"
 
 [features]
 lang-rust = ["dep:tree-sitter-rust"]
-default = ["lang-rust"]
+# Lossy WebP encoding via libwebp (the `webp` crate). Without this feature
+# WebP output falls back to the `image` crate's lossless encoder and
+# `images.quality` is ignored for WebP.
+webp-lossy = ["dep:webp"]
+default = ["lang-rust", "webp-lossy"]
 
 [dependencies]
 deunicode = "1"
@@ -40,6 +44,7 @@ tree-sitter-highlight = "0.26"
 tree-sitter-rust = { version = "0.24", optional = true }
 walkdir = "2.5"
 image = "0.25"
+webp = { version = "0.3.1", optional = true }
 
 # ── Islands (Yew SSR + WASM client) ───────────────────────────────────────────
 taxus-common = { path = "../taxus-common" }

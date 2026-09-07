@@ -109,13 +109,19 @@ output_dir = "images"
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `widths` | array | `[400, 800, 1200]` | Responsive breakpoint widths in pixels |
-| `quality` | number | `80` | Output quality (1–100) |
-| `format` | string | `"webp"` | Output format: `"webp"`, `"jpeg"`, or `"png"` |
+| `quality` | number | `80` | Output quality (1–100). Applies to `"jpeg"` and `"webp"` only; `"png"` ignores it |
+| `format` | string | `"webp"` | Output format: `"webp"`, `"jpeg"` (alias `"jpg"`), or `"png"` |
 | `output_dir` | string | `"images"` | Subdirectory within `dist/` for processed images |
+
+`quality` outside 1–100 or an unknown `format` is a configuration error.
 
 ### Omitting the Section
 
 If `[images]` is not present in `site.toml`, all defaults are used.
+
+### Lossy WebP and the `webp-lossy` Feature
+
+WebP variants are encoded with libwebp (the `webp` crate) at the configured `quality`. This is behind the `webp-lossy` cargo feature, which is enabled by default. If you build Taxus with `--no-default-features`, the C dependency is dropped and WebP output falls back to the `image` crate's lossless encoder: `quality` is then ignored for WebP and a warning is logged once per build. JPEG always honours `quality`; PNG is always lossless.
 
 ## How It Works
 
@@ -129,7 +135,7 @@ This means hero image variants are generated before assets are copied and pages 
 
 ### Caching
 
-The image processor uses content-hash-based filenames. If all expected variant files already exist on disk with the correct hash, the processor skips re-encoding and rebuilds the metadata from the cache. This makes subsequent builds fast.
+The image processor uses content-hash-based filenames. The hash covers the source path, modification time, size and (for lossy formats) the `quality` setting. If all expected variant files already exist on disk with the correct hash, the processor skips re-encoding and rebuilds the metadata from the cache. This makes subsequent builds fast, and changing `quality` in `site.toml` re-encodes lossy variants on the next build.
 
 ### Small Source Images
 

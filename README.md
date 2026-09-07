@@ -106,13 +106,16 @@ hero_alt = "A mountain sunset"
 +++
 ```
 
-Taxus automatically generates responsive variants (400/800/1200px), converts to WebP, and produces a `<picture>` element with srcset. Configure breakpoints and format in `site.toml`:
+Taxus automatically generates responsive variants (400/800/1200px), converts to lossy WebP, and produces a `<picture>` element with srcset. Configure breakpoints, format and quality in `site.toml`:
 
 ```toml
 [images]
 widths = [400, 800, 1200]
-format = "webp"
+format = "webp"   # "webp", "jpeg" (or "jpg"), or "png"
+quality = 80      # 1-100; applies to jpeg and webp only, png ignores it
 ```
+
+Lossy WebP is encoded with libwebp via the `webp-lossy` cargo feature, which is on by default. Building with `--no-default-features` drops the C dependency: WebP output is then lossless (via the `image` crate) and `quality` is ignored for WebP, with a warning at build time. Processed variants are cached by content hash and quality, so changing `quality` re-encodes on the next build.
 
 ## Project Structure
 

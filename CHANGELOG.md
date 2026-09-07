@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **images**: Lossy WebP encoding via libwebp (the `webp` crate), behind the
+  new `webp-lossy` cargo feature, enabled by default. Without the feature
+  (`--no-default-features`) WebP output falls back to the `image` crate's
+  lossless encoder and a warning is logged once per build that
+  `images.quality` is ignored for WebP (#34)
+- **config**: `images.quality` is validated (1–100) and `images.format` must
+  be `"webp"`, `"jpeg"`, `"jpg"` or `"png"`; `"jpg"` is normalised to
+  `"jpeg"`. `SiteConfig::from_file` now calls `validate()` (#34)
+- **init**: The scaffolded `site.toml` includes a commented `[images]` section
+
+### Fixed
+
+- **images**: `images.quality` was never applied. Every format was written
+  with the `image` crate's default encoder settings, and because the default
+  format is WebP, for which that encoder is lossless-only, every hero image
+  variant shipped at full lossless size regardless of `quality`. JPEG now
+  uses `quality` via `JpegEncoder::new_with_quality`, WebP is lossy at
+  `quality` (see Added), and PNG ignores it by design. The variant filename
+  hash now includes the effective quality, so changing `quality` in
+  `site.toml` invalidates the cache (#34)
+
+### Note
+
+- Existing sites will see their hero image variants re-encoded once on the
+  next build, because the cache key now includes `quality`; the new WebP
+  variants are substantially smaller than the previous lossless ones. Stale
+  variants with the old hash are not removed automatically; run
+  `taxus clean` to drop them
+
 ## [0.6.1] - 2026-09-06
 
 ### Fixed
