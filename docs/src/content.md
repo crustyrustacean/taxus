@@ -2,6 +2,10 @@
 
 Content in Taxus is written in Markdown files with TOML frontmatter.
 
+> For the conceptual overview — how pages, sections, taxonomies, and URLs
+> relate — see [Content Model](./content-model.md). This chapter is the
+> practical reference.
+
 ## Content Files
 
 Content files are stored in the `content/` directory:
@@ -22,6 +26,21 @@ content/
 |------|---------|
 | `_index.md` | Section index page (home page at root, section index in subdirectories) |
 | `*.md` | Regular pages |
+
+### Dated Filenames
+
+A `YYYY-MM-DD-` prefix on a content filename is treated as a storage
+convention, not as part of the slug:
+
+- The prefix is **stripped from the slug**: `content/blog/2026-04-06-my-post.md`
+  is served at `/blog/my-post/`.
+- If the page has no `date` in frontmatter, the prefix **supplies the default
+  publication date**. A frontmatter `date` always wins.
+- Stems that are *only* a date (`2026-04-06.md`) and filenames whose prefix is
+  not a valid date (`2026-13-45-post.md`) are left untouched.
+
+This keeps dates out of URLs while letting filenames sort chronologically on
+disk. See [Content Model](./content-model.md) for the design rule behind it.
 
 ### Co-located Assets
 
@@ -112,7 +131,7 @@ Your markdown content here.
 |-------|------|----------|---------|-------------|
 | `title` | string | No\* | `""` | Page title |
 | `description` | string | No | `None` | Page description for SEO |
-| `date` | date | No | `None` | Publication date (YYYY-MM-DD) |
+| `date` | date | No | `None` | Publication date (YYYY-MM-DD). Falls back to a `YYYY-MM-DD-` filename prefix when omitted |
 | `updated` | date | No | `None` | Last updated date |
 | `template` | string | No | `"page.html"` | Template override |
 | `draft` | bool | No | `false` | Draft status |

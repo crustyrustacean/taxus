@@ -151,9 +151,13 @@ impl RouteDiscovery {
                 })?
                 .to_string();
 
+            // Strip a `YYYY-MM-DD-` date prefix so dates never leak into
+            // URLs or output paths (#67).
+            let (stem, _) = crate::content::split_date_prefix(&stem);
+
             let parent = relative.parent().unwrap_or(Path::new(""));
-            let url_path = self.page_to_url_path(parent, &stem);
-            let output_file = self.page_to_output_file(parent, &stem);
+            let url_path = self.page_to_url_path(parent, stem);
+            let output_file = self.page_to_output_file(parent, stem);
             (RouteKind::Page, url_path, output_file)
         };
 
@@ -286,6 +290,32 @@ mod tests {
         assert_eq!(path, "/blog/first-post/");
         assert_eq!(output, PathBuf::from("blog/first-post/index.html"));
         assert_eq!(kind, RouteKind::Page);
+    }
+
+    #[test]
+    fn test_path_conversion_dated_page() {
+        // blog/2026-04-06-my-post.md -> /blog/my-post/ (#67)
+        let (path, output, kind) = convert_path("blog/2026-04-06-my-post.md");
+        assert_eq!(path, "/blog/my-post/");
+        assert_eq!(output, PathBuf::from("blog/my-post/index.html"));
+        assert_eq!(kind, RouteKind::Page);
+    }
+
+    #[test]
+    fn test_path_conversion_dated_page_at_root() {
+        // 2026-04-06-my-post.md -> /my-post/, my-post/index.html (#67)
+        let (path, output, kind) = convert_path("2026-04-06-my-post.md");
+        assert_eq!(path, "/my-post/");
+        assert_eq!(output, PathBuf::from("my-post/index.html"));
+        assert_eq!(kind, RouteKind::Page);
+    }
+
+    #[test]
+    fn test_path_conversion_pure_date_stem_untouched() {
+        // A stem that is only a date is left alone (nothing to strip into).
+        let (path, output, _kind) = convert_path("2026-04-06.md");
+        assert_eq!(path, "/2026-04-06/");
+        assert_eq!(output, PathBuf::from("2026-04-06/index.html"));
     }
 
     #[test]

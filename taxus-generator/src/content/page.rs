@@ -1,10 +1,59 @@
 //! Page type for individual content files.
 
 use crate::error::{ContentError, Result};
+use chrono::NaiveDate;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use super::Frontmatter;
+
+/// Split a leading `YYYY-MM-DD-` date prefix from a filename stem.
+///
+/// This interprets a storage convention into model data (#67): the date
+/// prefix is stripped from the stem so it never leaks into slugs or URLs,
+/// and the parsed date is returned so it can be used as default metadata.
+///
+/// The prefix is only stripped when it forms a valid calendar date *and*
+/// something remains after it. A stem that is exactly a date (e.g.
+/// `2026-04-06`), or that merely looks like one (e.g. `2026-13-45-post`),
+/// is returned unchanged with `None`.
+///
+/// # Examples
+///
+/// ```
+/// # use chrono::NaiveDate;
+/// # use taxus_lib::content::split_date_prefix;
+/// let (stem, date) = split_date_prefix("2026-04-06-my-post");
+/// assert_eq!(stem, "my-post");
+/// assert_eq!(date, NaiveDate::from_ymd_opt(2026, 4, 6));
+///
+/// // No (valid) prefix: unchanged.
+/// assert_eq!(split_date_prefix("my-post").0, "my-post");
+/// assert_eq!(split_date_prefix("2026-04-06").0, "2026-04-06");
+/// ```
+pub fn split_date_prefix(stem: &str) -> (&str, Option<NaiveDate>) {
+    // Shape check: exactly `XXXX-XX-XX-` (11 bytes, digits in position).
+    let b = stem.as_bytes();
+    if b.len() <= 11 || b[4] != b'-' || b[7] != b'-' || b[10] != b'-' {
+        return (stem, None);
+    }
+    let all_digits = |r: std::ops::Range<usize>| b[r].iter().all(u8::is_ascii_digit);
+    if !all_digits(0..4) || !all_digits(5..7) || !all_digits(8..10) {
+        return (stem, None);
+    }
+
+    // Parsing cannot fail: the digit shapes were just verified.
+    let year: i32 = stem[0..4].parse().expect("verified digits");
+    let month: u32 = stem[5..7].parse().expect("verified digits");
+    let day: u32 = stem[8..10].parse().expect("verified digits");
+
+    match NaiveDate::from_ymd_opt(year, month, day) {
+        // `b.len() > 11` guarantees a non-empty remainder and that index 11
+        // is a char boundary (bytes 0..=10 are ASCII).
+        Some(date) if b.len() > 11 => (&stem[11..], Some(date)),
+        _ => (stem, None),
+    }
+}
 
 /// A single page with frontmatter and Markdown content.
 #[derive(Debug, Clone)]
@@ -76,7 +125,19 @@ impl Page {
     /// # Ok::<(), taxus_lib::error::GeneratorError>(())
     /// ```
     pub fn from_str(content: &str, source: &str) -> Result<Self> {
-        let (frontmatter, raw_content) = Self::parse_frontmatter(content, source)?;
+        let (mut frontmatter, raw_content) = Self::parse_frontmatter(content, source)?;
+
+        // A `YYYY-MM-DD-` filename prefix supplies the default publication
+        // date when frontmatter does not set one (#67). Frontmatter wins.
+        if frontmatter.date.is_none() {
+            let stem = Path::new(source)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("");
+            if let Some(date) = split_date_prefix(stem).1 {
+                frontmatter.date = Some(date);
+            }
+        }
 
         // Generate URL path from source filename
         let path = Self::source_to_path(source);
@@ -137,6 +198,7 @@ impl Page {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("index");
+        let stem = split_date_prefix(stem).0;
 
         if stem == "_index" {
             "/".to_string()
@@ -203,16 +265,18 @@ impl Page {
     /// Get the effective slug for this page.
     ///
     /// Returns the custom slug from frontmatter if set, otherwise derives
-    /// from the source filename.
+    /// from the source filename, stripping a `YYYY-MM-DD-` date prefix if
+    /// present (#67) so that dates never leak into slugs or URLs.
     pub fn slug(&self) -> &str {
         if let Some(ref slug) = self.frontmatter.slug {
             slug
         } else {
             // Derive from source filename
-            Path::new(&self.source)
+            let stem = Path::new(&self.source)
                 .file_stem()
                 .and_then(|s| s.to_str())
-                .unwrap_or("index")
+                .unwrap_or("index");
+            split_date_prefix(stem).0
         }
     }
 
@@ -776,6 +840,113 @@ Content
 "#;
         let page = Page::from_str(content.trim_start(), "my-blog-post.md").unwrap();
         assert_eq!(page.slug(), "my-blog-post");
+    }
+
+    // ============================================
+    // Date-Prefix Stripping Tests (#67)
+    // ============================================
+
+    #[test]
+    fn test_slug_strips_date_prefix() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "2026-04-06-my-blog-post.md").unwrap();
+        assert_eq!(page.slug(), "my-blog-post");
+        assert_eq!(page.path, "/my-blog-post/");
+        assert_eq!(page.url_path(), "/my-blog-post/");
+    }
+
+    #[test]
+    fn test_slug_pure_date_filename_not_stripped() {
+        // A stem that is only a date has nothing left after stripping;
+        // the whole stem stays the slug.
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "2026-04-06.md").unwrap();
+        assert_eq!(page.slug(), "2026-04-06");
+        assert_eq!(page.path, "/2026-04-06/");
+    }
+
+    #[test]
+    fn test_slug_invalid_date_prefix_not_stripped() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        // Month 13 is not a valid date: no strip, no default date.
+        let page = Page::from_str(content.trim_start(), "2026-13-45-my-post.md").unwrap();
+        assert_eq!(page.slug(), "2026-13-45-my-post");
+        assert_eq!(page.frontmatter.date, None);
+
+        // Wrong digit shapes are not dates either.
+        let page = Page::from_str(content.trim_start(), "26-4-6-my-post.md").unwrap();
+        assert_eq!(page.slug(), "26-4-6-my-post");
+    }
+
+    #[test]
+    fn test_frontmatter_slug_wins_over_date_prefix() {
+        let content = r#"
++++
+title = "Test"
+slug = "custom-slug"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "2026-04-06-my-post.md").unwrap();
+        assert_eq!(page.slug(), "custom-slug");
+    }
+
+    #[test]
+    fn test_date_defaults_from_filename_prefix() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "2026-04-06-my-post.md").unwrap();
+        assert_eq!(
+            page.frontmatter.date,
+            chrono::NaiveDate::from_ymd_opt(2026, 4, 6)
+        );
+    }
+
+    #[test]
+    fn test_frontmatter_date_beats_filename_prefix() {
+        let content = r#"
++++
+title = "Test"
+date = 2020-01-01
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "2026-04-06-my-post.md").unwrap();
+        assert_eq!(
+            page.frontmatter.date,
+            chrono::NaiveDate::from_ymd_opt(2020, 1, 1)
+        );
+    }
+
+    #[test]
+    fn test_no_date_without_filename_prefix() {
+        let content = r#"
++++
+title = "Test"
++++
+Content
+"#;
+        let page = Page::from_str(content.trim_start(), "my-post.md").unwrap();
+        assert_eq!(page.frontmatter.date, None);
     }
 
     #[test]
