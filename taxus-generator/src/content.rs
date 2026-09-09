@@ -31,17 +31,16 @@
 //! # Ok::<(), taxus_lib::error::GeneratorError>(())
 //! ```
 
-mod frontmatter;
 mod page;
 mod pagination;
 mod section;
 mod taxonomy;
 
-pub use frontmatter::{Frontmatter, SortBy};
 pub use page::{Page, split_date_prefix};
 pub use pagination::{PaginatedSlice, PaginationConfig, PaginationInfo, Paginator};
 pub use section::Section;
 pub use taxonomy::{TaxonomyKind, TaxonomyMap, TaxonomyTerm};
+pub use taxus_domain::{Frontmatter, SortBy};
 
 use crate::error::{ContentError, GeneratorError, Result};
 use std::path::{Path, PathBuf};

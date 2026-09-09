@@ -1,4 +1,4 @@
-// taxus-generator/src/content/frontmatter.rs
+// taxus-domain/src/schema.rs
 
 //! Frontmatter parsing for content files.
 //!
@@ -111,7 +111,7 @@ impl FromStr for Frontmatter {
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use taxus_lib::content::Frontmatter;
+    /// use taxus_domain::Frontmatter;
     ///
     /// let fm = Frontmatter::from_str(r#"
     /// title = "My Page"

@@ -48,6 +48,7 @@ webp = { version = "0.3.1", optional = true }
 
 # ── Islands (Yew SSR + WASM client) ───────────────────────────────────────────
 taxus-common = { path = "../taxus-common" }
+taxus-domain = { path = "../taxus-domain" }
 yew = { version = "0.23", features = ["ssr"] }
 
 # ── Dev server dependencies ───────────────────────────────────────────────────
