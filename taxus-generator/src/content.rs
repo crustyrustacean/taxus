@@ -38,7 +38,7 @@ mod section;
 mod taxonomy;
 
 pub use frontmatter::{Frontmatter, SortBy};
-pub use page::Page;
+pub use page::{Page, split_date_prefix};
 pub use pagination::{PaginatedSlice, PaginationConfig, PaginationInfo, Paginator};
 pub use section::Section;
 pub use taxonomy::{TaxonomyKind, TaxonomyMap, TaxonomyTerm};

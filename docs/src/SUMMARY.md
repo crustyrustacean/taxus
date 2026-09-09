@@ -3,6 +3,7 @@
 - [Introduction](./introduction.md)
 - [Getting Started](./getting-started.md)
 - [Architecture](./architecture.md)
+- [Content Model](./content-model.md)
 - [Configuration](./configuration.md)
 - [Content](./content.md)
 - [Templates](./templates.md)
