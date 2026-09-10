@@ -4,13 +4,14 @@ This page provides a technical overview of Taxus's architecture, including the w
 
 ## Workspace Structure
 
-Taxus is organized as a multi-crate Cargo workspace with four crates:
+Taxus is organized as a multi-crate Cargo workspace with five crates:
 
 ```
 taxus/
 ├── taxus-client/    # WASM hydration client
 ├── taxus-common/    # Shared Yew components
-└── taxus-generator/ # SSG library and CLI binary
+├── taxus-domain/    # Pure data model: the Site Tree and its derivations
+├── taxus-generator/ # SSG library and CLI binary
 └── xtask/           # Workspace task runner (cargo xtask)
 ```
 
@@ -19,6 +20,7 @@ taxus/
 | Crate | Role | Output |
 |-------|------|--------|
 | `taxus-common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
+| `taxus-domain` | The Site Tree (`SiteTree`, `SectionNode`, `PageNode`), identity types (`Slug`, `NodePath`, `UrlPath`), typed frontmatter, and pure derivations over the tree. No I/O. | Library |
 | `taxus-generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`taxus`) |
 | `taxus-client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (embedded in generator binary at compile time) |
 | `xtask` | Workspace task runner wrapping common developer workflows (build, test, lint, release, …) | Binary (`cargo xtask`) |
@@ -107,8 +109,8 @@ The `SiteBuilder` orchestrates a 15-stage build pipeline:
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  [1/15] Discover routes                                          │
-│          └──▶ Walk content/ directory                            │
-│          └──▶ Create RouteRegistry (path → content file mapping) │
+│          └──▶ Walk content/ once, build the SiteTree             │
+│          └──▶ Derive RouteRegistry from the tree (from_tree)     │
 │                                                                  │
 │  [2/15] Load templates                                           │
 │          └──▶ Read templates/**/*.html                           │
@@ -173,11 +175,100 @@ The `SiteBuilder` orchestrates a 15-stage build pipeline:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Data Model
+
+The build has one source of truth: the **Site Tree**, defined in
+`taxus-domain` and built once, at the start of `SiteBuilder::build()`, by
+`RouteDiscovery::discover_tree()`. The tree is immutable after that; every
+later stage only queries it. See [Content Model](./content-model.md) for the
+ideas behind it — this section is the map of the types.
+
+### Node types
+
+```rust
+SiteTree { root: SectionNode }
+
+SectionNode {                       // a directory
+    path: NodePath,                 // membership path, e.g. ["blog"]; root is []
+    content_file: Option<PathBuf>,  // its _index.md, or None if the directory has none
+    meta: Frontmatter,              // from _index.md (defaults when absent)
+    body: Option<String>,
+    pages: Vec<PageNode>,           // direct children only, sorted by slug
+    subsections: Vec<SectionNode>,  // direct children only, sorted by slug
+}
+
+PageNode {                          // a document
+    path: NodePath,                 // e.g. ["blog", "my-post"]
+    content_file: PathBuf,          // e.g. "blog/2026-04-06-my-post.md" (storage, not identity)
+    meta: Frontmatter,
+    body: String,
+}
+```
+
+A `NodePath` is a list of `Slug`s. The generator computes it: directory
+segments are slugified, a page's last segment is its frontmatter `slug`
+(verbatim) or its slugified, date-prefix-stripped file stem. The domain
+does not slugify; a `Slug` only has to be a usable path segment. A node's
+address is derived from its path in exactly one place,
+`UrlPath::from_node_path` (`/blog/my-post/`; the root is `/`).
+
+`SiteTreeBuilder` assembles the tree from flat `add_page` / `add_section`
+calls, auto-creates intermediate sections that have no `_index.md`, and
+rejects two nodes at the same path (`TreeError::Duplicate`, or `Collision`
+for a page and a section) — those surface as the same `Duplicate route`
+error the route registry has always reported.
+
+### Navigation
+
+Queries on `SiteTree` (all cheap, all read-only):
+
+| Method | Returns |
+|--------|---------|
+| `get_section(&NodePath)` | the section at that path |
+| `get_page(&NodePath)` | the page at that path |
+| `iter_pages()` | every page in the site, depth-first, drafts included |
+
+### Derivations
+
+Everything computed *from* the tree lives in `taxus_domain::derivation` as
+pure functions: `(tree or section) -> Vec<&PageNode>`, never stored back.
+
+| Function | Meaning |
+|----------|---------|
+| `descendant_pages(&SectionNode)` | every page in a section's subtree, depth-first |
+| `recent(&SiteTree, include_drafts)` | all pages, newest first, undated last |
+| `aggregate(&SectionNode, &SiteTree, &[NodePath])` | a section's pages merged with the pages of donor sections (`pages_from`), deduplicated, sorted by the receiver's `sort_by` |
+| `tree::sort_pages(&mut [&PageNode], SortBy)` | the ordering used by listings |
+
+Draft filtering is always the caller's decision (the generator knows
+whether `--drafts` was passed), so derivations take it as a parameter.
+
+### What is wired today
+
+- **Routes** are derived: `RouteRegistry::from_tree` produces one
+  `RouteInfo` per page and per section that has an `_index.md`. The
+  registry is a projection of the tree, not a second source.
+- **Section listings** (`build/pipeline/pages.rs`) look the section up in
+  the tree and list `descendant_pages` of that node — every page under the
+  section, as the previous URL-prefix scan did — sorted by the section's
+  `sort_by`. `sort_by = "weight"` now works and `weight` is exposed on
+  `page` in templates. Date and title ordering keep their historical
+  comparators (undated pages first, byte-order titles) until they are
+  moved to the domain's in a dedicated change.
+- Taxonomies, feeds, the sitemap, pagination and the search index still
+  iterate the flat `Vec<ProcessedPage>`; porting them to derivations is
+  the next step, and `content::Section` (which duplicates the frontmatter
+  parser) retires with it.
+
+The rule for new code: **the tree is immutable after `build()` starts; a
+stage that needs structure queries the tree, and a stage that needs a new
+projection adds a pure function to `taxus_domain::derivation`.**
+
 ## Key Types in the Pipeline
 
 ### RouteRegistry
 
-The first major data structure created. Maps URL paths to content files:
+Derived from the Site Tree. Maps URL paths to content files:
 
 ```rust
 RouteRegistry {

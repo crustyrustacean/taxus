@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **build**: A `SiteTree` (from `taxus-domain`) is built during route
+  discovery (`RouteDiscovery::discover_tree`) and is the source of truth for
+  page and section lookups and section listings. It is immutable after
+  `build()` starts; stages query it
+- **templates**: `page.weight` is available in templates (the frontmatter
+  `weight`, `0` when unset)
+- **build**: `SiteBuilder::output_dir()` overrides the output directory from
+  `site.toml`
+- **tests**: A golden output test (`tests/golden_output.rs`) compares every
+  buildable fixture site and `get-taxus-org/` against committed manifests of
+  `(path, sha256)` so refactors that must not change output can prove it
+
+### Fixed
+
+- **build**: `sort_by = "weight"` on a section now orders its pages by
+  `weight` (lowest first). It silently fell back to a title sort (#5)
+
+### Changed
+
+- **routes** (internal): `RouteRegistry` is now derived from the tree with
+  `RouteRegistry::from_tree`; the legacy file walk (`discover`) remains for
+  the `routes` command. A page with a frontmatter `slug` is keyed in the tree
+  by section path + slug (`/blog/renamed-entry/`), the documented model, where
+  the legacy walk keyed it by filename. Generated output is unchanged: the
+  served URL still comes from `ProcessedPage::effective_url_path()`
+- **domain**: `Slug` accepts any non-empty URL path segment without `/`,
+  `.`/`..` or control characters — slugification is the generator's job, and
+  frontmatter slugs are used verbatim. `PageNode`/`SectionNode` carry
+  `content_file` (relative to the content directory). `SiteTree::recent()`
+  moved to `derivation::recent(tree, include_drafts)`
+
 ## [0.7.0] - 2026-09-07
 
 ### Added

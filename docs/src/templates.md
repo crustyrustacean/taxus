@@ -285,6 +285,7 @@ When iterating `extra.taxonomy.terms`, each term has:
 | `page.summary` | String | Summary/excerpt for the page |
 | `page.word_count` | Number | Word count |
 | `page.reading_time` | Number | Estimated reading time in minutes |
+| `page.weight` | Number | Frontmatter `weight` (`0` when unset); sections with `sort_by = "weight"` list pages in this order |
 | `page.tags` | Array | Tags for the page |
 | `page.categories` | Array | Categories for the page |
 | `page.series` | String? | Series name |
