@@ -7,8 +7,13 @@
 
 use std::fmt;
 
-/// A single URL-safe path segment: lowercase ASCII letters, digits, and
-/// hyphens; non-empty; no leading or trailing hyphen.
+/// A single URL path segment, already slugified by the caller.
+///
+/// The domain does not slugify: the generator owns the one slug algorithm
+/// (transliteration, lowercasing, separator collapsing) and frontmatter
+/// `slug` overrides are used verbatim. This type only guarantees that the
+/// segment can stand alone in a path: it is non-empty, contains no `/`, is
+/// neither `.` nor `..`, and has no ASCII control characters.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Slug(String);
 
@@ -18,14 +23,14 @@ impl Slug {
         if raw.is_empty() {
             return Err(IdentityError::Empty);
         }
-        let valid = raw
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
-        if !valid {
-            return Err(IdentityError::InvalidCharacters { s: raw.to_owned() });
+        if raw.contains('/') {
+            return Err(IdentityError::Slash { s: raw.to_owned() });
         }
-        if raw.starts_with('-') || raw.ends_with('-') {
-            return Err(IdentityError::EdgeHyphen { s: raw.to_owned() });
+        if raw == "." || raw == ".." {
+            return Err(IdentityError::DotSegment { s: raw.to_owned() });
+        }
+        if raw.bytes().any(|b| b.is_ascii_control()) {
+            return Err(IdentityError::ControlCharacter { s: raw.to_owned() });
         }
         Ok(Self(raw.to_owned()))
     }
@@ -155,10 +160,12 @@ impl fmt::Display for UrlPath {
 pub enum IdentityError {
     #[error("slug must not be empty")]
     Empty,
-    #[error("invalid slug `{s}`: only lowercase ASCII letters, digits, and hyphens are allowed")]
-    InvalidCharacters { s: String },
-    #[error("invalid slug `{s}`: must not start or end with a hyphen")]
-    EdgeHyphen { s: String },
+    #[error("invalid slug `{s}`: must not contain `/`")]
+    Slash { s: String },
+    #[error("invalid slug `{s}`: `.` and `..` are reserved")]
+    DotSegment { s: String },
+    #[error("invalid slug `{s}`: must not contain control characters")]
+    ControlCharacter { s: String },
 }
 
 #[cfg(test)]
@@ -166,18 +173,47 @@ mod tests {
     use super::*;
 
     #[test]
-    fn slug_accepts_valid() {
-        assert!(Slug::new("my-post-2").is_ok());
-        assert!(Slug::new("a").is_ok());
+    fn slug_accepts_any_segment_the_caller_slugified() {
+        // Slugification is the generator's job; the domain accepts whatever
+        // it produces, including verbatim frontmatter overrides.
+        for raw in [
+            "my-post-2",
+            "a",
+            "Ünïcödé",
+            "日本語",
+            "my_post",
+            "My-Post",
+            "2026-04-06",
+            "-edge-",
+            "with space",
+        ] {
+            assert!(Slug::new(raw).is_ok(), "{raw:?} should be accepted");
+        }
     }
 
     #[test]
-    fn slug_rejects_invalid() {
+    fn slug_rejects_empty_slash_dots_and_controls() {
         assert_eq!(Slug::new(""), Err(IdentityError::Empty));
-        assert!(Slug::new("My-Post").is_err());
-        assert!(Slug::new("my_post").is_err());
-        assert!(Slug::new("-post").is_err());
-        assert!(Slug::new("post-").is_err());
+        assert!(matches!(Slug::new("/"), Err(IdentityError::Slash { .. })));
+        assert!(matches!(Slug::new("a/b"), Err(IdentityError::Slash { .. })));
+        assert!(matches!(
+            Slug::new("."),
+            Err(IdentityError::DotSegment { .. })
+        ));
+        assert!(matches!(
+            Slug::new(".."),
+            Err(IdentityError::DotSegment { .. })
+        ));
+        assert!(matches!(
+            Slug::new("a\tb"),
+            Err(IdentityError::ControlCharacter { .. })
+        ));
+        assert!(matches!(
+            Slug::new("a\u{7f}"),
+            Err(IdentityError::ControlCharacter { .. })
+        ));
+        // `...` is an ordinary (if odd) segment.
+        assert!(Slug::new("...").is_ok());
     }
 
     #[test]

@@ -2,10 +2,25 @@
 //!
 //! Each derivation is `(source set, filter, order, grouping)` — computed,
 //! never stored. Draft filtering is the caller's concern (the generator
-//! decides whether drafts participate in a given build).
+//! decides whether drafts participate in a given build), so every
+//! derivation that filters drafts takes an explicit `include_drafts`.
 
 use crate::identity::NodePath;
+use crate::schema::SortBy;
 use crate::tree::{PageNode, SectionNode, SiteTree, sort_pages};
+
+/// Recent pages across the whole site: newest first, undated pages last.
+///
+/// Drafts are excluded unless `include_drafts` is set — the generator
+/// decides per build whether drafts participate.
+pub fn recent(tree: &SiteTree, include_drafts: bool) -> Vec<&PageNode> {
+    let mut pages: Vec<&PageNode> = tree
+        .iter_pages()
+        .filter(|p| include_drafts || !p.is_draft())
+        .collect();
+    sort_pages(&mut pages, SortBy::Date);
+    pages
+}
 
 /// Aggregation: declared membership beyond containment.
 ///
@@ -43,6 +58,7 @@ mod tests {
     fn page(path: &str, date: NaiveDate) -> PageNode {
         PageNode {
             path: NodePath::parse(path).unwrap(),
+            content_file: std::path::PathBuf::from(format!("{path}.md")),
             meta: crate::schema::Frontmatter {
                 date: Some(date),
                 ..crate::schema::Frontmatter::default()
@@ -51,19 +67,29 @@ mod tests {
         }
     }
 
-    fn fixture() -> SiteTree {
-        let mut builder = SiteTreeBuilder::new();
-        // Root page: direct child of the root, older than anything in blog/.
+    fn add(builder: &mut SiteTreeBuilder, path: &str, meta: crate::schema::Frontmatter) {
         builder
             .add_page(
-                &NodePath::parse("root-note").unwrap(),
-                page("root-note", NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()).meta,
+                &NodePath::parse(path).unwrap(),
+                std::path::PathBuf::from(format!("{path}.md")),
+                meta,
                 String::new(),
             )
             .unwrap();
+    }
+
+    fn fixture() -> SiteTree {
+        let mut builder = SiteTreeBuilder::new();
+        // Root page: direct child of the root, older than anything in blog/.
+        add(
+            &mut builder,
+            "root-note",
+            page("root-note", NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()).meta,
+        );
         builder
             .add_section(
                 &NodePath::parse("blog").unwrap(),
+                None,
                 crate::schema::Frontmatter {
                     sort_by: SortBy::Date,
                     ..crate::schema::Frontmatter::default()
@@ -72,15 +98,44 @@ mod tests {
             )
             .unwrap();
         for (path, y, m) in [("blog/newer", 2026, 9), ("blog/older", 2026, 2)] {
-            builder
-                .add_page(
-                    &NodePath::parse(path).unwrap(),
-                    page(path, NaiveDate::from_ymd_opt(y, m, 15).unwrap()).meta,
-                    String::new(),
-                )
-                .unwrap();
+            add(
+                &mut builder,
+                path,
+                page(path, NaiveDate::from_ymd_opt(y, m, 15).unwrap()).meta,
+            );
         }
         builder.build().unwrap()
+    }
+
+    #[test]
+    fn recent_sorts_by_date_desc_and_filters_drafts() {
+        let mut builder = SiteTreeBuilder::new();
+        let dated = |y, m, draft| crate::schema::Frontmatter {
+            date: Some(NaiveDate::from_ymd_opt(y, m, 1).unwrap()),
+            draft,
+            ..crate::schema::Frontmatter::default()
+        };
+        add(&mut builder, "old", dated(2026, 1, false));
+        add(&mut builder, "new", dated(2026, 9, false));
+        add(&mut builder, "secret", dated(2026, 12, true));
+        add(
+            &mut builder,
+            "undated",
+            crate::schema::Frontmatter::default(),
+        );
+        let tree = builder.build().unwrap();
+
+        fn names(pages: Vec<&PageNode>) -> Vec<&str> {
+            pages
+                .iter()
+                .map(|p| p.path.last().unwrap().as_str())
+                .collect()
+        }
+        assert_eq!(names(recent(&tree, false)), ["new", "old", "undated"]);
+        assert_eq!(
+            names(recent(&tree, true)),
+            ["secret", "new", "old", "undated"]
+        );
     }
 
     #[test]
