@@ -433,6 +433,7 @@ mod tests {
             tags: vec![],
             categories: vec![],
             series: None,
+            weight: 0,
             hero: None,
         }
     }

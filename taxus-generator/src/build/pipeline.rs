@@ -28,6 +28,7 @@ use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
 use std::fs;
 use std::path::Path;
+use taxus_domain::SiteTree;
 use tracing::{debug, debug_span, info, warn};
 
 use taxus_common::components::counter::{Counter, CounterProps};
@@ -80,7 +81,19 @@ pub fn load_config(dir: &Path) -> std::result::Result<SiteConfig, GeneratorError
     SiteConfig::from_dir(dir)
 }
 
-/// Discover routes from the content directory.
+/// Build the Site Tree from the content directory.
+///
+/// The tree is the source of truth for the build: the [`RouteRegistry`]
+/// is derived from it with [`RouteRegistry::from_tree`], and stages that
+/// need membership (section listings) query it. It is immutable once built.
+pub fn discover_tree(config: &SiteConfig) -> Result<SiteTree> {
+    RouteDiscovery::new(&config.build.content_dir).discover_tree()
+}
+
+/// Discover routes from the content directory with the legacy file walk.
+///
+/// Kept for callers that only need routes (the `routes` CLI command);
+/// the build itself derives its registry from [`discover_tree`].
 pub fn discover_routes(config: &SiteConfig) -> Result<RouteRegistry> {
     let discovery = RouteDiscovery::new(&config.build.content_dir);
     Ok(discovery.discover()?)

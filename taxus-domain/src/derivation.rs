@@ -9,6 +9,24 @@ use crate::identity::NodePath;
 use crate::schema::SortBy;
 use crate::tree::{PageNode, SectionNode, SiteTree, sort_pages};
 
+/// Every page in a section's subtree, depth-first: the section's own pages
+/// (slug order), then each subsection's pages in turn.
+///
+/// Reachability is a query, never a property of the structure: a section's
+/// `pages` field holds direct children only, and this is how a listing that
+/// wants the whole subtree asks for it.
+pub fn descendant_pages(section: &SectionNode) -> Vec<&PageNode> {
+    fn walk<'a>(section: &'a SectionNode, out: &mut Vec<&'a PageNode>) {
+        out.extend(section.pages.iter());
+        for sub in &section.subsections {
+            walk(sub, out);
+        }
+    }
+    let mut out = Vec::new();
+    walk(section, &mut out);
+    out
+}
+
 /// Recent pages across the whole site: newest first, undated pages last.
 ///
 /// Drafts are excluded unless `include_drafts` is set — the generator
@@ -105,6 +123,45 @@ mod tests {
             );
         }
         builder.build().unwrap()
+    }
+
+    #[test]
+    fn descendant_pages_walks_the_subtree_depth_first() {
+        let mut builder = SiteTreeBuilder::new();
+        for path in [
+            "top",
+            "blog/b-post",
+            "blog/a-post",
+            "blog/2026/nested",
+            "docs/guide",
+        ] {
+            add(&mut builder, path, crate::schema::Frontmatter::default());
+        }
+        let tree = builder.build().unwrap();
+
+        let names = |section: &SectionNode| -> Vec<String> {
+            descendant_pages(section)
+                .iter()
+                .map(|p| p.path.to_string())
+                .collect()
+        };
+        let blog = tree.get_section(&NodePath::parse("blog").unwrap()).unwrap();
+        assert_eq!(
+            names(blog),
+            ["blog/a-post", "blog/b-post", "blog/2026/nested"]
+        );
+        // Direct children stay direct children.
+        assert_eq!(blog.pages.len(), 2);
+        assert_eq!(
+            names(&tree.root),
+            [
+                "top",
+                "blog/a-post",
+                "blog/b-post",
+                "blog/2026/nested",
+                "docs/guide"
+            ]
+        );
     }
 
     #[test]

@@ -83,15 +83,7 @@ impl SiteTree {
 
     /// Every page in the site, depth-first, including drafts.
     pub fn iter_pages(&self) -> impl Iterator<Item = &PageNode> {
-        fn walk<'a>(section: &'a SectionNode, out: &mut Vec<&'a PageNode>) {
-            out.extend(section.pages.iter());
-            for sub in &section.subsections {
-                walk(sub, out);
-            }
-        }
-        let mut out = Vec::new();
-        walk(&self.root, &mut out);
-        out.into_iter()
+        crate::derivation::descendant_pages(&self.root).into_iter()
     }
 }
 

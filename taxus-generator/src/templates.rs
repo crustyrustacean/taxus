@@ -47,6 +47,7 @@
 //!     tags: vec![],
 //!     categories: vec![],
 //!     series: None,
+//!     weight: 0,
 //!     hero: None,
 //! };
 //! let ctx = TemplateContext::new(site).with_page(page);
