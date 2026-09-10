@@ -1,8 +1,9 @@
+// taxus-domain/src/lib.rs
+
 //! # taxus-domain
 //!
 //! The pure data model for Taxus sites — the Site Tree, its nodes, and the
-//! derivations computed over them (RFC 2: "Taxus Data Model — Clean-Slate
-//! Derivation").
+//! derivations computed over them.
 //!
 //! This crate is deliberately free of I/O: no filesystem, no network, no
 //! template engine, no markdown parsing. It defines *what a site is*;
@@ -15,7 +16,7 @@
 //! - [`tree`]: the Site Tree — [`SectionNode`]/[`PageNode`], construction, queries
 //! - [`derivation`]: pure derivations — sorting, aggregation (`pages_from`)
 //!
-//! ## Invariants (RFC 2 §3)
+//! ## Invariants
 //!
 //! - Structure contains only containment: `pages` and `subsections` are
 //!   direct children.

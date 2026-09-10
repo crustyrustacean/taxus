@@ -1,4 +1,4 @@
-//! Pure derivations over the Site Tree (RFC 2 §2.2).
+//! Pure derivations over the Site Tree.
 //!
 //! Each derivation is `(source set, filter, order, grouping)` — computed,
 //! never stored. Draft filtering is the caller's concern (the generator
@@ -7,7 +7,7 @@
 use crate::identity::NodePath;
 use crate::tree::{PageNode, SectionNode, SiteTree, sort_pages};
 
-/// Aggregation (RFC 2 §2.2): declared membership beyond containment.
+/// Aggregation: declared membership beyond containment.
 ///
 /// Merge the receiving section's direct pages with the pages of the named
 /// donor sections (e.g. `pages_from = ["blog"]` on the root `_index.md`).

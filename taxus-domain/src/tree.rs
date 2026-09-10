@@ -1,6 +1,8 @@
+// taxus-domain/src/tree.rs
+
 //! The Site Tree: the in-memory model of a site's containment structure.
 //!
-//! Invariants (RFC 2 §3):
+//! Invariants:
 //! - `pages` and `subsections` are **direct children only** — structure
 //!   contains only containment. Reachability is a query, never a property
 //!   of the structure (see [`crate::derivation`]).
@@ -253,7 +255,7 @@ impl SiteTreeBuilder {
     }
 }
 
-/// Deterministic ordering for derived listings (RFC 2 §2.2: sequence).
+/// Deterministic ordering for derived listings.
 ///
 /// Date: newest first, undated last. Title: case-insensitive ascending.
 /// Weight: lowest first. None: preserve order.

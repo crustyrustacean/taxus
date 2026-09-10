@@ -1,7 +1,7 @@
 [package]
 name = "taxus-domain"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Pure data model for Taxus sites: the Site Tree, its nodes, and the derivations computed over them."
 
 [dependencies]

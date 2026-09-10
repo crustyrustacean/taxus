@@ -399,7 +399,6 @@ mod tests {
                 static_dir: PathBuf::from("tests/fixtures/content_site/static"),
                 styles_dir: PathBuf::from("tests/fixtures/content_site/styles"),
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
-                slugify: "on".to_string(),
             },
             feed: FeedConfig::default(),
             highlight: HighlightConfig::default(),

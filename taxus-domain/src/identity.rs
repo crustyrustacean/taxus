@@ -1,6 +1,8 @@
+// taxus-domain/src/identity.rs
+
 //! Identity: slugs, membership paths, and derived URL paths.
 //!
-//! One derivation point for addresses ([`UrlPath::from_node_path`]) — RFC 2,
+//! One derivation point for addresses ([`UrlPath::from_node_path`])
 //! invariant 3.
 
 use std::fmt;

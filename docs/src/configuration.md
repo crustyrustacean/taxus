@@ -51,7 +51,7 @@ Build configuration options. All fields have defaults.
 | `static_dir` | string | `"static"` | Directory containing static assets |
 | `styles_dir` | string | `"styles"` | Directory containing SCSS stylesheets |
 | `templates_dir` | string | `"templates"` | Directory containing HTML templates |
-| `slugify` | string | `"on"` | URL slug mode: `"on"` (lowercase, transliterate non-ASCII, strip punctuation), `"safe"` (preserve non-ASCII, normalize case/whitespace), or `"off"` (use filenames verbatim) |
+
 
 ### `[feed]` Section
 

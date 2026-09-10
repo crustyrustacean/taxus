@@ -24,7 +24,7 @@ use crate::config::SiteConfig;
 use crate::content::Page;
 use crate::error::{GeneratorError, Result};
 use crate::images::{ImageProcessor, ImageRegistry, ProcessedImage};
-use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry, SlugMode};
+use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
 use std::fs;
 use std::path::Path;
@@ -82,8 +82,7 @@ pub fn load_config(dir: &Path) -> std::result::Result<SiteConfig, GeneratorError
 
 /// Discover routes from the content directory.
 pub fn discover_routes(config: &SiteConfig) -> Result<RouteRegistry> {
-    let discovery = RouteDiscovery::new(&config.build.content_dir)
-        .with_slug_mode(SlugMode::from_config(&config.build.slugify));
+    let discovery = RouteDiscovery::new(&config.build.content_dir);
     Ok(discovery.discover()?)
 }
 
@@ -118,7 +117,6 @@ pub fn process_content(
         // Convert markdown to HTML (collecting heading TOC at the same time)
         let md_options = markdown::MarkdownOptions {
             insert_anchor_links: config.markdown.insert_anchor_links,
-            slug_mode: crate::routes::SlugMode::from_config(&config.build.slugify),
         };
         let (html_content, toc) = markdown::markdown_to_html_with_toc(
             &resolved_content,

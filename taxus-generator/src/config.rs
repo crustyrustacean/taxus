@@ -69,18 +69,6 @@ pub struct BuildConfig {
     /// Templates directory path
     #[serde(default = "default_templates_dir")]
     pub templates_dir: PathBuf,
-
-    /// URL slugification mode for content paths (#27).
-    ///
-    /// - `"on"` (default): lowercase, transliterate non-ASCII, strip punctuation
-    /// - `"safe"`: preserve non-ASCII, still normalize case/whitespace
-    /// - `"off"`: use filenames verbatim
-    #[serde(default = "default_slugify")]
-    pub slugify: String,
-}
-
-fn default_slugify() -> String {
-    "on".to_string()
 }
 
 fn default_content_dir() -> PathBuf {
@@ -107,7 +95,6 @@ impl Default for BuildConfig {
             static_dir: default_static_dir(),
             styles_dir: default_styles_dir(),
             templates_dir: default_templates_dir(),
-            slugify: default_slugify(),
         }
     }
 }

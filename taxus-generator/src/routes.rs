@@ -47,4 +47,4 @@ pub mod slugify;
 
 pub use discovery::RouteDiscovery;
 pub use registry::{RouteInfo, RouteKind, RouteRegistry};
-pub use slugify::{SlugMode, slugify_path, slugify_segment};
+pub use slugify::{slugify_path, slugify_segment};

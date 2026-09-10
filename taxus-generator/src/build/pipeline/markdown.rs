@@ -2,7 +2,7 @@
 
 use crate::highlighting::engine::escape_html;
 use crate::highlighting::{CodeHighlighter, HighlightResult};
-use crate::routes::slugify::{SlugMode, slugify_segment};
+use crate::routes::slugify::slugify_segment;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use std::collections::HashMap;
 
@@ -24,22 +24,11 @@ pub struct TocEntry {
 }
 
 /// Options controlling markdown rendering.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct MarkdownOptions {
     /// Insert a visible anchor link (`<a class="anchor" href="#id">#</a>`)
     /// into each heading. Defaults to false.
     pub insert_anchor_links: bool,
-    /// Slugification mode used for generated heading ids.
-    pub slug_mode: SlugMode,
-}
-
-impl Default for MarkdownOptions {
-    fn default() -> Self {
-        Self {
-            insert_anchor_links: false,
-            slug_mode: SlugMode::On,
-        }
-    }
 }
 
 /// Render markdown to HTML, assigning ids to headings and collecting a TOC.
@@ -150,7 +139,7 @@ pub fn markdown_to_html_with_toc(
                 // Resolve the id: explicit {#id} wins, else slugify text.
                 let base_id = heading_explicit_id
                     .clone()
-                    .unwrap_or_else(|| slugify_segment(&heading_text, opts.slug_mode));
+                    .unwrap_or_else(|| slugify_segment(&heading_text));
                 let id = unique_id(&base_id, &mut id_counts);
 
                 // Open the tag with the id (and any explicit classes).
@@ -582,7 +571,6 @@ mod tests {
     fn test_anchor_links_inserted_when_enabled() {
         let opts = MarkdownOptions {
             insert_anchor_links: true,
-            ..Default::default()
         };
         let (html, _) = markdown_to_html_with_toc("## Sec\n", None, &opts);
         assert!(
@@ -621,7 +609,7 @@ mod tests {
     fn test_unicode_heading_id() {
         let (html, _) =
             markdown_to_html_with_toc("## Café Notes\n", None, &MarkdownOptions::default());
-        // On mode transliterates.
+        // Transliterated to ASCII.
         assert!(html.contains("id=\"cafe-notes\""), "got: {html}");
     }
 

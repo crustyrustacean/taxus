@@ -153,7 +153,6 @@ pub struct BuildConfig {
     pub static_dir: PathBuf,     // default: "static"
     pub styles_dir: PathBuf,     // default: "styles"
     pub templates_dir: PathBuf,  // default: "templates"
-    pub slugify: String,         // default: "on"
 }
 ```
 
