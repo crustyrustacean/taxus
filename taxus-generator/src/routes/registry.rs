@@ -5,6 +5,7 @@
 use crate::error::RouteError;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use taxus_domain::{NodePath, SectionNode, SiteTree, UrlPath};
 
 /// The type of route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -111,6 +112,54 @@ impl RouteRegistry {
         }
     }
 
+    /// Derive the registry from a [`SiteTree`].
+    ///
+    /// Every page becomes a page route and every section that has an
+    /// `_index.md` becomes a section route; sections without one exist in
+    /// the tree but have nothing to render, so — as with the legacy walk —
+    /// they get no route. Paths come from [`UrlPath::from_node_path`], the
+    /// one derivation point for addresses; output files mirror them
+    /// (`blog/my-post/index.html`, `index.html` for the root).
+    pub fn from_tree(tree: &SiteTree) -> Self {
+        fn output_file(path: &NodePath) -> PathBuf {
+            if path.is_root() {
+                PathBuf::from("index.html")
+            } else {
+                PathBuf::from(path.to_string()).join("index.html")
+            }
+        }
+
+        fn route(path: &NodePath, content_file: &Path, kind: RouteKind) -> RouteInfo {
+            RouteInfo::new(
+                UrlPath::from_node_path(path).to_string(),
+                content_file.to_path_buf(),
+                output_file(path),
+                kind,
+            )
+            .expect("a UrlPath is always a valid route path")
+        }
+
+        fn walk(section: &SectionNode, registry: &mut RouteRegistry) {
+            if let Some(index) = &section.content_file {
+                registry
+                    .register(route(&section.path, index, RouteKind::Section))
+                    .expect("tree paths are unique");
+            }
+            for page in &section.pages {
+                registry
+                    .register(route(&page.path, &page.content_file, RouteKind::Page))
+                    .expect("tree paths are unique");
+            }
+            for sub in &section.subsections {
+                walk(sub, registry);
+            }
+        }
+
+        let mut registry = Self::new();
+        walk(&tree.root, &mut registry);
+        registry
+    }
+
     /// Register a route.
     ///
     /// # Errors
@@ -172,6 +221,65 @@ impl RouteRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use taxus_domain::{Frontmatter, SiteTreeBuilder};
+
+    #[test]
+    fn test_from_tree_derives_routes_from_nodes() {
+        let mut builder = SiteTreeBuilder::new().root(
+            Some(PathBuf::from("_index.md")),
+            Frontmatter::default(),
+            None,
+        );
+        builder
+            .add_section(
+                &NodePath::parse("blog").unwrap(),
+                Some(PathBuf::from("blog/_index.md")),
+                Frontmatter::default(),
+                None,
+            )
+            .unwrap();
+        builder
+            .add_page(
+                &NodePath::parse("blog/my-post").unwrap(),
+                PathBuf::from("blog/2026-04-06-my-post.md"),
+                Frontmatter::default(),
+                String::new(),
+            )
+            .unwrap();
+        // `docs/` is auto-created without an index file: no route.
+        builder
+            .add_page(
+                &NodePath::parse("docs/guide").unwrap(),
+                PathBuf::from("docs/guide.md"),
+                Frontmatter::default(),
+                String::new(),
+            )
+            .unwrap();
+        let tree = builder.build().unwrap();
+
+        let registry = RouteRegistry::from_tree(&tree);
+        assert_eq!(registry.len(), 4);
+
+        let root = registry.get("/").unwrap();
+        assert_eq!(root.kind, RouteKind::Section);
+        assert_eq!(root.content_file, PathBuf::from("_index.md"));
+        assert_eq!(root.output_file, PathBuf::from("index.html"));
+
+        let blog = registry.get("/blog/").unwrap();
+        assert_eq!(blog.kind, RouteKind::Section);
+        assert_eq!(blog.output_file, PathBuf::from("blog/index.html"));
+
+        let post = registry.get("/blog/my-post/").unwrap();
+        assert_eq!(post.kind, RouteKind::Page);
+        assert_eq!(
+            post.content_file,
+            PathBuf::from("blog/2026-04-06-my-post.md")
+        );
+        assert_eq!(post.output_file, PathBuf::from("blog/my-post/index.html"));
+
+        assert!(!registry.contains("/docs/"));
+        assert!(registry.contains("/docs/guide/"));
+    }
 
     // RouteKind tests
 
