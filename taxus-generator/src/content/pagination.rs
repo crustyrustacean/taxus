@@ -5,7 +5,7 @@
 //! This module provides types for splitting large collections of pages
 //! across multiple pages (pagination).
 
-use super::frontmatter::SortBy;
+use super::SortBy;
 use super::page::Page;
 use serde::{Deserialize, Serialize};
 

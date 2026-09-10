@@ -3473,6 +3473,7 @@ dependencies = [
  "serde",
  "serde_json",
  "taxus-common",
+ "taxus-domain",
  "tempfile",
  "tera",
  "tera-contrib",
@@ -3523,6 +3524,17 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "yew",
+]
+
+[[package]]
+name = "taxus-domain"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
