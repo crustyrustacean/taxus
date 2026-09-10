@@ -1,0 +1,13 @@
+# Golden manifest: <sha256 or <unstable>>  <path relative to output dir>
+772e7837d11cee287bc93b25bbfd4e95b6f038f28fd54ef7a4f7ae801de573bf  blog/2026/index.html
+c27b6d879813279cb679907c8da923a91bb1ba9eb83ac0bba6451bd0779ff833  blog/2026/post/index.html
+cedfd55803824826bbb7702924c92c9859a92f29fac086742f77c6dcc6a5e5a7  blog/index.html
+cdefd50b4c395c11d4867ed265f2f3df118fd368638db0a7f355aded4fa2a61c  blog/top-level/index.html
+f665b7c31e7fba412ba4899f3c22fd23ed4a47a13c4c334678b9bb9598581cae  docs/alpha/index.html
+6c3f45497c396df36b93e491b06f72162f7416091a7936bcef2176ea931a5bc4  docs/beta/index.html
+2b91fe1d158752f4fead8bc4eed3afc170261d80172fb2375c02c6326142caa7  docs/gamma/index.html
+3eefa3e164d9bef929abaedcee1894f9b2bababdc8e2013ec6895ab8d41e3ce3  docs/index.html
+<unstable>  feed.xml
+<unstable>  index.html
+b87966e58d2e52aaf3d52e0e5308a67505c7b1015c2fa7f772d1ecc327c4082f  robots.txt
+631569444bbf642b9550f82237618a1296107ca6bbaaa2c9f5cc1acd7e9874d8  sitemap.xml

@@ -45,6 +45,10 @@ const SITES: &[(&str, &str)] = &[
     ("highlight_site", "tests/fixtures/highlight_site"),
     ("internal_links_site", "tests/fixtures/internal_links_site"),
     ("search_slug_site", "tests/fixtures/search_slug_site"),
+    (
+        "section_listing_site",
+        "tests/fixtures/section_listing_site",
+    ),
     ("get-taxus-org", "../get-taxus-org"),
 ];
 
@@ -286,6 +290,11 @@ fn golden_highlight_site() {
 #[test]
 fn golden_internal_links_site() {
     check_site("internal_links_site");
+}
+
+#[test]
+fn golden_section_listing_site() {
+    check_site("section_listing_site");
 }
 
 #[test]
