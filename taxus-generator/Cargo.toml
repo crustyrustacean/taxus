@@ -71,3 +71,4 @@ tempfile = "3"
 tokio = { version = "1.50", features = ["test-util"] }
 reqwest = { version = "0.13", features = ["json"] }
 tokio-tungstenite = "0.29"
+sha2 = "0.10"

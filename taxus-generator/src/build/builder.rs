@@ -88,6 +88,15 @@ impl SiteBuilder {
         self
     }
 
+    /// Override the output directory from `site.toml`.
+    ///
+    /// Every stage that writes files (pages, feeds, hero image variants,
+    /// the WASM client, …) resolves against this directory.
+    pub fn output_dir<P: Into<std::path::PathBuf>>(mut self, dir: P) -> Self {
+        self.config.build.output_dir = dir.into();
+        self
+    }
+
     /// Build the complete site.
     ///
     /// This orchestrates the full build pipeline:
@@ -436,6 +445,16 @@ mod tests {
         let config = test_config();
         let builder = SiteBuilder::new(config).include_drafts(true);
         assert!(builder.include_drafts);
+    }
+
+    #[test]
+    fn test_site_builder_output_dir() {
+        let config = test_config();
+        let builder = SiteBuilder::new(config).output_dir("/tmp/elsewhere");
+        assert_eq!(
+            builder.config().build.output_dir,
+            PathBuf::from("/tmp/elsewhere")
+        );
     }
 
     #[test]

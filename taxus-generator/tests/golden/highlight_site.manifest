@@ -1,0 +1,5 @@
+# Golden manifest: <sha256 or <unstable>>  <path relative to output dir>
+19a231d736d9650a752aa95f1de785baeb7a525544d6659e4194cc98ed65ef02  feed.xml
+0bad312ddf0e19dea2476a236535ed96e8ba36a6e7704f2bab8cc0c3d5299029  index.html
+b87966e58d2e52aaf3d52e0e5308a67505c7b1015c2fa7f772d1ecc327c4082f  robots.txt
+975d83723a75290df466ec0473d10645b3815ca44d0f45189a3e39afa84185f8  sitemap.xml
