@@ -55,7 +55,7 @@ The `generator` crate is organized into modules that each own a specific domain:
 | Module | Types | Responsibility |
 |--------|-------|----------------|
 | `config` | `SiteConfig`, `SiteMeta`, `BuildConfig`, `FeedConfig`, `ImageConfig` | Load and validate `site.toml` configuration |
-| `content` | `Page`, `Section`, `Frontmatter`, `ContentSource` | Parse Markdown files with TOML frontmatter |
+| `content` | `Page`, `Frontmatter`, `ContentSource`, `TaxonomyMap` | Parse Markdown files with TOML frontmatter |
 | `routes` | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind` | Map content files to URL paths |
 | `templates` | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext` | Render HTML with Tera templates |
 | `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline (including WASM client writing) |
@@ -267,8 +267,8 @@ whether `--drafts` was passed), so derivations take it as a parameter.
   order.
 - Pagination slices the section listing above. The search index still
   walks the processed pages, in registry (tree) order.
-- `content::Section` (which duplicates the frontmatter parser) is no
-  longer used by the build and is next to retire.
+- There is one frontmatter parser, `Page::from_str`; `content::Section`
+  and its duplicate were removed once the tree replaced them.
 
 The rule for new code: **the tree is immutable after `build()` starts; a
 stage that needs structure queries the tree, and a stage that needs a new

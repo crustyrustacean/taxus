@@ -9,8 +9,11 @@
 //!
 //! - [`Frontmatter`]: Page metadata parsed from TOML
 //! - [`Page`]: Individual content file with frontmatter and Markdown
-//! - [`Section`]: Collection of pages (e.g., a blog)
 //! - [`ContentSource`]: Trait for loading content from various sources
+//!
+//! Sections are not a content type: they are nodes of the Site Tree
+//! (`taxus_domain::SectionNode`), built by
+//! [`RouteDiscovery::discover_tree`](crate::routes::RouteDiscovery::discover_tree).
 //!
 //! # Example
 //!
@@ -32,13 +35,9 @@
 //! ```
 
 mod page;
-mod pagination;
-mod section;
 mod taxonomy;
 
 pub use page::{Page, split_date_prefix};
-pub use pagination::{PaginatedSlice, PaginationConfig, PaginationInfo, Paginator};
-pub use section::Section;
 pub use taxonomy::{TaxonomyKind, TaxonomyMap, TaxonomyTerm};
 pub use taxus_domain::{Frontmatter, SortBy};
 

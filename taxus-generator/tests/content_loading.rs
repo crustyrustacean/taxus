@@ -1,8 +1,10 @@
 //! Integration tests for content loading.
 
 use std::path::PathBuf;
-use taxus_lib::content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+use taxus_domain::NodePath;
+use taxus_lib::content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
 use taxus_lib::error::{ContentError, GeneratorError};
+use taxus_lib::routes::RouteDiscovery;
 
 #[test]
 fn test_load_page_from_file() {
@@ -77,19 +79,28 @@ fn test_filesystem_content_source_exists() {
     assert!(!source.exists(&PathBuf::from("nonexistent.md")));
 }
 
+/// Sections are Site Tree nodes: the blog directory's `_index.md` becomes
+/// a `SectionNode` with its frontmatter, and its pages hang off it.
 #[test]
-fn test_section_from_dir() {
-    let result = Section::from_dir("tests/fixtures/content_site/content/blog");
+fn test_section_is_a_tree_node() {
+    let tree = RouteDiscovery::new("tests/fixtures/content_site/content")
+        .discover_tree()
+        .unwrap();
+    let blog = tree
+        .get_section(&NodePath::parse("blog").unwrap())
+        .expect("blog section exists");
 
-    assert!(result.is_ok());
-    let section = result.unwrap();
-
-    assert_eq!(section.path, "/blog/");
-    assert_eq!(section.frontmatter.title, "Blog");
     assert_eq!(
-        section.frontmatter.template,
-        Some("section.html".to_string())
+        taxus_domain::UrlPath::from_node_path(&blog.path).as_str(),
+        "/blog/"
     );
+    assert_eq!(blog.meta.title, "Blog");
+    assert_eq!(blog.meta.template, Some("section.html".to_string()));
+    assert_eq!(
+        blog.content_file.as_deref(),
+        Some(std::path::Path::new("blog/_index.md"))
+    );
+    assert_eq!(blog.pages.len(), 2);
 }
 
 #[test]
