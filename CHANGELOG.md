@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **domain**: `derivation::documents(tree)` (every rendered document in
+  tree order) and `derivation::group_by_terms(tree, include_drafts, terms_of)`
+  (the index behind taxonomies)
 - **build**: A `SiteTree` (from `taxus-domain`) is built during route
   discovery (`RouteDiscovery::discover_tree`) and is the source of truth for
   page and section lookups and section listings. It is immutable after
@@ -25,9 +28,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **build**: `sort_by = "weight"` on a section now orders its pages by
   `weight` (lowest first). It silently fell back to a title sort (#5)
+- **build**: Generated output is deterministic. Feed entries, taxonomy term
+  listings, section listings with tied dates and the search index ordered
+  tied sort keys by `HashMap` iteration order and could differ between two
+  builds of the same site; documents are now visited in tree order
 
 ### Changed
 
+- **build** (internal): Taxonomies, feeds and the sitemap take their
+  membership from the tree (`group_by_terms`, `documents`) and join the
+  rendered page by content file. `build_taxonomy_map`, `generate_feeds` and
+  `generate_sitemap` take the `SiteTree`. `RouteRegistry` iterates in
+  registration (tree) order
 - **routes** (internal): `RouteRegistry` is now derived from the tree with
   `RouteRegistry::from_tree`; the legacy file walk (`discover`) remains for
   the `routes` command. A page with a frontmatter `slug` is keyed in the tree
