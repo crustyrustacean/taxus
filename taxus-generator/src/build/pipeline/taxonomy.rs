@@ -9,32 +9,40 @@ use crate::templates::{
 };
 use std::fs;
 use std::path::{Path, PathBuf};
+use taxus_domain::derivation::group_by_terms;
+use taxus_domain::{Frontmatter, SiteTree};
 use tracing::{debug, info};
 
-/// Build taxonomy map from processed pages.
+/// Reads one taxonomy's terms off a document's frontmatter.
+type TermsOf = fn(&Frontmatter) -> Vec<&str>;
+
+/// Build the taxonomy map from the tree.
 ///
-/// Uses `route.content_file` as the page identifier so that term pages
-/// can look up `ProcessedPage`s by the same key later in rendering.
-pub fn build_taxonomy_map(processed: &[ProcessedPage]) -> TaxonomyMap {
+/// Tags, categories and series are indexes over the tree
+/// ([`group_by_terms`]): every document — pages and sections with an
+/// `_index.md` alike — is filed under each term it declares, drafts
+/// excluded, in tree order. Documents are keyed by content file so term
+/// pages can look up the matching `ProcessedPage` when rendering.
+pub fn build_taxonomy_map(tree: &SiteTree) -> TaxonomyMap {
     let mut map = TaxonomyMap::new();
 
-    for p in processed {
-        if p.page.frontmatter.draft {
-            continue;
-        }
+    let kinds: [(TaxonomyKind, TermsOf); 3] = [
+        (TaxonomyKind::Tag, |m| {
+            m.tags.iter().map(String::as_str).collect()
+        }),
+        (TaxonomyKind::Category, |m| {
+            m.categories.iter().map(String::as_str).collect()
+        }),
+        (TaxonomyKind::Series, |m| {
+            m.series.as_deref().into_iter().collect()
+        }),
+    ];
 
-        let page_key = p.route.content_file.to_string_lossy().to_string();
-
-        for tag in p.page.tags() {
-            map.add_term(TaxonomyKind::Tag, tag, &page_key);
-        }
-
-        for category in p.page.categories() {
-            map.add_term(TaxonomyKind::Category, category, &page_key);
-        }
-
-        if let Some(series) = p.page.series() {
-            map.add_term(TaxonomyKind::Series, series, &page_key);
+    for (kind, terms_of) in kinds {
+        for (name, nodes) in group_by_terms(tree, false, terms_of) {
+            for node in nodes {
+                map.add_term(kind, &name, &node.content_file().to_string_lossy());
+            }
         }
     }
 
@@ -258,6 +266,7 @@ mod tests {
 
     use super::*;
     use crate::Page;
+    use crate::build::pipeline::test_support::tree_of;
 
     #[test]
     fn test_build_taxonomy_map() {
@@ -317,7 +326,7 @@ Content 2
             },
         ];
 
-        let taxonomy_map = build_taxonomy_map(&processed);
+        let taxonomy_map = build_taxonomy_map(&tree_of(&processed));
 
         // Check tags
         assert_eq!(taxonomy_map.tags().len(), 2);
@@ -360,7 +369,7 @@ Content
             hero_image: None,
         }];
 
-        let taxonomy_map = build_taxonomy_map(&processed);
+        let taxonomy_map = build_taxonomy_map(&tree_of(&processed));
 
         let templates = TeraRenderer::from_dir(std::path::Path::new(
             "tests/fixtures/template_site/templates",
@@ -451,7 +460,7 @@ Content 2
             },
         ];
 
-        let taxonomy_map = build_taxonomy_map(&processed);
+        let taxonomy_map = build_taxonomy_map(&tree_of(&processed));
 
         let templates = TeraRenderer::from_dir(std::path::Path::new(
             "tests/fixtures/template_site/templates",

@@ -3,8 +3,11 @@
 use crate::build::ProcessedPage;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use taxus_domain::SiteTree;
+use taxus_domain::derivation::documents;
 use tracing::{debug, info};
 
 /// Generated feed file.
@@ -16,8 +19,14 @@ pub struct GeneratedFeed {
     pub content: String,
 }
 
-/// Generate RSS and Atom feeds from processed pages.
+/// Generate RSS and Atom feeds.
+///
+/// Membership comes from the tree: every non-draft document
+/// ([`documents`], pages and indexed sections alike), joined to its
+/// rendered `ProcessedPage` by content file. The feed generator orders
+/// entries newest first and applies the configured limit.
 pub fn generate_feeds(
+    tree: &SiteTree,
     processed: &[ProcessedPage],
     config: &SiteConfig,
 ) -> Result<Vec<GeneratedFeed>> {
@@ -30,10 +39,16 @@ pub fn generate_feeds(
         return Ok(feeds);
     }
 
-    // Collect pages for feed generation
-    let pages: Vec<crate::content::Page> = processed
+    let processed_by_file: HashMap<&Path, &ProcessedPage> = processed
         .iter()
-        .filter(|p| !p.page.is_draft()) // Exclude drafts from feeds
+        .map(|p| (p.route.content_file.as_path(), p))
+        .collect();
+
+    // Collect pages for feed generation
+    let pages: Vec<crate::content::Page> = documents(tree)
+        .iter()
+        .filter(|n| !n.is_draft()) // Exclude drafts from feeds
+        .filter_map(|n| processed_by_file.get(n.content_file()))
         .map(|p| {
             let mut page = p.page.clone();
             // Update the page path to the effective URL (custom slug
