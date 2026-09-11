@@ -25,6 +25,10 @@
 //!   and `<published>` element bodies are blanked before hashing: feeds
 //!   stamp the build time, and undated pages get the build time as their
 //!   publication date.
+//! - Hero image variants are named `<stem>-<hash>-<width>w.<ext>`, where
+//!   the hash covers the source's absolute path and mtime, so it differs
+//!   on every fresh checkout. The hash is replaced by `HASH` in manifest
+//!   paths and in the HTML that references the variants before hashing.
 //! - When updating, each site is built several times. A file whose hash
 //!   differs between runs is recorded as `<unstable>`: the test then only
 //!   checks that the file exists. This happens where output order depends
@@ -103,14 +107,49 @@ fn blank_element(xml: &str, tag: &str) -> String {
     out
 }
 
+/// Replace the six-hex-digit cache key in every `-<hash>-<width>w.` image
+/// variant name with `HASH`. The key covers the source's absolute path and
+/// mtime, so it is different on every checkout.
+fn blank_image_hashes(text: &str) -> String {
+    let b = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < b.len() {
+        // `-` + 6 hex + `-` + digits + `w.`
+        if b[i] == b'-'
+            && i + 8 < b.len()
+            && b[i + 1..i + 7].iter().all(u8::is_ascii_hexdigit)
+            && b[i + 7] == b'-'
+        {
+            let mut j = i + 8;
+            while j < b.len() && b[j].is_ascii_digit() {
+                j += 1;
+            }
+            if j > i + 8 && j + 1 < b.len() && b[j] == b'w' && b[j + 1] == b'.' {
+                out.push_str("-HASH-");
+                i += 8;
+                continue;
+            }
+        }
+        // Advance by one char, not one byte.
+        let ch = text[i..].chars().next().unwrap();
+        out.push(ch);
+        i += ch.len_utf8();
+    }
+    out
+}
+
 /// Normalise build-time-dependent bytes before hashing.
 fn normalise(relative: &Path, bytes: Vec<u8>) -> Vec<u8> {
-    if relative.extension().is_some_and(|e| e == "xml")
+    let ext = relative.extension().and_then(|e| e.to_str());
+    if matches!(ext, Some("xml" | "html"))
         && let Ok(text) = String::from_utf8(bytes.clone())
     {
-        let mut text = text;
-        for tag in ["lastBuildDate", "pubDate", "updated", "published"] {
-            text = blank_element(&text, tag);
+        let mut text = blank_image_hashes(&text);
+        if ext == Some("xml") {
+            for tag in ["lastBuildDate", "pubDate", "updated", "published"] {
+                text = blank_element(&text, tag);
+            }
         }
         return text.into_bytes();
     }
@@ -143,6 +182,7 @@ fn manifest_of(output_dir: &Path) -> BTreeMap<String, String> {
             .map(|c| c.as_os_str().to_string_lossy().into_owned())
             .collect::<Vec<_>>()
             .join("/");
+        let key = blank_image_hashes(&key);
         manifest.insert(key, sha256_hex(&normalise(relative, bytes)));
     }
     manifest
@@ -280,6 +320,29 @@ fn check_site(site: &str) {
         "If this change is intended, re-baseline with GOLDEN_UPDATE=1 in a dedicated commit.\n",
     );
     panic!("{report}");
+}
+
+#[test]
+fn image_hash_normalisation() {
+    assert_eq!(
+        blank_image_hashes("images/mountain_sunset-3ab370-1200w.webp"),
+        "images/mountain_sunset-HASH-1200w.webp"
+    );
+    assert_eq!(
+        blank_image_hashes(
+            r#"<img src="/images/a-b4a6e0-400w.webp" srcset="/images/a-b4a6e0-800w.webp 800w">"#
+        ),
+        r#"<img src="/images/a-HASH-400w.webp" srcset="/images/a-HASH-800w.webp 800w">"#
+    );
+    // Not a variant name: wrong hex length, no width suffix, or non-hex.
+    for untouched in [
+        "post-2026-04-06-title",
+        "a-abcdef-x.png",
+        "a-zzzzzz-400w.png",
+        "héllo-abc123-4w",
+    ] {
+        assert_eq!(blank_image_hashes(untouched), untouched);
+    }
 }
 
 #[test]
