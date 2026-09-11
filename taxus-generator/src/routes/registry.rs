@@ -5,7 +5,8 @@
 use crate::error::RouteError;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use taxus_domain::{NodePath, SectionNode, SiteTree, UrlPath};
+use taxus_domain::derivation::{Node, documents};
+use taxus_domain::{NodePath, SiteTree, UrlPath};
 
 /// The type of route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -99,27 +100,32 @@ impl RouteInfo {
 }
 
 /// Registry of all routes in the site.
+///
+/// Iteration order is registration order. [`from_tree`](Self::from_tree)
+/// registers in tree order (see [`documents`]), so every stage that walks
+/// the registry sees documents in the same deterministic order.
 #[derive(Debug, Clone, Default)]
 pub struct RouteRegistry {
     routes: HashMap<String, RouteInfo>,
+    /// Paths in registration order.
+    order: Vec<String>,
 }
 
 impl RouteRegistry {
     /// Create a new empty registry.
     pub fn new() -> Self {
-        Self {
-            routes: HashMap::new(),
-        }
+        Self::default()
     }
 
     /// Derive the registry from a [`SiteTree`].
     ///
-    /// Every page becomes a page route and every section that has an
-    /// `_index.md` becomes a section route; sections without one exist in
-    /// the tree but have nothing to render, so — as with the legacy walk —
-    /// they get no route. Paths come from [`UrlPath::from_node_path`], the
-    /// one derivation point for addresses; output files mirror them
-    /// (`blog/my-post/index.html`, `index.html` for the root).
+    /// One route per document yielded by [`documents`], in that order:
+    /// every page, and every section that has an `_index.md` (sections
+    /// without one exist in the tree but have nothing to render, so — as
+    /// with the legacy walk — they get no route). Paths come from
+    /// [`UrlPath::from_node_path`], the one derivation point for addresses;
+    /// output files mirror them (`blog/my-post/index.html`, `index.html`
+    /// for the root).
     pub fn from_tree(tree: &SiteTree) -> Self {
         fn output_file(path: &NodePath) -> PathBuf {
             if path.is_root() {
@@ -129,34 +135,21 @@ impl RouteRegistry {
             }
         }
 
-        fn route(path: &NodePath, content_file: &Path, kind: RouteKind) -> RouteInfo {
-            RouteInfo::new(
-                UrlPath::from_node_path(path).to_string(),
-                content_file.to_path_buf(),
-                output_file(path),
+        let mut registry = Self::new();
+        for node in documents(tree) {
+            let kind = match node {
+                Node::Section(_) => RouteKind::Section,
+                Node::Page(_) => RouteKind::Page,
+            };
+            let route = RouteInfo::new(
+                UrlPath::from_node_path(node.path()).to_string(),
+                node.content_file().to_path_buf(),
+                output_file(node.path()),
                 kind,
             )
-            .expect("a UrlPath is always a valid route path")
+            .expect("a UrlPath is always a valid route path");
+            registry.register(route).expect("tree paths are unique");
         }
-
-        fn walk(section: &SectionNode, registry: &mut RouteRegistry) {
-            if let Some(index) = &section.content_file {
-                registry
-                    .register(route(&section.path, index, RouteKind::Section))
-                    .expect("tree paths are unique");
-            }
-            for page in &section.pages {
-                registry
-                    .register(route(&page.path, &page.content_file, RouteKind::Page))
-                    .expect("tree paths are unique");
-            }
-            for sub in &section.subsections {
-                walk(sub, registry);
-            }
-        }
-
-        let mut registry = Self::new();
-        walk(&tree.root, &mut registry);
         registry
     }
 
@@ -169,6 +162,7 @@ impl RouteRegistry {
         if self.routes.contains_key(&route.path) {
             return Err(RouteError::Duplicate(route.path));
         }
+        self.order.push(route.path.clone());
         self.routes.insert(route.path.clone(), route);
         Ok(())
     }
@@ -193,28 +187,26 @@ impl RouteRegistry {
         self.routes.is_empty()
     }
 
-    /// Iterate over all routes.
+    /// Iterate over all routes, in registration order.
     pub fn iter(&self) -> impl Iterator<Item = &RouteInfo> {
-        self.routes.values()
+        self.order.iter().map(|path| &self.routes[path])
     }
 
-    /// Iterate over all page routes.
+    /// Iterate over all page routes, in registration order.
     pub fn pages(&self) -> impl Iterator<Item = &RouteInfo> {
-        self.routes.values().filter(|r| r.is_page())
+        self.iter().filter(|r| r.is_page())
     }
 
-    /// Iterate over all section routes.
+    /// Iterate over all section routes, in registration order.
     pub fn sections(&self) -> impl Iterator<Item = &RouteInfo> {
-        self.routes.values().filter(|r| r.is_section())
+        self.iter().filter(|r| r.is_section())
     }
 
     /// Find a route by its content file path.
     ///
     /// The path should be relative to the content directory.
     pub fn find_by_content_file(&self, content_file: &Path) -> Option<&RouteInfo> {
-        self.routes
-            .values()
-            .find(|r| r.content_file == content_file)
+        self.iter().find(|r| r.content_file == content_file)
     }
 }
 
@@ -279,6 +271,32 @@ mod tests {
 
         assert!(!registry.contains("/docs/"));
         assert!(registry.contains("/docs/guide/"));
+
+        // Tree order: root index, blog index, blog page, docs page.
+        let order: Vec<&str> = registry.iter().map(|r| r.path.as_str()).collect();
+        assert_eq!(order, ["/", "/blog/", "/blog/my-post/", "/docs/guide/"]);
+    }
+
+    #[test]
+    fn test_registry_iterates_in_registration_order() {
+        let mut registry = RouteRegistry::new();
+        for path in ["/zulu/", "/alpha/", "/mike/"] {
+            registry
+                .register(
+                    RouteInfo::new(
+                        path.to_string(),
+                        PathBuf::from(format!("{}.md", path.trim_matches('/'))),
+                        PathBuf::from(format!("{}/index.html", path.trim_matches('/'))),
+                        RouteKind::Page,
+                    )
+                    .unwrap(),
+                )
+                .unwrap();
+        }
+        let order: Vec<&str> = registry.iter().map(|r| r.path.as_str()).collect();
+        assert_eq!(order, ["/zulu/", "/alpha/", "/mike/"]);
+        let pages: Vec<&str> = registry.pages().map(|r| r.path.as_str()).collect();
+        assert_eq!(pages, order);
     }
 
     // RouteKind tests

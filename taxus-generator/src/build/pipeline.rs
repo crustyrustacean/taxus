@@ -416,6 +416,36 @@ pub fn render_search_box(props: SearchBoxProps) -> String {
     format!(r#"<div data-island="SearchBox" data-props='{props_json}'>{ssr_html}</div>"#)
 }
 
+/// Test helpers shared by the stage modules.
+#[cfg(test)]
+pub(crate) mod test_support {
+    use super::ProcessedPage;
+    use taxus_domain::{NodePath, SiteTree, SiteTreeBuilder};
+
+    /// Build the tree the way discovery would for these processed pages.
+    pub(crate) fn tree_of(processed: &[ProcessedPage]) -> SiteTree {
+        let mut builder = SiteTreeBuilder::new();
+        for p in processed {
+            let path = NodePath::parse(&p.route.path).unwrap();
+            let meta = p.page.frontmatter.clone();
+            let body = p.page.raw_content.clone();
+            let file = p.route.content_file.clone();
+            if p.route.is_section() {
+                if path.is_root() {
+                    builder = builder.root(Some(file), meta, Some(body));
+                } else {
+                    builder
+                        .add_section(&path, Some(file), meta, Some(body))
+                        .unwrap();
+                }
+            } else {
+                builder.add_page(&path, file, meta, body).unwrap();
+            }
+        }
+        builder.build().unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

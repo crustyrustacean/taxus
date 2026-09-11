@@ -257,7 +257,7 @@ impl SiteBuilder {
         // Stage 8: Generate sitemap.xml
         let _sitemap_span = info_span!("generate_sitemap").entered();
         info!("[8/15] Generating sitemap.xml...");
-        let sitemap = pipeline::sitemap::generate_sitemap(&processed, &self.config)?;
+        let sitemap = pipeline::sitemap::generate_sitemap(&tree, &processed, &self.config)?;
         debug!(urls = sitemap.url_count, "Sitemap generated");
         pipeline::sitemap::write_sitemap(&sitemap, &output_dir, self.dry_run)?;
         drop(_sitemap_span);
@@ -273,7 +273,7 @@ impl SiteBuilder {
         // Stage 10: Build and render taxonomy pages
         let _taxonomy_span = info_span!("render_taxonomy").entered();
         info!("[10/15] Building taxonomy pages...");
-        let taxonomy_map = pipeline::taxonomy::build_taxonomy_map(&processed);
+        let taxonomy_map = pipeline::taxonomy::build_taxonomy_map(&tree);
         let taxonomy_pages = pipeline::taxonomy::render_taxonomy_pages(
             &processed,
             &taxonomy_map,
@@ -289,7 +289,7 @@ impl SiteBuilder {
         // Stage 11: Generate feeds
         let _feeds_span = info_span!("generate_feeds").entered();
         info!("[11/15] Generating feeds...");
-        let feeds = build::pipeline::feeds::generate_feeds(&processed, &self.config)?;
+        let feeds = build::pipeline::feeds::generate_feeds(&tree, &processed, &self.config)?;
         debug!(feeds = feeds.len(), "Feeds generated");
         drop(_feeds_span);
 

@@ -235,6 +235,8 @@ pure functions: `(tree or section) -> Vec<&PageNode>`, never stored back.
 
 | Function | Meaning |
 |----------|---------|
+| `documents(&SiteTree)` | every rendered document (`Node::Page` or `Node::Section` with an `_index.md`) in tree order: section index, pages by slug, subsections by slug, recursively. The canonical iteration order of a site |
+| `group_by_terms(&SiteTree, include_drafts, terms_of)` | documents grouped by the terms a selector reads from frontmatter — the index behind tags, categories and series; terms sorted by name, documents in tree order |
 | `descendant_pages(&SectionNode)` | every page in a section's subtree, depth-first |
 | `recent(&SiteTree, include_drafts)` | all pages, newest first, undated last |
 | `aggregate(&SectionNode, &SiteTree, &[NodePath])` | a section's pages merged with the pages of donor sections (`pages_from`), deduplicated, sorted by the receiver's `sort_by` |
@@ -246,8 +248,10 @@ whether `--drafts` was passed), so derivations take it as a parameter.
 ### What is wired today
 
 - **Routes** are derived: `RouteRegistry::from_tree` produces one
-  `RouteInfo` per page and per section that has an `_index.md`. The
-  registry is a projection of the tree, not a second source.
+  `RouteInfo` per document from `documents`, in that order, and the
+  registry iterates in registration order. The registry is a projection
+  of the tree, not a second source, and every stage that walks it sees
+  documents in tree order.
 - **Section listings** (`build/pipeline/pages.rs`) look the section up in
   the tree and list `descendant_pages` of that node — every page under the
   section, as the previous URL-prefix scan did — sorted by the section's
@@ -255,10 +259,16 @@ whether `--drafts` was passed), so derivations take it as a parameter.
   `page` in templates. Date and title ordering keep their historical
   comparators (undated pages first, byte-order titles) until they are
   moved to the domain's in a dedicated change.
-- Taxonomies, feeds, the sitemap, pagination and the search index still
-  iterate the flat `Vec<ProcessedPage>`; porting them to derivations is
-  the next step, and `content::Section` (which duplicates the frontmatter
-  parser) retires with it.
+- **Taxonomies** (`build/pipeline/taxonomy.rs`) are `group_by_terms`
+  over the tree for tags, categories and series. **Feeds** and the
+  **sitemap** take their membership from `documents` and join the
+  rendered HTML by content file. All three are deterministic: where trunk
+  ordered tied sort keys by `HashMap` iteration, they now follow tree
+  order.
+- Pagination slices the section listing above. The search index still
+  walks the processed pages, in registry (tree) order.
+- `content::Section` (which duplicates the frontmatter parser) is no
+  longer used by the build and is next to retire.
 
 The rule for new code: **the tree is immutable after `build()` starts; a
 stage that needs structure queries the tree, and a stage that needs a new

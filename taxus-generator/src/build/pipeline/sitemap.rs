@@ -4,8 +4,11 @@ use crate::build::ProcessedPage;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};
 use crate::templates::compute_permalink;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use taxus_domain::SiteTree;
+use taxus_domain::derivation::documents;
 use tracing::{debug, info};
 
 /// Sitemap URL entry.
@@ -30,25 +33,35 @@ pub struct GeneratedSitemap {
     pub url_count: usize,
 }
 
-/// Generate sitemap.xml from processed pages.
+/// Generate sitemap.xml.
 ///
 /// Creates a sitemap with:
-/// - All non-draft pages from the registry
+/// - Every non-draft document in the tree ([`documents`]: pages and
+///   indexed sections), joined to its rendered `ProcessedPage`
 /// - lastmod from page date if available
 /// - Priority: 1.0 for home, 0.8 for sections, 0.7 for pages
 /// - changefreq: weekly for home, monthly for others
 pub fn generate_sitemap(
+    tree: &SiteTree,
     processed: &[ProcessedPage],
     config: &SiteConfig,
 ) -> Result<GeneratedSitemap> {
     let base_url = config.site.base_url.trim_end_matches('/');
     let mut urls: Vec<SitemapUrl> = Vec::new();
 
-    for processed_page in processed {
+    let processed_by_file: HashMap<&Path, &ProcessedPage> = processed
+        .iter()
+        .map(|p| (p.route.content_file.as_path(), p))
+        .collect();
+
+    for node in documents(tree) {
         // Skip drafts
-        if processed_page.page.is_draft() {
+        if node.is_draft() {
             continue;
         }
+        let Some(processed_page) = processed_by_file.get(node.content_file()) else {
+            continue;
+        };
 
         // Get the URL path (respecting custom slugs)
         let url_path = processed_page.effective_url_path();

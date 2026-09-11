@@ -86,11 +86,12 @@ them apart:
 | URL          | *derived, never stored* | `/blog/my-post/`                 |
 
 The slug is a computed value: the `slug` frontmatter field if set, otherwise
-derived from the filename (`file_stem()`). The URL is then composed as
-*section path + slug* during route discovery
-(`taxus-generator/src/build/pipeline.rs`, `discover_routes`), and
-`ProcessedPage::effective_url_path()` is the single accessor every downstream
-consumer uses.
+derived from the filename (`file_stem()`, date prefix stripped, slugified).
+The URL is then composed as *section path + slug*: the Site Tree records the
+membership path when discovery builds it
+(`RouteDiscovery::discover_tree`), and `UrlPath::from_node_path` derives the
+address from it. `ProcessedPage::effective_url_path()` is the single accessor
+every downstream consumer uses today.
 
 The design rule that falls out of this: **metadata belongs in frontmatter, not
 in filenames.** A filename is a storage detail; the model should not depend on
