@@ -14,7 +14,7 @@
 //! - [`schema`]: typed frontmatter — the schema concern
 //! - [`identity`]: slugs, membership paths, and the URL paths derived from them
 //! - [`tree`]: the Site Tree — [`SectionNode`]/[`PageNode`], construction, queries
-//! - [`derivation`]: pure derivations — sorting, aggregation (`pages_from`)
+//! - [`derivation`]: pure derivations — recent pages, aggregation (`pages_from`)
 //!
 //! ## Invariants
 //!

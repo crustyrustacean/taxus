@@ -8,7 +8,10 @@ use crate::templates::{
     HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, TemplateContext,
     TemplateRenderer, TeraRenderer, compute_permalink,
 };
-use std::path::PathBuf;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use taxus_domain::{NodePath, PageNode, SiteTree, derivation};
 use tracing::{debug, debug_span, info};
 
 /// Build a `PageContext` from a `ProcessedPage`.
@@ -44,30 +47,66 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
         tags: processed.page.tags().to_vec(),
         categories: processed.page.categories().to_vec(),
         series: processed.page.series().map(|s| s.to_string()),
+        weight: processed.page.frontmatter.weight,
         hero,
     }
 }
 
-/// Collect child pages for a section.
+/// Collect the pages a section lists, in listing order.
 ///
-/// Filters the full processed page list to find pages whose route path starts with
-/// the section's route path. Returns an empty vec for the root index ("/") since
-/// it doesn't list all site pages. Maps each child to `PageContext` via
-/// `page_context_from`.
+/// Membership comes from the tree: the section node is looked up by the
+/// route path and its subtree is walked with
+/// [`derivation::descendant_pages`] — direct children *and* deeper
+/// descendants, which is what trunk's prefix scan listed (the root section
+/// lists the whole site). Pages the build skipped (drafts) are dropped.
+/// Ordering is [`sort_section_pages`].
 fn collect_child_pages(
     section: &ProcessedPage,
-    all_processed: &[ProcessedPage],
+    tree: &SiteTree,
+    processed_by_file: &HashMap<&Path, &ProcessedPage>,
     base_url: &str,
 ) -> Vec<PageContext> {
-    all_processed
+    let node = NodePath::parse(&section.route.path)
+        .ok()
+        .and_then(|path| tree.get_section(&path));
+    let Some(node) = node else {
+        debug!(path = %section.route.path, "Section route has no tree node; listing nothing");
+        return Vec::new();
+    };
+
+    let mut pages = derivation::descendant_pages(node);
+    sort_section_pages(&mut pages, section.page.frontmatter.sort_by);
+    pages
         .iter()
-        .filter(|p| {
-            p.route.is_page()
-                && p.route.path.starts_with(&section.route.path)
-                && p.route.path != section.route.path
-        })
+        .filter_map(|node| processed_by_file.get(node.content_file.as_path()))
         .map(|p| page_context_from(p, base_url))
         .collect()
+}
+
+/// Order a section's pages for listing.
+///
+/// `Weight` and `None` delegate to [`taxus_domain::tree::sort_pages`]:
+/// lowest weight first (#5), ties and `None` in the tree's slug order.
+///
+/// `Date` and `Title` deliberately keep trunk's comparators rather than
+/// the domain's, so generated output is unchanged by the tree port:
+/// - `Date`: newest first, but *undated pages first* (the domain puts
+///   them last);
+/// - `Title`: byte order (the domain compares case-insensitively).
+///
+/// Switching those two to the domain ordering is a visible behaviour
+/// change and belongs to its own PR with a golden re-baseline.
+fn sort_section_pages(pages: &mut [&PageNode], sort_by: SortBy) {
+    match sort_by {
+        SortBy::Date => pages.sort_by(|a, b| match (&b.meta.date, &a.meta.date) {
+            (Some(date_b), Some(date_a)) => date_b.cmp(date_a),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal,
+        }),
+        SortBy::Title => pages.sort_by(|a, b| a.meta.title.cmp(&b.meta.title)),
+        SortBy::Weight | SortBy::None => taxus_domain::tree::sort_pages(pages, sort_by),
+    }
 }
 
 /// Render a paginated section.
@@ -180,17 +219,27 @@ fn render_paginated_section(
 /// Render pages using templates.
 ///
 /// Iterates through processed pages, builds template contexts, and renders each
-/// to HTML. For sections, collects and sorts child pages; paginated sections are
-/// dispatched to `render_paginated_section`. Regular pages and non-paginated
-/// sections are rendered directly.
+/// to HTML. For sections, the listed pages come from `tree` (see
+/// [`collect_child_pages`]); paginated sections are dispatched to
+/// `render_paginated_section`. Regular pages and non-paginated sections are
+/// rendered directly.
 pub fn render_pages(
     processed: &[ProcessedPage],
+    tree: &SiteTree,
     templates: &TeraRenderer,
     site_context: &SiteContext,
     _verbose: bool,
 ) -> Result<Vec<RenderedPage>> {
     let span = debug_span!("render_pages", pages = processed.len());
     let _enter = span.enter();
+
+    // Tree nodes are joined back to their processed pages by content file:
+    // storage identity, shared by both, and absent for skipped drafts.
+    let processed_by_file: HashMap<&Path, &ProcessedPage> = processed
+        .iter()
+        .filter(|p| p.route.is_page())
+        .map(|p| (p.route.content_file.as_path(), p))
+        .collect();
 
     let mut rendered = Vec::new();
 
@@ -213,9 +262,12 @@ pub fn render_pages(
         let page_context = page_context_from(processed_page, &site_context.base_url);
 
         let context = if processed_page.route.is_section() {
-            let mut child_pages =
-                collect_child_pages(processed_page, processed, &site_context.base_url);
-            sort_page_contexts(&mut child_pages, processed_page.page.frontmatter.sort_by);
+            let child_pages = collect_child_pages(
+                processed_page,
+                tree,
+                &processed_by_file,
+                &site_context.base_url,
+            );
 
             let paginate_by = processed_page.page.frontmatter.paginate_by;
             if paginate_by > 0 && !child_pages.is_empty() {
@@ -277,35 +329,37 @@ pub fn render_pages(
     Ok(rendered)
 }
 
-/// Sort page contexts according to a sort order.
-fn sort_page_contexts(pages: &mut [PageContext], sort_by: SortBy) {
-    match sort_by {
-        SortBy::Date => {
-            pages.sort_by(|a, b| match (&b.date, &a.date) {
-                (Some(date_b), Some(date_a)) => date_b.cmp(date_a),
-                (Some(_), None) => std::cmp::Ordering::Less,
-                (None, Some(_)) => std::cmp::Ordering::Greater,
-                (None, None) => std::cmp::Ordering::Equal,
-            });
-        }
-        SortBy::Title => {
-            pages.sort_by(|a, b| a.title.cmp(&b.title));
-        }
-        SortBy::Weight => {
-            // Weight isn't in PageContext, so fall back to title sort
-            // This is a limitation - weight-based sorting requires the raw page data
-            pages.sort_by(|a, b| a.title.cmp(&b.title));
-        }
-        SortBy::None => {} // preserve existing order
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::content::{Frontmatter, Page};
     use crate::routes::{RouteInfo, RouteKind};
     use std::path::PathBuf;
+
+    /// Build the tree the way discovery would for these processed pages.
+    fn tree_of(processed: &[ProcessedPage]) -> SiteTree {
+        use taxus_domain::SiteTreeBuilder;
+
+        let mut builder = SiteTreeBuilder::new();
+        for p in processed {
+            let path = NodePath::parse(&p.route.path).unwrap();
+            let meta = p.page.frontmatter.clone();
+            let body = p.page.raw_content.clone();
+            let file = p.route.content_file.clone();
+            if p.route.is_section() {
+                if path.is_root() {
+                    builder = builder.root(Some(file), meta, Some(body));
+                } else {
+                    builder
+                        .add_section(&path, Some(file), meta, Some(body))
+                        .unwrap();
+                }
+            } else {
+                builder.add_page(&path, file, meta, body).unwrap();
+            }
+        }
+        builder.build().unwrap()
+    }
 
     fn test_site_context() -> SiteContext {
         SiteContext {
@@ -350,7 +404,15 @@ This is the content.
         ))
         .unwrap();
 
-        let rendered = render_pages(&[processed], &templates, &test_site_context(), false).unwrap();
+        let processed = [processed];
+        let rendered = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(rendered.len(), 1);
         assert_eq!(rendered[0].route.path, "/custom-url/");
@@ -391,7 +453,15 @@ This is the content.
         ))
         .unwrap();
 
-        let rendered = render_pages(&[processed], &templates, &test_site_context(), false).unwrap();
+        let processed = [processed];
+        let rendered = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(rendered.len(), 1);
         assert_eq!(rendered[0].route.path, "/my-post/");
@@ -503,7 +573,14 @@ This is the content.
         };
 
         let processed = vec![section_page, page1, page2];
-        let result = render_pages(&processed, &templates, &test_site_context(), false).unwrap();
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         let section_rendered = result
             .iter()
@@ -564,7 +641,14 @@ This is the content.
         };
 
         let processed = vec![section_page];
-        let result = render_pages(&processed, &templates, &test_site_context(), false).unwrap();
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         let section_rendered = result
             .iter()
@@ -665,7 +749,14 @@ This is the content.
         let mut all_pages = vec![section_page];
         all_pages.extend(child_pages);
 
-        let result = render_pages(&all_pages, &templates, &test_site_context(), false).unwrap();
+        let result = render_pages(
+            &all_pages,
+            &tree_of(&all_pages),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         let section_pages: Vec<_> = result
             .iter()
@@ -772,7 +863,14 @@ This is the content.
         };
 
         let all_pages = vec![section_page, child];
-        let result = render_pages(&all_pages, &templates, &test_site_context(), false).unwrap();
+        let result = render_pages(
+            &all_pages,
+            &tree_of(&all_pages),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         let section_pages: Vec<_> = result.iter().filter(|r| r.route.is_section()).collect();
 
@@ -828,7 +926,15 @@ Content here.
             )
             .unwrap();
 
-        let rendered = render_pages(&[processed], &templates, &test_site_context(), false).unwrap();
+        let processed = [processed];
+        let rendered = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(rendered.len(), 1);
         let html = &rendered[0].content;

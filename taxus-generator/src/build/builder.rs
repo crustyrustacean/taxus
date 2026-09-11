@@ -10,6 +10,7 @@ use crate::build::report::BuildReport;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};
 use crate::highlighting::{CodeHighlighter, LanguageRegistry};
+use crate::routes::RouteRegistry;
 use crate::templates::SiteContext;
 use std::path::Path;
 use std::time::Instant;
@@ -88,10 +89,19 @@ impl SiteBuilder {
         self
     }
 
+    /// Override the output directory from `site.toml`.
+    ///
+    /// Every stage that writes files (pages, feeds, hero image variants,
+    /// the WASM client, …) resolves against this directory.
+    pub fn output_dir<P: Into<std::path::PathBuf>>(mut self, dir: P) -> Self {
+        self.config.build.output_dir = dir.into();
+        self
+    }
+
     /// Build the complete site.
     ///
     /// This orchestrates the full build pipeline:
-    /// 1. Discover routes from content directory
+    /// 1. Build the Site Tree from the content directory and derive routes from it
     /// 2. Load templates
     /// 3. Process content files
     /// 4. Copy co-located assets
@@ -125,10 +135,12 @@ impl SiteBuilder {
             "Building site"
         );
 
-        // Stage 1: Discover routes
+        // Stage 1: Build the Site Tree; routes are derived from it. The tree
+        // is immutable from here on — every later stage only queries it.
         let _routes_span = info_span!("discover_routes").entered();
         info!("[1/15] Discovering routes...");
-        let registry = pipeline::discover_routes(&self.config)?;
+        let tree = pipeline::discover_tree(&self.config)?;
+        let registry = RouteRegistry::from_tree(&tree);
 
         if registry.is_empty() {
             return Err(GeneratorError::NoContent);
@@ -224,8 +236,13 @@ impl SiteBuilder {
             author: self.config.site.author.clone(),
         };
 
-        let rendered =
-            pipeline::pages::render_pages(&processed, &templates, &site_context, self.verbose)?;
+        let rendered = pipeline::pages::render_pages(
+            &processed,
+            &tree,
+            &templates,
+            &site_context,
+            self.verbose,
+        )?;
         drop(_render_span);
 
         // Stage 7: Generate robots.txt
@@ -436,6 +453,16 @@ mod tests {
         let config = test_config();
         let builder = SiteBuilder::new(config).include_drafts(true);
         assert!(builder.include_drafts);
+    }
+
+    #[test]
+    fn test_site_builder_output_dir() {
+        let config = test_config();
+        let builder = SiteBuilder::new(config).output_dir("/tmp/elsewhere");
+        assert_eq!(
+            builder.config().build.output_dir,
+            PathBuf::from("/tmp/elsewhere")
+        );
     }
 
     #[test]

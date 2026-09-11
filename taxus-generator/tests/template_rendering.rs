@@ -34,6 +34,7 @@ fn create_test_page_context() -> PageContext {
         tags: vec!["rust".to_string()],
         categories: vec!["programming".to_string()],
         series: None,
+        weight: 0,
         hero: None,
     }
 }
@@ -64,6 +65,7 @@ fn create_test_section_context() -> SectionContext {
                 tags: vec!["rust".to_string(), "tutorial".to_string()],
                 categories: vec!["programming".to_string()],
                 series: Some("Learning Rust".to_string()),
+                weight: 0,
                 hero: None,
             },
             PageContext {
@@ -83,6 +85,7 @@ fn create_test_section_context() -> SectionContext {
                 tags: vec!["rust".to_string(), "advanced".to_string()],
                 categories: vec!["programming".to_string()],
                 series: Some("Learning Rust".to_string()),
+                weight: 0,
                 hero: None,
             },
         ],
@@ -416,6 +419,7 @@ fn test_render_with_optional_fields() {
         tags: vec![],
         categories: vec![],
         series: None,
+        weight: 0,
         hero: None,
     };
     let ctx = TemplateContext::new(create_test_site_context()).with_page(minimal_page);

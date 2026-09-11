@@ -166,6 +166,7 @@ pub fn render_taxonomy_pages(
                             tags: proc_page.page.tags().to_vec(),
                             categories: proc_page.page.categories().to_vec(),
                             series: proc_page.page.series().map(|s| s.to_string()),
+                            weight: proc_page.page.frontmatter.weight,
                             hero: None,
                         };
                         page_contexts.push(page_context);

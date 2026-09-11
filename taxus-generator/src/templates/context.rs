@@ -104,6 +104,12 @@ pub struct PageContext {
     #[serde(default)]
     pub series: Option<String>,
 
+    /// Manual ordering weight from frontmatter (lower sorts first); `0`
+    /// when unset. Sections with `sort_by = "weight"` list pages in this
+    /// order (#5).
+    #[serde(default)]
+    pub weight: i32,
+
     /// Hero image context (if page has a hero_image)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hero: Option<HeroContext>,
@@ -402,6 +408,7 @@ impl TemplateContext {
     ///     tags: vec![],
     ///     categories: vec![],
     ///     series: None,
+    ///     weight: 0,
     ///     hero: None,
     /// };
     ///
@@ -504,6 +511,7 @@ mod tests {
             tags: vec!["rust".to_string(), "tutorial".to_string()],
             categories: vec!["programming".to_string()],
             series: Some("Learning Rust".to_string()),
+            weight: 0,
             hero: None,
         }
     }

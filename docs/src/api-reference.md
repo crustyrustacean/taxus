@@ -293,6 +293,7 @@ pub struct RouteRegistry { /* ... */ }
 | Method | Description |
 |--------|-------------|
 | `new() -> Self` | Create empty registry |
+| `from_tree(tree: &SiteTree) -> Self` | Derive the registry from a Site Tree (one route per page and per section with an `_index.md`) |
 | `register(&mut self, route: RouteInfo)` | Register a route |
 | `get(&self, path: &str) -> Option<&RouteInfo>` | Get by path |
 | `contains(&self, path: &str) -> bool` | Check existence |
@@ -310,7 +311,9 @@ pub struct RouteDiscovery { /* ... */ }
 | Method | Description |
 |--------|-------------|
 | `new(content_dir: P) -> Self` | Create with content directory |
-| `discover(&self) -> Result<RouteRegistry>` | Discover all routes |
+| `discover_tree(&self) -> Result<SiteTree>` | Walk the content directory and build the Site Tree (what `SiteBuilder::build` uses) |
+| `discover_tree_from_source(&self, source: &impl ContentSource) -> Result<SiteTree>` | Same, from a `ContentSource` |
+| `discover(&self) -> Result<RouteRegistry>` | Legacy file walk: routes keyed by filename, frontmatter not read |
 
 ## `templates` Module
 
@@ -443,6 +446,7 @@ pub struct SiteBuilder {
 | `dry_run(self, bool) -> Self` | Set dry-run mode |
 | `verbose(self, bool) -> Self` | Set verbose mode |
 | `include_drafts(self, bool) -> Self` | Include drafts |
+| `output_dir(self, dir: impl Into<PathBuf>) -> Self` | Override the output directory |
 | `build(self) -> Result<BuildReport>` | Run build pipeline |
 | `clean(self) -> Result<()>` | Clean output directory |
 
