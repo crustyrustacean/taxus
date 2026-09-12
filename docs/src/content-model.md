@@ -142,7 +142,7 @@ Everything the build emits is a query over the model:
 | Section indexes   | `section.pages`, sorted by `sort_by`         | `content/section.rs`         |
 | Pagination        | slices of a section's pages                  | `content/pagination.rs`      |
 | Taxonomy pages    | group pages by `tags`/`categories`/`series`  | `content/taxonomy.rs`        |
-| RSS/Atom feeds    | pages ordered by date, limited               | `build/pipeline/feeds.rs`    |
+| RSS/Atom feeds    | `recent`: dated pages, newest first, limited | `build/pipeline/feeds.rs`    |
 | Sitemap           | `effective_url_path()` of every node         | `build/pipeline/sitemap.rs`  |
 | Search index      | page bodies and titles                       | `build/pipeline/search.rs`   |
 | Alias redirects   | `aliases` frontmatter → derived URL          | `build/pipeline/alias.rs`    |

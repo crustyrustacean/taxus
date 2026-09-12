@@ -126,6 +126,12 @@ pub struct FeedConfig {
 
     /// Custom Atom feed path
     pub atom_path: Option<String>,
+
+    /// Sections whose pages the feeds syndicate, as content-relative
+    /// paths (`["blog"]`). A page anywhere under a listed section is
+    /// included. Empty (the default) means every section in the site.
+    #[serde(default)]
+    pub sections: Vec<String>,
 }
 
 fn default_rss_enabled() -> bool {
@@ -150,6 +156,7 @@ impl Default for FeedConfig {
             title: None,
             rss_path: None,
             atom_path: None,
+            sections: Vec::new(),
         }
     }
 }
@@ -485,6 +492,30 @@ output_dir = "public"
         assert_eq!(config.site.author, Some("Test Author".to_string()));
         assert_eq!(config.build.content_dir, PathBuf::from("pages"));
         assert_eq!(config.build.output_dir, PathBuf::from("public"));
+    }
+
+    #[test]
+    fn test_feed_config_sections() {
+        let toml = r#"
+[site]
+name = "Test Site"
+base_url = "https://test.example.com"
+
+[feed]
+sections = ["blog", "notes/2026"]
+"#;
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert_eq!(config.feed.sections, ["blog", "notes/2026"]);
+
+        let minimal: SiteConfig = toml::from_str(
+            r#"
+[site]
+name = "Test Site"
+base_url = "https://test.example.com"
+"#,
+        )
+        .unwrap();
+        assert!(minimal.feed.sections.is_empty());
     }
 
     #[test]

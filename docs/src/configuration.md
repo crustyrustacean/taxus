@@ -66,6 +66,7 @@ RSS/Atom feed configuration for content syndication.
 | `title` | string | `None` | Custom feed title (defaults to site name) |
 | `rss_path` | string | `None` | RSS feed output path (default: `feed.xml`) |
 | `atom_path` | string | `None` | Atom feed output path (default: `feed.atom`) |
+| `sections` | array | `[]` | Sections whose pages the feeds syndicate, e.g. `["blog"]`; empty means every section |
 
 ### `[highlight]` Section
 

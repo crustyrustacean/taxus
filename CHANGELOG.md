@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **config**: `[feed] sections = ["blog"]` scopes the feeds to pages under
+  the named sections; empty (the default) means the whole site (#44)
 - **content**: `pages_from` frontmatter on a section's `_index.md` — a list
   of content-relative section paths (`["blog", "blog/2026"]`) whose direct
   pages the section also lists. This is how an index page shows pages it does
@@ -56,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **build**: Feeds syndicate dated pages only. Entries come from
+  `derivation::recent` — every non-draft page with a `date`, newest first —
+  so section index pages (the home page, `/blog/`) and undated pages
+  (`/about/`) no longer appear, and an undated page is no longer stamped
+  with the build time and re-announced on every build (#44). Ties on date
+  keep tree order, so feed output is deterministic
 - **build**: A section's `section.pages` are its **direct children only**.
   Previously every page whose URL started with the section's URL was listed,
   so the root page listed the entire site and `blog/` listed pages of any
