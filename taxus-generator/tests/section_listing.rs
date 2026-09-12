@@ -9,6 +9,10 @@
 //!   section `blog/2026/` with one page (`post`, February).
 //! - the root `_index.md` declares `pages_from = ["blog", "blog/2026"]`,
 //!   the declared-membership bridge that replaces the old prefix scan (#70).
+//! - `notes/` (default `sort_by = "date"`) mixes two dated pages with an
+//!   undated one.
+//! - `glossary/` has `sort_by = "title"` with titles whose byte order
+//!   (`Banana`, `apple`, `cherry`) differs from their case-insensitive order.
 
 use std::fs;
 use std::path::Path;
@@ -77,5 +81,23 @@ fn root_lists_pages_from_donor_sections() {
     assert_eq!(
         listed_links(out.path(), "index.html"),
         ["/blog/2026/post/", "/blog/top-level/"]
+    );
+}
+
+#[test]
+fn date_sort_is_newest_first_with_undated_last() {
+    let out = build_fixture();
+    assert_eq!(
+        listed_links(out.path(), "notes/index.html"),
+        ["/notes/newer/", "/notes/older/", "/notes/undated/"]
+    );
+}
+
+#[test]
+fn title_sort_is_case_insensitive() {
+    let out = build_fixture();
+    assert_eq!(
+        listed_links(out.path(), "glossary/index.html"),
+        ["/glossary/apple/", "/glossary/banana/", "/glossary/cherry/"]
     );
 }

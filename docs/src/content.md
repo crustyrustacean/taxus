@@ -141,7 +141,7 @@ Your markdown content here.
 | `tags` | array | No | `[]` | Tags (e.g., `["rust", "web"]`) |
 | `categories` | array | No | `[]` | Categories (e.g., `["tutorial"]`) |
 | `series` | string | No | `None` | Series name (e.g., `"Learning Rust"`) |
-| `sort_by` | string | No | `"date"` | Sort order for sections: `"date"`, `"title"`, `"weight"`, `"none"` |
+| `sort_by` | string | No | `"date"` | Sort order for sections: `"date"` (newest first, undated last), `"title"` (case-insensitive), `"weight"` (lowest first), `"none"` (tree order) |
 | `paginate_by` | number | No | `0` | Items per page (0 = no pagination) |
 | `paginate_template` | string | No | `None` | Template for paginated pages |
 | `pages_from` | array | No | `[]` | Sections whose direct pages this section also lists (e.g. `["blog"]`); see [Section listings](#section-listings) |
@@ -398,7 +398,7 @@ Welcome to my blog!
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `sort_by` | string | `"date"` | Sort order: `"date"`, `"weight"`, `"title"`, `"none"` |
+| `sort_by` | string | `"date"` | Sort order: `"date"` (newest first, undated last), `"title"` (case-insensitive), `"weight"` (lowest first), `"none"` (tree order) |
 | `paginate_by` | number | `0` | Pages per slice (0 = no pagination) |
 | `paginate_template` | string | `None` | Template for paginated pages |
 
