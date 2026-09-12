@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **serve**: Every dev-server response carries `Cache-Control: no-store`, so
+  the browser never reuses a stale script, stylesheet or fetched data file
+  from a previous `taxus serve` run
+
 ## [1.0.0] - 2026-09-12
 
 Taxus 1.0 makes the Site Tree (`taxus-domain`) the source of truth for the

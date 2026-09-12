@@ -16,6 +16,10 @@
 //! - Rewrites extensionless paths (e.g. `/about`) to `/about.html` when the
 //!   `.html` file exists on disk
 //! - Injects the live-reload WebSocket `<script>` into HTML responses
+//!
+//! Every response also carries `Cache-Control: no-store`: a development
+//! server must never let the browser reuse a stale script, stylesheet or
+//! data file from a previous run. Caching in production is the host's job.
 
 use std::future::Future;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
@@ -32,7 +36,7 @@ use axum::{
     Router,
     body::Body,
     extract::State,
-    http::{Request, StatusCode, header},
+    http::{HeaderValue, Request, StatusCode, header},
     middleware::{Next, from_fn_with_state},
     response::Response,
     routing::get,
@@ -41,6 +45,7 @@ use futures_util::{SinkExt, StreamExt};
 use http_body_util::BodyExt;
 use tokio::sync::broadcast;
 use tower_http::services::{ServeDir, ServeFile};
+use tower_http::set_header::SetResponseHeaderLayer;
 use tracing::{info, warn};
 
 use super::coordinator::RebuildCoordinator;
@@ -147,6 +152,16 @@ pub struct ServerState {
 // Dev server
 // ---------------------------------------------------------------------------
 
+/// `Cache-Control: no-store` on every response.
+///
+/// A dev server serves files that change on every rebuild; letting the
+/// browser reuse a cached `scripts.js` or a fetched JSON file from a
+/// previous run makes changes appear not to work. Outermost layer, so it
+/// covers `ServeDir` files, rewritten HTML, the "Building…" page and 404s.
+fn no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
+    SetResponseHeaderLayer::overriding(header::CACHE_CONTROL, HeaderValue::from_static("no-store"))
+}
+
 /// Development server with live reload support.
 pub struct DevServer {
     config: DevServerConfig,
@@ -178,6 +193,7 @@ impl DevServer {
                 state.clone(),
                 rewrite_and_inject_middleware,
             ))
+            .layer(no_store_layer())
             .with_state(state)
     }
 
@@ -482,10 +498,10 @@ async fn favicon_handler(State(state): State<Arc<ServerState>>) -> Response {
                 "image/x-icon"
             };
 
+            // Cache-Control is set by `no_store_layer` like every response.
             return Response::builder()
                 .status(StatusCode::OK)
                 .header(header::CONTENT_TYPE, content_type)
-                .header(header::CACHE_CONTROL, "public, max-age=86400")
                 .body(Body::from(content))
                 .unwrap();
         }
@@ -683,6 +699,7 @@ mod tests {
                 state.clone(),
                 rewrite_and_inject_middleware,
             ))
+            .layer(no_store_layer())
             .with_state(state)
     }
 
@@ -914,6 +931,31 @@ mod tests {
     // =========================================================================
     // Integration tests: live-reload injection
     // =========================================================================
+
+    /// HTML (rewritten and injected), a plain static file, and a 404 all
+    /// tell the browser not to cache them.
+    #[tokio::test]
+    async fn test_every_response_is_no_store() {
+        let dir = create_test_output_dir();
+        let router = test_router(dir.path());
+
+        for path in [
+            "/about",
+            "/about.html",
+            "/scripts/app.js",
+            "/styles/main.css",
+            "/nope",
+        ] {
+            let (_status, headers, _body) = send_get(&router, path).await;
+            assert_eq!(
+                headers
+                    .get(header::CACHE_CONTROL)
+                    .and_then(|v| v.to_str().ok()),
+                Some("no-store"),
+                "{path} must be Cache-Control: no-store"
+            );
+        }
+    }
 
     #[tokio::test]
     async fn test_html_response_has_live_reload_script() {
@@ -1192,14 +1234,14 @@ mod tests {
         let ct = headers.get(header::CONTENT_TYPE).unwrap().to_str().unwrap();
         assert_eq!(ct, "image/x-icon");
         assert_eq!(body.as_ref(), b"fake-ico-data");
-        // Has cache-control
+        // Not cached between runs, like everything else the dev server serves.
         assert_eq!(
             headers
                 .get(header::CACHE_CONTROL)
                 .unwrap()
                 .to_str()
                 .unwrap(),
-            "public, max-age=86400"
+            "no-store"
         );
     }
 
