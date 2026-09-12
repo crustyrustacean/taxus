@@ -32,10 +32,18 @@ A slug is one URL segment. The domain type `Slug` only checks that a
 string can stand as a segment: not empty, no `/`, not `.` or `..`, no
 control characters. It does not make strings safe; the generator does.
 
-The generator has one slug algorithm, `routes::slugify::slugify_segment`:
-lowercase, transliterate to ASCII, collapse runs of whitespace and
-punctuation to a single dash, never start or end with a dash. A file
-called `My Créative Post.md` gets the slug `my-creative-post`.
+The generator owns two slug algorithms, one per concern, both in
+`routes::slugify`:
+
+- **Node paths** use `slugify_segment`: lowercase, transliterate to
+  ASCII, collapse runs of whitespace and punctuation to a single dash,
+  never start or end with a dash. A file called `My Créative Post.md`
+  gets the slug `my-creative-post`.
+- **Taxonomy terms** use `slugify_term`: lowercase, spaces and
+  underscores to dashes, punctuation stripped — but non-ASCII letters
+  are kept (`Café` → `café`), because a term is display-facing.
+  Templates reach the same rule through the `term_slug` filter, so a
+  tag's term page and the links to it can never disagree.
 
 A page's slug is decided by two rules, in this order:
 

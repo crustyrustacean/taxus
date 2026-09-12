@@ -239,7 +239,7 @@ and the tag links:
 <p class="description">{{ page.description }}</p>
 {{ page.content | safe }}
 {% for tag in page.tags %}
-<a href="/tags/{{ tag | slugify }}/">{{ tag }}</a>
+<a href="/tags/{{ tag | term_slug }}/">{{ tag }}</a>
 {% endfor %}
 ```
 

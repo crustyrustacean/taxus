@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **templates**: Taxonomy term links built with the `slugify` filter (ASCII,
+  tera-contrib) disagreed with term page URLs (non-ASCII preserved): a
+  `Café` tag rendered links to `/tags/cafe/` while its term page lived at
+  `/tags/café/`. A new `term_slug` filter applies the term algorithm, and
+  the scaffold's tag/category/series links use it; term page and link can
+  no longer disagree
 - **feeds**: Feed entries carry the page's *effective* URL (section path
   + frontmatter slug), not the filename-derived path; the pipeline no
   longer overwrites `Page::path` in place to compensate, and
@@ -26,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **templates**: The private taxonomy slug rule is public as
+  `routes::slugify::slugify_term`, beside `slugify_segment` (node paths);
+  the two-algorithm contract is documented in the Identity chapter
+- **api**: `Page::url_path()` removed — its last production caller (the
+  feed stage) derives served URLs from `ProcessedPage::effective_url_path`
+  since the feed fix above
 - **feeds**: `FeedConfig::limit` (both the site `[feed]` key and the
   `feed::FeedConfig` field) is `Option<usize>`: unset = no limit. Sites
   with more than 20 dated pages will see larger feeds unless they set an

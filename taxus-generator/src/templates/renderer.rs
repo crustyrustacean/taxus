@@ -133,6 +133,7 @@ fn new_tera(lookup: &Arc<RwLock<SiteLookup>>) -> Tera {
     let mut tera = Tera::default();
     register_island_function(&mut tera);
     register_contrib_filters(&mut tera);
+    register_taxus_filters(&mut tera);
     register_site_functions(&mut tera, lookup);
     tera
 }
@@ -419,6 +420,24 @@ fn register_contrib_filters(tera: &mut Tera) {
     tera.register_filter("slug", tera_contrib::slug::slug);
     tera.register_filter("slugify", tera_contrib::slug::slug);
     tera.register_filter("date", tera_contrib::dates::date);
+}
+
+/// The `term_slug` filter: taxonomy term names through taxus's own term
+/// slug rule.
+///
+/// Term pages live at `/tags/<slugify_term(name)>/`; template links to
+/// them must use the same rule or the two can disagree — the tera-contrib
+/// `slug`/`slugify` filters transliterate to ASCII (`Café` → `cafe`)
+/// while taxus keeps non-ASCII letters in terms (`Café` → `café`),
+/// producing a link to a page that does not exist. Templates that build
+/// taxonomy links use `{{ tag | term_slug }}`.
+fn term_slug(val: &str, _kwargs: Kwargs, _state: &State) -> String {
+    crate::routes::slugify::slugify_term(val)
+}
+
+/// Register taxus's own filters (see [`term_slug`]).
+fn register_taxus_filters(tera: &mut Tera) {
+    tera.register_filter("term_slug", term_slug);
 }
 
 /// Extract the names of templates that `content` references via
@@ -841,5 +860,31 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.unwrap().contains("2024-01-15"));
+    }
+
+    #[test]
+    fn test_term_slug_filter_matches_term_page_rule() {
+        // A term page for the tag `Café` lives at /tags/café/ (the term
+        // rule keeps non-ASCII letters). The filter templates use to link
+        // to it must agree, or the link points nowhere.
+        let mut renderer = TeraRenderer::new().unwrap();
+        renderer
+            .register_template(
+                "terms.html",
+                "{{ extra.tag | term_slug }}|{{ extra.tag | slugify }}",
+            )
+            .unwrap();
+
+        let mut extra = std::collections::HashMap::new();
+        extra.insert(
+            "tag".to_string(),
+            serde_json::Value::String("Café".to_string()),
+        );
+        let ctx = TemplateContext::new(create_test_site_context()).with_extra(extra);
+        let rendered = renderer.render("terms.html", &ctx).unwrap();
+
+        // term_slug matches the term page rule; the contrib slugify
+        // transliterates and would 404.
+        assert_eq!(rendered, "café|cafe");
     }
 }

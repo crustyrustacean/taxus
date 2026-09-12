@@ -103,7 +103,7 @@ Page templates extend the base template:
   {% if page.tags %}
   <div class="tags">
     {% for tag in page.tags %}
-    <a href="/tags/{{ tag | slugify }}/">{{ tag }}</a>
+    <a href="/tags/{{ tag | term_slug }}/">{{ tag }}</a>
     {% endfor %}
   </div>
   {% endif %}
@@ -454,7 +454,8 @@ Commonly used filters:
 | `last` | Get last element of array |
 | `length` | Get length of string/array |
 | `join(sep=", ")` | Join array with separator |
-| `slugify` | Convert to URL-safe slug |
+| `slugify` | Convert to URL-safe slug (ASCII) |
+| `term_slug` | Taxonomy term slug: keeps non-ASCII letters (`Café` → `café`); use for tag/category/series links |
 
 ## Custom Templates
 
