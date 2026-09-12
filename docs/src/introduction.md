@@ -43,7 +43,9 @@ Taxus is ideal for:
 ## Documentation Overview
 
 - [Getting Started](./getting-started.md) — Quick start guide
-- [Architecture](./architecture.md) — Technical overview of the workspace, modules, and build pipeline
+- [Theory](./theory/overview.md) — How a build works: the Site Tree, identity, derivations, a worked example, the glossary, and the reasons behind the design
+- [Architecture](./architecture.md) — The crates, modules, and the build pipeline stage by stage
+- [Content Model](./content-model.md) — The content directory as a database: rows, parent pointers, indexes
 - [Configuration](./configuration.md) — `site.toml` format and options
 - [Content](./content.md) — Markdown files, frontmatter, taxonomies, pagination
 - [Templates](./templates.md) — Tera templates and context variables
@@ -59,4 +61,4 @@ Taxus is ideal for:
 
 ## License
 
-This project is licensed under the MIT License - see the [License.txt](../License.txt) file for details.
+This project is licensed under the MIT License - see the [License.txt](https://github.com/crustyrustacean/taxus/blob/trunk/License.txt) file for details.

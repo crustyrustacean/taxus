@@ -43,7 +43,9 @@ my-site/
 │   ├── scripts.js          # Placeholder scripts
 │   └── favicon.png         # Placeholder favicon
 └── styles/
-    └── main.scss           # Starter stylesheet
+    ├── main.scss           # Starter stylesheet
+    ├── _highlight-dark.scss  # Code highlighting theme (dark)
+    └── _highlight-light.scss # Code highlighting theme (light)
 ```
 
 ### Step 2: Build the Site
@@ -52,7 +54,7 @@ my-site/
 cargo run -- build --dir my-site --verbose
 ```
 
-This runs the 15-stage build pipeline and writes output to `my-site/dist/`. The WASM client (`client.js` and `client_bg.wasm`) is compiled during the Cargo build, embedded in the binary, and written to `dist/wasm/` automatically — no separate build step is needed.
+This runs the 15-stage build pipeline (see [Architecture](./architecture.md)) and writes output to `my-site/dist/`. The WASM client (`client.js` and `client_bg.wasm`) is compiled during the Cargo build, embedded in the binary, and written to `dist/wasm/` automatically — no separate build step is needed.
 
 ### Step 3: Serve and View
 
@@ -66,6 +68,7 @@ You should see the home page rendered from the Markdown content in `content/_ind
 
 ## Next Steps
 
+- Read the [Theory](./theory/overview.md) chapters to learn how a build works
 - Learn about [Configuration](./configuration.md) for customizing your site
 - Understand [Content](./content.md) for writing pages and posts
 - Explore [Templates](./templates.md) for customizing HTML output

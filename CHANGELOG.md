@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- **book**: A Theory section (overview, the Site Tree, identity,
+  derivations, a worked example traced through a real build, a glossary,
+  and design decisions) explains how a build works, before the
+  Architecture chapter
+- **book**: Architecture rewritten around the Site Tree: every one of the
+  fifteen build stages is labelled parse, analyse or emit and says what it
+  reads and produces; the API reference now covers `taxus-domain` and
+  matches the current signatures; islands, search, CLI, development and
+  README pages corrected against the code
+- **rustdoc**: `taxus-domain` is fully documented and warns on any
+  undocumented public item (`#![warn(missing_docs)]`); every public
+  `taxus-generator` module states its build phase and links the theory
+  chapter that explains it
+
 ## [1.0.1] - 2026-09-12
 
 ### Fixed

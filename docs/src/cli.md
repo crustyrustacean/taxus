@@ -53,9 +53,12 @@ taxus build --output /tmp/preview
 
 ### Build Pipeline Stages
 
-1. Discover routes from `content/`
+The numbers match the `[n/15]` lines in the build log. Each stage is
+described in [Architecture](./architecture.md).
+
+1. Discover routes: build the Site Tree from `content/` and derive the routes from it
 2. Load Tera templates from `templates/`
-3. Parse Markdown + frontmatter
+3. Process content: render Markdown to HTML, resolve `@/` links
 4. Process hero images (responsive variants, WebP conversion, srcset)
 5. Copy co-located assets
 6. Render pages with templates
@@ -126,7 +129,6 @@ Options:
 | `templates/series_term.html` | Individual series page |
 | `templates/404.html` | Not-found page |
 | `styles/main.scss` | Starter stylesheet |
-| `styles/_main.scss` | SCSS partials imported by `main.scss` |
 | `styles/_highlight-dark.scss`, `styles/_highlight-light.scss` | Code highlighting theme partials |
 | `static/scripts.js` | Placeholder scripts file |
 | `static/favicon.png` | Placeholder favicon |
@@ -164,16 +166,27 @@ Options:
 
 ### Example Output
 
+Routes are listed sorted by URL path, with the content file and the
+output file in the next two columns. This is the product site in the
+repository, `get-taxus-org/`:
+
 ```
-Routes for "My Site"
-────────────────────────────────────────────────────
-  [section]  /          →  _index.md            →  index.html
-  [page]     /about/    →  about.md             →  about/index.html
-  [section]  /blog/     →  blog/_index.md       →  blog/index.html
-  [page]     /blog/post/ → blog/post.md         →  blog/post/index.html
-────────────────────────────────────────────────────
-  Total: 4 routes (2 pages, 2 sections)
+Routes for "Taxus"
+─────────────────────────────────────────────────────
+  [section]  /                             _index.md                       index.html
+  [section]  /appearance/                  appearance/_index.md            appearance/index.html
+  [section]  /authoring/                   authoring/_index.md             authoring/index.html
+  [section]  /blog/                        blog/_index.md                  blog/index.html
+  [page   ]  /blog/project-launch/         blog/2026-04-03-project-launch.md  blog/project-launch/index.html
+  ...
+  [section]  /structure/                   structure/_index.md             structure/index.html
+─────────────────────────────────────────────────────
+  Total: 11 routes (5 pages, 6 sections)
 ```
+
+The URL paths are the served addresses, derived from the Site Tree: the
+date prefix on the post's file name is not in its URL. See
+[Identity](./theory/identity.md).
 
 ### Examples
 
