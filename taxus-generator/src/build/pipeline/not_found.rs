@@ -1,5 +1,7 @@
 // generator/src/build/pipeline/not_found.rs
 
+//! Stage 9 (emit): the `404.html` page, rendered when a `404.html` template exists.
+
 use crate::error::{GeneratorError, Result};
 use crate::templates::{SiteContext, TemplateContext, TemplateRenderer, TeraRenderer};
 use std::fs;

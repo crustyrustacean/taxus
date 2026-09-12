@@ -1,10 +1,11 @@
 # Content Model
 
-This chapter describes the *conceptual model* behind Taxus — what the content
-directory means, how it becomes an in-memory structure, and how every output is
-derived from it. The practical reference for frontmatter fields and file
-conventions lives in [Content](./content.md); this page explains the ideas
-underneath.
+This chapter describes the content directory as a database: what the
+directory means, how it becomes an in-memory structure, and how every output
+is derived from it. The practical reference for frontmatter fields and file
+conventions lives in [Content](./content.md). The [Theory](./theory/overview.md)
+chapters cover the same ground from the compiler's point of view and define
+the vocabulary in the [Glossary](./theory/glossary.md).
 
 The short version: **the content directory is a database.** Markdown files are
 rows, frontmatter is the schema, directories are parent–child relations, and
@@ -36,7 +37,7 @@ the next build.
 
 ## Pages Are Rows
 
-Every Markdown file is one page — one row. `Page::from_file`
+Every Markdown file is one page — one row. `Page::from_str`
 (`taxus-generator/src/content/page.rs`) parses it into:
 
 - **Frontmatter** — the columns. Typed fields: `title`, `date`, `draft`,
@@ -45,7 +46,7 @@ Every Markdown file is one page — one row. `Page::from_file`
   projection that needs it.
 
 Derived values (summary, reading time, word count) are computed from these two
-and cached on the page. They are never stored on disk.
+on demand by methods on `Page`. They are never stored.
 
 ## Sections Are Parent Pointers
 
@@ -67,8 +68,9 @@ pub struct SectionNode {
 }
 ```
 
-A section is itself a page: its `_index.md` has frontmatter and a body, and
-its frontmatter carries section *behaviour* — `sort_by`, `paginate_by`. The
+A section with an `_index.md` is itself a document: the index file has
+frontmatter and a body, and its frontmatter carries section *behaviour* —
+`sort_by`, `paginate_by`, `pages_from`. The
 result is a tree: the root section (the content directory itself) contains
 pages and subsections, recursively.
 
@@ -84,12 +86,14 @@ them apart:
 | Concept      | Lives in            | Example                              |
 |--------------|---------------------|--------------------------------------|
 | Storage path | the filesystem      | `content/blog/my-post.md`            |
-| Slug         | `Page::slug()`      | `my-post`                            |
+| Slug         | the tree (`NodePath::last`) | `my-post`                    |
 | Section path | the tree            | `/blog/`                             |
 | URL          | *derived, never stored* | `/blog/my-post/`                 |
 
 The slug is a computed value: the `slug` frontmatter field if set, otherwise
 derived from the filename (`file_stem()`, date prefix stripped, slugified).
+It is computed once, in `RouteDiscovery::discover_tree`, before the page
+enters the tree; see [Identity](./theory/identity.md).
 The URL is then composed as *section path + slug*: the Site Tree records the
 membership path when discovery builds it
 (`RouteDiscovery::discover_tree`), and `UrlPath::from_node_path` derives the
@@ -111,14 +115,15 @@ Taxonomies answer *what is this about* — many memberships per page, flat.
 
 Tags, categories, and series are declared in frontmatter and **derived** into
 listing and term pages after the tree walk
-(`taxus-generator/src/content/taxonomy.rs`). They are indexes over the model,
+(`taxus_domain::derivation::group_by_terms`, rendered by
+`taxus-generator/src/build/pipeline/taxonomy.rs`). They are indexes over the model,
 never stored: add a tag to five posts and `/tags/your-tag/` exists; remove the
 last one and it disappears. No configuration, no manifest.
 
 ## URLs Are a Computed Column
 
 No URL is ever written down anywhere in a Taxus site. Every URL — page links,
-feed entries, the sitemap, next/prev navigation, `@/` internal links — is
+feed entries, the sitemap, `@/` internal links — is
 computed at build time from the same formula:
 
 ```
@@ -141,9 +146,9 @@ Everything the build emits is a query over the model:
 | Output            | Derivation                                   | Code                         |
 |-------------------|----------------------------------------------|------------------------------|
 | HTML pages        | each node rendered through its template      | `build/`, `templates.rs`     |
-| Section indexes   | `section.pages`, sorted by `sort_by`         | `content/section.rs`         |
-| Pagination        | slices of a section's pages                  | `content/pagination.rs`      |
-| Taxonomy pages    | group pages by `tags`/`categories`/`series`  | `content/taxonomy.rs`        |
+| Section indexes   | `section.pages`, sorted by `sort_by`         | `build/pipeline/pages.rs` (`derivation::aggregate`) |
+| Pagination        | slices of a section's pages                  | `build/pipeline/pages.rs`    |
+| Taxonomy pages    | group pages by `tags`/`categories`/`series`  | `build/pipeline/taxonomy.rs` (`derivation::group_by_terms`) |
 | RSS/Atom feeds    | `recent`: dated pages, newest first, limited | `build/pipeline/feeds.rs`    |
 | Sitemap           | `effective_url_path()` of every node         | `build/pipeline/sitemap.rs`  |
 | Search index      | page bodies and titles                       | `build/pipeline/search.rs`   |

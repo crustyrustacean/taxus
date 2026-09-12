@@ -1,5 +1,10 @@
 // taxus-generator/src/build/pipeline/wasm.rs
 
+//! Stage 14 (emit): write the embedded WASM client to `dist/wasm/`.
+//!
+//! The client is compiled by the generator's build script and embedded
+//! with `include_bytes!`; this stage only writes those bytes out.
+
 use crate::error::GeneratorError;
 use std::path::{Path, PathBuf};
 use tracing::debug;

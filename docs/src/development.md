@@ -5,7 +5,7 @@ This guide covers development workflows for contributing to Taxus.
 ## Prerequisites
 
 - **Rust** — [Install Rust](https://rustup.rs/)
-- **mdbook** ≥ 0.5.0 — Documentation: `cargo install mdbook --locked`
+- **mdbook** — Documentation: `cargo install mdbook --locked` (the docs workflow in CI pins 0.4.40; the book builds with 0.4 and 0.5)
 
 ## Setup
 
@@ -19,7 +19,7 @@ cargo build
 ## Running Tests
 
 ```bash
-# Run all tests (600+)
+# Run all unit, integration and doc tests
 cargo test
 
 # Run tests for a specific crate
@@ -66,7 +66,7 @@ Open `http://localhost:3000` to view.
 | `cargo test` | Run all tests |
 | `cargo run -- build` | Build the static site |
 | `cargo run -- serve` | Start dev server |
-| `cargo doc` | Generate API docs |
+| `cargo doc --workspace --no-deps` | Generate API docs (`taxus-domain` warns on any undocumented public item) |
 | `cargo clippy` | Run linter |
 | `cargo fmt` | Format code |
 
@@ -173,12 +173,26 @@ Notes:
 
 ```
 taxus/
-├── taxus-client/    # WASM hydration client
-├── taxus-common/    # Shared Yew components
+├── taxus-domain/    # Site Tree, identity types, frontmatter, derivations (no I/O)
 ├── taxus-generator/ # SSG library and CLI
+├── taxus-common/    # Shared Yew components and the search index
+├── taxus-client/    # WASM hydration client
 ├── xtask/           # Workspace task runner (`cargo xtask`)
 └── docs/            # mdBook documentation
 ```
+
+See [Architecture](./architecture.md) for what each crate does and
+[Theory](./theory/overview.md) for the model behind the build.
+
+## Documentation conventions
+
+- The vocabulary is fixed by the [Glossary](./theory/glossary.md). A page
+  that needs a new domain term adds it there first.
+- `taxus-domain` has `#![warn(missing_docs)]`: every public item says what
+  it is in glossary terms and why it exists.
+- Every public module in `taxus-generator` states which phase it belongs
+  to (parse, analyse, emit) and links the theory page that explains it.
+- `CHANGELOG.md` gets an entry under `[Unreleased]` with every change.
 
 ## Contributing
 

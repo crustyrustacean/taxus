@@ -1,6 +1,8 @@
-//! Route registry and route information types.
+//! Route registry and route information types (parse phase).
 //!
-//! This module provides the core types for representing and storing routes.
+//! A route is one document's URL path, content file, output file and kind
+//! as a plain record. [`RouteRegistry::from_tree`] derives them from the
+//! Site Tree in tree order, so the registry is a projection of the tree.
 
 use crate::error::RouteError;
 use std::collections::HashMap;

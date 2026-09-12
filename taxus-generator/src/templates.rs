@@ -1,11 +1,14 @@
 // taxus-generator/src/templates.rs
 
-//! Template rendering module.
+//! Template rendering (emit phase).
 //!
 //! This module provides a flexible template system with a trait-based
 //! backend, allowing different template engines to be used. The primary
 //! implementation uses [Tera](https://keats.github.io/tera/), a Jinja2-like
-//! template engine for Rust.
+//! template engine for Rust. The context types are the views of tree
+//! nodes that templates see; the book's
+//! [Worked Example](https://crustyrustacean.github.io/taxus/theory/worked-example.html) shows a real
+//! `PageContext` and the template that renders it.
 //!
 //! # Overview
 //!

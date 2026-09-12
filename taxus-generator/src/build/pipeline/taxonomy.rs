@@ -1,5 +1,12 @@
 // taxus-generator/src/build/pipeline/taxonomy.rs
 
+//! Stage 10 (analyse, emit): tag, category and series pages.
+//!
+//! The grouping is a derivation, `taxus_domain::derivation::group_by_terms`,
+//! called once per kind to fill a [`TaxonomyMap`]; the term and list pages
+//! are then rendered from the map when their templates exist. See the
+//! book's [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) chapter.
+
 use crate::build::ProcessedPage;
 use crate::content::{TaxonomyKind, TaxonomyMap};
 use crate::error::{GeneratorError, Result};

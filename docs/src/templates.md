@@ -276,7 +276,8 @@ When iterating `extra.taxonomy.terms`, each term has:
 |----------|------|-------------|
 | `page.title` | String | Page title from frontmatter |
 | `page.description` | String? | Optional page description |
-| `page.path` | String | URL path (e.g., `/about/`) |
+| `page.tagline` | String? | Optional tagline from frontmatter |
+| `page.path` | String | URL path (e.g., `/about/`), derived from the page's node path |
 | `page.permalink` | String | Absolute URL (e.g., `https://example.com/about/`) |
 | `page.content` | String | Rendered HTML content |
 | `page.raw_content` | String | Raw markdown content |
@@ -285,6 +286,7 @@ When iterating `extra.taxonomy.terms`, each term has:
 | `page.summary` | String | Summary/excerpt for the page |
 | `page.word_count` | Number | Word count |
 | `page.reading_time` | Number | Estimated reading time in minutes |
+| `page.toc` | Array | Table of contents: entries with `level`, `text`, `id`, `children` (absent when the page has no headings) |
 | `page.weight` | Number | Frontmatter `weight` (`0` when unset); sections with `sort_by = "weight"` list pages in this order |
 | `page.tags` | Array | Tags for the page |
 | `page.categories` | Array | Categories for the page |
@@ -326,7 +328,9 @@ See [Images](./images.md) for the complete guide.
 | `section.title` | String | Section title |
 | `section.description` | String? | Optional section description |
 | `section.path` | String | Section URL path |
+| `section.permalink` | String | Absolute URL of the section |
 | `section.content` | String? | Section HTML content |
+| `section.toc` | Array | Table of contents of the section's `_index.md` |
 | `section.pages` | Array | The section's direct child pages, plus the direct pages of any `pages_from` sections, sorted by `sort_by` |
 | `section.subsections` | Array | Direct child sections, in slug order; each has `title`, `description`, `path`, `permalink` |
 | `section.pagination` | Object? | Pagination information |
@@ -402,7 +406,7 @@ Templates can extend other templates:
 
 ## Tree Functions
 
-Templates can reach any part of the Site Tree, not just the section being
+Templates can reach any part of the [Site Tree](./theory/site-tree.md), not just the section being
 rendered (#69). This is how a home page lists recent posts it does not own:
 
 ```html

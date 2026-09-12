@@ -181,10 +181,10 @@ The code will display in a code block without syntax highlighting, but HTML spec
 
 To add support for additional languages:
 
-1. Add the tree-sitter grammar to `Cargo.toml` as an optional dependency
+1. Add the tree-sitter grammar to `taxus-generator/Cargo.toml` as an optional dependency
 2. Create a feature flag for the language
-3. Add `LanguageSpec` registration in `languages.rs`
-4. Add highlight queries in `queries/<lang>/highlights.scm`
+3. Add `LanguageSpec` registration in `taxus-generator/src/highlighting/languages.rs`
+4. Add highlight queries in `taxus-generator/src/highlighting/queries/<lang>/highlights.scm`
 
 Example for adding JavaScript support:
 

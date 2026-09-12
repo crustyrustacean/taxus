@@ -1,6 +1,11 @@
-//! Taxonomy support for content organization.
+//! Taxonomy map types (analyse phase).
 //!
-//! Taxonomies allow grouping content by categories, tags, and series.
+//! A taxonomy is one of three ways a document says what it is about: tags,
+//! categories or series. A term is one value of a taxonomy with the
+//! documents that carry it. The grouping itself is the derivation
+//! `taxus_domain::derivation::group_by_terms`; this module holds the
+//! [`TaxonomyMap`] the build fills from it and the term's URL rules. See
+//! the book's [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) chapter.
 
 use std::collections::HashMap;
 

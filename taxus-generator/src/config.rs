@@ -1,9 +1,11 @@
 // taxus-generator/src/config.rs
 
-//! Configuration types for the generator.
+//! Configuration types for the generator (parse phase).
 //!
 //! This module provides types for loading and representing site configuration
-//! from `site.toml` files.
+//! from `site.toml` files. The config is the second input to every
+//! derivation after the Site Tree; see the book's
+//! [Overview](https://crustyrustacean.github.io/taxus/theory/overview.html) chapter.
 
 use crate::error::{ConfigError, GeneratorError, Result};
 use serde::Deserialize;
@@ -121,10 +123,10 @@ pub struct FeedConfig {
     /// Custom feed title (defaults to site name)
     pub title: Option<String>,
 
-    /// Custom feed path (defaults to "feed.xml" for RSS, "atom.xml" for Atom)
+    /// Custom RSS feed filename (defaults to `feed.xml`)
     pub rss_path: Option<String>,
 
-    /// Custom Atom feed path
+    /// Custom Atom feed filename (defaults to `feed.atom`)
     pub atom_path: Option<String>,
 
     /// Sections whose pages the feeds syndicate, as content-relative

@@ -1,7 +1,11 @@
-//! Route discovery from content directory.
+//! Route discovery from the content directory (parse phase).
 //!
-//! This module provides the [`RouteDiscovery`] type for discovering routes
-//! from a content directory structure.
+//! [`RouteDiscovery::discover_tree`] is the one place a file name becomes
+//! a node path: directory segments are slugified, a `YYYY-MM-DD-` prefix
+//! is stripped, and a frontmatter `slug` replaces the last segment, all
+//! before the path enters the Site Tree. [`RouteDiscovery::discover`] is
+//! the legacy file walk that keys routes by file name without reading
+//! frontmatter; the build does not use it.
 
 use crate::content::{ContentSource, FilesystemContentSource, Page, split_date_prefix};
 use crate::error::{GeneratorError, RouteError};

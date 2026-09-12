@@ -73,10 +73,17 @@ Props are passed as keyword arguments to `island()`:
 
 ```html
 {{ island(component="Counter", initial=5) | safe }}
-{{ island(component="MyWidget", label="Hello", count=3) | safe }}
+{{ island(component="SearchBox", placeholder="Find…", class="docs-search") | safe }}
 ```
 
-The props are serialized to JSON and stored in `data-props`.
+Only the arguments a component's match arm reads are used; any other
+keyword is ignored. The props are serialized to JSON and stored in
+`data-props`.
+
+| Component | Arguments read by `island()` |
+|-----------|------------------------------|
+| `Counter` | `initial` (integer, default 0), `class` |
+| `SearchBox` | `placeholder` (default `"Search..."`), `class`; `max_results` is fixed at 5 |
 
 ### The `class` Prop
 
@@ -89,7 +96,7 @@ All island components accept an optional `class` prop that appends custom CSS cl
 This renders as:
 
 ```html
-<div data-island="SearchBox" data-props='{"placeholder":"Search...","max_results":5,"class":"docs-search"}' class="search-box docs-search">
+<div data-island="SearchBox" data-props='{"placeholder":"Search...","max_results":5,"class":"docs-search"}'>
   <!-- component content -->
 </div>
 ```
@@ -98,10 +105,10 @@ This enables template authors to pass CSS styling hooks for targeting descendant
 
 ## Writing an Island Component
 
-Island components live in `common/src/components/`. Their props must implement `Serialize` and `Deserialize`:
+Island components live in `taxus-common/src/components/`. Their props must implement `Serialize` and `Deserialize`:
 
 ```rust
-// common/src/components/counter.rs
+// taxus-common/src/components/counter.rs
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 
@@ -132,7 +139,7 @@ pub fn counter(props: &CounterProps) -> Html {
 
 ### Export the Component
 
-Add the component module to `common/src/components/mod.rs`:
+Add the component module to `taxus-common/src/components.rs`:
 
 ```rust
 pub mod counter;
@@ -144,81 +151,63 @@ Two registries must be updated in sync:
 
 ### 1. Generator SSR Registry
 
-In `generator/src/templates/renderer.rs`, add a match arm to the `island()` Tera function:
+In `taxus-generator/src/templates/renderer.rs`, the `island()` Tera
+function (Tera v2 signature) matches on the component name. Add an arm
+for the new component, and a render helper next to `render_island_counter`
+in `taxus-generator/src/build/pipeline.rs`:
 
 ```rust
-tera.register_function("island", |args: &HashMap<String, tera::Value>| {
-    use tera::Value;
-    
-    let component = args.get("component").and_then(Value::as_str).unwrap_or("");
-    
-    let html = match component {
+fn island(kwargs: Kwargs, _state: &State) -> TeraResult<Value> {
+    let component = kwargs.get::<String>("component")?.unwrap_or_default();
+
+    let html = match component.as_str() {
         "Counter" => {
             use crate::build::pipeline::render_island_counter;
-            use common::components::counter::CounterProps;
-            
-            let initial = args.get("initial").and_then(Value::as_i64).unwrap_or(0) as i32;
-            
-            render_island_counter(CounterProps { initial })
-        }
-        "SearchBox" => {
-            use crate::build::pipeline::render_search_box;
-            use common::components::search_box::SearchBoxProps;
-            
-            let placeholder = args.get("placeholder")
-                .and_then(Value::as_str)
-                .unwrap_or("Search...")
-                .to_string();
-            let max_results = args.get("max_results")
-                .and_then(Value::as_i64)
-                .unwrap_or(5) as usize;
-            
-            render_search_box(SearchBoxProps { placeholder, max_results })
+            use taxus_common::components::counter::CounterProps;
+
+            let initial = kwargs.get::<i64>("initial")?.unwrap_or(0) as i32;
+            let class = kwargs.get::<String>("class")?.unwrap_or_default();
+
+            render_island_counter(CounterProps { initial, class })
         }
         "MyWidget" => {
-            // Add your component here
-            use crate::build::pipeline::render_island_generic;
-            use common::components::my_widget::{MyWidget, MyWidgetProps};
-            
-            let label = args.get("label")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string();
-            let count = args.get("count")
-                .and_then(Value::as_i64)
-                .unwrap_or(0) as i32;
-            
-            render_island_generic::<MyWidget>(
-                MyWidgetProps { label, count },
-                "MyWidget"
-            )
+            use crate::build::pipeline::render_island_my_widget; // your helper
+            use taxus_common::components::my_widget::MyWidgetProps;
+
+            let label = kwargs.get::<String>("label")?.unwrap_or_default();
+            let count = kwargs.get::<i64>("count")?.unwrap_or(0) as i32;
+
+            render_island_my_widget(MyWidgetProps { label, count })
         }
         other => format!("<!-- unknown island: {other} -->"),
     };
-    
-    Ok(Value::String(html))
-});
+
+    Ok(Value::from(html))
+}
+```
+
+The helper renders with `yew::ServerRenderer` on the island thread and
+wraps the output in the mount point:
+
+```rust
+pub fn render_island_my_widget(props: MyWidgetProps) -> String {
+    let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
+    let ssr_html = block_on_ssr(ServerRenderer::<MyWidget>::with_props(move || props).render());
+    format!(r#"<div data-island="MyWidget" data-props='{props_json}'>{ssr_html}</div>"#)
+}
 ```
 
 ### 2. Client Hydration Registry
 
-In `client/src/main.rs`, add a match arm to the hydration function:
+In `taxus-client/src/main.rs`, add a match arm to `hydrate_island`:
 
 ```rust
 fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
     match name {
         "Counter" => {
             let props: CounterProps = serde_json::from_str(props_json)
-                .unwrap_or(CounterProps { initial: 0 });
+                .unwrap_or(CounterProps { initial: 0, class: String::new() });
             yew::Renderer::<Counter>::with_root_and_props(el.into(), props).hydrate();
-        }
-        "SearchBox" => {
-            let props: SearchBoxProps = serde_json::from_str(props_json)
-                .unwrap_or(SearchBoxProps {
-                    placeholder: String::new(),
-                    max_results: 5,
-                });
-            yew::Renderer::<SearchBox>::with_root_and_props(el.into(), props).hydrate();
         }
         "MyWidget" => {
             let props: MyWidgetProps = serde_json::from_str(props_json)
@@ -229,6 +218,11 @@ fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
     }
 }
 ```
+
+Three files change in lockstep for every new island: the component in
+`taxus-common`, the arm in the generator, and the arm in the client
+([#50](https://github.com/crustyrustacean/taxus/issues/50) tracks
+collapsing this).
 
 ## Built-in Islands
 
@@ -243,7 +237,7 @@ A simple counter with increment button. This is an example component demonstrati
 A production-ready search component with debounced input and async results. See [Search](./search.md) for full documentation.
 
 ```html
-{{ island(component="SearchBox", placeholder="Search...", max_results=10, class="my-search") | safe }}
+{{ island(component="SearchBox", placeholder="Search...", class="my-search") | safe }}
 ```
 
 ## Initializing a Site with Islands

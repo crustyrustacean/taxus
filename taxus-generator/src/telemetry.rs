@@ -1,6 +1,6 @@
 // generator/src/telemetry.rs
 
-//! Telemetry initialization for the generator.
+//! Telemetry initialization for the generator (no build phase).
 //!
 //! This module provides structured logging via the `tracing` crate, replacing
 //! the previous `println!`/`eprintln!` based output. Log levels are controlled

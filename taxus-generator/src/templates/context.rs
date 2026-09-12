@@ -1,10 +1,13 @@
 // taxus-generator/src/templates/context.rs
 
-//! Template context types for rendering.
+//! Template context types for rendering (emit phase).
 //!
 //! This module provides the context types that hold variables available
 //! to templates during rendering. These types are serialized to JSON
-//! and passed to the template engine.
+//! and passed to the template engine. A [`PageContext`] is one document's
+//! view (URL path, permalink, rendered HTML, summary); a
+//! [`SectionContext`] adds the section's listing, which is derived from
+//! the Site Tree in `build::pipeline::pages`.
 
 use crate::build::pipeline::markdown::TocEntry;
 use serde::{Deserialize, Serialize};
@@ -187,7 +190,7 @@ pub struct SectionContext {
     pub path: String,
 
     /// Pre-computed absolute URL combining base_url and path
-    /// (e.g., "https://example.com/blog/")
+    /// (e.g., `<https://example.com/blog/>`)
     pub permalink: String,
 
     /// Section HTML content (rendered from markdown)

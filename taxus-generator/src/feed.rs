@@ -1,9 +1,13 @@
 // taxus-generator/src/feed.rs
 
-//! Feed generation module.
+//! Feed generation: RSS and Atom documents (emit phase).
 //!
 //! This module provides types for generating RSS and Atom feeds for blog content.
-//! Feeds allow users to subscribe to site updates using feed readers.
+//! Feeds allow users to subscribe to site updates using feed readers. Which
+//! pages a feed carries is decided upstream, by
+//! `build::pipeline::feeds::feed_pages` over the Site Tree; this module
+//! turns those pages into XML. See the book's
+//! [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) chapter.
 //!
 //! # Overview
 //!

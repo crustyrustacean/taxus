@@ -1,8 +1,10 @@
-//! Template renderer trait and Tera implementation.
+//! Template renderer trait and Tera implementation (emit phase).
 //!
 //! This module provides the [`TemplateRenderer`] trait for template rendering
 //! and [`TeraRenderer`] as the primary implementation using the Tera template
-//! engine.
+//! engine. The renderer registers the `island()` function, the
+//! `get_section` and `get_page` tree functions, and the `slugify`, `slug`
+//! and `date` filters.
 
 use crate::error::TemplateError;
 use crate::templates::context::{PageContext, SectionContext, TemplateContext};

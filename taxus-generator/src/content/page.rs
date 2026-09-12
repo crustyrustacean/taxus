@@ -1,4 +1,8 @@
-//! Page type for individual content files.
+//! Page type for individual content files (parse phase).
+//!
+//! A [`Page`] is the parsed form of one content file: frontmatter, body,
+//! and the content-relative `source` path that joins it to its tree node.
+//! See the book's [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter.
 
 use crate::error::{ContentError, Result};
 use chrono::NaiveDate;
@@ -61,7 +65,12 @@ pub struct Page {
     /// Page metadata from frontmatter
     pub frontmatter: Frontmatter,
 
-    /// URL path (e.g., "/about/")
+    /// The page's slug as a root-level path (`/about/`; `/` for an
+    /// `_index.md`), derived from the file stem alone. This is **not** the
+    /// served URL: that is section path + slug, derived from the Site
+    /// Tree and exposed as `ProcessedPage::effective_url_path()`. The feed
+    /// stage overwrites this field with the served URL before generating
+    /// entries.
     pub path: String,
 
     /// Source file path. [`from_file_in`](Self::from_file_in) stores it

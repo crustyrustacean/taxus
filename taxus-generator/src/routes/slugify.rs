@@ -6,11 +6,14 @@
 //! `/My Créative Post/` — a raw space and non-ASCII bytes flowing into
 //! hrefs, the sitemap (where spaces are invalid), and feed links.
 //!
-//! There is exactly one slug algorithm (RFC 2 invariant 3: one derivation
+//! There is exactly one slug algorithm for node paths (one derivation
 //! point per concept): lowercase, whitespace → `-`, non-ASCII
 //! transliterated to ASCII, remaining punctuation stripped. This is the
 //! behavior taxus has always shipped as its default; the configurable
-//! modes from #27 (`safe`/`off`) were removed as unowned knobs.
+//! modes from #27 (`safe`/`off`) were removed as unowned knobs. Taxonomy
+//! term slugs and the Tera `slugify` filter use their own, similar rules.
+//! Phase: parse. See the book's
+//! [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter.
 //!
 //! Slugs are guaranteed non-empty: an input that slugifies to nothing
 //! (e.g. a file named `().md`) falls back to `"page"` so route

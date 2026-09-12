@@ -2,6 +2,13 @@
 
 - [Introduction](./introduction.md)
 - [Getting Started](./getting-started.md)
+- [Theory](./theory/overview.md)
+  - [The Site Tree](./theory/site-tree.md)
+  - [Identity](./theory/identity.md)
+  - [Derivations](./theory/derivations.md)
+  - [Worked Example](./theory/worked-example.md)
+  - [Glossary](./theory/glossary.md)
+  - [Decisions](./theory/decisions.md)
 - [Architecture](./architecture.md)
 - [Content Model](./content-model.md)
 - [Configuration](./configuration.md)

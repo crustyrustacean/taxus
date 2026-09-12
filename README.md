@@ -2,18 +2,28 @@
 
 A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring WebAssembly "islands" for interactive components.
 
+Taxus is a compiler for websites: a folder of Markdown, templates, styles
+and static files goes in, a folder of HTML and a few generated files comes
+out. The build parses the content directory into a Site Tree, computes
+every listing, feed and index from that tree, and writes the result. The
+[Theory](docs/src/theory/overview.md) chapters explain the model.
+
 ## Features
 
-- **Static Site Generation** — Pre-rendered HTML for optimal performance and SEO
-- **Markdown + TOML Frontmatter** — Write content with familiar syntax
-- **Islands Architecture** — Yew/WASM components that hydrate client-side
-- **Syntax Highlighting** — Tree-sitter based code highlighting (Rust built in)
-- **Full-Text Search** — TF-IDF search index for client-side search
-- **Hot-Reloading Dev Server** — WebSocket-based live reload during development
-- **RSS/Atom Feeds** — Automatic feed generation
-- **Taxonomies** — Tags, categories, and series with automatic archive pages (list + term templates included in scaffold)
-- **Co-located Assets** — Images in content directories copy to output
-- **Hero Images** — Responsive hero images with automatic WebP conversion and srcset generation
+- **Static site generation**: pre-rendered HTML, no JavaScript needed to read a page
+- **Markdown with TOML frontmatter**: one file per page, `_index.md` per section
+- **Site Tree**: sections and pages in memory; URLs, listings, feeds and the sitemap are derived from it
+- **Islands**: Yew components rendered to HTML at build time and hydrated by WASM in the browser
+- **Syntax highlighting**: tree-sitter, Rust grammar built in
+- **Full-text search**: a TF-IDF index searched in the browser by the `SearchBox` island
+- **Development server**: rebuilds on change and reloads the browser over a WebSocket
+- **RSS and Atom feeds**: dated pages, newest first
+- **Taxonomies**: tags, categories and series, with list and term pages
+- **Pagination**: `paginate_by` on any section
+- **Co-located assets**: non-Markdown files in `content/` are copied to the output
+- **Hero images**: responsive variants, WebP conversion, `<picture>` markup
+- **Internal links**: `@/path.md` links checked at build time
+- **Sitemap, robots.txt, 404 page, alias redirects**
 
 ## Installation
 
@@ -41,35 +51,38 @@ cargo run -- serve --dir my-site
 
 ## CLI Commands
 
+The table is the `Commands:` block of `taxus --help`.
+
 | Command | Description |
 |---------|-------------|
-| `init [PATH]` | Scaffold a new site structure |
-| `build` | Generate static files |
-| `serve` | Start dev server with live reload |
-| `clean` | Remove output directory |
-| `routes` | List discovered routes |
+| `build` | Build the static site from Markdown content and templates |
+| `clean` | Remove all generated files from the output directory |
+| `init` | Initialize a new site with a default directory structure |
+| `routes` | List all routes that would be discovered from the content directory |
+| `serve` | Start a development server with live reload |
+| `help` | Print this message or the help of the given subcommand(s) |
 
 ### Notable options
 
-**`init`**
+**`init [PATH]`**
 
-- `-n, --name <NAME>` — Site name
-- `-u, --base-url <URL>` — Base URL
-- `-f, --force` — Initialize even if directory is not empty
-- `--no-islands` — Disable WASM islands hydration (enabled by default)
+- `-n, --name <NAME>` — Site name used in templates and site.toml
+- `-u, --base-url <URL>` — Base URL for the site (must start with http:// or https://)
+- `-f, --force` — Initialize even if the directory is not empty
+- `--no-islands` — Disable islands support for a plain Tera/Markdown scaffold
 
 **`build`**
 
-- `--include-drafts` — Include draft content
-- `--dry-run` — Simulate without writing files
-- `--clean` — Remove output directory before building
-- `-o, --output <PATH>` — Override the output directory
+- `--include-drafts` — Include pages marked `draft = true` in frontmatter
+- `--dry-run` — Simulate the build without writing any output files
+- `--clean` — Remove all files from the output directory before building
+- `-o, --output <PATH>` — Override the output directory from site.toml
 
 **`serve`**
 
 - `--host <ADDR>` — IP address to listen on (default: 127.0.0.1)
 - `-p, --port <PORT>` — Port to listen on (default: 3000)
-- `-o, --open` — Open browser automatically
+- `-o, --open` — Open the site in a browser after starting the server
 
 The dev server binds to loopback only, so it is reachable from your machine
 and nothing else. To test on another device on your network (a phone, say),
@@ -78,9 +91,9 @@ opt in explicitly with `taxus serve --host 0.0.0.0` and open
 
 **Common**
 
-- `-d, --dir <path>` — Site directory (default: current)
-- `-v, --verbose` — Debug output
-- `-q, --quiet` — Errors only
+- `-d, --dir <PATH>` — Root directory of the site (must contain site.toml); default `.`
+- `-v, --verbose` — Print detailed progress for each build stage (`build`, `serve`)
+- `-q, --quiet` — Suppress all output except errors (`build`, `serve`)
 
 The workspace also ships an `xtask` task runner (`cargo xtask`) wrapping
 build, test, lint, doc, and release workflows — see
@@ -91,8 +104,9 @@ build, test, lint, doc, and release workflows — see
 | Feature | Default | Description |
 |---------|---------|-------------|
 | `lang-rust` | on | Rust syntax highlighting via tree-sitter |
+| `webp-lossy` | on | Lossy WebP hero image variants via libwebp; without it WebP output is lossless and `images.quality` is ignored for WebP |
 
-Islands (Yew SSR + WASM hydration) are always enabled — they are a first-class part of the generator. No feature flag is required.
+Islands (Yew SSR + WASM hydration) are always compiled in. No feature flag is required; `taxus init --no-islands` only leaves the hydration script out of the scaffold.
 
 ## Hero Images
 
@@ -147,7 +161,9 @@ Comprehensive documentation is available in the `docs/` directory:
 
 - [Introduction](docs/src/introduction.md)
 - [Getting Started](docs/src/getting-started.md)
+- [Theory](docs/src/theory/overview.md): [Site Tree](docs/src/theory/site-tree.md), [Identity](docs/src/theory/identity.md), [Derivations](docs/src/theory/derivations.md), [Worked Example](docs/src/theory/worked-example.md), [Glossary](docs/src/theory/glossary.md), [Decisions](docs/src/theory/decisions.md)
 - [Architecture](docs/src/architecture.md)
+- [Content Model](docs/src/content-model.md)
 - [Configuration](docs/src/configuration.md)
 - [Content](docs/src/content.md)
 - [Images](docs/src/images.md)
@@ -171,6 +187,7 @@ cd docs && mdbook serve
 
 | Crate | Description |
 |-------|-------------|
+| `taxus-domain` | The Site Tree, identity types, frontmatter schema and pure derivations; no I/O |
 | `taxus-generator` | SSG library and `taxus` CLI binary |
 | `taxus-client` | WASM hydration client (built into the generator binary at compile time) |
 | `taxus-common` | Shared Yew components for SSR and hydration, search index |

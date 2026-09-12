@@ -1,10 +1,13 @@
 // taxus-generator/src/routes.rs
 
-//! Route discovery and management.
+//! Route discovery and the route registry (parse phase).
 //!
-//! This module provides types for discovering and managing routes in a static site.
-//! Routes are derived from the content directory structure and map content files
-//! to URL paths and output files.
+//! [`RouteDiscovery::discover_tree`] walks the content directory and builds
+//! the Site Tree; [`RouteRegistry::from_tree`] projects the tree to one
+//! [`RouteInfo`] per document (URL path, content file, output file, kind).
+//! The registry is a view of the tree, never a second source. See the
+//! book's [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) and
+//! [Site Tree](https://crustyrustacean.github.io/taxus/theory/site-tree.html) chapters.
 //!
 //! # Overview
 //!
@@ -18,9 +21,10 @@
 //! ```no_run
 //! use taxus_lib::routes::{RouteDiscovery, RouteRegistry, RouteInfo, RouteKind};
 //!
-//! // Discover routes from content directory
+//! // Build the Site Tree from the content directory, then derive the routes
 //! let discovery = RouteDiscovery::new("content");
-//! let registry = discovery.discover()?;
+//! let tree = discovery.discover_tree()?;
+//! let registry = RouteRegistry::from_tree(&tree);
 //!
 //! // Query routes
 //! if let Some(route) = registry.get("/about/") {

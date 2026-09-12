@@ -1,16 +1,45 @@
 // taxus-domain/src/schema.rs
 
-//! Frontmatter parsing for content files.
+//! The frontmatter schema: what an author can write between `+++` lines.
 //!
-//! Frontmatter is TOML metadata at the beginning of a Markdown file,
-//! delimited by `+++` markers.
+//! Frontmatter is the typed metadata at the top of every content file. It
+//! is the only place meaning lives: titles, dates, taxonomies, listing
+//! behaviour (`sort_by`, `paginate_by`, `pages_from`) and identity
+//! overrides (`slug`, `aliases`). This module parses the TOML into
+//! [`Frontmatter`]; it does not read files. See the book's
+//! [Glossary](https://crustyrustacean.github.io/taxus/theory/glossary.html#storage).
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-/// Page frontmatter metadata parsed from TOML between `+++` markers.
+/// The frontmatter of one content file, parsed from the TOML between
+/// `+++` markers.
+///
+/// A section node carries the frontmatter of its `_index.md` (or the
+/// default when there is none); a page node carries its own. Every field
+/// has a default so that a file with an empty frontmatter block is still
+/// a valid document; the schema never fails a build for a missing field,
+/// only for TOML that does not parse.
+///
+/// # Example
+///
+/// ```
+/// use taxus_domain::{Frontmatter, SortBy};
+///
+/// let meta: Frontmatter = r#"
+/// title = "Project Launch"
+/// date = 2026-04-03
+/// tags = ["rust", "ssg"]
+/// "#.parse()?;
+///
+/// assert_eq!(meta.title, "Project Launch");
+/// assert_eq!(meta.tags, ["rust", "ssg"]);
+/// assert_eq!(meta.sort_by, SortBy::Date); // the default
+/// assert!(!meta.draft);
+/// # Ok::<(), toml::de::Error>(())
+/// ```
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct Frontmatter {
     /// Page title (required for pages, optional for sections)
@@ -154,7 +183,22 @@ impl Frontmatter {
     }
 }
 
-/// Sort order for pages within a section.
+/// The order a section's listing shows its pages in: the `sort_by`
+/// frontmatter key.
+///
+/// Sorting is a derivation, never stored: the tree keeps children in slug
+/// order and [`crate::tree::sort_pages`] applies this choice when a
+/// listing is built. The default is [`SortBy::Date`].
+///
+/// # Example
+///
+/// ```
+/// use taxus_domain::{Frontmatter, SortBy};
+///
+/// let meta: Frontmatter = r#"sort_by = "weight""#.parse()?;
+/// assert_eq!(meta.sort_by, SortBy::Weight);
+/// # Ok::<(), toml::de::Error>(())
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SortBy {
@@ -165,7 +209,7 @@ pub enum SortBy {
     Title,
     /// Sort by weight (lowest first)
     Weight,
-    /// No sorting (preserve filesystem order)
+    /// No sorting: keep tree (slug) order
     None,
 }
 

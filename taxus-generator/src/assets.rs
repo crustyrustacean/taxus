@@ -1,10 +1,11 @@
 // taxus-generator/src/assets.rs
 
-//! Asset processing module for the generator library.
+//! Asset processing: SCSS compilation and static file copying (emit phase).
 //!
 //! This module provides a trait-based architecture for processing different
 //! asset types, with concrete implementations for SCSS compilation and
-//! static file copying.
+//! static file copying. Co-located assets inside the content directory are
+//! handled separately, by `build::pipeline::copy_colocated_assets`.
 //!
 //! # Overview
 //!

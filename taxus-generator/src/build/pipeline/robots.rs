@@ -1,5 +1,7 @@
 // generator/src/build/pipeline/robots.rs
 
+//! Stage 7 (emit): a default `robots.txt`, unless `static/robots.txt` exists.
+
 // dependencies
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};

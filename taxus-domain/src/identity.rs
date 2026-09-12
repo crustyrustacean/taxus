@@ -1,24 +1,47 @@
 // taxus-domain/src/identity.rs
 
-//! Identity: slugs, membership paths, and derived URL paths.
+//! Identity: how a node is named and how its address follows from the name.
 //!
-//! One derivation point for addresses ([`UrlPath::from_node_path`])
-//! invariant 3.
+//! A document has four names. Its **content file** is where it is stored.
+//! Its **slug** is one URL segment. Its **node path** is the list of slugs
+//! from the root section down to it, and is the source of truth. Its
+//! **URL path** is derived from the node path in exactly one place,
+//! [`UrlPath::from_node_path`], and nowhere else.
+//!
+//! The domain does not slugify. The generator owns the one slug algorithm
+//! and applies frontmatter `slug` overrides and date-prefix stripping
+//! before a path enters the tree; this module only validates that a
+//! segment can stand in a path. See the book's
+//! [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html)
+//! chapter.
 
 use std::fmt;
 
-/// A single URL path segment, already slugified by the caller.
+/// A slug: one URL path segment, already slugified by the caller.
 ///
-/// The domain does not slugify: the generator owns the one slug algorithm
-/// (transliteration, lowercasing, separator collapsing) and frontmatter
-/// `slug` overrides are used verbatim. This type only guarantees that the
-/// segment can stand alone in a path: it is non-empty, contains no `/`, is
-/// neither `.` nor `..`, and has no ASCII control characters.
+/// It exists so that a [`NodePath`] can only ever hold segments that are
+/// safe to join with `/`: non-empty, no `/`, neither `.` nor `..`, no
+/// ASCII control characters. The domain does not slugify. The generator
+/// owns the one slug algorithm (lowercase, ASCII, dashes) and passes
+/// frontmatter `slug` overrides through verbatim; this type accepts
+/// whatever the generator produced.
+///
+/// # Example
+///
+/// ```
+/// use taxus_domain::Slug;
+///
+/// let slug = Slug::new("project-launch")?;
+/// assert_eq!(slug.as_str(), "project-launch");
+/// assert!(Slug::new("a/b").is_err());
+/// assert!(Slug::new("").is_err());
+/// # Ok::<(), taxus_domain::identity::IdentityError>(())
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Slug(String);
 
 impl Slug {
-    /// Validate and create a slug.
+    /// Validate `raw` as a path segment and wrap it; nothing is rewritten.
     pub fn new(raw: &str) -> Result<Self, IdentityError> {
         if raw.is_empty() {
             return Err(IdentityError::Empty);
@@ -35,6 +58,7 @@ impl Slug {
         Ok(Self(raw.to_owned()))
     }
 
+    /// The segment as text.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -54,15 +78,32 @@ impl std::str::FromStr for Slug {
     }
 }
 
-/// A membership path from the root section to a node, as a sequence of slugs.
+/// A node path: the slugs from the root section down to a node.
 ///
-/// `["blog", "my-post"]` is the page at `/blog/my-post/`; the empty path is
-/// the root section. Membership only — this type knows nothing about URLs.
+/// This is a node's name inside the Site Tree and the source of truth
+/// for its identity: the builder checks it for duplicates, lookups take
+/// it, and the address is derived from it. `["blog", "project-launch"]`
+/// names the page under the `blog` section; the empty path names the
+/// root section. It says where a node is, not what its URL is: that is
+/// [`UrlPath`]'s job.
+///
+/// # Example
+///
+/// ```
+/// use taxus_domain::NodePath;
+///
+/// let path = NodePath::parse("blog/project-launch")?;
+/// assert_eq!(path.segments().len(), 2);
+/// assert_eq!(path.parent().unwrap().to_string(), "blog");
+/// assert_eq!(path.last().unwrap().as_str(), "project-launch");
+/// assert!(NodePath::parse("/")?.is_root());
+/// # Ok::<(), taxus_domain::identity::IdentityError>(())
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
 pub struct NodePath(Vec<Slug>);
 
 impl NodePath {
-    /// The root section's path.
+    /// The root section's path: no segments.
     pub fn root() -> Self {
         Self::default()
     }
@@ -80,7 +121,10 @@ impl NodePath {
         Ok(Self(slugs))
     }
 
-    /// Parse a slash-separated path. `""` or `"/"` is the root.
+    /// Parse a slash-separated path such as `"blog/project-launch"`.
+    ///
+    /// Leading and trailing slashes are ignored; `""` and `"/"` are the
+    /// root. Each segment is validated as a [`Slug`], not slugified.
     pub fn parse(raw: &str) -> Result<Self, IdentityError> {
         let trimmed = raw.trim_matches('/');
         if trimmed.is_empty() {
@@ -89,6 +133,7 @@ impl NodePath {
         Self::from_segments(trimmed.split('/'))
     }
 
+    /// Is this the root section's path?
     pub fn is_root(&self) -> bool {
         self.0.is_empty()
     }
@@ -103,13 +148,14 @@ impl NodePath {
         self.0.last()
     }
 
-    /// This path with `slug` appended.
+    /// This path with `slug` appended: a child's path.
     pub fn join(&self, slug: &Slug) -> Self {
         let mut segments = self.0.clone();
         segments.push(slug.clone());
         Self(segments)
     }
 
+    /// The slugs from the root down, in order.
     pub fn segments(&self) -> &[Slug] {
         &self.0
     }
@@ -128,14 +174,33 @@ impl fmt::Display for NodePath {
     }
 }
 
-/// The address of a node: derived from its membership path, never stored.
+/// A URL path: the address a document is served at.
 ///
-/// Derivation (RFC 2 §2.2): `root + "/" + path + "/"`; the root's address
-/// is `/`.
+/// It is derived from a [`NodePath`] by [`UrlPath::from_node_path`] and
+/// never stored on a node, so every output that names a document (page
+/// links, listings, feeds, the sitemap, the search index, aliases) gets
+/// the same address from the same rule. The shape is fixed: `/` for the
+/// root, otherwise `/` + the segments joined by `/` + `/`.
+///
+/// # Example
+///
+/// ```
+/// use taxus_domain::{NodePath, UrlPath};
+///
+/// let post = NodePath::parse("blog/project-launch")?;
+/// assert_eq!(UrlPath::from_node_path(&post).as_str(), "/blog/project-launch/");
+/// assert_eq!(UrlPath::from_node_path(&NodePath::root()).as_str(), "/");
+/// # Ok::<(), taxus_domain::identity::IdentityError>(())
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct UrlPath(String);
 
 impl UrlPath {
+    /// Derive the address from a node path.
+    ///
+    /// This is the only place in the workspace that turns a path into an
+    /// address. The root is `/`; every other node is `/a/b/`, with a
+    /// trailing slash.
     pub fn from_node_path(path: &NodePath) -> Self {
         if path.is_root() {
             Self("/".to_owned())
@@ -144,6 +209,7 @@ impl UrlPath {
         }
     }
 
+    /// The address as text, e.g. `/blog/project-launch/`.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -155,17 +221,33 @@ impl fmt::Display for UrlPath {
     }
 }
 
-/// Errors from slug and path validation.
+/// Why a string cannot be a [`Slug`].
+///
+/// Each variant names one rule a path segment must satisfy. The generator
+/// reports these as an invalid route path, naming the content file.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum IdentityError {
+    /// The segment was the empty string.
     #[error("slug must not be empty")]
     Empty,
+    /// The segment contained a `/`, which would make it two segments.
     #[error("invalid slug `{s}`: must not contain `/`")]
-    Slash { s: String },
+    Slash {
+        /// The rejected text.
+        s: String,
+    },
+    /// The segment was `.` or `..`, which paths treat specially.
     #[error("invalid slug `{s}`: `.` and `..` are reserved")]
-    DotSegment { s: String },
+    DotSegment {
+        /// The rejected text.
+        s: String,
+    },
+    /// The segment contained an ASCII control character.
     #[error("invalid slug `{s}`: must not contain control characters")]
-    ControlCharacter { s: String },
+    ControlCharacter {
+        /// The rejected text.
+        s: String,
+    },
 }
 
 #[cfg(test)]

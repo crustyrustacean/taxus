@@ -6,7 +6,8 @@ Taxus provides a built-in search component with client-side full-text search. Th
 
 The build pipeline:
 
-1. Generates a search index at `dist/search_index.bin`
+1. Generates a search index at `dist/search_index.bin` (stage 13, from every
+   processed page in tree order; see [Architecture](./architecture.md))
 2. The `SearchBox` component is available for use in templates
 
 The binary index contains:
@@ -41,13 +42,16 @@ The `SearchBox` island component provides a ready-to-use search interface. Add i
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `placeholder` | string | `"Search..."` | Placeholder text for the input |
-| `max_results` | number | `5` | Maximum number of results to display |
 | `class` | string | `""` | Custom CSS classes to append to the outer container |
+
+The component also has a `max_results` prop, but the `island()` function
+does not read it from the template: it is always 5. A `max_results=`
+argument in a template is ignored.
 
 Example with custom props:
 
 ```html
-{{ island(component="SearchBox", placeholder="Find content...", max_results=10, class="docs-search") | safe }}
+{{ island(component="SearchBox", placeholder="Find content...", class="docs-search") | safe }}
 ```
 
 ### Styling
@@ -185,7 +189,7 @@ pub struct SearchDocument {
 
 ```rust
 pub struct SearchIndex {
-    pub documents: Vec<SearchDocument>,
+    pub documents: BTreeMap<u32, SearchDocument>,
     pub index: HashMap<String, Vec<(u32, f32)>>,
 }
 ```
@@ -196,8 +200,8 @@ pub struct SearchIndex {
 | `add_document(doc, content)` | Add a document with its content |
 | `search(query) -> Vec<&SearchDocument>` | Search and return ranked results |
 | `finalize()` | Apply IDF weighting (call after all documents added) |
-| `to_bytes() -> Vec<u8>` | Serialize to binary |
-| `from_bytes(bytes) -> Self` | Deserialize from binary |
+| `to_bytes() -> Result<Vec<u8>, postcard::Error>` | Serialize to binary |
+| `from_bytes(bytes) -> Result<Self, postcard::Error>` | Deserialize from binary |
 
 ### Helper Functions
 

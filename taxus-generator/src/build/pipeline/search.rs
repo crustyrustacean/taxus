@@ -1,5 +1,11 @@
 // taxus-generator/src/build/pipeline/search.rs
 
+//! Stage 13 (emit): the client-side search index, `search_index.bin`.
+//!
+//! One `SearchDocument` per processed page, in registry (tree) order,
+//! with the served URL path from the tree. See the book's
+//! [Search](https://crustyrustacean.github.io/taxus/search.html) chapter.
+
 use crate::build::ProcessedPage;
 use crate::error::{GeneratorError, Result, SearchError};
 use std::fs;

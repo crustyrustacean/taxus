@@ -1,359 +1,197 @@
 # Architecture
 
-This page provides a technical overview of Taxus's architecture, including the workspace structure, module organization, build pipeline, and data flow.
+This page is the map of the code: the crates, the modules, and the build
+pipeline stage by stage. The ideas behind the pipeline are in the
+[Theory](./theory/overview.md) chapters; the words used here are defined
+in the [Glossary](./theory/glossary.md).
 
-## Workspace Structure
+## Workspace
 
-Taxus is organized as a multi-crate Cargo workspace with five crates:
+Taxus is a Cargo workspace of five crates.
 
-```
+```text
 taxus/
-├── taxus-client/    # WASM hydration client
-├── taxus-common/    # Shared Yew components
-├── taxus-domain/    # Pure data model: the Site Tree and its derivations
-├── taxus-generator/ # SSG library and CLI binary
-└── xtask/           # Workspace task runner (cargo xtask)
+├── taxus-domain/    # the Site Tree, identity types, frontmatter, derivations (no I/O)
+├── taxus-generator/ # the build: parse, analyse, emit; the `taxus` CLI
+├── taxus-common/    # Yew island components and the search index, shared by both sides
+├── taxus-client/    # the browser-side WASM that hydrates islands (embedded in the binary)
+└── xtask/           # developer task runner (`cargo xtask`)
 ```
 
-### Crate Responsibilities
+| Crate | Phase | Role | Output |
+|-------|-------|------|--------|
+| `taxus-domain` | parse, analyse | Defines what a site is (`SiteTree`, `SectionNode`, `PageNode`), how nodes are named (`Slug`, `NodePath`, `UrlPath`), the frontmatter schema, and the pure derivations. Reads no files. | library |
+| `taxus-generator` | all three | Fills the tree from disk, calls the derivations, renders Markdown and templates, processes images and assets, writes the output. | library `taxus_lib` and binary `taxus` |
+| `taxus-common` | emit | Island components (`Counter`, `SearchBox`) rendered at build time and hydrated in the browser; the search index format. | library |
+| `taxus-client` | emit | Finds `[data-island]` mount points in the page and hydrates them; fetches the search index on demand. Compiled to WASM by the generator's build script and embedded with `include_bytes!`. | WASM bundle written to `dist/wasm/` |
+| `xtask` | none | `cargo xtask build`, `test`, `lint`, `book`, `release`, and the rest. | binary |
 
-| Crate | Role | Output |
-|-------|------|--------|
-| `taxus-common` | Shared Yew components used by both SSR (generator) and hydration (client) | Library |
-| `taxus-domain` | The Site Tree (`SiteTree`, `SectionNode`, `PageNode`), identity types (`Slug`, `NodePath`, `UrlPath`), typed frontmatter, and pure derivations over the tree. No I/O. | Library |
-| `taxus-generator` | Static site generation: config, content parsing, route discovery, Tera rendering, asset processing | Library (`taxus_lib`) + Binary (`taxus`) |
-| `taxus-client` | Browser-side WASM that finds island mount points and hydrates them | WASM bundle (embedded in generator binary at compile time) |
-| `xtask` | Workspace task runner wrapping common developer workflows (build, test, lint, release, …) | Binary (`cargo xtask`) |
+How the crates depend on each other:
 
-### Data Flow Between Crates
-
-```
-┌─────────────┐     SSR at build time      ┌─────────────┐
-│   common    │ ──────────────────────────▶│  generator  │
-│ (components)│                            │  (CLI/lib)  │
-└─────────────┘                            └──────┬──────┘
-      │                                           │
-      │              Build output                 │
-      │         (HTML + props JSON)               │
-      │                                           ▼
-      │                                    ┌─────────────┐
-      │     Hydration at runtime           │   dist/     │
-      │ ──────────────────────────────────▶│  (output)   │
-      │                                    └─────────────┘
-      │                                           │
-      ▼                                           ▼
-┌─────────────┐                            ┌─────────────┐
-│   client    │ ◀─── WASM loads in browser ─│   Browser   │
-│   (WASM)    │                            │             │
-└─────────────┘                            └─────────────┘
+```text
+ taxus-domain ◄── taxus-generator ──► taxus-common ◄── taxus-client
+   (model)          (the build)        (islands,        (hydration,
+                         │              search)           compiled to
+                         │ build.rs compiles taxus-client   wasm32)
+                         │ and embeds client.js + client_bg.wasm
+                         ▼
+                       dist/
 ```
 
-## Generator Module Map
+## The three phases
 
-The `generator` crate is organized into modules that each own a specific domain:
+Every stage below belongs to one of three phases. **Parse** turns the
+filesystem into the Site Tree. **Analyse** computes derivations over the
+tree. **Emit** turns the tree, the derivations and the other inputs into
+files. The tree is built in stage 1 and is immutable from then on; every
+later stage holds it as `&SiteTree`.
 
-| Module | Types | Responsibility |
-|--------|-------|----------------|
-| `config` | `SiteConfig`, `SiteMeta`, `BuildConfig`, `FeedConfig`, `ImageConfig` | Load and validate `site.toml` configuration |
-| `content` | `Page`, `Frontmatter`, `ContentSource`, `TaxonomyMap` | Parse Markdown files with TOML frontmatter |
-| `routes` | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind` | Map content files to URL paths |
-| `templates` | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext` | Render HTML with Tera templates |
-| `build` | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage` | Orchestrate the build pipeline (including WASM client writing) |
-| `assets` | `ScssProcessor`, `StaticCopier`, `AssetReport` | Compile SCSS, copy static files |
-| `images` | `ImageProcessor`, `ImageRegistry`, `ProcessedImage`, `render_picture` | Hero image processing: responsive variants, WebP conversion, `<picture>`/srcset |
-| `feed` | `FeedGenerator`, `FeedEntry`, `FeedConfig` | Generate RSS/Atom feeds |
-| `init` | `InitScaffolder`, `InitOptions`, `InitReport` | Scaffold new site directories |
-| `serve` | `DevServer`, `FileWatcher`, WebSocket live reload | Development server with hot reload |
-| `error` | `GeneratorError` + domain sub-errors | Error handling hierarchy |
-| `tracing` | `init()`, `init_with_level()` | Structured logging setup |
+## The build pipeline, stage by stage
 
-### Module Dependencies
+`SiteBuilder::build` in `taxus-generator/src/build/builder.rs` runs
+fifteen stages and logs one line per stage. The list below uses the same
+numbers and the same wording as the log. For each stage: which phase it
+is, what it reads, what it produces.
 
-```
-                ┌──────────┐
-                │  config  │
-                └────┬─────┘
-                     │
-         ┌───────────┼───────────┐
-         ▼           ▼           ▼
-    ┌─────────┐ ┌─────────┐ ┌─────────┐
-    │ content │ │  routes │ │  error  │
-    └────┬────┘ └────┬────┘ └─────────┘
-         │           │
-         └─────┬─────┘
-               ▼
-         ┌───────────┐
-         │ templates │
-         └─────┬─────┘
-               │
-         ┌─────┼─────┐
-         ▼     ▼     ▼
-    ┌────────┐ ┌───────┐ ┌──────┐
-    │ assets │ │ build │ │ feed │
-    └────────┘ └───┬───┘ └──────┘
-                   │
-         ┌─────────┼─────────┐
-         ▼         ▼         ▼
-    ┌────────┐ ┌────────┐ ┌───────┐
-    │  init  │ │ serve  │ │tracing│
-    └────────┘ └────────┘ └───────┘
-```
+**[1/15] Discovering routes** (parse). Reads every `.md` under the content
+directory. Produces the `SiteTree` (`RouteDiscovery::discover_tree`) and,
+from it, the `RouteRegistry` (`RouteRegistry::from_tree`): one route per
+document in tree order. Frontmatter is parsed here, slugs are computed
+here, and duplicate paths fail here. An empty registry ends the build with
+`NoContent`.
 
-## Build Pipeline
+**[2/15] Loading templates** (emit setup). Reads `templates/**/*.html`.
+Produces a `TeraRenderer` with the `island()`, `get_section()` and
+`get_page()` functions and the `slugify` and `date` filters registered.
 
-The `SiteBuilder` orchestrates a 15-stage build pipeline:
+**[3/15] Processing content** (emit). Reads the registry, the config and
+each content file again. Produces one `ProcessedPage` per route:
+internal links resolved against the registry, Markdown rendered to HTML,
+headings collected into a table of contents, code blocks highlighted.
+Drafts are dropped here unless `--include-drafts` was passed.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      SiteBuilder.build()                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [1/15] Discover routes                                          │
-│          └──▶ Walk content/ once, build the SiteTree             │
-│          └──▶ Derive RouteRegistry from the tree (from_tree)     │
-│                                                                  │
-│  [2/15] Load templates                                           │
-│          └──▶ Read templates/**/*.html                           │
-│          └──▶ Register with Tera (inheritance, island() fn)      │
-│                                                                  │
-│  [3/15] Process content                                          │
-│          └──▶ Parse frontmatter (TOML)                           │
-│          └──▶ Convert Markdown → HTML                            │
-│          └──▶ Resolve internal links (@/file.md)                 │
-│          └──▶ Produce ProcessedPage for each route               │
-│                                                                  │
-│  [4/15] Process images                                           │
-│          └──▶ Generate responsive variants for hero images       │
-│          └──▶ Convert to WebP and build <picture> srcset         │
-│                                                                  │
-│  [5/15] Copy co-located assets                                   │
-│          └──▶ Non-.md files in content/ → dist/                  │
-│          └──▶ Preserve directory structure                       │
-│                                                                  │
-│  [6/15] Render pages                                             │
-│          └──▶ Apply Tera templates to ProcessedPage              │
-│          └──▶ Handle pagination for sections                     │
-│          └──▶ Produce RenderedPage (final HTML)                  │
-│                                                                  │
-│  [7/15] Generate robots.txt                                      │
-│          └──▶ If no static/robots.txt exists                     │
-│          └──▶ Write default with sitemap reference               │
-│                                                                  │
-│  [8/15] Generate sitemap.xml                                     │
-│          └──▶ List all routes with lastmod dates                 │
-│          └──▶ Assign priorities (home: 1.0, sections: 0.8, etc)  │
-│                                                                  │
-│  [9/15] Generate 404.html                                        │
-│          └──▶ Render 404 template if present                     │
-│                                                                  │
-│  [10/15] Build and render taxonomy pages                         │
-│          └──▶ Extract tags, categories, series from pages        │
-│          └──▶ Generate /tags/, /tags/slug/, etc                  │
-│                                                                  │
-│  [11/15] Generate feeds                                          │
-│          └──▶ RSS 2.0 (rss_enabled)                              │
-│          └──▶ Atom (atom_enabled)                                │
-│                                                                  │
-│  [12/15] Process assets                                          │
-│          └──▶ Compile SCSS → CSS (styles/**/*.scss)              │
-│          └──▶ Copy static/ files to dist/static/                 │
-│                                                                  │
-│  [13/15] Generate search index                                   │
-│          └──▶ Build TF-IDF index from page content               │
-│          └──▶ Write dist/search_index.bin                        │
-│                                                                  │
-│  [14/15] Write WASM client                                       │
-│          └──▶ Write embedded client.js to dist/wasm/             │
-│          └──▶ Write embedded client_bg.wasm to dist/wasm/        │
-│                                                                  │
-│  [15/15] Write output                                            │
-│          └──▶ Write RenderedPage HTML files                      │
-│          └──▶ Write taxonomy pages                               │
-│          └──▶ Write feed XML files                               │
-│          └──▶ Write alias redirects (HTML meta refresh)          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+**[4/15] Processing images** (emit). Reads the processed pages and
+`[images]` config. For every page with `hero_image`, produces resized
+variants under `dist/images/` (or their paths, in dry run) and attaches a
+`ProcessedImage` to the page.
 
-## Data Model
+**[5/15] Copying co-located assets** (emit). Reads the content directory.
+Copies every non-`.md` file to the same relative path under the output
+directory.
 
-The build has one source of truth: the **Site Tree**, defined in
-`taxus-domain` and built once, at the start of `SiteBuilder::build()`, by
-`RouteDiscovery::discover_tree()`. The tree is immutable after that; every
-later stage only queries it. See [Content Model](./content-model.md) for the
-ideas behind it — this section is the map of the types.
+**[6/15] Rendering pages** (analyse and emit). Reads the processed pages,
+the tree and the templates. First fills the tree functions' lookup with
+every section and page as a context (`site_lookup`). Then, for each
+processed page, builds a `TemplateContext` and runs its template. A
+section's `section.pages` is the derivation `aggregate` sorted by
+`sort_pages`; a section with `paginate_by` is rendered once per slice.
+Produces one `RenderedPage` per output file.
 
-### Node types
+**[7/15] Generating robots.txt** (emit). Reads the config and checks for
+`static/robots.txt`. If none exists, produces a default `robots.txt`
+pointing at the sitemap and writes it.
 
-```rust
-SiteTree { root: SectionNode }
+**[8/15] Generating sitemap.xml** (analyse and emit). Reads the tree, the
+processed pages and the base URL. Walks `derivation::documents`, skips
+drafts, joins each document to its processed page by content file, and
+writes `sitemap.xml`.
 
-SectionNode {                       // a directory
-    path: NodePath,                 // membership path, e.g. ["blog"]; root is []
-    content_file: Option<PathBuf>,  // its _index.md, or None if the directory has none
-    meta: Frontmatter,              // from _index.md (defaults when absent)
-    body: Option<String>,
-    pages: Vec<PageNode>,           // direct children only, sorted by slug
-    subsections: Vec<SectionNode>,  // direct children only, sorted by slug
-}
+**[9/15] Generating 404.html** (emit). Reads the templates. If
+`404.html` exists, renders it with the site context and writes it.
 
-PageNode {                          // a document
-    path: NodePath,                 // e.g. ["blog", "my-post"]
-    content_file: PathBuf,          // e.g. "blog/2026-04-06-my-post.md" (storage, not identity)
-    meta: Frontmatter,
-    body: String,
-}
-```
+**[10/15] Building taxonomy pages** (analyse and emit). Reads the tree,
+the processed pages and the templates. `derivation::group_by_terms` fills
+a `TaxonomyMap` for tags, categories and series. For each kind whose
+templates exist, renders `/tags/` and `/tags/<term>/` and the same for
+the other two. Produces `RenderedTaxonomy` values; they are written in
+stage 15.
 
-A `NodePath` is a list of `Slug`s. The generator computes it: directory
-segments are slugified, a page's last segment is its frontmatter `slug`
-(verbatim) or its slugified, date-prefix-stripped file stem. The domain
-does not slugify; a `Slug` only has to be a usable path segment. A node's
-address is derived from its path in exactly one place,
-`UrlPath::from_node_path` (`/blog/my-post/`; the root is `/`).
+**[11/15] Generating feeds** (analyse and emit). Reads the tree, the
+processed pages and `[feed]` config. `feed_pages` selects dated, non-draft
+pages newest first (from `derivation::recent`), scoped by `sections` if
+set. Produces the RSS and Atom documents; written in stage 15.
 
-`SiteTreeBuilder` assembles the tree from flat `add_page` / `add_section`
-calls, auto-creates intermediate sections that have no `_index.md`, and
-rejects two nodes at the same path (`TreeError::Duplicate`, or `Collision`
-for a page and a section) — those surface as the same `Duplicate route`
-error the route registry has always reported.
+**[12/15] Processing assets** (emit). Reads `styles/` and `static/`.
+Compiles SCSS to `dist/css/` and copies static files to `dist/static/`.
+The co-located asset report from stage 5 is merged in here.
 
-### Navigation
+**[13/15] Generating search index** (emit). Reads the processed pages in
+registry order. Produces `dist/search_index.bin`: one `SearchDocument`
+per page with its title, URL path, truncated summary and taxonomies, plus
+the TF-IDF postings over the rendered HTML.
 
-Queries on `SiteTree` (all cheap, all read-only):
+**[14/15] Writing WASM client** (emit). Reads nothing from the site.
+Writes the embedded `client.js` and `client_bg.wasm` to `dist/wasm/`.
 
-| Method | Returns |
-|--------|---------|
-| `get_section(&NodePath)` | the section at that path |
-| `get_page(&NodePath)` | the page at that path |
-| `iter_pages()` | every page in the site, depth-first, drafts included |
+**[15/15] Writing output** (emit). Writes every `RenderedPage` to its
+output file, then the taxonomy pages, then the feeds, then one redirect
+page per `aliases` entry. Produces the `BuildReport`.
 
-### Derivations
+In `--dry-run` every stage runs and nothing is written; stage 4 skips
+pixel work and stage 12 still compiles SCSS so errors surface.
 
-Everything computed *from* the tree lives in `taxus_domain::derivation` as
-pure functions: `(tree or section) -> Vec<&PageNode>`, never stored back.
+## Key types along the way
 
-| Function | Meaning |
-|----------|---------|
-| `documents(&SiteTree)` | every rendered document (`Node::Page` or `Node::Section` with an `_index.md`) in tree order: section index, pages by slug, subsections by slug, recursively. The canonical iteration order of a site |
-| `group_by_terms(&SiteTree, include_drafts, terms_of)` | documents grouped by the terms a selector reads from frontmatter — the index behind tags, categories and series; terms sorted by name, documents in tree order |
-| `descendant_pages(&SectionNode)` | every page in a section's subtree, depth-first |
-| `recent(&SiteTree, include_drafts)` | all pages, newest first, undated last |
-| `aggregate(&SectionNode, &SiteTree, &[NodePath])` | a section's pages merged with the pages of donor sections (`pages_from`), deduplicated, sorted by the receiver's `sort_by` |
-| `tree::sort_pages(&mut [&PageNode], SortBy)` | the ordering used by listings |
+| Type | Made in stage | Holds |
+|------|---------------|-------|
+| `SiteTree` (`taxus_domain`) | 1 | the parsed site: sections, pages, frontmatter, bodies |
+| `RouteRegistry`, `RouteInfo` | 1 | per document: URL path, content file, output file, kind |
+| `ProcessedPage` | 3, 4 | route, parsed `Page`, rendered `html_content`, `toc`, `hero_image` |
+| `TemplateContext` | 6 | `site`, `page`, `section`, `now`, `extra` for one render |
+| `RenderedPage` | 6 | route and final HTML `content` |
+| `TaxonomyMap` | 10 | terms per kind, each with its documents' content files |
+| `GeneratedFeed`, `GeneratedSitemap`, `GeneratedSearch` | 11, 8, 13 | the bytes of one output file |
+| `BuildReport` | 15 | counts, duration, asset report |
 
-Draft filtering is always the caller's decision (the generator knows
-whether `--drafts` was passed), so derivations take it as a parameter.
+Stages join the tree to the processed pages by **content file**: a
+`PageNode::content_file` equals a `RouteInfo::content_file` equals a
+`Page::source`. That is the one name that survives every stage.
 
-### What is wired today
+## Generator module map
 
-- **Routes** are derived: `RouteRegistry::from_tree` produces one
-  `RouteInfo` per document from `documents`, in that order, and the
-  registry iterates in registration order. The registry is a projection
-  of the tree, not a second source, and every stage that walks it sees
-  documents in tree order.
-- **Section listings** (`build/pipeline/pages.rs`) look the section up in
-  the tree and list its direct children plus the direct pages of any
-  `pages_from` donors (`aggregate`), sorted by the section's `sort_by`.
-  Structure is containment only; anything a listing shows beyond that is
-  declared in frontmatter. Ordering is the domain's `sort_pages`: date
-  newest first with undated pages last, title case-insensitive, weight
-  lowest first (`weight` is exposed on `page` in templates); ties keep
-  tree order.
-- **Taxonomies** (`build/pipeline/taxonomy.rs`) are `group_by_terms`
-  over the tree for tags, categories and series. **Feeds** and the
-  **sitemap** take their membership from `documents` and join the
-  rendered HTML by content file. All three are deterministic: where trunk
-  ordered tied sort keys by `HashMap` iteration, they now follow tree
-  order.
-- Pagination slices the section listing above. The search index still
-  walks the processed pages, in registry (tree) order.
-- There is one frontmatter parser, `Page::from_str`; `content::Section`
-  and its duplicate were removed once the tree replaced them.
+| Module | Phase | Types | Responsibility |
+|--------|-------|-------|----------------|
+| `config` | parse | `SiteConfig`, `SiteMeta`, `BuildConfig`, `FeedConfig`, `HighlightConfig`, `ImageConfig`, `MarkdownConfig` | load and validate `site.toml` |
+| `content` | parse | `Page`, `Frontmatter` (re-exported from the domain), `ContentSource`, `split_date_prefix`, `TaxonomyMap` | parse one content file; taxonomy map type |
+| `routes` | parse | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind`, `slugify` | build the tree from disk; derive routes; the slug algorithm |
+| `build` | all | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage`, `pipeline::*` | the fifteen stages |
+| `templates` | emit | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext`, `PaginationContext`, `TaxonomyTermContext` | render Tera templates; tree functions |
+| `images` | emit | `ImageProcessor`, `ProcessedImage`, `ImageRegistry`, `render_picture` | hero image variants and `<picture>` markup |
+| `highlighting` | emit | `CodeHighlighter`, `LanguageRegistry` | tree-sitter syntax highlighting |
+| `assets` | emit | `ScssProcessor`, `StaticCopier`, `AssetReport` | SCSS and static files |
+| `feed` | emit | `FeedGenerator`, `FeedEntry`, `FeedConfig` | RSS and Atom documents |
+| `init` | none | `InitScaffolder`, `InitOptions`, `InitReport` | `taxus init` |
+| `serve` | none | `DevServer`, `DevServerConfig`, `FileWatcher` | dev server, file watching, live reload |
+| `error` | all | `GeneratorError` and the per-module errors | error types |
+| `telemetry` | none | `init`, `init_tracing`, `init_with_level` | logging setup |
 
-The rule for new code: **the tree is immutable after `build()` starts; a
-stage that needs structure queries the tree, and a stage that needs a new
-projection adds a pure function to `taxus_domain::derivation`.**
+The `build::pipeline` modules, one per stage or output: `markdown`,
+`internal_links`, `pages`, `robots`, `sitemap`, `not_found`, `taxonomy`,
+`feeds`, `search`, `wasm`, `alias`.
 
-## Key Types in the Pipeline
+## Islands
 
-### RouteRegistry
-
-Derived from the Site Tree. Maps URL paths to content files:
-
-```rust
-RouteRegistry {
-    "/":           RouteInfo { kind: Section, content_file: "_index.md", ... },
-    "/about/":     RouteInfo { kind: Page, content_file: "about.md", ... },
-    "/blog/":      RouteInfo { kind: Section, content_file: "blog/_index.md", ... },
-    "/blog/post/": RouteInfo { kind: Page, content_file: "blog/post.md", ... },
-}
-```
-
-### ProcessedPage
-
-The intermediate representation after content parsing:
-
-```rust
-ProcessedPage {
-    route: RouteInfo,
-    page: Page {
-        frontmatter: Frontmatter { title, date, tags, ... },
-        content: "<p>Rendered HTML from markdown</p>",
-        raw_content: "Original markdown text",
-    },
-}
-```
-
-### RenderedPage
-
-The final output after template rendering:
-
-```rust
-RenderedPage {
-    route: RouteInfo,
-    html: "<!DOCTYPE html><html>...</html>",
-}
-```
-
-## Islands Architecture
-
-The generator pre-renders Yew components at build time:
-
-### Build-Time (SSR)
-
-1. Tera encounters `{{ island(component="Counter", initial=5) | safe }}` in a template
-2. The `island()` Tera function calls Yew SSR to render the component
-3. Output is wrapped in a mount point with props as JSON:
+At build time the `island()` Tera function renders a Yew component from
+`taxus-common` to HTML and wraps it in a mount point:
 
 ```html
-<div data-island="Counter" data-props='{"initial":5}'>
-  <!-- Pre-rendered HTML from Yew SSR -->
-  <div class="counter"><span>5</span><button>+</button></div>
+<div data-island="Counter" data-props='{"initial":3,"class":""}'>
+  <!-- HTML rendered by Yew at build time -->
 </div>
 ```
 
-### Browser-Time (Hydration)
+In the browser the embedded client (`dist/wasm/client.js`) finds every
+`[data-island]`, reads `data-props`, and calls `yew::Renderer::hydrate`
+on it, attaching event handlers without re-rendering. Pages with no
+islands are plain HTML. See [Islands Architecture](./islands.md).
 
-1. Page loads immediately with pre-rendered HTML (no JavaScript required for initial render)
-2. WASM bundle (embedded in the generator binary at compile time) loads asynchronously from `/wasm/`
-3. Client finds all `[data-island]` elements
-4. For each: deserialize `data-props`, call `yew::Renderer::hydrate()`
-
-See [Islands Architecture](./islands.md) for the full guide.
-
-## Feature Flags
+## Feature flags
 
 | Feature | Default | Effect |
 |---------|---------|--------|
 | `lang-rust` | on | Rust syntax highlighting via tree-sitter |
+| `webp-lossy` | on | Lossy WebP hero variants via libwebp; without it WebP is lossless and `images.quality` is ignored for WebP |
 
-Islands (Yew SSR + WASM hydration) are always enabled. The WASM client
-(`taxus-client`) is compiled by `build.rs` at Cargo build time and embedded
-in the binary via `include_bytes!`; at site build time it is written to
-`dist/wasm/`. No feature flag is required.
-
-```bash
-# Build the site (islands are always compiled in)
-cargo run -- build --dir my-site
-```
+Islands are not a feature flag. The WASM client is always compiled and
+embedded; `taxus init --no-islands` only leaves the hydration script out
+of the scaffolded `base.html`.

@@ -1,9 +1,10 @@
 // taxus-generator/src/serve.rs
 
-//! Development server with hot-reload support.
+//! Development server with hot-reload support (no build phase).
 //!
 //! This module provides a development server that serves static files and
-//! automatically reloads the browser when content, templates, or styles change.
+//! automatically reloads the browser when content, templates, or styles
+//! change. Each rebuild runs the full pipeline in `build`.
 //!
 //! # Overview
 //!
