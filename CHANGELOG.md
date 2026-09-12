@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-09-12
+
+### Added
+
+- **build**: Derive taxonomies, feeds and the sitemap from the tree
+- **build**: Drive the build from the SiteTree; section listings query it
+- **routes**: Build the SiteTree during discovery; derive RouteRegistry from it
+- Add taxus-domain crate — the pure data model (RFC 2)
+- **content**: Strip YYYY-MM-DD- filename prefixes from slugs
+
+### Changed
+
+- **content**: Retire content::Section and its duplicate frontmatter parser
+- **slug**: Remove SlugMode — one slug pipeline (RFC 2 invariant 3)
+
+### Fixed
+
+- **content**: Page::source keeps the directory; add Page::from_file_in
+
+### Testing
+
+- **golden**: Re-baseline the files that were unstable on trunk
+- **golden**: Normalise hero image cache keys so the manifest is checkout-independent
+- **golden**: Re-baseline section_listing_site for weight ordering
+- Section_listing_site fixture with a trunk-generated golden manifest
+- Golden output manifests for every buildable site
+## [1.0.0] - 2026-09-12
+
+### Added
+
+- **build**: Derive taxonomies, feeds and the sitemap from the tree
+- **build**: Drive the build from the SiteTree; section listings query it
+- **domain**: Boundary decisions from the #71 review
+- Add taxus-domain crate — the pure data model (RFC 2)
+
+### Changed
+
+- **slug**: Remove SlugMode — one slug pipeline (RFC 2 invariant 3)
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [Unreleased]
 
 ### Added
