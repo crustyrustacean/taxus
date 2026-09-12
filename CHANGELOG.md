@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Taxus 1.0 makes the Site Tree (`taxus-domain`) the source of truth for the
+whole build: every URL, listing, feed entry, sitemap entry and search document
+is derived from it, and a golden output test pins every byte the generator
+produces. A site upgrading from 0.7 should read the **Changed** entries:
+section listings, feed contents, the order of undated pages and mixed-case
+titles, custom-slug URLs and hero image filenames all changed deliberately,
+each with a one-line migration.
+
 ### Added
 
 - **ci**: The CI workflow and `cargo xtask ci` build `get-taxus-org/` with
@@ -39,42 +47,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   buildable fixture site and `get-taxus-org/` against committed manifests of
   `(path, sha256)` so refactors that must not change output can prove it
 
-### Fixed
-
-- **routes**: On Windows a nested content directory (`content/blog/2026/`)
-  produced the URL `/blog-2026/` instead of `/blog/2026/`: the directory
-  path reached the slugifier with a backslash, which is not a segment
-  separator there. Directory segments are now joined with `/` before
-  slugifying on every platform
-- **tests**: The golden output test hashes text outputs with CRLF folded to
-  LF, so a `core.autocrlf=true` checkout (the Windows default) matches the
-  committed manifests; a test builds a CRLF copy of a fixture to pin this
-- **content**: `Page::source` keeps the directory. `Page::from_file` stores
-  the path it was given instead of the bare file name, and the new
-  `Page::from_file_in(content_dir, relative)` — which the build now uses —
-  stores the content-relative path (`blog/post-1.md`), so frontmatter errors
-  name the file the way the author knows it (#23)
-- **build**: `sort_by = "weight"` on a section now orders its pages by
-  `weight` (lowest first). It silently fell back to a title sort (#5)
-- **build**: Generated output is deterministic. Feed entries, taxonomy term
-  listings, section listings with tied dates and the search index ordered
-  tied sort keys by `HashMap` iteration order and could differ between two
-  builds of the same site; documents are now visited in tree order
-
-### Removed
-
-- **content**: `content::Section` and its private frontmatter parser, which
-  rejected empty `+++\n+++\n` frontmatter that `Page` accepted (#8). Sections
-  are `taxus_domain::SectionNode`s in the `SiteTree`; nothing in the build
-  used `Section` since the tree was wired in. The `Paginator`,
-  `PaginatedSlice`, `PaginationConfig` and `PaginationInfo` types that only
-  `Section` used go with it; section pagination is `render_paginated_section`
-  in the pages stage
-- **content**: `TaxonomyMap::from_pages`, dead code keyed by URL path while
-  the build keys terms by content file (#7)
-
 ### Changed
 
+- **xtask**: `cargo xtask release --bump <level>` promotes this file's
+  `[Unreleased]` section to the next version, and `cargo release` runs the
+  same step through its `cargo xtask changelog` hook. The old command
+  generated a section from commit messages with git-cliff, ran `cargo cliff`
+  (which does not exist) and tagged the section `vmajor`
 - **images**: The hero image cache key is a digest of the source file's
   bytes and the encoding quality, not its absolute path and mtime. Variant
   filenames are now identical on every machine and checkout, so unchanged
@@ -109,17 +88,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rendered page by content file. `build_taxonomy_map`, `generate_feeds` and
   `generate_sitemap` take the `SiteTree`. `RouteRegistry` iterates in
   registration (tree) order
-- **routes** (internal): `RouteRegistry` is now derived from the tree with
-  `RouteRegistry::from_tree`; the legacy file walk (`discover`) remains for
-  the `routes` command. A page with a frontmatter `slug` is keyed in the tree
-  by section path + slug (`/blog/renamed-entry/`), the documented model, where
-  the legacy walk keyed it by filename. Generated output is unchanged: the
-  served URL still comes from `ProcessedPage::effective_url_path()`
+- **routes** (internal): `RouteRegistry` is derived from the tree with
+  `RouteRegistry::from_tree`, and `pipeline::discover_routes` (which the
+  `routes` command uses) returns it, so every listed path is the served URL.
+  A page with a frontmatter `slug` is keyed by section path + slug
+  (`/blog/renamed-entry/`), the documented model; `RouteDiscovery::discover`,
+  the legacy file walk keyed by filename, remains only as a cross-check in
+  tests
 - **domain**: `Slug` accepts any non-empty URL path segment without `/`,
   `.`/`..` or control characters — slugification is the generator's job, and
   frontmatter slugs are used verbatim. `PageNode`/`SectionNode` carry
   `content_file` (relative to the content directory). `SiteTree::recent()`
   moved to `derivation::recent(tree, include_drafts)`
+
+### Removed
+
+- **content**: `content::Section` and its private frontmatter parser, which
+  rejected empty `+++\n+++\n` frontmatter that `Page` accepted (#8). Sections
+  are `taxus_domain::SectionNode`s in the `SiteTree`; nothing in the build
+  used `Section` since the tree was wired in. The `Paginator`,
+  `PaginatedSlice`, `PaginationConfig` and `PaginationInfo` types that only
+  `Section` used go with it; section pagination is `render_paginated_section`
+  in the pages stage
+- **content**: `TaxonomyMap::from_pages`, dead code keyed by URL path while
+  the build keys terms by content file (#7)
+- **tooling**: git-cliff and `cliff.toml`. The changelog is written by hand,
+  one entry per change, under `[Unreleased]`; generating it from commit
+  messages skipped every commit not in conventional format and pasted the
+  file's header in again on each release
+### Fixed
+
+- **routes**: On Windows a nested content directory (`content/blog/2026/`)
+  produced the URL `/blog-2026/` instead of `/blog/2026/`: the directory
+  path reached the slugifier with a backslash, which is not a segment
+  separator there. Directory segments are now joined with `/` before
+  slugifying on every platform
+- **tests**: The golden output test hashes text outputs with CRLF folded to
+  LF, so a `core.autocrlf=true` checkout (the Windows default) matches the
+  committed manifests; a test builds a CRLF copy of a fixture to pin this
+- **content**: `Page::source` keeps the directory. `Page::from_file` stores
+  the path it was given instead of the bare file name, and the new
+  `Page::from_file_in(content_dir, relative)` — which the build now uses —
+  stores the content-relative path (`blog/post-1.md`), so frontmatter errors
+  name the file the way the author knows it (#23)
+- **build**: `sort_by = "weight"` on a section now orders its pages by
+  `weight` (lowest first). It silently fell back to a title sort (#5)
+- **build**: Generated output is deterministic. Feed entries, taxonomy term
+  listings, section listings with tied dates and the search index ordered
+  tied sort keys by `HashMap` iteration order and could differ between two
+  builds of the same site; documents are now visited in tree order
 
 ## [0.7.0] - 2026-09-07
 
@@ -224,28 +241,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **docs**: Repair stale doc example for SectionContext::with_section
+
 ## [0.5.0] - 2026-08-26
 
 ### Added
 
 - **scaffold**: Section meta/OG tags; SectionContext.permalink (#29)
 - **markdown**: GFM task lists, footnotes, strikethrough; heading anchors and page.toc (#30, #31)
+
 ## [0.4.0] - 2026-08-26
 
 ### Added
 
 - **slugify**: Slugify content paths and normalize aliases (#27, #9)
+
 ## [0.3.3] - 2026-08-25
 
 ### Fixed
 
 - Phase 1 bug batch — #20, #33, #28, #25
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.3.2] - 2026-08-25
 
@@ -270,12 +284,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dependencies
 - Fix clippy lints
 - **deps**: Upgrade tera to v2, tower-http to 0.7, wasm-bindgen to 0.2.126
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.87] - 2026-04-24
 
