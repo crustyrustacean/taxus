@@ -61,6 +61,7 @@ const SITES: &[(&str, &str)] = &[
         "section_listing_site",
         "tests/fixtures/section_listing_site",
     ),
+    ("term_slug_site", "tests/fixtures/term_slug_site"),
     ("get-taxus-org", "../get-taxus-org"),
 ];
 
@@ -375,6 +376,11 @@ fn golden_feed_slug_site() {
 #[test]
 fn golden_search_slug_site() {
     check_site("search_slug_site");
+}
+
+#[test]
+fn golden_term_slug_site() {
+    check_site("term_slug_site");
 }
 
 #[test]

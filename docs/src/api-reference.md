@@ -404,8 +404,9 @@ pub struct RouteInfo {
 ### `slugify`
 
 ```rust
-pub fn slugify_segment(segment: &str) -> String  // "My Créative Post" -> "my-creative-post"
+pub fn slugify_segment(segment: &str) -> String  // "My Créative Post" -> "my-creative-post" (node paths; ASCII)
 pub fn slugify_path(relative: &str) -> String    // "blog/My Old Post" -> "blog/my-old-post"
+pub fn slugify_term(name: &str) -> String        // "Café" -> "café" (taxonomy terms; keeps non-ASCII letters)
 ```
 
 ## `templates` Module
@@ -425,7 +426,7 @@ pub trait TemplateRenderer: Send + Sync {
 
 | Method | Description |
 |--------|-------------|
-| `new() -> Result<Self, TemplateError>` | Empty renderer with `island()`, `get_section()`, `get_page()`, `slugify`, `slug` and `date` registered |
+| `new() -> Result<Self, TemplateError>` | Empty renderer with `island()`, `get_section()`, `get_page()`, `slugify`, `term_slug`, `slug` and `date` registered |
 | `from_dir(dir: P) -> Result<Self, TemplateError>` | Create and load `**/*.html` from a directory |
 | `set_site_lookup(&self, sections, pages)` | What `get_section` and `get_page` resolve to; the render stage fills it |
 

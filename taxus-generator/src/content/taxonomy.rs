@@ -9,6 +9,8 @@
 
 use std::collections::HashMap;
 
+use crate::routes::slugify::slugify_term;
+
 /// Type of taxonomy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TaxonomyKind {
@@ -62,7 +64,7 @@ pub struct TaxonomyTerm {
 impl TaxonomyTerm {
     /// Create a new taxonomy term.
     pub fn new(kind: TaxonomyKind, name: &str) -> Self {
-        let slug = slugify(name);
+        let slug = slugify_term(name);
         Self {
             kind,
             name: name.to_string(),
@@ -111,7 +113,7 @@ impl TaxonomyMap {
             TaxonomyKind::Series => &mut self.series,
         };
 
-        let slug = slugify(name);
+        let slug = slugify_term(name);
         let term = map
             .entry(slug.clone())
             .or_insert_with(|| TaxonomyTerm::new(kind, name));
@@ -163,34 +165,6 @@ impl TaxonomyMap {
     pub fn total_terms(&self) -> usize {
         self.tags.len() + self.categories.len() + self.series.len()
     }
-}
-
-/// Convert a term name to a URL-safe slug.
-fn slugify(name: &str) -> String {
-    let slug: String = name
-        .to_lowercase()
-        .replace([' ', '_'], "-")
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect();
-
-    // Collapse consecutive dashes into one
-    let mut result = String::new();
-    let mut prev_dash = false;
-    for c in slug.chars() {
-        if c == '-' {
-            if !prev_dash {
-                result.push(c);
-                prev_dash = true;
-            }
-        } else {
-            result.push(c);
-            prev_dash = false;
-        }
-    }
-
-    // Trim leading and trailing dashes
-    result.trim_matches('-').to_string()
 }
 
 #[cfg(test)]
@@ -245,11 +219,11 @@ mod tests {
 
     #[test]
     fn test_slugify() {
-        assert_eq!(slugify("Rust"), "rust");
-        assert_eq!(slugify("Web Development"), "web-development");
-        assert_eq!(slugify("Hello_World"), "hello-world");
-        assert_eq!(slugify("Test & Demo!"), "test-demo");
-        assert_eq!(slugify("Multiple   Spaces"), "multiple-spaces");
+        assert_eq!(slugify_term("Rust"), "rust");
+        assert_eq!(slugify_term("Web Development"), "web-development");
+        assert_eq!(slugify_term("Hello_World"), "hello-world");
+        assert_eq!(slugify_term("Test & Demo!"), "test-demo");
+        assert_eq!(slugify_term("Multiple   Spaces"), "multiple-spaces");
     }
 
     #[test]

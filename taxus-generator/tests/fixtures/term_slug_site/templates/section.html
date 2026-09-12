@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% block title %}{{ section.title }} - {{ site.name
+}}{% endblock %} {% block content %}
+<section>
+  <h1>{{ section.title }}</h1>
+  <ul class="page-list">
+    {% for page in section.pages %}
+    <li>
+      <a href="{{ page.path }}">
+        <span class="title">{{ page.title }}</span>
+        {% if page.date %}
+        <time datetime="{{ page.date }}">{{ page.date }}</time>
+        {% endif %}
+      </a>
+      {% if page.description %}
+      <p class="description">{{ page.description }}</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

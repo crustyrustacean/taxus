@@ -68,9 +68,7 @@ pub struct Page {
     /// The page's slug as a root-level path (`/about/`; `/` for an
     /// `_index.md`), derived from the file stem alone. This is **not** the
     /// served URL: that is section path + slug, derived from the Site
-    /// Tree and exposed as `ProcessedPage::effective_url_path()`. The feed
-    /// stage overwrites this field with the served URL before generating
-    /// entries.
+    /// Tree and exposed as `ProcessedPage::effective_url_path()`.
     pub path: String,
 
     /// Source file path. [`from_file_in`](Self::from_file_in) stores it
@@ -327,22 +325,6 @@ impl Page {
                 .and_then(|s| s.to_str())
                 .unwrap_or("index");
             split_date_prefix(stem).0
-        }
-    }
-
-    /// The page's slug as a root-level URL path (`/my-post/`; `/` for an
-    /// `_index.md`).
-    ///
-    /// This is *not* the URL the page is served at: that is section path +
-    /// slug, derived from the Site Tree and exposed as
-    /// `ProcessedPage::effective_url_path()`. This helper only knows the
-    /// page, not where it lives.
-    pub fn url_path(&self) -> String {
-        let slug = self.slug();
-        if slug == "_index" {
-            "/".to_string()
-        } else {
-            format!("/{}/", slug)
         }
     }
 
@@ -956,7 +938,6 @@ Content
         let page = Page::from_str(content.trim_start(), "2026-04-06-my-blog-post.md").unwrap();
         assert_eq!(page.slug(), "my-blog-post");
         assert_eq!(page.path, "/my-blog-post/");
-        assert_eq!(page.url_path(), "/my-blog-post/");
     }
 
     #[test]
@@ -1072,44 +1053,6 @@ Content
 "#;
         let page = Page::from_str(content.trim_start(), "_index.md").unwrap();
         assert_eq!(page.slug(), "_index");
-    }
-
-    #[test]
-    fn test_url_path_regular_page() {
-        let content = r#"
-+++
-title = "Test"
-+++
-Content
-"#;
-        let page = Page::from_str(content.trim_start(), "about.md").unwrap();
-        assert_eq!(page.url_path(), "/about/");
-    }
-
-    #[test]
-    fn test_url_path_with_custom_slug() {
-        let content = r#"
-+++
-title = "Test"
-slug = "my-custom-url"
-+++
-Content
-"#;
-        let page = Page::from_str(content.trim_start(), "original-filename.md").unwrap();
-        assert_eq!(page.url_path(), "/my-custom-url/");
-    }
-
-    #[test]
-    fn test_url_path_index_page() {
-        let content = r#"
-+++
-title = "Home"
-+++
-Content
-"#;
-        let page = Page::from_str(content.trim_start(), "_index.md").unwrap();
-        // _index pages should have root path
-        assert_eq!(page.url_path(), "/");
     }
 
     #[test]

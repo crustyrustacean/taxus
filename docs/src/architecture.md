@@ -153,7 +153,7 @@ Stages join the tree to the processed pages by **content file**: a
 |--------|-------|-------|----------------|
 | `config` | parse | `SiteConfig`, `SiteMeta`, `BuildConfig`, `FeedConfig`, `HighlightConfig`, `ImageConfig`, `MarkdownConfig` | load and validate `site.toml` |
 | `content` | parse | `Page`, `Frontmatter` (re-exported from the domain), `ContentSource`, `split_date_prefix`, `TaxonomyMap` | parse one content file; taxonomy map type |
-| `routes` | parse | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind`, `slugify` | build the tree from disk; derive routes; the slug algorithm |
+| `routes` | parse | `RouteDiscovery`, `RouteRegistry`, `RouteInfo`, `RouteKind`, `slugify` | build the tree from disk; derive routes; the two slug algorithms (node paths, taxonomy terms) |
 | `build` | all | `SiteBuilder`, `BuildReport`, `ProcessedPage`, `RenderedPage`, `pipeline::*` | the fifteen stages |
 | `templates` | emit | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext`, `PaginationContext`, `TaxonomyTermContext` | render Tera templates; tree functions |
 | `images` | emit | `ImageProcessor`, `ProcessedImage`, `ImageRegistry`, `render_picture` | hero image variants and `<picture>` markup |
