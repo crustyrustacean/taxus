@@ -4,12 +4,12 @@ use crate::build::{ProcessedPage, RenderedPage};
 use crate::error::Result;
 use crate::routes::RouteInfo;
 use crate::templates::{
-    HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, TemplateContext,
-    TemplateRenderer, TeraRenderer, compute_permalink,
+    HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, SubsectionContext,
+    TemplateContext, TemplateRenderer, TeraRenderer, compute_permalink,
 };
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use taxus_domain::{NodePath, SiteTree, derivation};
+use taxus_domain::{NodePath, SectionNode, SiteTree, UrlPath, derivation};
 use tracing::{debug, debug_span, info, warn};
 
 /// Build a `PageContext` from a `ProcessedPage`.
@@ -49,42 +49,31 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
     }
 }
 
-/// Collect the pages a section lists, in listing order.
-///
-/// Membership comes from the tree and is **direct children only**: the
-/// section node's `pages`, plus the direct pages of every section named in
-/// the section's `pages_from` frontmatter ([`derivation::aggregate`]).
-/// Deeper descendants are not listed, so the root lists the site only if
-/// its `_index.md` declares `pages_from` (#70). Pages the build skipped
-/// (drafts) are dropped. Ordering is the domain's
+/// The pages a section lists: the section node's `pages`, plus the direct
+/// pages of every section named in its `pages_from` frontmatter
+/// ([`derivation::aggregate`]). Deeper descendants are not listed, so the
+/// root lists the site only if its `_index.md` declares `pages_from` (#70).
+/// Pages the build skipped (drafts) are dropped. Ordering is the domain's
 /// [`taxus_domain::tree::sort_pages`] with the section's `sort_by`: date
 /// newest first with undated pages last, title case-insensitive, weight
 /// lowest first; ties keep tree (slug) order.
 fn collect_child_pages(
-    section: &ProcessedPage,
+    node: &SectionNode,
     tree: &SiteTree,
     processed_by_file: &HashMap<&Path, &ProcessedPage>,
     base_url: &str,
 ) -> Vec<PageContext> {
-    let node = NodePath::parse(&section.route.path)
-        .ok()
-        .and_then(|path| tree.get_section(&path));
-    let Some(node) = node else {
-        debug!(path = %section.route.path, "Section route has no tree node; listing nothing");
-        return Vec::new();
-    };
-
     let mut donors = Vec::new();
-    for raw in &section.page.frontmatter.pages_from {
+    for raw in &node.meta.pages_from {
         match NodePath::parse(raw) {
             Ok(path) if tree.get_section(&path).is_some() => donors.push(path),
             Ok(_) => warn!(
-                section = %section.route.path,
+                section = %node.path,
                 pages_from = %raw,
                 "pages_from names a section that does not exist; ignoring it"
             ),
             Err(e) => warn!(
-                section = %section.route.path,
+                section = %node.path,
                 pages_from = %raw,
                 error = %e,
                 "pages_from entry is not a valid section path; ignoring it"
@@ -93,7 +82,7 @@ fn collect_child_pages(
     }
 
     let mut pages = derivation::aggregate(node, tree, &donors);
-    taxus_domain::tree::sort_pages(&mut pages, section.page.frontmatter.sort_by);
+    taxus_domain::tree::sort_pages(&mut pages, node.meta.sort_by);
     pages
         .iter()
         .filter_map(|node| processed_by_file.get(node.content_file.as_path()))
@@ -101,22 +90,129 @@ fn collect_child_pages(
         .collect()
 }
 
+/// A child section as templates see it on `section.subsections`.
+fn subsection_context(node: &SectionNode, base_url: &str) -> SubsectionContext {
+    let path = UrlPath::from_node_path(&node.path).to_string();
+    SubsectionContext {
+        title: node.meta.title.clone(),
+        description: node.meta.description.clone(),
+        permalink: compute_permalink(base_url, &path),
+        path,
+    }
+}
+
+/// The template view of a section node: what `section` holds while the
+/// section's own index renders, and what `get_section` returns (#69).
+///
+/// `content` and `toc` come from the rendered `_index.md` when there is
+/// one (a directory without an index file is still a section, with default
+/// frontmatter and no content); `pages` is [`collect_child_pages`];
+/// `subsections` are the direct child sections in tree order. `pagination`
+/// is `None`: slicing belongs to the owning section's render, not to the
+/// view.
+fn section_context_for(
+    node: &SectionNode,
+    tree: &SiteTree,
+    processed_by_file: &HashMap<&Path, &ProcessedPage>,
+    base_url: &str,
+) -> SectionContext {
+    let rendered = node
+        .content_file
+        .as_deref()
+        .and_then(|file| processed_by_file.get(file))
+        .copied();
+    let path = UrlPath::from_node_path(&node.path).to_string();
+    SectionContext {
+        title: node.meta.title.clone(),
+        description: node.meta.description.clone(),
+        permalink: compute_permalink(base_url, &path),
+        path,
+        content: rendered.map(|p| p.html_content.clone()),
+        toc: rendered.map(|p| p.toc.clone()).unwrap_or_default(),
+        pages: collect_child_pages(node, tree, processed_by_file, base_url),
+        pagination: None,
+        subsections: node
+            .subsections
+            .iter()
+            .map(|sub| subsection_context(sub, base_url))
+            .collect(),
+    }
+}
+
+/// Sections keyed for `get_section`, see [`site_lookup`].
+type SectionLookup = Vec<(String, SectionContext)>;
+/// Pages keyed for `get_page`, see [`site_lookup`].
+type PageLookup = Vec<(String, PageContext)>;
+
+/// Every section and page as `get_section` / `get_page` fetch them.
+///
+/// Sections are keyed by tree path (`blog`; the root is `""`). Pages are
+/// keyed by tree path (`blog/my-post`) and by content file
+/// (`blog/2026-04-06-my-post.md`); pages the build skipped (drafts) are
+/// absent.
+fn site_lookup(
+    tree: &SiteTree,
+    processed_by_file: &HashMap<&Path, &ProcessedPage>,
+    base_url: &str,
+) -> (SectionLookup, PageLookup) {
+    fn walk(
+        node: &SectionNode,
+        tree: &SiteTree,
+        processed_by_file: &HashMap<&Path, &ProcessedPage>,
+        base_url: &str,
+        sections: &mut SectionLookup,
+        pages: &mut PageLookup,
+    ) {
+        sections.push((
+            node.path.to_string(),
+            section_context_for(node, tree, processed_by_file, base_url),
+        ));
+        for page in &node.pages {
+            if let Some(rendered) = processed_by_file.get(page.content_file.as_path()) {
+                let context = page_context_from(rendered, base_url);
+                pages.push((
+                    page.content_file.to_string_lossy().replace('\\', "/"),
+                    context.clone(),
+                ));
+                pages.push((page.path.to_string(), context));
+            }
+        }
+        for sub in &node.subsections {
+            walk(sub, tree, processed_by_file, base_url, sections, pages);
+        }
+    }
+
+    let mut sections = Vec::new();
+    let mut pages = Vec::new();
+    walk(
+        &tree.root,
+        tree,
+        processed_by_file,
+        base_url,
+        &mut sections,
+        &mut pages,
+    );
+    (sections, pages)
+}
+
 /// Render a paginated section.
 ///
-/// Handles the entire pagination loop: slices child pages per pagination page,
-/// builds `PaginationContext`, renders each page with the template, and collects
-/// results. Uses `page_context_from` internally, overriding `path` and `permalink`
-/// for each pagination page. First page outputs to the section's normal path;
-/// subsequent pages go to `/page/N/` subdirectories.
+/// Handles the entire pagination loop: slices the section view's pages per
+/// pagination page, builds `PaginationContext`, renders each page with the
+/// template, and collects results. Uses `page_context_from` internally,
+/// overriding `path` and `permalink` for each pagination page. First page
+/// outputs to the section's normal path; subsequent pages go to `/page/N/`
+/// subdirectories.
 fn render_paginated_section(
     processed_page: &ProcessedPage,
-    child_pages: Vec<PageContext>,
+    mut section: SectionContext,
     templates: &TeraRenderer,
     site_context: &SiteContext,
     url_path: &str,
 ) -> Result<Vec<RenderedPage>> {
     let mut rendered = Vec::new();
     let paginate_by = processed_page.page.frontmatter.paginate_by;
+    let child_pages = std::mem::take(&mut section.pages);
     let total_items = child_pages.len();
     let total_pages = total_items.div_ceil(paginate_by);
 
@@ -162,14 +258,11 @@ fn render_paginated_section(
         };
 
         let section_context = SectionContext {
-            title: processed_page.page.frontmatter.title.clone(),
-            description: processed_page.page.frontmatter.description.clone(),
             path: page_url(page_num),
             permalink: compute_permalink(&site_context.base_url, &page_url(page_num)),
-            content: Some(processed_page.html_content.clone()),
-            toc: processed_page.toc.clone(),
             pages: slice,
             pagination: Some(pagination_context),
+            ..section.clone()
         };
 
         let mut paginated_page_context = page_context_from(processed_page, &site_context.base_url);
@@ -229,9 +322,13 @@ pub fn render_pages(
     // storage identity, shared by both, and absent for skipped drafts.
     let processed_by_file: HashMap<&Path, &ProcessedPage> = processed
         .iter()
-        .filter(|p| p.route.is_page())
         .map(|p| (p.route.content_file.as_path(), p))
         .collect();
+
+    // What templates fetch with get_section / get_page (#69): every
+    // section and page of the tree, as rendered in this build.
+    let (sections, pages) = site_lookup(tree, &processed_by_file, &site_context.base_url);
+    templates.set_site_lookup(sections, pages);
 
     let mut rendered = Vec::new();
 
@@ -254,35 +351,41 @@ pub fn render_pages(
         let page_context = page_context_from(processed_page, &site_context.base_url);
 
         let context = if processed_page.route.is_section() {
-            let child_pages = collect_child_pages(
-                processed_page,
-                tree,
-                &processed_by_file,
-                &site_context.base_url,
-            );
+            let section_context = NodePath::parse(&processed_page.route.path)
+                .ok()
+                .and_then(|path| tree.get_section(&path))
+                .map(|node| {
+                    section_context_for(node, tree, &processed_by_file, &site_context.base_url)
+                })
+                .unwrap_or_else(|| {
+                    debug!(
+                        path = %processed_page.route.path,
+                        "Section route has no tree node; listing nothing"
+                    );
+                    SectionContext {
+                        title: processed_page.page.frontmatter.title.clone(),
+                        description: processed_page.page.frontmatter.description.clone(),
+                        path: url_path.clone(),
+                        permalink: compute_permalink(&site_context.base_url, &url_path),
+                        content: Some(processed_page.html_content.clone()),
+                        toc: processed_page.toc.clone(),
+                        pages: Vec::new(),
+                        pagination: None,
+                        subsections: Vec::new(),
+                    }
+                });
 
             let paginate_by = processed_page.page.frontmatter.paginate_by;
-            if paginate_by > 0 && !child_pages.is_empty() {
+            if paginate_by > 0 && !section_context.pages.is_empty() {
                 rendered.extend(render_paginated_section(
                     processed_page,
-                    child_pages,
+                    section_context,
                     templates,
                     site_context,
                     &url_path,
                 )?);
                 continue;
             }
-
-            let section_context = SectionContext {
-                title: processed_page.page.frontmatter.title.clone(),
-                description: processed_page.page.frontmatter.description.clone(),
-                path: url_path.clone(),
-                permalink: compute_permalink(&site_context.base_url, &url_path),
-                content: Some(processed_page.html_content.clone()),
-                toc: processed_page.toc.clone(),
-                pages: child_pages,
-                pagination: None,
-            };
 
             TemplateContext::new(site_context.clone())
                 .with_page(page_context)
@@ -1047,6 +1150,48 @@ Content here.
         // receiver's sort_by; the unknown donor is ignored with a warning.
         assert_eq!(listed(&result, "/"), "[About][Guide][Top]");
         assert_eq!(listed(&result, "/blog/"), "[Top]");
+    }
+
+    #[test]
+    fn test_section_subsections_and_tree_functions() {
+        let processed = vec![
+            section_page("/", "_index.md", Frontmatter::default()),
+            section_page("/blog/", "blog/_index.md", Frontmatter::default()),
+            plain_page("/about/", "about.md", "About"),
+            plain_page("/blog/top/", "blog/top.md", "Top"),
+            plain_page("/docs/guide/", "docs/guide.md", "Guide"),
+        ];
+        let mut templates = TeraRenderer::new().unwrap();
+        templates
+            .register_template("page.html", "{{ page.title }}")
+            .unwrap();
+        templates
+            .register_template(
+                "section.html",
+                concat!(
+                    "{% for s in section.subsections %}<{{ s.path }}>{% endfor %}",
+                    "{% set blog = get_section(path=\"blog/_index.md\") %}",
+                    "{% for p in blog.pages %}[{{ p.title }}]{% endfor %}",
+                    "{% set docs = get_section(path=\"docs\") %}",
+                    "{% for p in docs.pages %}[{{ p.title }}]{% endfor %}",
+                    "{% set about = get_page(path=\"about.md\") %}({{ about.path }})",
+                ),
+            )
+            .unwrap();
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &templates,
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
+        // `docs/` has no _index.md and is still a section the tree knows.
+        assert_eq!(
+            listed(&result, "/"),
+            "</blog/></docs/>[Top][Guide](/about/)"
+        );
+        assert_eq!(listed(&result, "/blog/"), "[Top][Guide](/about/)");
     }
 
     fn dated_page(path: &str, file: &str, title: &str, date: Option<&str>) -> ProcessedPage {

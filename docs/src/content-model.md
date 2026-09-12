@@ -180,6 +180,9 @@ Every output follows:
 - `/blog/my-post/` renders the page
 - `/tags/rust/` exists because the taxonomy index says so
 - `feed.xml` and `sitemap.xml` read the same tree through `effective_url_path()`
+- a template reads the same tree: `section.subsections` for a section's
+  children, `get_section(path="blog")` and `get_page(path="about")` for any
+  other node
 
 ## Design Invariants
 
