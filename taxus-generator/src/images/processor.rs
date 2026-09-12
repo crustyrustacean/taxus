@@ -452,24 +452,32 @@ impl ImageProcessor {
         stem.to_string()
     }
 
-    /// Cache key for a source image: path, mtime, size, and the effective
-    /// encoding quality (see [`Self::effective_quality`]), so that changing
-    /// `images.quality` in site.toml re-encodes lossy variants.
+    /// Cache key for a source image: a digest of the file's bytes and the
+    /// effective encoding quality (see [`Self::effective_quality`]).
+    ///
+    /// The same image therefore gets the same variant names on every
+    /// machine and checkout, and changing `images.quality` re-encodes lossy
+    /// variants. Path and mtime are deliberately not part of the key: they
+    /// differ per clone, which made variant names — and every page linking
+    /// them — differ between builds of identical content.
+    ///
+    /// A source that cannot be read hashes its path instead, so the key is
+    /// always defined; the caller reports the read error when it decodes
+    /// the image.
     fn compute_hash(&self, source: &Path) -> String {
-        use std::hash::{Hash, Hasher};
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        source.hash(&mut hasher);
-        if let Ok(metadata) = std::fs::metadata(source) {
-            if let Ok(modified) = metadata.modified()
-                && let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH)
-            {
-                duration.as_nanos().hash(&mut hasher);
-            }
-            metadata.len().hash(&mut hasher);
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        match std::fs::read(source) {
+            Ok(bytes) => hasher.update(&bytes),
+            Err(_) => hasher.update(source.to_string_lossy().as_bytes()),
         }
-        self.effective_quality().hash(&mut hasher);
-        let hash = hasher.finish();
-        format!("{:x}", hash)[..6].to_string()
+        // Two bytes so that "no effective quality" and "quality 0" differ.
+        match self.effective_quality() {
+            Some(quality) => hasher.update([1u8, quality]),
+            None => hasher.update([0u8, 0u8]),
+        }
+        let digest = hasher.finalize();
+        format!("{:02x}{:02x}{:02x}", digest[0], digest[1], digest[2])
     }
 }
 
@@ -754,6 +762,42 @@ mod tests {
             );
             assert!(filename.ends_with(".webp"));
         }
+    }
+
+    /// The cache key depends on the bytes and the quality, not on where
+    /// the file lives or when it was written.
+    #[test]
+    fn test_cache_key_is_content_based() {
+        let temp = TempDir::new().unwrap();
+        let output_dir = temp.path().join("dist");
+        let processor = ImageProcessor::new(default_config(), output_dir);
+
+        let original = create_test_image(temp.path(), "hero.jpg", 1600, 900);
+        let elsewhere = temp.path().join("moved").join("renamed.jpg");
+        std::fs::create_dir_all(elsewhere.parent().unwrap()).unwrap();
+        std::fs::copy(&original, &elsewhere).unwrap();
+        // A copy has its own mtime; make the difference unmistakable.
+        let old = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+        std::fs::File::open(&elsewhere)
+            .unwrap()
+            .set_modified(old)
+            .unwrap();
+        assert_eq!(
+            processor.compute_hash(&original),
+            processor.compute_hash(&elsewhere),
+            "same bytes, different path and mtime: same key"
+        );
+
+        let different = create_test_image(temp.path(), "other.jpg", 1600, 901);
+        assert_ne!(
+            processor.compute_hash(&original),
+            processor.compute_hash(&different),
+            "different bytes: different key"
+        );
+
+        let key = processor.compute_hash(&original);
+        assert_eq!(key.len(), 6);
+        assert!(key.bytes().all(|b| b.is_ascii_hexdigit()), "{key}");
     }
 
     #[test]
