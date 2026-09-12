@@ -43,7 +43,7 @@ pub mod templates;
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 pub use build::{BuildReport, SiteBuilder};
 pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta};
-pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
 pub use error::{
     AssetError, ContentError, FeedError, GeneratorError, ImageError, InitError, Result, RouteError,
     TemplateError,

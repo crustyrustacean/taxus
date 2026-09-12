@@ -53,14 +53,17 @@ In a database, a row points at its parent with a `parent_id` column. In Taxus,
 *the directory is the foreign key*: a file belongs to whatever directory it
 sits in.
 
-Every directory becomes a `Section` (`taxus-generator/src/content/section.rs`):
+Every directory becomes a `SectionNode` in the Site Tree
+(`taxus-domain/src/tree.rs`):
 
 ```rust
-pub struct Section {
-    pub frontmatter: Frontmatter, // from _index.md (or defaults)
-    pub path: String,             // e.g. "/blog/"
-    pub source: PathBuf,          // e.g. "content/blog"
-    pub pages: Vec<Page>,         // membership = directory contents
+pub struct SectionNode {
+    pub path: NodePath,                 // membership path, e.g. ["blog"]
+    pub content_file: Option<PathBuf>,  // "blog/_index.md", or None
+    pub meta: Frontmatter,              // from _index.md (or defaults)
+    pub body: Option<String>,
+    pub pages: Vec<PageNode>,           // direct children = directory contents
+    pub subsections: Vec<SectionNode>,  // direct child directories
 }
 ```
 
@@ -160,10 +163,10 @@ content/
 The model after the walk:
 
 ```
-root (Section "/")
-├── about (Section "/about/")
-└── blog (Section "/blog/", pages sorted by date)
-    └── Page { title: "My Post", date: 2026-04-06, tags: ["rust"] }
+root (SectionNode, path [])
+├── about (PageNode, path ["about"])
+└── blog (SectionNode, path ["blog"], sort_by = date)
+    └── my-post (PageNode { title: "My Post", date: 2026-04-06, tags: ["rust"] })
 ```
 
 Every output follows:

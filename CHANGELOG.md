@@ -33,6 +33,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tied sort keys by `HashMap` iteration order and could differ between two
   builds of the same site; documents are now visited in tree order
 
+### Removed
+
+- **content**: `content::Section` and its private frontmatter parser, which
+  rejected empty `+++\n+++\n` frontmatter that `Page` accepted (#8). Sections
+  are `taxus_domain::SectionNode`s in the `SiteTree`; nothing in the build
+  used `Section` since the tree was wired in. The `Paginator`,
+  `PaginatedSlice`, `PaginationConfig` and `PaginationInfo` types that only
+  `Section` used go with it; section pagination is `render_paginated_section`
+  in the pages stage
+- **content**: `TaxonomyMap::from_pages`, dead code keyed by URL path while
+  the build keys terms by content file (#7)
+
 ### Changed
 
 - **build** (internal): Taxonomies, feeds and the sitemap take their

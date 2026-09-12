@@ -74,7 +74,7 @@ The library re-exports commonly used types from `lib.rs`:
 pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta};
 
 // Content
-pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page, Section};
+pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
 
 // Templates
 pub use templates::{
@@ -224,23 +224,13 @@ pub struct Page {
 | `url_path(&self) -> String` | Get URL path |
 | `aliases(&self) -> &Vec<String>` | Get redirect aliases |
 
-### `Section`
+### Sections
 
-```rust
-pub struct Section {
-    pub frontmatter: Frontmatter,
-    pub path: String,
-    pub source: PathBuf,
-    pub content: Option<String>,
-    pub pages: Vec<Page>,
-}
-```
-
-| Method | Description |
-|--------|-------------|
-| `from_dir(dir: P) -> Result<Self>` | Load from directory |
-| `add_page(&mut self, page: Page)` | Add a page |
-| `sort_by_date(&mut self)` | Sort by date (newest first) |
+Sections are not a `content` type. A directory is a `taxus_domain::SectionNode`
+in the `SiteTree` built by `RouteDiscovery::discover_tree` (see the
+[Architecture](./architecture.md) data model): its `_index.md` frontmatter
+is `meta`, its body is `body`, and `pages` / `subsections` are its direct
+children.
 
 ### `ContentSource` Trait
 
