@@ -1045,7 +1045,9 @@ each with a one-line migration.
 
 - **File watching**: Automatic rebuild on content, template, style, config, and static file changes
   - Uses `notify` 6.x for cross-platform file system watching
-  - 100ms debounce to batch rapid changes
+  - ~~100ms debounce to batch rapid changes~~ *(correction, 2026-09: this was never shipped — the
+    100ms figure was `notify`'s poll interval, not a debounce. Event coalescing arrived with the
+    `RebuildCoordinator` in 0.7.x; see #42 for the remaining debounce work.)*
   - Change categorization (Content, Template, Style, Static, Config, Unknown)
 
 - **Browser integration**:
