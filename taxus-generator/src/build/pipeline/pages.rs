@@ -1,17 +1,15 @@
 // taxus-generator/src/build/pipeline/pages.rs
 
 use crate::build::{ProcessedPage, RenderedPage};
-use crate::content::SortBy;
 use crate::error::Result;
 use crate::routes::RouteInfo;
 use crate::templates::{
     HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, TemplateContext,
     TemplateRenderer, TeraRenderer, compute_permalink,
 };
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use taxus_domain::{NodePath, PageNode, SiteTree, derivation};
+use taxus_domain::{NodePath, SiteTree, derivation};
 use tracing::{debug, debug_span, info, warn};
 
 /// Build a `PageContext` from a `ProcessedPage`.
@@ -59,7 +57,10 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
 /// the section's `pages_from` frontmatter ([`derivation::aggregate`]).
 /// Deeper descendants are not listed, so the root lists the site only if
 /// its `_index.md` declares `pages_from` (#70). Pages the build skipped
-/// (drafts) are dropped. Ordering is [`sort_section_pages`].
+/// (drafts) are dropped. Ordering is the domain's
+/// [`taxus_domain::tree::sort_pages`] with the section's `sort_by`: date
+/// newest first with undated pages last, title case-insensitive, weight
+/// lowest first; ties keep tree (slug) order.
 fn collect_child_pages(
     section: &ProcessedPage,
     tree: &SiteTree,
@@ -93,38 +94,12 @@ fn collect_child_pages(
     }
 
     let mut pages = derivation::aggregate(node, tree, &donors);
-    sort_section_pages(&mut pages, section.page.frontmatter.sort_by);
+    taxus_domain::tree::sort_pages(&mut pages, section.page.frontmatter.sort_by);
     pages
         .iter()
         .filter_map(|node| processed_by_file.get(node.content_file.as_path()))
         .map(|p| page_context_from(p, base_url))
         .collect()
-}
-
-/// Order a section's pages for listing.
-///
-/// `Weight` and `None` delegate to [`taxus_domain::tree::sort_pages`]:
-/// lowest weight first (#5), ties and `None` in the tree's slug order.
-///
-/// `Date` and `Title` deliberately keep trunk's comparators rather than
-/// the domain's, so generated output is unchanged by the tree port:
-/// - `Date`: newest first, but *undated pages first* (the domain puts
-///   them last);
-/// - `Title`: byte order (the domain compares case-insensitively).
-///
-/// Switching those two to the domain ordering is a visible behaviour
-/// change and belongs to its own PR with a golden re-baseline.
-fn sort_section_pages(pages: &mut [&PageNode], sort_by: SortBy) {
-    match sort_by {
-        SortBy::Date => pages.sort_by(|a, b| match (&b.meta.date, &a.meta.date) {
-            (Some(date_b), Some(date_a)) => date_b.cmp(date_a),
-            (Some(_), None) => Ordering::Less,
-            (None, Some(_)) => Ordering::Greater,
-            (None, None) => Ordering::Equal,
-        }),
-        SortBy::Title => pages.sort_by(|a, b| a.meta.title.cmp(&b.meta.title)),
-        SortBy::Weight | SortBy::None => taxus_domain::tree::sort_pages(pages, sort_by),
-    }
 }
 
 /// Render a paginated section.
@@ -350,6 +325,7 @@ pub fn render_pages(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content::SortBy;
     use crate::content::{Frontmatter, Page};
     use crate::routes::{RouteInfo, RouteKind};
     use std::path::PathBuf;
@@ -1078,5 +1054,55 @@ Content here.
         // receiver's sort_by; the unknown donor is ignored with a warning.
         assert_eq!(listed(&result, "/"), "[About][Guide][Top]");
         assert_eq!(listed(&result, "/blog/"), "[Top]");
+    }
+
+    fn dated_page(path: &str, file: &str, title: &str, date: Option<&str>) -> ProcessedPage {
+        let mut page = plain_page(path, file, title);
+        page.page.frontmatter.date =
+            date.map(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap());
+        page
+    }
+
+    #[test]
+    fn test_date_sort_is_newest_first_with_undated_last() {
+        let processed = vec![
+            section_page("/notes/", "notes/_index.md", Frontmatter::default()),
+            dated_page("/notes/a/", "notes/a.md", "Undated", None),
+            dated_page("/notes/b/", "notes/b.md", "Older", Some("2026-01-01")),
+            dated_page("/notes/c/", "notes/c.md", "Newer", Some("2026-03-01")),
+        ];
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &listing_template(),
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
+        assert_eq!(listed(&result, "/notes/"), "[Newer][Older][Undated]");
+    }
+
+    #[test]
+    fn test_title_sort_is_case_insensitive() {
+        let meta = Frontmatter {
+            sort_by: SortBy::Title,
+            ..Default::default()
+        };
+        let processed = vec![
+            section_page("/glossary/", "glossary/_index.md", meta),
+            plain_page("/glossary/c/", "glossary/c.md", "cherry"),
+            plain_page("/glossary/b/", "glossary/b.md", "Banana"),
+            plain_page("/glossary/a/", "glossary/a.md", "apple"),
+        ];
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &listing_template(),
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
+        // Byte order would put "Banana" first.
+        assert_eq!(listed(&result, "/glossary/"), "[apple][Banana][cherry]");
     }
 }

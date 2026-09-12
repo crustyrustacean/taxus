@@ -256,10 +256,10 @@ whether `--drafts` was passed), so derivations take it as a parameter.
   the tree and list its direct children plus the direct pages of any
   `pages_from` donors (`aggregate`), sorted by the section's `sort_by`.
   Structure is containment only; anything a listing shows beyond that is
-  declared in frontmatter. `sort_by = "weight"` works and `weight` is
-  exposed on `page` in templates. Date and title ordering keep their
-  historical comparators (undated pages first, byte-order titles) until
-  they are moved to the domain's in a dedicated change.
+  declared in frontmatter. Ordering is the domain's `sort_pages`: date
+  newest first with undated pages last, title case-insensitive, weight
+  lowest first (`weight` is exposed on `page` in templates); ties keep
+  tree order.
 - **Taxonomies** (`build/pipeline/taxonomy.rs`) are `group_by_terms`
   over the tree for tags, categories and series. **Feeds** and the
   **sitemap** take their membership from `documents` and join the

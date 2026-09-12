@@ -593,4 +593,55 @@ mod tests {
         // Stable: b and d tie on weight and keep their slug order.
         assert_eq!(slugs, ["b", "d", "c", "a"]);
     }
+
+    fn slugs_sorted_by(tree: &SiteTree, by: SortBy) -> Vec<String> {
+        let mut pages: Vec<&PageNode> = tree.root.pages.iter().collect();
+        sort_pages(&mut pages, by);
+        pages
+            .iter()
+            .map(|p| p.path.last().unwrap().as_str().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn sort_pages_by_date_is_newest_first_undated_last() {
+        let mut builder = SiteTreeBuilder::new();
+        for (slug, date) in [
+            ("undated", None),
+            ("older", Some("2026-01-01")),
+            ("newer", Some("2026-03-01")),
+        ] {
+            add_page_with(
+                &mut builder,
+                slug,
+                Frontmatter {
+                    date: date.map(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap()),
+                    ..Frontmatter::default()
+                },
+            );
+        }
+        let tree = builder.build().unwrap();
+        assert_eq!(
+            slugs_sorted_by(&tree, SortBy::Date),
+            ["newer", "older", "undated"]
+        );
+    }
+
+    #[test]
+    fn sort_pages_by_title_is_case_insensitive() {
+        let mut builder = SiteTreeBuilder::new();
+        for (slug, title) in [("c", "cherry"), ("b", "Banana"), ("a", "apple")] {
+            add_page_with(
+                &mut builder,
+                slug,
+                Frontmatter {
+                    title: title.to_string(),
+                    ..Frontmatter::default()
+                },
+            );
+        }
+        let tree = builder.build().unwrap();
+        // Byte order would put "Banana" before "apple".
+        assert_eq!(slugs_sorted_by(&tree, SortBy::Title), ["a", "b", "c"]);
+    }
 }

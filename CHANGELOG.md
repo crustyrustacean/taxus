@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **build**: Section listings use the domain's ordering for every
+  `sort_by`. `"date"` puts undated pages **last** (they were listed first),
+  and `"title"` compares **case-insensitively** (it was byte order, so
+  `Banana` sorted before `apple`). Ties keep tree order
 - **build**: Feeds syndicate dated pages only. Entries come from
   `derivation::recent` — every non-draft page with a `date`, newest first —
   so section index pages (the home page, `/blog/`) and undated pages
