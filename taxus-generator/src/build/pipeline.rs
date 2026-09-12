@@ -114,9 +114,9 @@ pub fn process_content(
     let mut pages = Vec::new();
 
     for route in registry.iter() {
-        // Load the page from file
-        let full_path = config.build.content_dir.join(&route.content_file);
-        let page = Page::from_file(&full_path)?;
+        // Load the page; `source` is the content-relative path, the same
+        // identity the tree node and the route carry.
+        let page = Page::from_file_in(&config.build.content_dir, &route.content_file)?;
 
         // Skip drafts unless explicitly included
         if page.is_draft() && !include_drafts {

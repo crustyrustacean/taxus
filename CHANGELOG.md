@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **content**: `Page::source` keeps the directory. `Page::from_file` stores
+  the path it was given instead of the bare file name, and the new
+  `Page::from_file_in(content_dir, relative)` — which the build now uses —
+  stores the content-relative path (`blog/post-1.md`), so frontmatter errors
+  name the file the way the author knows it (#23)
 - **build**: `sort_by = "weight"` on a section now orders its pages by
   `weight` (lowest first). It silently fell back to a title sort (#5)
 - **build**: Generated output is deterministic. Feed entries, taxonomy term
