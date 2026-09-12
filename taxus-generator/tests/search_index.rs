@@ -1,9 +1,9 @@
 //! End-to-end coverage for the search index build stage (#25).
 //!
 //! The destination-first assertion: a page with a custom slug is SERVED at
-//! the slug URL, so the search index must contain that URL — not the
-//! discovered route path. Before the fix, search results navigated to a
-//! 404 for every slug-renamed page.
+//! section path + slug, so the search index must contain that URL — not the
+//! filename path. Before the fix, search results navigated to a 404 for
+//! every slug-renamed page.
 
 use taxus_common::search::SearchIndex;
 use taxus_lib::build::SiteBuilder;
@@ -38,10 +38,11 @@ fn test_search_index_uses_effective_url_for_custom_slugs() {
         .expect("fixture page missing from index");
 
     // The page lives at content/blog/e.md with slug = "renamed-entry".
-    // It is served at /renamed-entry/ — the index must point there,
-    // not at the stale route path /blog/e/.
+    // It is served at section path + slug, /blog/renamed-entry/ — the
+    // index must point there, not at the filename path /blog/e/ nor at a
+    // root-level /renamed-entry/.
     assert_eq!(
-        doc.path, "/renamed-entry/",
+        doc.path, "/blog/renamed-entry/",
         "search result for a slug-renamed page must use the served URL"
     );
 }

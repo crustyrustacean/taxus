@@ -321,10 +321,13 @@ impl Page {
         }
     }
 
-    /// Get the URL path for this page, respecting custom slug.
+    /// The page's slug as a root-level URL path (`/my-post/`; `/` for an
+    /// `_index.md`).
     ///
-    /// If a custom slug is set in frontmatter, uses that instead of the
-    /// filename-based path.
+    /// This is *not* the URL the page is served at: that is section path +
+    /// slug, derived from the Site Tree and exposed as
+    /// `ProcessedPage::effective_url_path()`. This helper only knows the
+    /// page, not where it lives.
     pub fn url_path(&self) -> String {
         let slug = self.slug();
         if slug == "_index" {

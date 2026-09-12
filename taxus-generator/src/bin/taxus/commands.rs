@@ -184,11 +184,13 @@ pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
 // ---------------------------------------------------------------------------
 
 pub fn run_routes(dir: &Path) -> Result<(), GeneratorError> {
-    use taxus_lib::{RouteDiscovery, SiteConfig};
+    use taxus_lib::SiteConfig;
+    use taxus_lib::build::pipeline::discover_routes;
 
     let config = SiteConfig::from_dir(dir)?;
-    let discovery = RouteDiscovery::new(&config.build.content_dir);
-    let registry = discovery.discover()?;
+    // The same tree-derived registry the build runs on, so the listed
+    // paths are the served URLs.
+    let registry = discover_routes(&config)?;
 
     tracing::info!(
         "\nRoutes for \"{}\"\n─────────────────────────────────────────────────────",

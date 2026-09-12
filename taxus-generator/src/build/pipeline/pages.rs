@@ -14,9 +14,8 @@ use tracing::{debug, debug_span, info, warn};
 
 /// Build a `PageContext` from a `ProcessedPage`.
 ///
-/// Handles the slug-vs-route-path logic: if a custom slug is defined in frontmatter,
-/// uses the slug-derived URL path; otherwise uses the discovered route path.
-/// Computes the permalink from the base URL and resolved path.
+/// The page's path is its served URL (`effective_url_path`, derived from
+/// the tree); the permalink is that path on the site's base URL.
 fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
     let url_path = processed.effective_url_path();
     let permalink = compute_permalink(base_url, &url_path);
@@ -297,21 +296,10 @@ pub fn render_pages(
 
         let content = templates.render(template_name, &context)?;
 
-        let output_file = if processed_page.page.frontmatter.slug.is_some() {
-            let slug = processed_page.page.slug();
-            if slug == "_index" {
-                std::path::PathBuf::from("index.html")
-            } else {
-                std::path::PathBuf::from(slug).join("index.html")
-            }
-        } else {
-            processed_page.route.output_file.clone()
-        };
-
         let route = RouteInfo::new(
             url_path,
             processed_page.route.content_file.clone(),
-            output_file,
+            processed_page.route.output_file.clone(),
             processed_page.route.kind,
         )?;
 
@@ -343,6 +331,10 @@ mod tests {
 
     // ── Slug tests ─────────────────────────────────────────────────────────────
 
+    /// A `slug` replaces the last segment of the page's tree path; the page
+    /// stays in its section. Discovery already places it there, so the
+    /// route handed to rendering is the served URL and nothing here
+    /// second-guesses it.
     #[test]
     fn test_render_pages_with_custom_slug() {
         let content = r#"
@@ -352,12 +344,13 @@ slug = "custom-url"
 +++
 This is the content.
 "#;
-        let page = Page::from_str(content.trim_start(), "original-filename.md").unwrap();
+        let page = Page::from_str(content.trim_start(), "blog/original-filename.md").unwrap();
 
+        // What `RouteRegistry::from_tree` derives for this page.
         let route = RouteInfo::new(
-            "/original-filename/".to_string(),
-            PathBuf::from("original-filename.md"),
-            PathBuf::from("original-filename/index.html"),
+            "/blog/custom-url/".to_string(),
+            PathBuf::from("blog/original-filename.md"),
+            PathBuf::from("blog/custom-url/index.html"),
             RouteKind::Page,
         )
         .unwrap();
@@ -386,10 +379,10 @@ This is the content.
         .unwrap();
 
         assert_eq!(rendered.len(), 1);
-        assert_eq!(rendered[0].route.path, "/custom-url/");
+        assert_eq!(rendered[0].route.path, "/blog/custom-url/");
         assert_eq!(
             rendered[0].route.output_file,
-            PathBuf::from("custom-url/index.html")
+            PathBuf::from("blog/custom-url/index.html")
         );
     }
 
