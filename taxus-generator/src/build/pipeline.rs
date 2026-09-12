@@ -51,19 +51,17 @@ pub struct ProcessedPage {
 }
 
 impl ProcessedPage {
-    /// The URL path this page is actually served at (#25).
+    /// The URL path this page is served at.
     ///
-    /// A custom `slug` in frontmatter overrides the discovered route path
-    /// — the page is served at the slug URL, and `route.path` is stale for
-    /// linking purposes. Every consumer that emits a URL (feeds, sitemap,
-    /// search index, templates) must use this method, never `route.path`
-    /// directly; callers that got this wrong produced links to 404s.
+    /// Derived from the Site Tree: the route's path is
+    /// `UrlPath::from_node_path` of the page's membership path, so a
+    /// frontmatter `slug` replaces the last segment and the page stays in
+    /// its section (`content/blog/e.md` with `slug = "renamed-entry"` is
+    /// `/blog/renamed-entry/`). Every consumer that emits a URL (feeds,
+    /// sitemap, search index, templates, aliases) goes through this one
+    /// accessor (#25).
     pub fn effective_url_path(&self) -> String {
-        if self.page.frontmatter.slug.is_some() {
-            self.page.url_path()
-        } else {
-            self.route.path.clone()
-        }
+        self.route.path.clone()
     }
 }
 
@@ -90,13 +88,13 @@ pub fn discover_tree(config: &SiteConfig) -> Result<SiteTree> {
     RouteDiscovery::new(&config.build.content_dir).discover_tree()
 }
 
-/// Discover routes from the content directory with the legacy file walk.
+/// The route registry the build runs on: [`discover_tree`] projected
+/// through [`RouteRegistry::from_tree`].
 ///
-/// Kept for callers that only need routes (the `routes` CLI command);
-/// the build itself derives its registry from [`discover_tree`].
+/// For callers that only need routes (the `routes` CLI command, tests).
+/// Every route's path is the served URL, slug overrides included.
 pub fn discover_routes(config: &SiteConfig) -> Result<RouteRegistry> {
-    let discovery = RouteDiscovery::new(&config.build.content_dir);
-    Ok(discovery.discover()?)
+    Ok(RouteRegistry::from_tree(&discover_tree(config)?))
 }
 
 /// Load templates from the templates directory.

@@ -93,8 +93,10 @@ derived from the filename (`file_stem()`, date prefix stripped, slugified).
 The URL is then composed as *section path + slug*: the Site Tree records the
 membership path when discovery builds it
 (`RouteDiscovery::discover_tree`), and `UrlPath::from_node_path` derives the
-address from it. `ProcessedPage::effective_url_path()` is the single accessor
-every downstream consumer uses today.
+address from it. `ProcessedPage::effective_url_path()` is that derived
+address, and the single accessor every downstream consumer uses. A `slug`
+replaces the last segment only: `content/blog/e.md` with
+`slug = "renamed-entry"` is `/blog/renamed-entry/`.
 
 The design rule that falls out of this: **metadata belongs in frontmatter, not
 in filenames.** A filename is a storage detail; the model should not depend on

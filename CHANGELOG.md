@@ -58,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **build**: A page with a frontmatter `slug` is served at *section path +
+  slug*, as documented (`content/blog/e.md` with `slug = "renamed-entry"` is
+  `/blog/renamed-entry/`). It was served at the root (`/renamed-entry/`)
+  regardless of its directory. Served URLs now come from the Site Tree for
+  every page; nothing downstream reinterprets `slug`. A site that relied on
+  the old address can keep it with `aliases = ["/renamed-entry/"]`
 - **build**: Section listings use the domain's ordering for every
   `sort_by`. `"date"` puts undated pages **last** (they were listed first),
   and `"title"` compares **case-insensitively** (it was byte order, so

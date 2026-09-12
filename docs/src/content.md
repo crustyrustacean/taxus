@@ -136,7 +136,7 @@ Your markdown content here.
 | `template` | string | No | `"page.html"` | Template override |
 | `draft` | bool | No | `false` | Draft status |
 | `summary` | string | No | `None` | Custom summary/excerpt |
-| `slug` | string | No | `None` | Custom URL slug |
+| `slug` | string | No | `None` | Custom last URL segment; the page stays in its section |
 | `aliases` | array | No | `[]` | Old URLs that redirect to this page |
 | `tags` | array | No | `[]` | Tags (e.g., `["rust", "web"]`) |
 | `categories` | array | No | `[]` | Categories (e.g., `["tutorial"]`) |
@@ -195,7 +195,11 @@ slug = "hello-world"
 +++
 ```
 
-This creates `/blog/hello-world/` instead of `/blog/my-first-post/`.
+This creates `/blog/hello-world/` instead of `/blog/my-first-post/`. The slug
+replaces only the last segment: the page stays in its section, and every
+consumer — page links, section listings, feeds, the sitemap, the search index,
+alias redirects — agrees on the URL because all of them derive it from the
+Site Tree. To keep an old address working, add it to `aliases`.
 
 ## Markdown Support
 
