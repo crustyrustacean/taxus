@@ -204,6 +204,30 @@ pub struct SectionContext {
     /// Pagination information (if this is a paginated section)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pagination: Option<PaginationContext>,
+
+    /// Direct child sections, in tree (slug) order (#69). Always present,
+    /// so templates can iterate it without a guard.
+    #[serde(default)]
+    pub subsections: Vec<SubsectionContext>,
+}
+
+/// A child section as listed on `section.subsections`.
+///
+/// Enough to link to it; fetch the full view with `get_section(path=…)`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubsectionContext {
+    /// Section title (empty for a directory without an `_index.md`)
+    pub title: String,
+
+    /// Section description (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+
+    /// Section URL path (e.g., "/blog/2026/")
+    pub path: String,
+
+    /// Pre-computed absolute URL
+    pub permalink: String,
 }
 
 /// Pagination context for templates.
@@ -442,6 +466,7 @@ impl TemplateContext {
     ///     toc: vec![],
     ///     pages: vec![],
     ///     pagination: None,
+    ///     subsections: vec![],
     /// };
     ///
     /// let ctx = TemplateContext::new(site).with_section(section);
@@ -526,6 +551,7 @@ mod tests {
             content: Some("<p>Welcome to the blog.</p>".to_string()),
             pages: vec![create_test_page()],
             pagination: None,
+            subsections: vec![],
         }
     }
 

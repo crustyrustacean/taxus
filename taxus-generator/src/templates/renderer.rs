@@ -5,9 +5,11 @@
 //! engine.
 
 use crate::error::TemplateError;
-use crate::templates::context::TemplateContext;
+use crate::templates::context::{PageContext, SectionContext, TemplateContext};
+use std::collections::HashMap;
 use std::path::Path;
-use tera::{Context, Kwargs, State, Tera, TeraResult, Value};
+use std::sync::{Arc, RwLock};
+use tera::{Context, Error as TeraError, Kwargs, State, Tera, TeraResult, Value};
 
 /// Trait for template rendering backends.
 ///
@@ -94,6 +96,80 @@ pub trait TemplateRenderer: Send + Sync {
 #[derive(Debug)]
 pub struct TeraRenderer {
     tera: Tera,
+    /// What `get_section` / `get_page` resolve against; see [`SiteLookup`].
+    lookup: Arc<RwLock<SiteLookup>>,
+}
+
+/// Sections and pages templates can fetch by path with `get_section` and
+/// `get_page` (#69).
+///
+/// Filled by [`TeraRenderer::set_site_lookup`] once the tree and the
+/// rendered content exist (the render stage does it), but the functions
+/// themselves are registered on every Tera instance at construction:
+/// Tera checks that a function exists when a template referencing it is
+/// added, and templates load before content is processed.
+#[derive(Debug, Default)]
+struct SiteLookup {
+    sections: HashMap<String, SectionContext>,
+    pages: HashMap<String, PageContext>,
+}
+
+/// The key form shared by `set_site_lookup` and the lookup functions.
+///
+/// No leading or trailing `/`, and a trailing `_index.md` (Zola's spelling,
+/// `get_section(path="blog/_index.md")`) names the section itself, so
+/// `blog`, `/blog/` and `blog/_index.md` are one key and the root is `""`,
+/// `/` or `_index.md`.
+fn lookup_key(raw: &str) -> String {
+    let trimmed = raw.trim().trim_matches('/');
+    let trimmed = trimmed.strip_suffix("_index.md").unwrap_or(trimmed);
+    trimmed.trim_end_matches('/').to_string()
+}
+
+/// A Tera instance with every taxus function and filter registered.
+fn new_tera(lookup: &Arc<RwLock<SiteLookup>>) -> Tera {
+    let mut tera = Tera::default();
+    register_island_function(&mut tera);
+    register_contrib_filters(&mut tera);
+    register_site_functions(&mut tera, lookup);
+    tera
+}
+
+/// Register `get_section(path=…)` and `get_page(path=…)` (#69).
+///
+/// Both take a content-relative tree path (`blog`, `blog/2026`,
+/// `blog/my-post`; a page also by content file, `blog/2026-04-06-my-post.md`)
+/// and return the same objects templates already know as `section` and
+/// `page`. A path that names nothing is a render error, so a typo fails
+/// the build instead of rendering an empty list.
+fn register_site_functions(tera: &mut Tera, lookup: &Arc<RwLock<SiteLookup>>) {
+    let sections = Arc::clone(lookup);
+    tera.register_function(
+        "get_section",
+        move |kwargs: Kwargs, _state: &State| -> TeraResult<Value> {
+            let path: String = kwargs.must_get("path")?;
+            let lookup = sections.read().unwrap_or_else(|e| e.into_inner());
+            match lookup.sections.get(&lookup_key(&path)) {
+                Some(section) => Ok(Value::from_serializable(section)),
+                None => Err(TeraError::message(format!(
+                    "get_section: no section at `{path}`"
+                ))),
+            }
+        },
+    );
+
+    let pages = Arc::clone(lookup);
+    tera.register_function(
+        "get_page",
+        move |kwargs: Kwargs, _state: &State| -> TeraResult<Value> {
+            let path: String = kwargs.must_get("path")?;
+            let lookup = pages.read().unwrap_or_else(|e| e.into_inner());
+            match lookup.pages.get(&lookup_key(&path)) {
+                Some(page) => Ok(Value::from_serializable(page)),
+                None => Err(TeraError::message(format!("get_page: no page at `{path}`"))),
+            }
+        },
+    );
 }
 
 impl TeraRenderer {
@@ -108,9 +184,34 @@ impl TeraRenderer {
     /// assert!(renderer.is_ok());
     /// ```
     pub fn new() -> Result<Self, TemplateError> {
+        let lookup = Arc::new(RwLock::new(SiteLookup::default()));
         Ok(Self {
-            tera: Tera::default(),
+            tera: new_tera(&lookup),
+            lookup,
         })
+    }
+
+    /// Set what `get_section(path=…)` and `get_page(path=…)` resolve to.
+    ///
+    /// Keys are tree paths (`blog`, `blog/my-post`), normalised with the
+    /// same rule as lookups, so `blog/_index.md` and `/blog/` find the
+    /// section keyed `blog`. Replaces any previous lookup. Takes `&self`
+    /// because the render stage holds the renderer shared; the lookup is
+    /// behind a lock.
+    pub fn set_site_lookup(
+        &self,
+        sections: impl IntoIterator<Item = (String, SectionContext)>,
+        pages: impl IntoIterator<Item = (String, PageContext)>,
+    ) {
+        let mut lookup = self.lookup.write().unwrap_or_else(|e| e.into_inner());
+        lookup.sections = sections
+            .into_iter()
+            .map(|(key, section)| (lookup_key(&key), section))
+            .collect();
+        lookup.pages = pages
+            .into_iter()
+            .map(|(key, page)| (lookup_key(&key), page))
+            .collect();
     }
 
     /// Create a Tera renderer and load templates from a directory.
@@ -203,11 +304,9 @@ impl TemplateRenderer for TeraRenderer {
         // Create a new empty Tera instance.
         //
         // Tera v2 checks at template-add time that every function/filter/test
-        // referenced by a template exists, so the island() function must be
+        // referenced by a template exists, so every taxus function must be
         // registered before any templates are added.
-        let mut tera = Tera::default();
-        register_island_function(&mut tera);
-        register_contrib_filters(&mut tera);
+        let mut tera = new_tera(&self.lookup);
 
         // Collect all templates first (name -> content)
         let mut templates: Vec<(String, String)> = Vec::new();
@@ -448,6 +547,7 @@ mod tests {
             content: Some("<p>Welcome to the blog.</p>".to_string()),
             pages: vec![create_test_page_context()],
             pagination: None,
+            subsections: vec![],
         }
     }
 
@@ -459,6 +559,65 @@ mod tests {
     fn test_tera_renderer_new() {
         let renderer = TeraRenderer::new();
         assert!(renderer.is_ok());
+    }
+
+    #[test]
+    fn test_lookup_key_forms() {
+        assert_eq!(lookup_key("blog"), "blog");
+        assert_eq!(lookup_key("/blog/"), "blog");
+        assert_eq!(lookup_key("blog/_index.md"), "blog");
+        assert_eq!(lookup_key("blog/2026"), "blog/2026");
+        assert_eq!(lookup_key(""), "");
+        assert_eq!(lookup_key("/"), "");
+        assert_eq!(lookup_key("_index.md"), "");
+        assert_eq!(
+            lookup_key("blog/2026-04-06-post.md"),
+            "blog/2026-04-06-post.md"
+        );
+    }
+
+    #[test]
+    fn test_get_section_and_get_page_functions() {
+        let mut renderer = TeraRenderer::new().unwrap();
+        renderer
+            .register_template(
+                "t.html",
+                r#"{% set blog = get_section(path="blog/_index.md") %}{{ blog.title }}:{% for p in blog.pages %}[{{ p.title }}]{% endfor %}|{% set about = get_page(path="/about/") %}{{ about.path }}"#,
+            )
+            .unwrap();
+        let section = create_test_section_context();
+        let page = create_test_page_context();
+        let expected = format!(
+            "{}:{}|{}",
+            section.title,
+            section
+                .pages
+                .iter()
+                .map(|p| format!("[{}]", p.title))
+                .collect::<String>(),
+            page.path
+        );
+        renderer.set_site_lookup(
+            vec![("blog".to_string(), section)],
+            vec![("about".to_string(), page)],
+        );
+        let html = renderer.render("t.html", &create_test_context()).unwrap();
+        assert_eq!(html, expected);
+    }
+
+    #[test]
+    fn test_get_section_unknown_path_is_a_render_error() {
+        let mut renderer = TeraRenderer::new().unwrap();
+        renderer
+            .register_template(
+                "t.html",
+                r#"{% set s = get_section(path="nope") %}{{ s.title }}"#,
+            )
+            .unwrap();
+        let err = renderer
+            .render("t.html", &create_test_context())
+            .unwrap_err();
+        assert!(err.to_string().contains("no section at `nope`"), "{err}");
     }
 
     #[test]

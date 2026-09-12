@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **templates**: `get_section(path="blog")` and `get_page(path="about")`
+  fetch any section or page of the Site Tree from a template, and
+  `section.subsections` lists a section's direct child sections — so a home
+  page can list recent posts it does not own. A `get_section` result has the
+  section's `pages` sorted by its `sort_by` (with `pages_from`), never
+  pagination; a path that names nothing is a render error (#69)
 - **config**: `[feed] sections = ["blog"]` scopes the feeds to pages under
   the named sections; empty (the default) means the whole site (#44)
 - **content**: `pages_from` frontmatter on a section's `_index.md` — a list

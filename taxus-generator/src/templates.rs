@@ -61,7 +61,7 @@ mod context;
 mod renderer;
 
 pub use context::{
-    HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, TaxonomyListContext,
-    TaxonomyTermContext, TemplateContext, compute_permalink,
+    HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, SubsectionContext,
+    TaxonomyListContext, TaxonomyTermContext, TemplateContext, compute_permalink,
 };
 pub use renderer::{TemplateRenderer, TeraRenderer};

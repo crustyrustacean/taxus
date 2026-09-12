@@ -328,6 +328,7 @@ See [Images](./images.md) for the complete guide.
 | `section.path` | String | Section URL path |
 | `section.content` | String? | Section HTML content |
 | `section.pages` | Array | The section's direct child pages, plus the direct pages of any `pages_from` sections, sorted by `sort_by` |
+| `section.subsections` | Array | Direct child sections, in slug order; each has `title`, `description`, `path`, `permalink` |
 | `section.pagination` | Object? | Pagination information |
 
 ### Pagination Context
@@ -398,6 +399,41 @@ Templates can extend other templates:
 {{ page.content | safe }}
 {% endblock %}
 ```
+
+## Tree Functions
+
+Templates can reach any part of the Site Tree, not just the section being
+rendered (#69). This is how a home page lists recent posts it does not own:
+
+```html
+{% set blog = get_section(path="blog") %}
+<ul>
+{% for page in blog.pages | slice(end=5) %}
+  <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+{% endfor %}
+</ul>
+
+{% for sub in section.subsections %}
+  <a href="{{ sub.path }}">{{ sub.title }}</a>
+{% endfor %}
+
+{% set about = get_page(path="about") %}
+<a href="{{ about.path }}">{{ about.title }}</a>
+```
+
+| Function | Returns |
+|----------|---------|
+| `get_section(path="blog")` | The section as a `section` object: `title`, `description`, `path`, `permalink`, `content`, `toc`, `pages` (sorted by that section's `sort_by`, including its `pages_from`), `subsections`. `pagination` is never set — slicing belongs to the section's own render |
+| `get_page(path="blog/my-post")` | The page as a `page` object, with the same fields as `page` |
+
+Paths are content-relative tree paths, the same form `pages_from` uses:
+`blog`, `blog/2026`, `blog/my-post`. Leading and trailing slashes are
+ignored, a section can also be named by its index file (`blog/_index.md`),
+a page by its content file (`blog/2026-04-06-my-post.md`), and the root is
+`""`, `/` or `_index.md`. A directory without an `_index.md` is still a
+section (with an empty title and no content). Drafts are absent unless the
+build includes them. A path that names nothing fails the render, so a typo
+stops the build instead of producing an empty list.
 
 ## Filters
 

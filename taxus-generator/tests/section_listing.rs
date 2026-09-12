@@ -13,6 +13,8 @@
 //!   undated one.
 //! - `glossary/` has `sort_by = "title"` with titles whose byte order
 //!   (`Banana`, `apple`, `cherry`) differs from their case-insensitive order.
+//! - the root renders `home.html`, which also lists `section.subsections`,
+//!   fetches the blog with `get_section` and a page with `get_page` (#69).
 
 use std::fs;
 use std::path::Path;
@@ -28,13 +30,13 @@ fn build_fixture() -> tempfile::TempDir {
     tmp
 }
 
-/// The `href` targets of the section's page list, in document order.
-fn listed_links(output_dir: &Path, page: &str) -> Vec<String> {
+/// The `href` targets of the `<ul class="{class}">` list, in document order.
+fn links_in(output_dir: &Path, page: &str, class: &str) -> Vec<String> {
     let html = fs::read_to_string(output_dir.join(page)).unwrap();
     let list = html
-        .split("<ul class=\"page-list\">")
+        .split(&format!("<ul class=\"{class}\">"))
         .nth(1)
-        .expect("page list present")
+        .unwrap_or_else(|| panic!("no <ul class=\"{class}\"> in {page}:\n{html}"))
         .split("</ul>")
         .next()
         .unwrap();
@@ -42,6 +44,11 @@ fn listed_links(output_dir: &Path, page: &str) -> Vec<String> {
         .skip(1)
         .map(|rest| rest.split('"').next().unwrap().to_owned())
         .collect()
+}
+
+/// The `href` targets of the section's page list, in document order.
+fn listed_links(output_dir: &Path, page: &str) -> Vec<String> {
+    links_in(output_dir, page, "page-list")
 }
 
 #[test]
@@ -99,5 +106,30 @@ fn title_sort_is_case_insensitive() {
     assert_eq!(
         listed_links(out.path(), "glossary/index.html"),
         ["/glossary/apple/", "/glossary/banana/", "/glossary/cherry/"]
+    );
+}
+
+#[test]
+fn root_lists_its_subsections() {
+    let out = build_fixture();
+    assert_eq!(
+        links_in(out.path(), "index.html", "subsections"),
+        ["/blog/", "/docs/", "/glossary/", "/notes/"]
+    );
+}
+
+#[test]
+fn home_fetches_other_sections_and_pages_from_the_tree() {
+    let out = build_fixture();
+    // get_section(path="blog/_index.md"): the blog's own listing, then its
+    // subsections.
+    assert_eq!(
+        links_in(out.path(), "index.html", "recent"),
+        ["/blog/top-level/", "/blog/2026/"]
+    );
+    // get_page(path="docs/alpha")
+    assert_eq!(
+        links_in(out.path(), "index.html", "featured"),
+        ["/docs/alpha/"]
     );
 }
