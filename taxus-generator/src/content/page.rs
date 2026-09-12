@@ -64,7 +64,9 @@ pub struct Page {
     /// URL path (e.g., "/about/")
     pub path: String,
 
-    /// Source file path relative to content directory
+    /// Source file path. [`from_file_in`](Self::from_file_in) stores it
+    /// relative to the content directory (e.g. `blog/post-1.md`);
+    /// [`from_file`](Self::from_file) stores the path it was given.
     pub source: PathBuf,
 
     /// Raw Markdown content (without frontmatter)
@@ -78,6 +80,9 @@ impl Page {
     /// Parse a page from a Markdown file.
     ///
     /// The file should contain TOML frontmatter between `+++` markers.
+    /// `source` records the path exactly as given, so pass a path relative
+    /// to the content directory when you have one — or use
+    /// [`from_file_in`](Self::from_file_in), which does that for you.
     ///
     /// # Example
     ///
@@ -97,15 +102,51 @@ impl Page {
         })?;
 
         let source = path
-            .file_name()
-            .ok_or_else(|| ContentError::InvalidPath(path.display().to_string()))?
-            .to_string_lossy()
-            .to_string();
+            .to_str()
+            .ok_or_else(|| ContentError::InvalidPath(path.display().to_string()))?;
 
-        Self::from_str(&content, &source)
+        Self::from_str(&content, source)
     }
 
-    /// Parse a page from a string with explicit source name.
+    /// Parse the page at `relative` inside `content_dir`.
+    ///
+    /// The file is read from `content_dir.join(relative)` and `source` is
+    /// `relative` (e.g. `blog/post-1.md`), the same identity the Site Tree
+    /// and the route registry use for the file — so error messages name
+    /// the file the way the author knows it, and a page can be joined back
+    /// to its tree node by `source`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use taxus_lib::content::Page;
+    ///
+    /// let page = Page::from_file_in("content", "blog/post-1.md")?;
+    /// assert_eq!(page.source.to_str(), Some("blog/post-1.md"));
+    /// # Ok::<(), taxus_lib::error::GeneratorError>(())
+    /// ```
+    pub fn from_file_in<C: AsRef<Path>, R: AsRef<Path>>(
+        content_dir: C,
+        relative: R,
+    ) -> Result<Self> {
+        let relative = relative.as_ref();
+        let full_path = content_dir.as_ref().join(relative);
+        let content = std::fs::read_to_string(&full_path).map_err(|e| ContentError::Io {
+            path: full_path.clone(),
+            source: e,
+        })?;
+
+        let source = relative
+            .to_str()
+            .ok_or_else(|| ContentError::InvalidPath(relative.display().to_string()))?;
+
+        Self::from_str(&content, source)
+    }
+
+    /// Parse a page from a string with an explicit source path.
+    ///
+    /// `source` is stored verbatim; only its file stem is used to derive
+    /// the URL path, the slug and the `YYYY-MM-DD-` default date.
     ///
     /// # Example
     ///
@@ -646,6 +687,52 @@ This is content.
 
         assert_eq!(page.path, "/about/");
         assert_eq!(page.source, PathBuf::from("about.md"));
+    }
+
+    #[test]
+    fn test_page_from_str_keeps_directory_in_source() {
+        let content = "+++\ntitle = \"Post\"\n+++\nBody";
+        let page = Page::from_str(content, "blog/2026-04-06-post-1.md").unwrap();
+
+        // Storage keeps the directory (#23); identity is still the stem.
+        assert_eq!(page.source, PathBuf::from("blog/2026-04-06-post-1.md"));
+        assert_eq!(page.path, "/post-1/");
+        assert_eq!(page.slug(), "post-1");
+        assert_eq!(
+            page.frontmatter.date,
+            chrono::NaiveDate::from_ymd_opt(2026, 4, 6)
+        );
+    }
+
+    #[test]
+    fn test_from_file_in_records_relative_path() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join("blog")).unwrap();
+        std::fs::write(
+            dir.path().join("blog/post.md"),
+            "+++\ntitle = \"Post\"\n+++\nBody",
+        )
+        .unwrap();
+
+        let page = Page::from_file_in(dir.path(), "blog/post.md").unwrap();
+        assert_eq!(page.source, PathBuf::from("blog/post.md"));
+        assert_eq!(page.path, "/post/");
+
+        // from_file keeps whatever path it was given.
+        let page = Page::from_file(dir.path().join("blog/post.md")).unwrap();
+        assert_eq!(page.source, dir.path().join("blog/post.md"));
+    }
+
+    #[test]
+    fn test_from_file_in_error_names_relative_path() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join("blog")).unwrap();
+        std::fs::write(dir.path().join("blog/bad.md"), "+++\ntitle = \n+++\n").unwrap();
+
+        let err = Page::from_file_in(dir.path(), "blog/bad.md")
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("Invalid frontmatter in blog/bad.md"), "{err}");
     }
 
     // ============================================

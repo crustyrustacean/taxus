@@ -218,7 +218,8 @@ pub struct Page {
 
 | Method | Description |
 |--------|-------------|
-| `from_file(path: P) -> Result<Self>` | Load from Markdown file |
+| `from_file(path: P) -> Result<Self>` | Load from a Markdown file; `source` is the path as given |
+| `from_file_in(content_dir: C, relative: R) -> Result<Self>` | Load `content_dir/relative`; `source` is `relative` (what the build uses) |
 | `from_str(content: &str, source: &str) -> Result<Self>` | Parse from string |
 | `is_draft(&self) -> bool` | Check if draft |
 | `url_path(&self) -> String` | Get URL path |
