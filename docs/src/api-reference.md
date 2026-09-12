@@ -690,15 +690,16 @@ pub struct AssetReport {
 ## `feed` Module
 
 ```rust
-pub struct FeedConfig { pub title, pub description, pub base_url, pub author, pub author_email, pub language, pub limit, pub full_content, pub filename }
+pub struct FeedConfig { pub title, pub description, pub base_url, pub author, pub author_email, pub language, pub limit: Option<usize>, pub full_content, pub filename }
 pub struct FeedEntry { pub title, pub url, pub summary, pub content: Option<String>, pub date: DateTime<Utc>, pub updated, pub author, pub author_email, pub tags }
 ```
 
 | Item | Description |
 |------|-------------|
-| `FeedEntry::from_page(&Page, base_url) -> FeedEntry` | Summary is `summary`, else `description`, else `Page::summary()` |
+| `FeedEntry::from_page(&Page, url) -> FeedEntry` | Summary is `summary`, else `description`, else `Page::summary()`; `url` is the served (effective) URL, supplied by the caller |
 | `FeedGenerator::new(FeedConfig)` | Create a generator |
-| `FeedGenerator::generate_rss(&[Page])`, `generate_atom(&[Page])` | Drafts dropped, newest first, truncated to `limit` |
+| `FeedGenerator::generate_rss(&[Page])`, `generate_atom(&[Page])` | Drafts dropped, newest first, truncated to `limit`; URLs derive from `page.path`, so prefer the `_from_entries` forms for pages with custom slugs |
+| `FeedGenerator::generate_rss_from_entries(Vec<FeedEntry>)`, `generate_atom_from_entries(Vec<FeedEntry>)` | The pipeline form: entries carry their own effective URLs; newest first, truncated to `limit` |
 | `FeedGenerator::rss_filename()`, `atom_filename()` | `feed.xml`, `feed.atom` |
 | `escape_xml(&str) -> String` | XML escaping |
 

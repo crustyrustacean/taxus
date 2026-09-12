@@ -1,7 +1,7 @@
 # Golden manifest: <sha256 or <unstable>>  <path relative to output dir>
 3cf1af81acb67b4f829b7f4d980f1851e66d65b0ccc558fc29b4886bbde77285  blog/ordinary/index.html
 ab2812b9a8fd549625d26be3eddaf39087b2206a8fa98846a258114482eb5c40  blog/renamed-entry/index.html
-20ecb37b4b87a514f0660067ef8eb796605e491468b68f3126aabc95da2fb67e  feed.xml
+df1e791e29a7cddc0a4e1f02441fd90a07a25e3731c30c2127bb78725bb83e1f  feed.xml
 b1177a9d4261ce4946238cf31ccc18cfc6dbda49e10d9699b6bbe98d35f81715  index.html
 b87966e58d2e52aaf3d52e0e5308a67505c7b1015c2fa7f772d1ecc327c4082f  robots.txt
 0d3f7ce58b23ed019baa28dff7968061ccc795960408486b22a059431e305efd  sitemap.xml

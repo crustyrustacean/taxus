@@ -1,0 +1,3 @@
+[site]
+name = "Feed Slug Fixture"
+base_url = "https://example.com"

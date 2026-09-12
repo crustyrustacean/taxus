@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **feeds**: Feed entries carry the page's *effective* URL (section path
+  + frontmatter slug), not the filename-derived path; the pipeline no
+  longer overwrites `Page::path` in place to compensate, and
+  `FeedEntry::from_page` takes the served URL from the caller instead of
+  re-deriving it (#19)
+- **feeds**: `feed.xml` declares `xmlns:content` when `<content:encoded>`
+  is used; all URLs (`<link>`, `<guid>`, `<atom:link>`, Atom `<link>`/`<id>`)
+  are XML-escaped; `]]>` inside full content no longer terminates the
+  CDATA section early; `lastBuildDate` / Atom `<updated>` come from the
+  newest entry, not the build time, so unchanged content builds an
+  unchanged feed (#38)
+- **feeds**: `limit = 0` is rejected at config validation with a message
+  pointing at `rss_enabled`/`atom_enabled`; an unset `limit` now means
+  *no limit* (previously 0 and unset both silently meant 20) (#58)
+
+### Changed
+
+- **feeds**: `FeedConfig::limit` (both the site `[feed]` key and the
+  `feed::FeedConfig` field) is `Option<usize>`: unset = no limit. Sites
+  with more than 20 dated pages will see larger feeds unless they set an
+  explicit `limit`
+
 ### Documentation
 
 - **book**: A Theory section (overview, the Site Tree, identity,
