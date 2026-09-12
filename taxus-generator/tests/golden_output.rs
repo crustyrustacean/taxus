@@ -53,6 +53,7 @@ use taxus_lib::build::SiteBuilder;
 /// Paths are relative to the crate root (`taxus-generator/`), which is the
 /// working directory for integration tests.
 const SITES: &[(&str, &str)] = &[
+    ("feed_slug_site", "tests/fixtures/feed_slug_site"),
     ("highlight_site", "tests/fixtures/highlight_site"),
     ("internal_links_site", "tests/fixtures/internal_links_site"),
     ("search_slug_site", "tests/fixtures/search_slug_site"),
@@ -364,6 +365,11 @@ fn golden_internal_links_site() {
 #[test]
 fn golden_section_listing_site() {
     check_site("section_listing_site");
+}
+
+#[test]
+fn golden_feed_slug_site() {
+    check_site("feed_slug_site");
 }
 
 #[test]

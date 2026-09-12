@@ -74,9 +74,9 @@ pub struct FeedConfig {
     #[serde(default = "default_language")]
     pub language: String,
 
-    /// Maximum number of entries in the feed
+    /// Maximum number of entries in the feed. `None` means no limit.
     #[serde(default = "default_limit")]
-    pub limit: usize,
+    pub limit: Option<usize>,
 
     /// Include full content in feed (vs just summary)
     #[serde(default)]
@@ -91,8 +91,8 @@ fn default_language() -> String {
     "en".to_string()
 }
 
-fn default_limit() -> usize {
-    20
+fn default_limit() -> Option<usize> {
+    None
 }
 
 fn default_filename() -> String {
@@ -147,11 +147,15 @@ pub struct FeedEntry {
 }
 
 impl FeedEntry {
-    /// Create a feed entry from a page.
-    pub fn from_page(page: &Page, base_url: &str) -> Self {
-        use crate::templates::compute_permalink;
-        let url = compute_permalink(base_url, &page.path);
-
+    /// Create a feed entry from a page and its served URL.
+    ///
+    /// `url` is the page's *effective* URL path (the served address, where
+    /// a frontmatter `slug` override has already moved the page) joined to
+    /// `base_url`. Deriving it here from `page.path` would be wrong for
+    /// custom slugs (#19): `Page::path` is the filename-derived path. The
+    /// caller owns the URL because the Site Tree is its single derivation
+    /// point (`UrlPath::from_node_path`).
+    pub fn from_page(page: &Page, url: String) -> Self {
         // #28: use the page's summary machinery — frontmatter.summary,
         // `<!-- more -->` split, or first paragraph with markdown
         // stripped — instead of truncating raw markdown into the feed.
@@ -218,30 +222,63 @@ impl FeedGenerator {
     }
 
     /// Generate an RSS 2.0 feed from pages.
+    ///
+    /// Pages are converted with [`FeedEntry::from_page`], deriving each
+    /// URL from `page.path` — the filename-derived path. Pages with a
+    /// frontmatter `slug` override serve at a different address (#19);
+    /// for those, build entries with the served URL yourself and use
+    /// [`FeedGenerator::generate_rss_from_entries`].
     pub fn generate_rss(&self, pages: &[Page]) -> Result<String> {
         let entries = self.pages_to_entries(pages);
         generate_rss_feed(&entries, &self.config)
     }
 
-    /// Generate an Atom feed from pages.
+    /// Generate an Atom feed from pages; see [`FeedGenerator::generate_rss`]
+    /// for the URL caveat.
     pub fn generate_atom(&self, pages: &[Page]) -> Result<String> {
         let entries = self.pages_to_entries(pages);
         generate_atom_feed(&entries, &self.config)
     }
 
+    /// Generate an RSS 2.0 feed from pre-built entries.
+    ///
+    /// This is the form the build pipeline uses: it owns each page's
+    /// effective (served) URL path, so no URL is re-derived here.
+    pub fn generate_rss_from_entries(&self, entries: Vec<FeedEntry>) -> Result<String> {
+        let entries = self.apply_limit(entries);
+        generate_rss_feed(&entries, &self.config)
+    }
+
+    /// Generate an Atom feed from pre-built entries; see
+    /// [`FeedGenerator::generate_rss_from_entries`].
+    pub fn generate_atom_from_entries(&self, entries: Vec<FeedEntry>) -> Result<String> {
+        let entries = self.apply_limit(entries);
+        generate_atom_feed(&entries, &self.config)
+    }
+
     /// Convert pages to feed entries.
     fn pages_to_entries(&self, pages: &[Page]) -> Vec<FeedEntry> {
-        let mut entries: Vec<FeedEntry> = pages
-            .iter()
-            .filter(|p| !p.frontmatter.draft) // Exclude drafts
-            .map(|p| FeedEntry::from_page(p, &self.config.base_url))
-            .collect();
+        self.apply_limit(
+            pages
+                .iter()
+                .filter(|p| !p.frontmatter.draft) // Exclude drafts
+                .map(|p| {
+                    use crate::templates::compute_permalink;
+                    FeedEntry::from_page(p, compute_permalink(&self.config.base_url, &p.path))
+                })
+                .collect(),
+        )
+    }
 
+    /// Sort newest-first and apply the configured entry limit.
+    fn apply_limit(&self, mut entries: Vec<FeedEntry>) -> Vec<FeedEntry> {
         // Sort by date, newest first
         entries.sort_by_key(|b| std::cmp::Reverse(b.date));
 
         // Limit the number of entries
-        entries.truncate(self.config.limit);
+        if let Some(limit) = self.config.limit {
+            entries.truncate(limit);
+        }
 
         entries
     }
@@ -297,11 +334,25 @@ mod tests {
     #[test]
     fn test_feed_entry_from_page() {
         let page = create_test_page("Test Post", "2024-01-15");
-        let entry = FeedEntry::from_page(&page, "https://example.com");
+        let entry = FeedEntry::from_page(&page, "https://example.com/test-post/".to_string());
 
         assert_eq!(entry.title, "Test Post");
         assert_eq!(entry.url, "https://example.com/test-post/");
         assert!(!entry.summary.is_empty());
+    }
+
+    #[test]
+    fn test_feed_entry_from_page_uses_the_url_it_is_given() {
+        // #19: the served URL is the caller's, verbatim — a custom slug
+        // moves the page and the entry must follow it, whatever
+        // page.path says.
+        let mut page = create_test_page("Renamed Post", "2024-01-15");
+        page.frontmatter.slug = Some("custom-slug".to_string());
+        page.path = "/2024-01-15-renamed-post/".to_string(); // filename-derived
+
+        let entry = FeedEntry::from_page(&page, "https://example.com/custom-slug/".to_string());
+
+        assert_eq!(entry.url, "https://example.com/custom-slug/");
     }
 
     #[test]
@@ -310,7 +361,7 @@ mod tests {
         let mut page = create_test_page("Md Post", "2024-01-15");
         page.raw_content = "# A Heading\n\nSome *emphasized* prose here.".to_string();
 
-        let entry = FeedEntry::from_page(&page, "https://example.com");
+        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
 
         assert!(
             !entry.summary.contains('#'),
@@ -329,7 +380,7 @@ mod tests {
         let mut page = create_test_page("More Post", "2024-01-15");
         page.raw_content = "Intro text only.\n\n<!-- more -->\n\nRest of the article.".to_string();
 
-        let entry = FeedEntry::from_page(&page, "https://example.com");
+        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
 
         assert_eq!(entry.summary, "Intro text only.");
     }
@@ -342,7 +393,7 @@ mod tests {
         page.raw_content = "# Heading\n\nBody content.".to_string();
         page.frontmatter.description = Some("An authored description.".to_string());
 
-        let entry = FeedEntry::from_page(&page, "https://example.com");
+        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
 
         assert_eq!(entry.summary, "An authored description.");
     }
@@ -356,7 +407,7 @@ mod tests {
         page.frontmatter.description = Some("The description.".to_string());
         page.frontmatter.summary = Some("The summary.".to_string());
 
-        let entry = FeedEntry::from_page(&page, "https://example.com");
+        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
 
         assert_eq!(entry.summary, "The summary.");
     }
@@ -409,7 +460,7 @@ mod tests {
             title: "Test Blog".to_string(),
             description: "A test blog".to_string(),
             base_url: "https://example.com".to_string(),
-            limit: 2,
+            limit: Some(2),
             ..Default::default()
         };
 
@@ -425,5 +476,27 @@ mod tests {
         // Should be sorted by date, newest first
         assert_eq!(entries[0].title, "Third Post");
         assert_eq!(entries[1].title, "Second Post");
+    }
+
+    #[test]
+    fn test_no_limit_keeps_all_entries() {
+        // #58: unset limit means no limit, not a silent 20-entry cap
+        let config = FeedConfig {
+            base_url: "https://example.com".to_string(),
+            ..Default::default()
+        };
+
+        let generator = FeedGenerator::new(config);
+        let pages: Vec<Page> = (0..30)
+            .map(|i| {
+                create_test_page(
+                    &format!("Post {i}"),
+                    &format!("2024-01-{:02}", (i % 28) + 1),
+                )
+            })
+            .collect();
+
+        let entries = generator.pages_to_entries(&pages);
+        assert_eq!(entries.len(), 30);
     }
 }

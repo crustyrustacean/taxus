@@ -112,9 +112,12 @@ pub struct FeedConfig {
     #[serde(default = "default_atom_enabled")]
     pub atom_enabled: bool,
 
-    /// Number of entries to include in feeds (0 is treated as 20)
+    /// Maximum number of entries in the feed. Unset means no limit;
+    /// `0` is rejected by [`SiteConfig::validate`] — it has no meaning
+    /// under "unset = unlimited", and a reader wanting to suppress feeds
+    /// should use `rss_enabled` / `atom_enabled`.
     #[serde(default)]
-    pub limit: usize,
+    pub limit: Option<usize>,
 
     /// Include full content in feeds (vs summaries)
     #[serde(default = "default_full_content")]
@@ -153,7 +156,7 @@ impl Default for FeedConfig {
         Self {
             rss_enabled: default_rss_enabled(),
             atom_enabled: default_atom_enabled(),
-            limit: 0,
+            limit: None,
             full_content: default_full_content(),
             title: None,
             rss_path: None,
@@ -411,6 +414,16 @@ impl SiteConfig {
             return Err(ConfigError::MissingField {
                 field: "site.base_url",
             }
+            .into());
+        }
+
+        if self.feed.limit == Some(0) {
+            return Err(ConfigError::Invalid(
+                "[feed] limit = 0 has no meaning: unset means no limit. \
+                 To disable feeds, set rss_enabled = false and/or \
+                 atom_enabled = false instead."
+                    .to_string(),
+            )
             .into());
         }
 

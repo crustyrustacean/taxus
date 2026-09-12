@@ -71,14 +71,17 @@ pub fn feed_pages<'a>(tree: &'a SiteTree, sections: &[String]) -> Vec<&'a PageNo
 ///
 /// Membership and order come from the tree via [`feed_pages`]: dated,
 /// non-draft pages, newest first, optionally scoped to `[feed] sections`.
-/// Each is joined to its rendered `ProcessedPage` by content file, and the
-/// feed generator applies the configured limit.
+/// Each is joined to its rendered `ProcessedPage` by content file and
+/// converted to a [`FeedEntry`] carrying the page's *effective* URL
+/// (where a frontmatter `slug` override has moved it, #19); the feed
+/// generator applies the configured limit.
 pub fn generate_feeds(
     tree: &SiteTree,
     processed: &[ProcessedPage],
     config: &SiteConfig,
 ) -> Result<Vec<GeneratedFeed>> {
-    use crate::feed::{FeedConfig as FeedGenConfig, FeedGenerator};
+    use crate::feed::{FeedConfig as FeedGenConfig, FeedEntry, FeedGenerator};
+    use crate::templates::compute_permalink;
 
     let mut feeds = Vec::new();
 
@@ -92,22 +95,23 @@ pub fn generate_feeds(
         .map(|p| (p.route.content_file.as_path(), p))
         .collect();
 
-    // Collect pages for feed generation
-    let pages: Vec<crate::content::Page> = feed_pages(tree, &config.feed.sections)
+    // Build one entry per syndicated page, newest first, with the served
+    // URL from the page itself (#19): the Site Tree is the single
+    // derivation point for addresses, and `effective_url_path()` is the
+    // page's place in it.
+    let entries: Vec<FeedEntry> = feed_pages(tree, &config.feed.sections)
         .iter()
         .filter_map(|n| processed_by_file.get(n.content_file.as_path()))
         .map(|p| {
             let mut page = p.page.clone();
-            // Update the page path to the effective URL (custom slug
-            // overrides the discovered route path) so the feed entry
-            // links where the page actually lives.
-            let url_path = p.effective_url_path();
-            page.path = url_path;
             // Set content for full-content feeds
             if config.feed.full_content {
                 page.content = Some(p.html_content.clone());
             }
-            page
+            FeedEntry::from_page(
+                &page,
+                compute_permalink(&config.site.base_url, &p.effective_url_path()),
+            )
         })
         .collect();
 
@@ -121,11 +125,7 @@ pub fn generate_feeds(
         base_url: config.site.base_url.clone(),
         description: config.site.description.clone().unwrap_or_default(),
         author: config.site.author.clone(),
-        limit: if config.feed.limit > 0 {
-            config.feed.limit
-        } else {
-            20
-        },
+        limit: config.feed.limit,
         full_content: config.feed.full_content,
         ..Default::default()
     };
@@ -134,7 +134,7 @@ pub fn generate_feeds(
 
     // Generate RSS feed if enabled
     if config.feed.rss_enabled {
-        let rss_content = generator.generate_rss(&pages)?;
+        let rss_content = generator.generate_rss_from_entries(entries.clone())?;
         let filename = config
             .feed
             .rss_path
@@ -149,7 +149,7 @@ pub fn generate_feeds(
 
     // Generate Atom feed if enabled
     if config.feed.atom_enabled {
-        let atom_content = generator.generate_atom(&pages)?;
+        let atom_content = generator.generate_atom_from_entries(entries)?;
         let filename = config
             .feed
             .atom_path

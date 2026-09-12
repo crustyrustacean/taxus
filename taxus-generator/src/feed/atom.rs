@@ -10,7 +10,13 @@ use chrono::{DateTime, Utc};
 
 /// Generate an Atom feed from entries.
 pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<String> {
-    let now: DateTime<Utc> = Utc::now();
+    // #38: the newest entry's updated date, not `Utc::now()` — a build
+    // that changed no content must produce a byte-identical feed.
+    let now: DateTime<Utc> = entries
+        .iter()
+        .map(|e| e.updated.unwrap_or(e.date))
+        .max()
+        .unwrap_or_else(Utc::now);
     let now_rfc3339 = now.to_rfc3339();
 
     let mut entries_xml = String::new();
@@ -40,7 +46,7 @@ pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>{}</title>
   <link href="{}"/>
-  <link href="{}/{}.atom" rel="self"/>
+  <link href="{}" rel="self"/>
   <updated>{}</updated>
   <id>{}</id>
 {}
@@ -48,11 +54,14 @@ pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<
 {}
 </feed>"#,
         escape_xml(&config.title),
-        config.base_url,
-        config.base_url.trim_end_matches('/'),
-        config.filename,
+        escape_xml(&config.base_url),
+        escape_xml(&format!(
+            "{}/{}.atom",
+            config.base_url.trim_end_matches('/'),
+            config.filename
+        )),
         now_rfc3339,
-        config.base_url,
+        escape_xml(&config.base_url),
         author_xml,
         escape_xml(&config.description),
         entries_xml
@@ -114,7 +123,7 @@ fn generate_entry_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> 
         if config.full_content {
             format!(
                 "    <content type=\"html\"><![CDATA[{}]]></content>\n",
-                content
+                escape_cdata(content)
             )
         } else {
             String::new()
@@ -134,8 +143,8 @@ fn generate_entry_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> 
 {}{}{}  </entry>
 "#,
         escape_xml(&entry.title),
-        entry.url,
-        entry.url,
+        escape_xml(&entry.url),
+        escape_xml(&entry.url),
         published,
         updated,
         escape_xml(&entry.summary),
@@ -143,6 +152,13 @@ fn generate_entry_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> 
         category_xml,
         content_xml
     ))
+}
+
+/// Make text safe to embed inside a `<![CDATA[ … ]]>` section: the
+/// sequence `]]>` terminates the section early (#38), so each occurrence
+/// is split into `]]]]><![CDATA[>` — close, escaped tail, reopen.
+fn escape_cdata(s: &str) -> String {
+    s.replace("]]>", "]]]]><![CDATA[>")
 }
 
 #[cfg(test)]
@@ -198,5 +214,55 @@ mod tests {
         // Test quote escaping
         let escaped = escape_xml("\"quoted\"");
         assert!(escaped.contains("\u{26}quot;"));
+    }
+
+    /// #38: well-formed XML even when URLs and content carry
+    /// metacharacters; `updated` reflects the newest entry, not the
+    /// build time.
+    #[test]
+    fn atom_with_metacharacters_is_well_formed_xml() {
+        use chrono::TimeZone;
+
+        let config = FeedConfig {
+            title: "A & B".to_string(),
+            base_url: "https://example.com".to_string(),
+            full_content: true,
+            ..Default::default()
+        };
+
+        let entries = vec![FeedEntry {
+            title: "Q & A".to_string(),
+            url: "https://example.com/q-a/?x=1&y=2".to_string(),
+            summary: "s".to_string(),
+            content: Some("<pre>idx]]>size</pre>".to_string()),
+            date: Utc.with_ymd_and_hms(2026, 2, 2, 0, 0, 0).unwrap(),
+            updated: Some(Utc.with_ymd_and_hms(2026, 3, 3, 0, 0, 0).unwrap()),
+            author: None,
+            author_email: None,
+            tags: vec![],
+        }];
+
+        let atom = generate_atom_feed(&entries, &config).unwrap();
+
+        let mut reader = quick_xml::Reader::from_str(&atom);
+        reader.config_mut().check_end_names = true;
+        let mut buf = Vec::new();
+        let mut cdata_text = String::new();
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(quick_xml::events::Event::Eof) => break,
+                Ok(quick_xml::events::Event::CData(d)) => {
+                    cdata_text.push_str(&String::from_utf8_lossy(d.as_ref()));
+                }
+                Ok(_) => {}
+                Err(e) => panic!("feed is not well-formed XML: {e}\n{atom}"),
+            }
+            buf.clear();
+        }
+        assert!(
+            cdata_text.contains("idx]]>size"),
+            "CDATA content must round-trip; got {cdata_text:?}"
+        );
+        assert!(atom.contains("2026-03-03"));
     }
 }

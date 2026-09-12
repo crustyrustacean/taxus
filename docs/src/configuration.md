@@ -61,7 +61,7 @@ RSS/Atom feed configuration for content syndication.
 |-------|------|---------|-------------|
 | `rss_enabled` | bool | `true` | Enable RSS 2.0 feed generation |
 | `atom_enabled` | bool | `false` | Enable Atom feed generation |
-| `limit` | number | `20` | Maximum entries in feed (0 or unset is treated as 20) |
+| `limit` | number | *no limit* | Maximum entries in feed. Unset means no limit; `0` is rejected (to disable feeds, use `rss_enabled` / `atom_enabled`) |
 | `full_content` | bool | `false` | Include full content vs summary |
 | `title` | string | `None` | Custom feed title (defaults to site name) |
 | `rss_path` | string | `None` | RSS feed output path (default: `feed.xml`) |
