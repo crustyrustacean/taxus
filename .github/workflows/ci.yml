@@ -37,6 +37,15 @@ jobs:
       - name: Run unit and integration tests
         run: cargo test
 
+      # The same command the deploy workflow runs, against the real
+      # binary and CLI, so a change that breaks the product site build
+      # fails here rather than on the deploy.
+      - name: Build get-taxus.org
+        run: |
+          cargo run -p taxus -- build --dir get-taxus-org --output "$RUNNER_TEMP/get-taxus-org"
+          test -f "$RUNNER_TEMP/get-taxus-org/index.html"
+          test -f "$RUNNER_TEMP/get-taxus-org/feed.xml"
+
   wasm-check:
     name: WASM Check
     runs-on: ubuntu-latest

@@ -87,7 +87,7 @@ The workspace includes an `xtask` crate (aliased as `cargo xtask` via
 | `cargo xtask audit` | Run `cargo audit` security scan (requires `cargo-audit`) |
 | `cargo xtask wasm [--release]` | Build WASM artifacts |
 | `cargo xtask clean` | Clean build artifacts |
-| `cargo xtask ci` | Run the full local CI pipeline (fmt, lint, test) |
+| `cargo xtask ci` | Run the full local CI pipeline (fmt, lint, build, test, WASM check, build `get-taxus-org/` into `target/ci-site`) |
 | `cargo xtask release --bump <major\|minor\|patch> [--dry-run]` | Changelog only (see [Releasing](#releasing) for the full procedure — versioning and tagging go through `cargo release`) |
 | `cargo xtask deploy [--project <name>] [--branch <name>] [--prod-branch <name>] [--no-build]` | Build `get-taxus-org/` and deploy to Cloudflare Pages via wrangler (workspace tool; requires Cloudflare credentials) |
 

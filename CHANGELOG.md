@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **ci**: The CI workflow and `cargo xtask ci` build `get-taxus-org/` with
+  the real `taxus build` command, the same one the deploy workflow runs, so
+  a change that breaks the product site fails before it reaches a deploy
 - **templates**: `get_section(path="blog")` and `get_page(path="about")`
   fetch any section or page of the Site Tree from a template, and
   `section.subsections` lists a section's direct child sections — so a home
