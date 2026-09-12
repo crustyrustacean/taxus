@@ -126,10 +126,7 @@ mod tests {
                 tags,
                 ..Default::default()
             },
-            path: route.path.clone(),
-            source: route.content_file.clone(),
             raw_content: content.to_string(),
-            content: None,
         };
 
         ProcessedPage {

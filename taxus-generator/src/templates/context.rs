@@ -523,11 +523,11 @@ mod tests {
 
     fn create_test_page() -> PageContext {
         PageContext {
+            path: "/test/".to_string(),
             toc: Vec::new(),
             title: "Test Page".to_string(),
             description: Some("A test page".to_string()),
             tagline: Some("This is a tagline.".to_string()),
-            path: "/test/".to_string(),
             permalink: "https://example.com/test/".to_string(),
             content: "<p>Content</p>".to_string(),
             raw_content: "Content".to_string(),
@@ -546,10 +546,10 @@ mod tests {
 
     fn create_test_section() -> SectionContext {
         SectionContext {
+            path: "/blog/".to_string(),
             toc: Vec::new(),
             title: "Blog".to_string(),
             description: Some("Blog section description".to_string()),
-            path: "/blog/".to_string(),
             permalink: "https://example.com/blog/".to_string(),
             content: Some("<p>Welcome to the blog.</p>".to_string()),
             pages: vec![create_test_page()],

@@ -18,7 +18,6 @@ fn test_load_page_from_file() {
         page.frontmatter.description,
         Some("About this site".to_string())
     );
-    assert_eq!(page.path, "/about/");
     assert!(page.raw_content.contains("# About"));
 }
 
@@ -29,7 +28,6 @@ fn test_load_home_page() {
     assert!(result.is_ok());
     let page = result.unwrap();
 
-    assert_eq!(page.path, "/");
     assert_eq!(page.frontmatter.title, "Home");
 }
 
@@ -111,6 +109,37 @@ fn test_page_draft_status() {
 
     assert!(draft.is_draft());
     assert!(!published.is_draft());
+}
+
+/// #55: the draft count is observed where skips happen, not inferred by
+/// subtraction. `content_site` carries exactly one draft; the count must
+/// equal it whether or not other documents would have been skipped, and
+/// `--include-drafts` must report zero skips.
+#[test]
+fn test_process_content_reports_observed_draft_count() {
+    use taxus_lib::config::SiteConfig;
+    use taxus_lib::routes::RouteRegistry;
+
+    let config = SiteConfig::from_dir("tests/fixtures/content_site").unwrap();
+
+    let content_dir = PathBuf::from("tests/fixtures/content_site/content");
+    let tree = RouteDiscovery::new(&content_dir).discover_tree().unwrap();
+    let registry = RouteRegistry::from_tree(&tree);
+
+    let (processed, skipped) =
+        taxus_lib::build::pipeline::process_content(&tree, &registry, &config, false, None)
+            .unwrap();
+
+    // The site's documents are three pages (about, draft-post,
+    // first-post) plus two section indexes (root, blog); the one draft
+    // is skipped, leaving four processed.
+    assert_eq!(skipped, 1, "exactly the one draft is counted as skipped");
+    assert_eq!(processed.len(), 4);
+
+    let (processed, skipped) =
+        taxus_lib::build::pipeline::process_content(&tree, &registry, &config, true, None).unwrap();
+    assert_eq!(skipped, 0, "including drafts skips nothing");
+    assert_eq!(processed.len(), 5);
 }
 
 #[test]

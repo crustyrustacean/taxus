@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **build**: The Site Tree is the whole model: stage 3 no longer re-reads
+  and re-parses every content file from disk — it walks the tree's
+  documents in canonical order and builds `ProcessedPage`s from the node
+  data discovery already parsed. `Page` shrinks to exactly the node's
+  document shape (`frontmatter`, `raw_content`): the misleading
+  root-slug `path`, the `source` duplicate of the route's
+  `content_file`, the never-set `content` temporary, `slug()`, and
+  `from_file_in` are gone. Golden output for every fixture and
+  `get-taxus-org` is byte-identical
+- **build**: `drafts_skipped` is counted where documents are skipped,
+  not inferred by subtracting processed pages from route count (#55)
+
 ### Fixed
 
 - **templates**: Taxonomy term links built with the `slugify` filter (ASCII,

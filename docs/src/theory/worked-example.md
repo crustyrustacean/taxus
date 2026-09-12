@@ -115,14 +115,15 @@ The date is not in it.
 
 ## 4. The processed page
 
-Stage 3, `[3/15] Processing content...`, reads the file again through
-`Page::from_file_in`, resolves `@/` links (there are none), and renders
-the Markdown. The result:
+Stage 3, `[3/15] Processing content...`, takes the tree node — the
+same parse discovery already made; nothing is read from disk a second
+time — resolves `@/` links (there are none), and renders the Markdown.
+The result:
 
 ```rust
 ProcessedPage {
     route:        RouteInfo { path: "/blog/project-launch/", .. },
-    page:         Page { frontmatter, raw_content: body, source: "blog/2026-04-03-project-launch.md", .. },
+    page:         Page { frontmatter, raw_content: body },
     html_content: "<h3 id=\"ready-set-go\">Ready, Set, Go!</h3>\n<p>Welcome to the official launch of Taxus! ...",
     toc:          [TocEntry { level: 3, text: "Ready, Set, Go!", id: "ready-set-go", .. }, ..],
     hero_image:   None,

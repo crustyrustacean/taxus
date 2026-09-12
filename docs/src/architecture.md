@@ -64,11 +64,14 @@ here, and duplicate paths fail here. An empty registry ends the build with
 Produces a `TeraRenderer` with the `island()`, `get_section()` and
 `get_page()` functions and the `slugify` and `date` filters registered.
 
-**[3/15] Processing content** (emit). Reads the registry, the config and
-each content file again. Produces one `ProcessedPage` per route:
-internal links resolved against the registry, Markdown rendered to HTML,
-headings collected into a table of contents, code blocks highlighted.
-Drafts are dropped here unless `--include-drafts` was passed.
+**[3/15] Processing content** (emit). Reads the tree — the same parse
+discovery already made; no file is read from disk a second time — the
+registry and the config. Produces one `ProcessedPage` per document in
+canonical tree order: internal links resolved against the registry,
+Markdown rendered to HTML, headings collected into a table of contents,
+code blocks highlighted. Drafts are dropped here unless
+`--include-drafts` was passed; skipped documents are counted as they
+happen, not inferred by subtraction (#55).
 
 **[4/15] Processing images** (emit). Reads the processed pages and
 `[images]` config. For every page with `hero_image`, produces resized

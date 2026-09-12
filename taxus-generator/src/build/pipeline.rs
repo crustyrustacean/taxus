@@ -33,13 +33,15 @@ use crate::build::pipeline::internal_links::resolve_internal_links;
 use crate::build::ssr::block_on_ssr;
 use crate::config::SiteConfig;
 use crate::content::Page;
-use crate::error::{GeneratorError, Result};
+use crate::error::{GeneratorError, Result, RouteError};
 use crate::images::{ImageProcessor, ImageRegistry, ProcessedImage};
 use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
 use std::fs;
 use std::path::Path;
 use taxus_domain::SiteTree;
+use taxus_domain::UrlPath;
+use taxus_domain::derivation::documents;
 use tracing::{debug, debug_span, info, warn};
 
 use taxus_common::components::counter::{Counter, CounterProps};
@@ -114,23 +116,48 @@ pub fn load_templates(config: &SiteConfig) -> Result<TeraRenderer> {
 }
 
 /// Process content files into rendered HTML.
+///
+/// The tree is the whole model (#55, Phase 3 of the seam-closure plan):
+/// discovery already parsed every file into tree nodes — frontmatter and
+/// raw body — so this stage re-reads nothing from disk. It walks the
+/// documents in canonical tree order, joins each to its route by node
+/// path, and counts skips as they happen (drafts today, anything else
+/// tomorrow) rather than inferring them by subtraction.
+///
+/// Returns the processed pages and the number of documents skipped.
 pub fn process_content(
+    tree: &SiteTree,
     registry: &RouteRegistry,
     config: &SiteConfig,
     include_drafts: bool,
     mut highlighter: Option<&mut CodeHighlighter>,
-) -> Result<Vec<ProcessedPage>> {
+) -> Result<(Vec<ProcessedPage>, usize)> {
     let mut pages = Vec::new();
+    let mut skipped = 0usize;
 
-    for route in registry.iter() {
-        // Load the page; `source` is the content-relative path, the same
-        // identity the tree node and the route carry.
-        let page = Page::from_file_in(&config.build.content_dir, &route.content_file)?;
-
-        // Skip drafts unless explicitly included
-        if page.is_draft() && !include_drafts {
+    for node in documents(tree) {
+        // The skip paths live here, counted where they happen.
+        if node.is_draft() && !include_drafts {
+            skipped += 1;
             continue;
         }
+
+        // The route for this document, joined by node path — the same
+        // identity `RouteRegistry::from_tree` registered it under.
+        let route = registry
+            .get(&UrlPath::from_node_path(node.path()).to_string())
+            .cloned()
+            .ok_or_else(|| {
+                GeneratorError::Route(Box::new(RouteError::InvalidPath(format!(
+                    "tree node {} has no route",
+                    node.path()
+                ))))
+            })?;
+
+        let page = Page {
+            frontmatter: node.meta().clone(),
+            raw_content: node.body().to_string(),
+        };
 
         // Resolve internal links in the content
         let resolved_content =
@@ -147,7 +174,7 @@ pub fn process_content(
         );
 
         pages.push(ProcessedPage {
-            route: route.clone(),
+            route,
             page,
             html_content,
             toc,
@@ -155,7 +182,7 @@ pub fn process_content(
         });
     }
 
-    Ok(pages)
+    Ok((pages, skipped))
 }
 
 /// Process assets (SCSS and static files).

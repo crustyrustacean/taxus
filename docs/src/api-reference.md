@@ -290,25 +290,24 @@ One parsed content file (page or index file).
 
 ```rust
 pub struct Page {
-    pub frontmatter: Frontmatter,
-    pub path: String,            // root-level slug path, "/my-post/"; NOT the served URL
-    pub source: PathBuf,         // content file, e.g. "blog/post-1.md"
-    pub raw_content: String,     // the body
-    pub content: Option<String>, // rendered HTML; set only for full-content feeds
+    pub frontmatter: Frontmatter, // page metadata
+    pub raw_content: String,      // the Markdown body
 }
 ```
 
+A `Page` is the parsed form of one tree node's document — exactly what
+discovery read from disk, nothing computed. The build constructs them
+from the tree in stage 3; the served URL lives on
+[`ProcessedPage`](#processedpage), never here.
+
 | Method | Description |
 |--------|-------------|
-| `from_file(path: P) -> Result<Self>` | Load from a Markdown file; `source` is the path as given |
-| `from_file_in(content_dir: C, relative: R) -> Result<Self>` | Load `content_dir/relative`; `source` is `relative` (what the build uses) |
-| `from_str(content: &str, source: &str) -> Result<Self>` | Parse from string |
+| `from_file(path: P) -> Result<Self>` | Load from a Markdown file |
+| `from_str(content: &str, source: &str) -> Result<Self>` | Parse from string (what discovery uses) |
 | `template(&self) -> &str` | `template`, or `"page.html"` |
 | `is_draft(&self) -> bool` | Check if draft |
 | `summary(&self) -> String` | Frontmatter `summary`, else text before `<!-- more -->`, else first paragraph |
 | `word_count(&self) -> usize`, `reading_time(&self) -> usize` | From the body; 200 words per minute, rounded up |
-| `slug(&self) -> &str` | Frontmatter `slug`, else the date-stripped file stem |
-| `url_path(&self) -> String` | The slug as a root-level path; not the served URL (use `ProcessedPage::effective_url_path`) |
 | `aliases`, `tags`, `categories`, `series` | Frontmatter accessors |
 
 ### `split_date_prefix`
@@ -607,7 +606,7 @@ pub struct RenderedPage {
 | `discover_tree(&SiteConfig) -> Result<SiteTree>` | 1 | Build the Site Tree |
 | `discover_routes(&SiteConfig) -> Result<RouteRegistry>` | 1 | The tree projected to routes |
 | `load_templates(&SiteConfig) -> Result<TeraRenderer>` | 2 | Load templates |
-| `process_content(&RouteRegistry, &SiteConfig, include_drafts, highlighter) -> Result<Vec<ProcessedPage>>` | 3 | Render Markdown |
+| `process_content(&SiteTree, &RouteRegistry, &SiteConfig, include_drafts, highlighter) -> Result<(Vec<ProcessedPage>, usize)>` | 3 | Render Markdown from the tree; returns the pages and the observed skip count (#55) |
 | `process_images(&mut [ProcessedPage], &SiteConfig, dry_run) -> Result<ImageRegistry>` | 4 | Hero image variants |
 | `copy_colocated_assets(content_dir, output_dir, dry_run) -> Result<AssetReport>` | 5 | Copy non-`.md` files |
 | `pages::render_pages(&[ProcessedPage], &SiteTree, &TeraRenderer, &SiteContext, verbose) -> Result<Vec<RenderedPage>>` | 6 | Run templates |

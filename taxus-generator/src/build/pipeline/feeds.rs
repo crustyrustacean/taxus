@@ -103,14 +103,16 @@ pub fn generate_feeds(
         .iter()
         .filter_map(|n| processed_by_file.get(n.content_file.as_path()))
         .map(|p| {
-            let mut page = p.page.clone();
-            // Set content for full-content feeds
-            if config.feed.full_content {
-                page.content = Some(p.html_content.clone());
-            }
-            FeedEntry::from_page(
-                &page,
+            let content = if config.feed.full_content {
+                Some(p.html_content.clone())
+            } else {
+                None
+            };
+            FeedEntry::from_parts(
+                &p.page.frontmatter,
+                p.page.summary(),
                 compute_permalink(&config.site.base_url, &p.effective_url_path()),
+                content,
             )
         })
         .collect();
@@ -286,10 +288,7 @@ mod feed_membership_tests {
             .unwrap(),
             page: Page {
                 frontmatter: fm,
-                path: path.to_string(),
-                source: PathBuf::from(file),
                 raw_content: String::new(),
-                content: None,
             },
             html_content: String::new(),
             hero_image: None,
