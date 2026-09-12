@@ -234,7 +234,7 @@ impl RouteDiscovery {
         if parent.as_os_str().is_empty() {
             return Ok(NodePath::root());
         }
-        NodePath::parse(&slugify_path(&parent.display().to_string()))
+        NodePath::parse(&slugify_path(&parent_segments(parent)))
             .map_err(|e| RouteError::InvalidPath(e.to_string()).into())
     }
 
@@ -304,7 +304,7 @@ impl RouteDiscovery {
         if parent.as_os_str().is_empty() {
             "/".to_string()
         } else {
-            format!("/{}/", slugify_path(&parent.display().to_string()))
+            format!("/{}/", slugify_path(&parent_segments(parent)))
         }
     }
 
@@ -318,7 +318,7 @@ impl RouteDiscovery {
         if parent.as_os_str().is_empty() {
             PathBuf::from("index.html")
         } else {
-            PathBuf::from(slugify_path(&parent.display().to_string())).join("index.html")
+            PathBuf::from(slugify_path(&parent_segments(parent))).join("index.html")
         }
     }
 
@@ -336,7 +336,7 @@ impl RouteDiscovery {
         } else {
             format!(
                 "/{}/",
-                slugify_path(&format!("{}/{}", parent.display(), stem))
+                slugify_path(&format!("{}/{}", parent_segments(parent), stem))
             )
         }
     }
@@ -350,10 +350,28 @@ impl RouteDiscovery {
         if parent.as_os_str().is_empty() {
             PathBuf::from(slugify_path(stem)).join("index.html")
         } else {
-            PathBuf::from(slugify_path(&format!("{}/{}", parent.display(), stem)))
-                .join("index.html")
+            PathBuf::from(slugify_path(&format!(
+                "{}/{}",
+                parent_segments(parent),
+                stem
+            )))
+            .join("index.html")
         }
     }
+}
+
+/// A content-relative directory as `/`-joined segments, whatever the
+/// platform's separator.
+///
+/// `Path::display()` prints the native separator, and on Windows
+/// `blog\\2026` would reach [`slugify_path`] as one segment and become
+/// `blog-2026`. Joining the components keeps the segment boundaries.
+fn parent_segments(parent: &Path) -> String {
+    parent
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Internal helper function for testing path conversion.
@@ -373,6 +391,22 @@ fn convert_path(path: &str) -> (String, PathBuf, RouteKind) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `Path::join` uses the native separator, so on Windows this is the
+    /// `blog\\2026` case that used to slugify into `blog-2026`.
+    #[test]
+    fn test_parent_segments_join_with_forward_slash() {
+        let nested = Path::new("blog").join("2026").join("archive");
+        assert_eq!(parent_segments(&nested), "blog/2026/archive");
+        assert_eq!(parent_segments(Path::new("blog")), "blog");
+        assert_eq!(parent_segments(Path::new("")), "");
+        assert_eq!(
+            RouteDiscovery::parent_to_node_path(&Path::new("blog").join("2026"))
+                .unwrap()
+                .to_string(),
+            "blog/2026"
+        );
+    }
     use crate::content::MockContentSource;
 
     // Path conversion tests

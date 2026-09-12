@@ -25,6 +25,12 @@
 //!   and `<published>` element bodies are blanked before hashing: feeds
 //!   stamp the build time, and undated pages get the build time as their
 //!   publication date.
+//! - Text outputs (`html`, `xml`, `txt`, `svg`, `css`, `js`, `json`) are
+//!   hashed with `\r\n` folded to `\n`. A git checkout with
+//!   `core.autocrlf=true` (the Windows default) gives every template,
+//!   content file and static asset CRLF endings, which the build copies
+//!   through verbatim; the manifests were recorded from LF sources. The
+//!   `crlf_sources_build_to_the_same_manifest` test pins this.
 //! - Hero image variants are named `<stem>-<hash>-<width>w.<ext>`, where
 //!   the hash is a digest of the source's bytes and the encoding quality.
 //!   It is the same on every checkout, so variant names are recorded as
@@ -108,13 +114,18 @@ fn blank_element(xml: &str, tag: &str) -> String {
     out
 }
 
-/// Normalise build-time-dependent bytes before hashing.
+/// Output files whose bytes are text: hashed with CRLF folded to LF.
+const TEXT_EXTENSIONS: &[&str] = &["html", "xml", "txt", "svg", "css", "js", "json"];
+
+/// Normalise build-time-dependent and platform-dependent bytes before
+/// hashing: feed timestamps, and CRLF line endings that a Windows checkout
+/// introduces into every text source.
 fn normalise(relative: &Path, bytes: Vec<u8>) -> Vec<u8> {
     let ext = relative.extension().and_then(|e| e.to_str());
-    if matches!(ext, Some("xml" | "html"))
+    if ext.is_some_and(|e| TEXT_EXTENSIONS.contains(&e))
         && let Ok(text) = String::from_utf8(bytes.clone())
     {
-        let mut text = text;
+        let mut text = text.replace("\r\n", "\n");
         if ext == Some("xml") {
             for tag in ["lastBuildDate", "pubDate", "updated", "published"] {
                 text = blank_element(&text, tag);
@@ -288,6 +299,56 @@ fn check_site(site: &str) {
         "If this change is intended, re-baseline with GOLDEN_UPDATE=1 in a dedicated commit.\n",
     );
     panic!("{report}");
+}
+
+/// A site whose sources have CRLF endings — what `core.autocrlf=true`
+/// checks out on Windows — builds to the committed manifest.
+#[test]
+fn crlf_sources_build_to_the_same_manifest() {
+    const SOURCE_TEXT: &[&str] = &[
+        "md", "html", "toml", "txt", "scss", "css", "js", "svg", "xml",
+    ];
+    let site = "internal_links_site";
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/internal_links_site");
+    let tmp = tempfile::TempDir::new().expect("tempdir");
+    let copy = tmp.path().join(site);
+    let mut converted = 0;
+    for entry in walkdir::WalkDir::new(&source)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+    {
+        let relative = entry.path().strip_prefix(&source).unwrap();
+        // The fixture's own build output is not a source.
+        if relative.starts_with("dist") {
+            continue;
+        }
+        let target = copy.join(relative);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        let bytes = fs::read(entry.path()).unwrap();
+        let ext = relative.extension().and_then(|e| e.to_str());
+        if ext.is_some_and(|e| SOURCE_TEXT.contains(&e)) {
+            let text = String::from_utf8(bytes).expect("text source is UTF-8");
+            fs::write(&target, text.replace("\r\n", "\n").replace('\n', "\r\n")).unwrap();
+            converted += 1;
+        } else {
+            fs::write(&target, bytes).unwrap();
+        }
+    }
+    assert!(converted > 0, "fixture has text sources to convert");
+
+    let expected = read_manifest(&manifest_path(site));
+    let actual = build_manifest(&copy);
+    let differing: Vec<&String> = expected
+        .iter()
+        .filter(|(path, hash)| *hash != UNSTABLE && actual.get(*path) != Some(hash))
+        .map(|(path, _)| path)
+        .collect();
+    assert!(
+        differing.is_empty(),
+        "CRLF sources changed the manifest for: {differing:?}"
+    );
+    assert_eq!(actual.len(), expected.len(), "file set differs");
 }
 
 #[test]

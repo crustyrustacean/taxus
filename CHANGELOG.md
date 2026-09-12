@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **routes**: On Windows a nested content directory (`content/blog/2026/`)
+  produced the URL `/blog-2026/` instead of `/blog/2026/`: the directory
+  path reached the slugifier with a backslash, which is not a segment
+  separator there. Directory segments are now joined with `/` before
+  slugifying on every platform
+- **tests**: The golden output test hashes text outputs with CRLF folded to
+  LF, so a `core.autocrlf=true` checkout (the Windows default) matches the
+  committed manifests; a test builds a CRLF copy of a fixture to pin this
 - **content**: `Page::source` keeps the directory. `Page::from_file` stores
   the path it was given instead of the bare file name, and the new
   `Page::from_file_in(content_dir, relative)` — which the build now uses —
