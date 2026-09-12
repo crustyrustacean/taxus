@@ -112,15 +112,28 @@ enum Command {
     /// build get-taxus-org).
     Ci,
 
-    /// Prepend the next version's changelog section to CHANGELOG.md with
-    /// git-cliff (changelog only; versioning and tagging go through
-    /// `cargo release`). The version is the workspace version bumped by
-    /// the given level.
+    /// Promote CHANGELOG.md's `[Unreleased]` section to the next version
+    /// (the workspace version bumped by the given level). Changelog only;
+    /// versioning and tagging go through `cargo release`, whose hook runs
+    /// `cargo xtask changelog`.
     Release {
         /// Bump level: "major", "minor", or "patch".
         #[arg(long, value_parser = ["major", "minor", "patch"])]
         bump: String,
-        /// Dry-run: print the generated section instead of writing it.
+        /// Dry-run: report what would change without writing CHANGELOG.md.
+        #[arg(long)]
+        dry_run: bool,
+    },
+
+    /// Promote CHANGELOG.md's `[Unreleased]` section to an explicit version.
+    /// This is the `cargo release` pre-release hook; a no-op when the
+    /// version's section already exists and `[Unreleased]` is empty.
+    #[command(disable_version_flag = true)]
+    Changelog {
+        /// The version being released, e.g. 1.0.0.
+        #[arg(long)]
+        version: String,
+        /// Dry-run: report what would change without writing CHANGELOG.md.
         #[arg(long)]
         dry_run: bool,
     },
@@ -167,6 +180,7 @@ fn main() {
         Command::Clean => cmd_clean(),
         Command::Ci => cmd_ci(),
         Command::Release { bump, dry_run } => cmd_release(&bump, dry_run),
+        Command::Changelog { version, dry_run } => cmd_changelog(&version, dry_run),
         Command::Deploy {
             project,
             branch,
@@ -506,16 +520,131 @@ fn bump_version(version: &str, level: &str) -> Result<String, String> {
     })
 }
 
-/// Generate the next version's changelog section with git-cliff.
-///
-/// The section covers every commit since the latest tag (`--unreleased`)
-/// under the bumped workspace version. Without `--dry-run` it is prepended
-/// to `CHANGELOG.md`; with it, git-cliff prints the section and writes
-/// nothing. Versioning and tagging are `cargo release`'s job (see
-/// `release.toml`, whose hook runs the same git-cliff command).
-fn cmd_release(bump: &str, dry_run: bool) -> i32 {
-    require_tool("git-cliff", "Install with: cargo install git-cliff");
+/// Today's date in UTC as `YYYY-MM-DD`, from the system clock.
+fn today_utc() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    // Howard Hinnant's civil-from-days; days since 1970-01-01.
+    let z = (secs / 86_400) as i64 + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + i64::from(month <= 2);
+    format!("{year:04}-{month:02}-{day:02}")
+}
 
+/// What [`promote_changelog`] did.
+#[derive(Debug, PartialEq, Eq)]
+enum Promotion {
+    /// `[Unreleased]` became `[version] - date`; a fresh empty
+    /// `[Unreleased]` sits above it.
+    Promoted,
+    /// `[version]` already exists and `[Unreleased]` is empty: nothing to do.
+    /// Lets the release hook run more than once without harm.
+    AlreadyPromoted,
+}
+
+/// Promote the `## [Unreleased]` section of a Keep-a-Changelog file to
+/// `## [version] - date`, leaving an empty `## [Unreleased]` above it.
+///
+/// The changelog is written by hand, one entry per change, as the work
+/// lands; releasing only renames the section. Fails when there is no
+/// `[Unreleased]` heading, when the section is empty (nothing to release),
+/// or when `[version]` already exists with unreleased entries still
+/// pending (the version was released and new work has accumulated since).
+fn promote_changelog(text: &str, version: &str, date: &str) -> Result<(String, Promotion), String> {
+    let unreleased = "## [Unreleased]";
+    let versioned = format!("## [{version}]");
+    let lines: Vec<&str> = text.lines().collect();
+    let start = lines
+        .iter()
+        .position(|l| l.trim_end() == unreleased)
+        .ok_or_else(|| format!("no `{unreleased}` heading in CHANGELOG.md"))?;
+    let end = lines[start + 1..]
+        .iter()
+        .position(|l| l.starts_with("## "))
+        .map_or(lines.len(), |i| start + 1 + i);
+    let body_is_empty = lines[start + 1..end].iter().all(|l| l.trim().is_empty());
+    let already_released = lines.iter().any(|l| l.starts_with(&versioned));
+
+    match (already_released, body_is_empty) {
+        (true, true) => return Ok((text.to_string(), Promotion::AlreadyPromoted)),
+        (true, false) => {
+            return Err(format!(
+                "`{versioned}` already exists and `{unreleased}` has entries; bump to a new version"
+            ));
+        }
+        (false, true) => {
+            return Err(format!("`{unreleased}` is empty: nothing to release"));
+        }
+        (false, false) => {}
+    }
+
+    let mut out: Vec<String> = lines[..start].iter().map(|l| l.to_string()).collect();
+    out.push(unreleased.to_string());
+    out.push(String::new());
+    out.push(format!("{versioned} - {date}"));
+    out.extend(lines[start + 1..].iter().map(|l| l.to_string()));
+    let mut joined = out.join("\n");
+    if text.ends_with('\n') {
+        joined.push('\n');
+    }
+    Ok((joined, Promotion::Promoted))
+}
+
+/// Promote `[Unreleased]` to `version` in the workspace CHANGELOG.md.
+fn cmd_changelog(version: &str, dry_run: bool) -> i32 {
+    let path = workspace_root().join("CHANGELOG.md");
+    let text = match std::fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("error: cannot read {}: {e}", path.display());
+            return 1;
+        }
+    };
+    let date = today_utc();
+    match promote_changelog(&text, version, &date) {
+        Ok((_, Promotion::AlreadyPromoted)) => {
+            eprintln!("  ✓ CHANGELOG.md already has [{version}] and no unreleased entries");
+            0
+        }
+        Ok((updated, Promotion::Promoted)) => {
+            let entries = updated
+                .lines()
+                .skip_while(|l| !l.starts_with(&format!("## [{version}]")))
+                .skip(1)
+                .take_while(|l| !l.starts_with("## "))
+                .filter(|l| l.starts_with("- "))
+                .count();
+            if dry_run {
+                eprintln!(
+                    "  ✓ would promote [Unreleased] ({entries} entries) to [{version}] - {date} (dry run)"
+                );
+                return 0;
+            }
+            if let Err(e) = std::fs::write(&path, updated) {
+                eprintln!("error: cannot write {}: {e}", path.display());
+                return 1;
+            }
+            eprintln!("  ✓ promoted [Unreleased] ({entries} entries) to [{version}] - {date}");
+            0
+        }
+        Err(e) => {
+            eprintln!("error: {e}");
+            1
+        }
+    }
+}
+
+/// `cargo xtask release --bump <level>`: promote `[Unreleased]` to the
+/// workspace version bumped by `level`.
+fn cmd_release(bump: &str, dry_run: bool) -> i32 {
     let current = match workspace_version() {
         Ok(v) => v,
         Err(e) => {
@@ -530,20 +659,12 @@ fn cmd_release(bump: &str, dry_run: bool) -> i32 {
             return 1;
         }
     };
-    let tag = format!("v{next}");
-    eprintln!("\n━━━ Changelog for {tag} ({bump} bump from {current}) ━━━\n");
-
-    let mut args = vec!["--unreleased", "--tag", tag.as_str()];
-    let label = if dry_run {
-        "git-cliff (dry run: section printed, CHANGELOG.md untouched)"
-    } else {
-        args.extend(["--prepend", "CHANGELOG.md"]);
-        "git-cliff — prepend to CHANGELOG.md"
-    };
-
-    let rc = run(label, "git-cliff", &args);
-    if rc == 0 && dry_run {
-        eprintln!("\n  Dry run complete. Re-run without --dry-run to prepend to CHANGELOG.md.");
+    eprintln!("\n━━━ Changelog for {next} ({bump} bump from {current}) ━━━\n");
+    let rc = cmd_changelog(&next, dry_run);
+    if rc == 0 {
+        eprintln!(
+            "\n  Versioning and tagging: `cargo release {bump} --execute --no-confirm` runs this\n  step itself, bumps every crate to {next}, commits and tags v{next}."
+        );
     }
     rc
 }
@@ -616,7 +737,59 @@ fn cmd_deploy(project: &str, branch: Option<&str>, prod_branch: &str, no_build: 
 
 #[cfg(test)]
 mod tests {
-    use super::bump_version;
+    use super::{Promotion, bump_version, promote_changelog, today_utc};
+
+    const CHANGELOG: &str = "# Changelog\n\nIntro.\n\n## [Unreleased]\n\n### Added\n\n- one\n- two\n\n## [0.7.0] - 2026-09-07\n\n### Fixed\n\n- old\n";
+
+    #[test]
+    fn promote_renames_unreleased_and_leaves_an_empty_one() {
+        let (out, what) = promote_changelog(CHANGELOG, "1.0.0", "2026-09-12").unwrap();
+        assert_eq!(what, Promotion::Promoted);
+        assert_eq!(
+            out,
+            "# Changelog\n\nIntro.\n\n## [Unreleased]\n\n## [1.0.0] - 2026-09-12\n\n### Added\n\n- one\n- two\n\n## [0.7.0] - 2026-09-07\n\n### Fixed\n\n- old\n"
+        );
+    }
+
+    #[test]
+    fn promote_is_a_no_op_once_done() {
+        let (once, _) = promote_changelog(CHANGELOG, "1.0.0", "2026-09-12").unwrap();
+        let (twice, what) = promote_changelog(&once, "1.0.0", "2026-09-13").unwrap();
+        assert_eq!(what, Promotion::AlreadyPromoted);
+        assert_eq!(twice, once);
+    }
+
+    #[test]
+    fn promote_rejects_empty_missing_and_stale() {
+        let empty = "# Changelog\n\n## [Unreleased]\n\n## [0.7.0] - 2026-09-07\n\n- old\n";
+        assert!(
+            promote_changelog(empty, "1.0.0", "2026-09-12")
+                .unwrap_err()
+                .contains("empty")
+        );
+        assert!(
+            promote_changelog("# Changelog\n\n## [0.7.0]\n", "1.0.0", "2026-09-12")
+                .unwrap_err()
+                .contains("no `## [Unreleased]`")
+        );
+        // 1.0.0 was released and new entries accumulated: bump again.
+        let (released, _) = promote_changelog(CHANGELOG, "1.0.0", "2026-09-12").unwrap();
+        let stale = released.replacen("## [Unreleased]\n", "## [Unreleased]\n\n- newer\n", 1);
+        assert!(
+            promote_changelog(&stale, "1.0.0", "2026-09-13")
+                .unwrap_err()
+                .contains("already exists")
+        );
+    }
+
+    #[test]
+    fn today_is_iso_date() {
+        let today = today_utc();
+        assert_eq!(today.len(), 10, "{today}");
+        assert_eq!(&today[4..5], "-");
+        assert_eq!(&today[7..8], "-");
+        assert!(today.starts_with("20"), "{today}");
+    }
 
     #[test]
     fn bump_levels() {

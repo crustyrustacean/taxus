@@ -88,7 +88,8 @@ The workspace includes an `xtask` crate (aliased as `cargo xtask` via
 | `cargo xtask wasm [--release]` | Build WASM artifacts |
 | `cargo xtask clean` | Clean build artifacts |
 | `cargo xtask ci` | Run the full local CI pipeline (fmt, lint, build, test, WASM check, build `get-taxus-org/` into `target/ci-site`) |
-| `cargo xtask release --bump <major\|minor\|patch> [--dry-run]` | Changelog only: prepends the next version's section (workspace version bumped by the level) to `CHANGELOG.md` with git-cliff; `--dry-run` prints it instead. See [Releasing](#releasing) for the full procedure — versioning and tagging go through `cargo release` |
+| `cargo xtask release --bump <major\|minor\|patch> [--dry-run]` | Changelog only: promotes `[Unreleased]` in `CHANGELOG.md` to the workspace version bumped by the level. See [Releasing](#releasing) — versioning and tagging go through `cargo release` |
+| `cargo xtask changelog --version <x.y.z> [--dry-run]` | The `cargo release` pre-release hook: promotes `[Unreleased]` to that version; a no-op once done |
 | `cargo xtask deploy [--project <name>] [--branch <name>] [--prod-branch <name>] [--no-build]` | Build `get-taxus-org/` and deploy to Cloudflare Pages via wrangler (workspace tool; requires Cloudflare credentials) |
 
 ## Logging
@@ -126,11 +127,16 @@ fn build_site() {
 
 ## Releasing
 
+The changelog is written by hand: every change adds an entry under
+`## [Unreleased]` in `CHANGELOG.md` as it lands (Keep a Changelog headings —
+Added, Changed, Removed, Fixed). Releasing renames that section; nothing is
+generated from commit messages.
+
 Three commands. The only decision is the bump level.
 
 ```bash
-# 1. See what's going into the release
-git log v<last-tag>..HEAD --oneline
+# 1. Read the [Unreleased] section — that is the release note
+cargo xtask release --bump <level> --dry-run
 
 # 2. Cut the release (bumps all crates, writes the changelog, commits, tags)
 cargo release <level> --execute --no-confirm
@@ -156,8 +162,8 @@ git log v<last-tag>..HEAD --format="%s" | grep -c "^feat"
 Notes:
 
 - `--no-confirm` skips the interactive prompt (required for non-interactive terminals).
-- `cargo-release` runs a git-cliff hook that prepends to `CHANGELOG.md`; it resolves `../CHANGELOG.md` because hooks run from `taxus-generator/`, not the workspace root.
-- `--dry-run` **skips the hook entirely**, so it verifies nothing about changelog generation. To test the hook alone: `cargo release hook`.
+- `cargo-release` runs `cargo xtask changelog --version <x.y.z>` as its pre-release hook, which turns `## [Unreleased]` into `## [x.y.z] - <date>` and leaves an empty `## [Unreleased]` above it. It fails if `[Unreleased]` is empty, and is a no-op if the version's section already exists, so re-running is safe.
+- `cargo release --dry-run` **skips the hook entirely**; use `cargo xtask release --bump <level> --dry-run` to check the changelog step, or `cargo release hook` to run the hook alone.
 - A plain `cargo release <level>` (no `--execute`) still modifies `Cargo.toml` and `CHANGELOG.md` before stopping — `git checkout -- .` to undo.
 - `push = false` and `publish = false` in `release.toml`: nothing leaves the machine until step 3.
 - If `cargo build`/`test` fails with `Access is denied (os error 5)` on Windows, a running `taxus.exe` (usually a leftover `serve`) is holding the binary: `taskkill /F /IM taxus.exe` and retry.
