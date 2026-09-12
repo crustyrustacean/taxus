@@ -777,8 +777,12 @@ mod tests {
         std::fs::create_dir_all(elsewhere.parent().unwrap()).unwrap();
         std::fs::copy(&original, &elsewhere).unwrap();
         // A copy has its own mtime; make the difference unmistakable.
+        // Setting the time needs a writable handle: on Windows a read-only
+        // `File::open` is refused with "Access is denied".
         let old = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
-        std::fs::File::open(&elsewhere)
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&elsewhere)
             .unwrap()
             .set_modified(old)
             .unwrap();
