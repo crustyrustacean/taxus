@@ -108,7 +108,8 @@ enum Command {
     /// Clean build artifacts.
     Clean,
 
-    /// Run the full CI pipeline locally (fmt, lint, test for default + islands).
+    /// Run the full CI pipeline locally (fmt, lint, build, test, WASM check,
+    /// build get-taxus-org).
     Ci,
 
     /// Prepare a release: generate changelog, tag, verify build.
@@ -392,35 +393,74 @@ fn cmd_clean() -> i32 {
 }
 
 /// Run the full CI pipeline locally (fmt, lint, test, WASM check).
+/// Build the product site with the debug binary into `target/ci-site`,
+/// the same `taxus build` the deploy workflow runs, so a change that
+/// breaks it fails in CI rather than on the deploy.
+fn cmd_build_site() -> i32 {
+    let output = workspace_root().join("target").join("ci-site");
+    let output = output.to_string_lossy().into_owned();
+    let rc = run(
+        "taxus build get-taxus-org",
+        "cargo",
+        &[
+            "run",
+            "-p",
+            "taxus",
+            "--",
+            "build",
+            "--dir",
+            "get-taxus-org",
+            "--output",
+            &output,
+        ],
+    );
+    if rc != 0 {
+        return rc;
+    }
+    for expected in ["index.html", "feed.xml"] {
+        if !Path::new(&output).join(expected).is_file() {
+            eprintln!("    error: {expected} missing from {output}");
+            return 1;
+        }
+    }
+    0
+}
+
 fn cmd_ci() -> i32 {
     eprintln!("\n━━━ CI pipeline ━━━\n");
 
-    eprintln!("[1/5] Format check");
+    eprintln!("[1/6] Format check");
     let rc = cmd_fmt(true);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[2/5] Clippy");
+    eprintln!("[2/6] Clippy");
     let rc = cmd_lint(None, false);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[3/5] Build");
+    eprintln!("[3/6] Build");
     let rc = cmd_build(false, None);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[4/5] Test");
+    eprintln!("[4/6] Test");
     let rc = cmd_test(false, None, false);
     if rc != 0 {
         return rc;
     }
 
-    eprintln!("[5/5] WASM check");
+    eprintln!("[5/6] WASM check");
     let rc = cmd_wasm(false);
+    if rc != 0 {
+        return rc;
+    }
+
+    eprintln!("[6/6] Build get-taxus.org");
+    let rc = cmd_build_site();
     if rc != 0 {
         return rc;
     }
