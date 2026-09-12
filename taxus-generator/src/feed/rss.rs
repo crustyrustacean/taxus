@@ -266,7 +266,7 @@ mod tests {
             match reader.read_event_into(&mut buf) {
                 Ok(quick_xml::events::Event::Eof) => break,
                 Ok(quick_xml::events::Event::CData(d)) => {
-                    text.push_str(&String::from_utf8_lossy(d.as_ref()));
+                    text.push_str(d.as_ref());
                 }
                 Ok(_) => {}
                 Err(e) => panic!("feed is not well-formed XML: {e}\n{rss}"),
