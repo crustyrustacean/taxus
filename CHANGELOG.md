@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **content**: `pages_from` frontmatter on a section's `_index.md` — a list
+  of content-relative section paths (`["blog", "blog/2026"]`) whose direct
+  pages the section also lists. This is how an index page shows pages it does
+  not own, now that listings are direct children only (#70)
 - **domain**: `derivation::documents(tree)` (every rendered document in
   tree order) and `derivation::group_by_terms(tree, include_drafts, terms_of)`
   (the index behind taxonomies)
@@ -52,6 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **build**: A section's `section.pages` are its **direct children only**.
+  Previously every page whose URL started with the section's URL was listed,
+  so the root page listed the entire site and `blog/` listed pages of any
+  section nested under it (#70). Sites that relied on the root listing posts
+  from a subsection should add `pages_from = ["blog"]` to the root
+  `_index.md`
+- **domain**: `derivation::aggregate` returns membership only (receiver's
+  pages, then each donor's, in tree order); ordering is the caller's
 - **build** (internal): Taxonomies, feeds and the sitemap take their
   membership from the tree (`group_by_terms`, `documents`) and join the
   rendered page by content file. `build_taxonomy_map`, `generate_feeds` and

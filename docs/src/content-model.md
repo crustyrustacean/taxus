@@ -171,8 +171,10 @@ root (SectionNode, path [])
 
 Every output follows:
 
-- `/` lists the root's pages (and can paginate)
-- `/blog/` lists `blog.pages`, sorted by date, sliced into pages of 10
+- `/` lists the root's own pages — and, with `pages_from = ["blog"]` in its
+  `_index.md`, the blog's pages too (and can paginate)
+- `/blog/` lists `blog.pages` — its direct children — sorted by date, sliced
+  into pages of 10
 - `/blog/my-post/` renders the page
 - `/tags/rust/` exists because the taxonomy index says so
 - `feed.xml` and `sitemap.xml` read the same tree through `effective_url_path()`

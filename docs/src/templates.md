@@ -327,7 +327,7 @@ See [Images](./images.md) for the complete guide.
 | `section.description` | String? | Optional section description |
 | `section.path` | String | Section URL path |
 | `section.content` | String? | Section HTML content |
-| `section.pages` | Array | List of pages in section |
+| `section.pages` | Array | The section's direct child pages, plus the direct pages of any `pages_from` sections, sorted by `sort_by` |
 | `section.pagination` | Object? | Pagination information |
 
 ### Pagination Context

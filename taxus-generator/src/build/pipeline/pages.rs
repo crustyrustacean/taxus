@@ -12,7 +12,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use taxus_domain::{NodePath, PageNode, SiteTree, derivation};
-use tracing::{debug, debug_span, info};
+use tracing::{debug, debug_span, info, warn};
 
 /// Build a `PageContext` from a `ProcessedPage`.
 ///
@@ -54,12 +54,12 @@ fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
 
 /// Collect the pages a section lists, in listing order.
 ///
-/// Membership comes from the tree: the section node is looked up by the
-/// route path and its subtree is walked with
-/// [`derivation::descendant_pages`] — direct children *and* deeper
-/// descendants, which is what trunk's prefix scan listed (the root section
-/// lists the whole site). Pages the build skipped (drafts) are dropped.
-/// Ordering is [`sort_section_pages`].
+/// Membership comes from the tree and is **direct children only**: the
+/// section node's `pages`, plus the direct pages of every section named in
+/// the section's `pages_from` frontmatter ([`derivation::aggregate`]).
+/// Deeper descendants are not listed, so the root lists the site only if
+/// its `_index.md` declares `pages_from` (#70). Pages the build skipped
+/// (drafts) are dropped. Ordering is [`sort_section_pages`].
 fn collect_child_pages(
     section: &ProcessedPage,
     tree: &SiteTree,
@@ -74,7 +74,25 @@ fn collect_child_pages(
         return Vec::new();
     };
 
-    let mut pages = derivation::descendant_pages(node);
+    let mut donors = Vec::new();
+    for raw in &section.page.frontmatter.pages_from {
+        match NodePath::parse(raw) {
+            Ok(path) if tree.get_section(&path).is_some() => donors.push(path),
+            Ok(_) => warn!(
+                section = %section.route.path,
+                pages_from = %raw,
+                "pages_from names a section that does not exist; ignoring it"
+            ),
+            Err(e) => warn!(
+                section = %section.route.path,
+                pages_from = %raw,
+                error = %e,
+                "pages_from entry is not a valid section path; ignoring it"
+            ),
+        }
+    }
+
+    let mut pages = derivation::aggregate(node, tree, &donors);
     sort_section_pages(&mut pages, section.page.frontmatter.sort_by);
     pages
         .iter()
@@ -931,5 +949,134 @@ Content here.
             html.contains("Featured!"),
             "Should contain featured extra variable"
         );
+    }
+
+    // ── Membership tests (#70) ────────────────────────────────────────────────
+
+    fn section_page(path: &str, file: &str, fm: Frontmatter) -> ProcessedPage {
+        let output = if path == "/" {
+            "index.html".to_string()
+        } else {
+            format!("{}/index.html", path.trim_matches('/'))
+        };
+        ProcessedPage {
+            toc: Vec::new(),
+            route: RouteInfo::new(
+                path.to_string(),
+                PathBuf::from(file),
+                PathBuf::from(output),
+                RouteKind::Section,
+            )
+            .unwrap(),
+            page: Page {
+                frontmatter: fm,
+                path: path.to_string(),
+                source: PathBuf::from(file),
+                raw_content: String::new(),
+                content: None,
+            },
+            html_content: String::new(),
+            hero_image: None,
+        }
+    }
+
+    fn plain_page(path: &str, file: &str, title: &str) -> ProcessedPage {
+        ProcessedPage {
+            toc: Vec::new(),
+            route: RouteInfo::new(
+                path.to_string(),
+                PathBuf::from(file),
+                PathBuf::from(format!("{}/index.html", path.trim_matches('/'))),
+                RouteKind::Page,
+            )
+            .unwrap(),
+            page: Page {
+                frontmatter: Frontmatter {
+                    title: title.to_string(),
+                    ..Default::default()
+                },
+                path: path.to_string(),
+                source: PathBuf::from(file),
+                raw_content: String::new(),
+                content: None,
+            },
+            html_content: String::new(),
+            hero_image: None,
+        }
+    }
+
+    fn listing_template() -> TeraRenderer {
+        let mut templates = TeraRenderer::new().unwrap();
+        templates
+            .register_template("page.html", "{{ page.title }}")
+            .unwrap();
+        templates
+            .register_template(
+                "section.html",
+                "{% for p in section.pages %}[{{ p.title }}]{% endfor %}",
+            )
+            .unwrap();
+        templates
+    }
+
+    fn listed(result: &[RenderedPage], path: &str) -> String {
+        result
+            .iter()
+            .find(|r| r.route.path == path)
+            .unwrap()
+            .content
+            .clone()
+    }
+
+    #[test]
+    fn test_section_lists_direct_children_only() {
+        let processed = vec![
+            section_page("/", "_index.md", Frontmatter::default()),
+            section_page("/blog/", "blog/_index.md", Frontmatter::default()),
+            plain_page("/about/", "about.md", "About"),
+            plain_page("/blog/top/", "blog/top.md", "Top"),
+            plain_page("/blog/2026/nested/", "blog/2026/nested.md", "Nested"),
+        ];
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &listing_template(),
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
+
+        assert_eq!(listed(&result, "/"), "[About]");
+        assert_eq!(listed(&result, "/blog/"), "[Top]");
+    }
+
+    #[test]
+    fn test_pages_from_adds_donor_sections_direct_pages() {
+        let root_meta = Frontmatter {
+            pages_from: vec!["blog".into(), "docs".into(), "missing".into()],
+            sort_by: SortBy::Title,
+            ..Default::default()
+        };
+        let processed = vec![
+            section_page("/", "_index.md", root_meta),
+            section_page("/blog/", "blog/_index.md", Frontmatter::default()),
+            plain_page("/about/", "about.md", "About"),
+            plain_page("/blog/top/", "blog/top.md", "Top"),
+            plain_page("/blog/2026/nested/", "blog/2026/nested.md", "Nested"),
+            plain_page("/docs/guide/", "docs/guide.md", "Guide"),
+        ];
+        let result = render_pages(
+            &processed,
+            &tree_of(&processed),
+            &listing_template(),
+            &test_site_context(),
+            false,
+        )
+        .unwrap();
+
+        // Own page + donors' direct pages (not blog/2026), sorted by the
+        // receiver's sort_by; the unknown donor is ignored with a warning.
+        assert_eq!(listed(&result, "/"), "[About][Guide][Top]");
+        assert_eq!(listed(&result, "/blog/"), "[Top]");
     }
 }

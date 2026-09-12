@@ -73,6 +73,14 @@ pub struct Frontmatter {
     #[serde(default)]
     pub weight: i32,
 
+    /// Sections whose direct pages this section also lists, as
+    /// content-relative paths (e.g. `["blog", "blog/2026"]`). Declared
+    /// membership beyond containment: a section's own listing is only its
+    /// direct children, and `pages_from` is how an index page (typically
+    /// the root) shows pages it does not own.
+    #[serde(default)]
+    pub pages_from: Vec<String>,
+
     /// Last updated date
     #[serde(default, deserialize_with = "optional_date::deserialize")]
     pub updated: Option<NaiveDate>,
@@ -164,6 +172,13 @@ pub enum SortBy {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_pages_from() {
+        let fm = Frontmatter::from_str(r#"pages_from = ["blog", "blog/2026"]"#).unwrap();
+        assert_eq!(fm.pages_from, ["blog", "blog/2026"]);
+        assert!(Frontmatter::from_str("").unwrap().pages_from.is_empty());
+    }
 
     #[test]
     fn test_parse_minimal_frontmatter() {
