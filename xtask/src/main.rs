@@ -112,12 +112,15 @@ enum Command {
     /// build get-taxus-org).
     Ci,
 
-    /// Prepare a release: generate changelog, tag, verify build.
+    /// Prepend the next version's changelog section to CHANGELOG.md with
+    /// git-cliff (changelog only; versioning and tagging go through
+    /// `cargo release`). The version is the workspace version bumped by
+    /// the given level.
     Release {
         /// Bump level: "major", "minor", or "patch".
         #[arg(long, value_parser = ["major", "minor", "patch"])]
         bump: String,
-        /// Dry-run: print commands without executing them.
+        /// Dry-run: print the generated section instead of writing it.
         #[arg(long)]
         dry_run: bool,
     },
@@ -469,44 +472,80 @@ fn cmd_ci() -> i32 {
     0
 }
 
+/// The workspace version from the root `Cargo.toml` (`[workspace.package]`).
+fn workspace_version() -> Result<String, String> {
+    let manifest = workspace_root().join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest)
+        .map_err(|e| format!("cannot read {}: {e}", manifest.display()))?;
+    text.lines()
+        .map(str::trim)
+        .find_map(|line| {
+            line.strip_prefix("version")
+                .map(str::trim_start)
+                .and_then(|rest| rest.strip_prefix('='))
+                .map(|rest| rest.trim().trim_matches('"').to_string())
+        })
+        .ok_or_else(|| format!("no `version = \"…\"` line in {}", manifest.display()))
+}
+
+/// `version` bumped by `level` ("major", "minor" or "patch").
+fn bump_version(version: &str, level: &str) -> Result<String, String> {
+    let parts: Vec<u64> = version
+        .split('.')
+        .map(|p| p.parse::<u64>())
+        .collect::<Result<_, _>>()
+        .map_err(|e| format!("cannot parse version `{version}`: {e}"))?;
+    let [major, minor, patch] = parts[..] else {
+        return Err(format!("version `{version}` is not MAJOR.MINOR.PATCH"));
+    };
+    Ok(match level {
+        "major" => format!("{}.0.0", major + 1),
+        "minor" => format!("{major}.{}.0", minor + 1),
+        "patch" => format!("{major}.{minor}.{}", patch + 1),
+        other => return Err(format!("unknown bump level `{other}`")),
+    })
+}
+
+/// Generate the next version's changelog section with git-cliff.
+///
+/// The section covers every commit since the latest tag (`--unreleased`)
+/// under the bumped workspace version. Without `--dry-run` it is prepended
+/// to `CHANGELOG.md`; with it, git-cliff prints the section and writes
+/// nothing. Versioning and tagging are `cargo release`'s job (see
+/// `release.toml`, whose hook runs the same git-cliff command).
 fn cmd_release(bump: &str, dry_run: bool) -> i32 {
     require_tool("git-cliff", "Install with: cargo install git-cliff");
 
-    let tag = format!("v{bump}");
-    let args: Vec<&str> = vec![
-        "cliff",
-        "--unreleased",
-        "--tag",
-        tag.as_str(),
-        "--prepend",
-        "CHANGELOG.md",
-    ];
+    let current = match workspace_version() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return 1;
+        }
+    };
+    let next = match bump_version(&current, bump) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return 1;
+        }
+    };
+    let tag = format!("v{next}");
+    eprintln!("\n━━━ Changelog for {tag} ({bump} bump from {current}) ━━━\n");
 
+    let mut args = vec!["--unreleased", "--tag", tag.as_str()];
     let label = if dry_run {
-        "git-cliff (dry run)"
+        "git-cliff (dry run: section printed, CHANGELOG.md untouched)"
     } else {
-        "git-cliff — update CHANGELOG.md"
+        args.extend(["--prepend", "CHANGELOG.md"]);
+        "git-cliff — prepend to CHANGELOG.md"
     };
 
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.args(&args)
-        .current_dir(workspace_root())
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
-
-    if dry_run {
-        cmd.arg("--dry-run");
+    let rc = run(label, "git-cliff", &args);
+    if rc == 0 && dry_run {
+        eprintln!("\n  Dry run complete. Re-run without --dry-run to prepend to CHANGELOG.md.");
     }
-
-    let status = cmd.status().expect("failed to spawn cargo cliff");
-    let icon = if status.success() { "✓" } else { "✗" };
-    eprintln!("  {icon} {label}");
-
-    if dry_run {
-        eprintln!("\n  Dry run complete. Re-run without --dry-run to write changes.");
-    }
-
-    status.code().unwrap_or(1)
+    rc
 }
 
 /// Deploy the get-taxus-org product site to Cloudflare Pages via `wrangler`.
@@ -573,4 +612,20 @@ fn cmd_deploy(project: &str, branch: Option<&str>, prod_branch: &str, no_build: 
     ];
 
     run_in("wrangler pages deploy", &site_dir, "npx", &args)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bump_version;
+
+    #[test]
+    fn bump_levels() {
+        assert_eq!(bump_version("0.7.0", "major").unwrap(), "1.0.0");
+        assert_eq!(bump_version("0.7.0", "minor").unwrap(), "0.8.0");
+        assert_eq!(bump_version("0.7.3", "patch").unwrap(), "0.7.4");
+        assert_eq!(bump_version("1.2.3", "major").unwrap(), "2.0.0");
+        assert!(bump_version("1.2", "patch").is_err());
+        assert!(bump_version("1.2.x", "patch").is_err());
+        assert!(bump_version("1.2.3", "huge").is_err());
+    }
 }

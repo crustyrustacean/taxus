@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **xtask**: `cargo xtask release` ran `cargo cliff` (which does not exist)
+  after checking for `git-cliff`, tagged the section `vmajor`/`vminor`/`vpatch`
+  instead of a version, and passed git-cliff a `--dry-run` flag it does not
+  have. It now runs `git-cliff` with the workspace version bumped by the
+  requested level, and `--dry-run` prints the section without writing
 - **routes**: On Windows a nested content directory (`content/blog/2026/`)
   produced the URL `/blog-2026/` instead of `/blog/2026/`: the directory
   path reached the slugifier with a backslash, which is not a segment
