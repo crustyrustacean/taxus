@@ -1,5 +1,12 @@
 // taxus-generator/src/pipeline/alias.rs
 
+//! Stage 15 (emit): redirect pages for the `aliases` frontmatter field.
+//!
+//! An alias is an old URL path that should send readers to a document's
+//! current address. Each one becomes an HTML page with a meta refresh at
+//! the old path. Addresses come from the tree; see the book's
+//! [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter.
+
 use crate::error::{GeneratorError, Result};
 use std::fs;
 use std::path::{Path, PathBuf};

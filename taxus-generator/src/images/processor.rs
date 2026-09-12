@@ -1,3 +1,5 @@
+//! Resizing and encoding hero image variants (emit phase).
+
 use crate::config::ImageConfig;
 use crate::error::{ImageError, Result};
 use image::GenericImageView;

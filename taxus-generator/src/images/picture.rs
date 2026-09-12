@@ -1,3 +1,5 @@
+//! Rendering a `<picture>` element for a processed hero image (emit phase).
+
 use super::processor::ProcessedImage;
 
 pub fn render_picture(processed: &ProcessedImage, alt: &str, loading: &str) -> String {

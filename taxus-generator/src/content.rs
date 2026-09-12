@@ -1,9 +1,13 @@
 // taxus-generator/src/content.rs
 
-//! Content loading and parsing.
+//! Content loading and parsing (parse phase).
 //!
 //! This module provides types for parsing and managing Markdown content files
-//! with TOML frontmatter.
+//! with TOML frontmatter. A [`Page`] is one parsed content file, page or
+//! index file alike; the Site Tree is built from these by
+//! `RouteDiscovery::discover_tree`. See the book's
+//! [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter for how a file's name
+//! becomes a node path.
 //!
 //! # Overview
 //!

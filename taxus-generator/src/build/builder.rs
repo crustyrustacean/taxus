@@ -2,7 +2,9 @@
 
 //! Site builder for orchestrating the build pipeline.
 //!
-//! This module provides the main [`SiteBuilder`] type for building static sites.
+//! This module provides the main [`SiteBuilder`] type for building static
+//! sites. The stage list is documented on [`SiteBuilder::build`] and, with
+//! what each stage reads and produces, in the book's Architecture chapter.
 
 use crate::build;
 use crate::build::pipeline::{self, alias::AliasPage};
@@ -100,18 +102,24 @@ impl SiteBuilder {
 
     /// Build the complete site.
     ///
-    /// This orchestrates the full build pipeline:
-    /// 1. Build the Site Tree from the content directory and derive routes from it
+    /// The fifteen stages, numbered as the build log numbers them:
+    /// 1. Discover routes: build the Site Tree and derive the route registry from it (parse)
     /// 2. Load templates
-    /// 3. Process content files
-    /// 4. Copy co-located assets
-    /// 5. Render pages with templates
-    /// 6. Generate robots.txt
-    /// 7. Generate sitemap.xml
-    /// 8. Build and render taxonomy pages
-    /// 9. Generate feeds (RSS/Atom)
-    /// 10. Process assets (SCSS, static files)
-    /// 11. Write output files
+    /// 3. Process content: resolve internal links, render Markdown (emit)
+    /// 4. Process hero images (emit)
+    /// 5. Copy co-located assets (emit)
+    /// 6. Render pages: section listings and pagination are derived from the tree here (analyse, emit)
+    /// 7. Generate robots.txt (emit)
+    /// 8. Generate sitemap.xml from the tree (analyse, emit)
+    /// 9. Generate 404.html (emit)
+    /// 10. Build and render taxonomy pages from the tree (analyse, emit)
+    /// 11. Generate feeds from the tree (analyse, emit)
+    /// 12. Process assets: SCSS and static files (emit)
+    /// 13. Generate the search index (emit)
+    /// 14. Write the embedded WASM client (emit)
+    /// 15. Write output: pages, taxonomy pages, feeds, alias redirects (emit)
+    ///
+    /// The tree is immutable after stage 1; every later stage only queries it.
     ///
     /// This is a synchronous call with no runtime requirement: templates that
     /// place islands are server-rendered on an internal thread, so `build()`

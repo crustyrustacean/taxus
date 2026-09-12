@@ -1,5 +1,7 @@
 // taxus-generator/src/highlighting/language.rs
 
+//! The registry of tree-sitter grammars and their highlight queries (emit phase).
+
 use std::collections::HashMap;
 
 #[derive(Clone)]

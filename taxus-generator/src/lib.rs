@@ -1,11 +1,27 @@
-//! Generator Library
+//! # taxus_lib
 //!
-//! A reusable static site generator library.
+//! The Taxus generator: the crate that turns a site directory into an
+//! output directory.
 //!
-//! # Overview
+//! Taxus is a compiler for websites. A build has three phases. **Parse**
+//! reads the content directory into the Site Tree, the pure model defined
+//! in `taxus_domain`. **Analyse** computes derivations over that tree:
+//! listings, taxonomy terms, feed and sitemap entries. **Emit** renders
+//! Markdown and templates, processes images and assets, and writes files.
+//! This crate does all the reading and writing; the domain crate does
+//! none. See the book's
+//! [Overview](https://crustyrustacean.github.io/taxus/theory/overview.html) and
+//! [Architecture](https://crustyrustacean.github.io/taxus/architecture.html) chapters. Vocabulary is fixed
+//! by the [Glossary](https://crustyrustacean.github.io/taxus/theory/glossary.html).
 //!
-//! This library provides the core functionality for generating static sites
-//! from Markdown content with Yew server-side rendering.
+//! # Modules by phase
+//!
+//! | Phase | Modules |
+//! |-------|---------|
+//! | parse | [`config`], [`content`], [`routes`] |
+//! | analyse and emit | [`build`] (the fifteen stages of [`SiteBuilder::build`]) |
+//! | emit | [`templates`], [`images`], [`highlighting`], [`assets`], [`feed`] |
+//! | none | [`init`], [`serve`], [`telemetry`], [`error`] |
 //!
 //! # Example
 //!

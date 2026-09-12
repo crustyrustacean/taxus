@@ -1,5 +1,12 @@
 // generator/src/build/pipeline/sitemap.rs
 
+//! Stage 8 (analyse, emit): `sitemap.xml`.
+//!
+//! Membership is a derivation: every non-draft document from
+//! `taxus_domain::derivation::documents`, joined to its rendered page by
+//! content file. See the book's
+//! [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) chapter.
+
 use crate::build::ProcessedPage;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};

@@ -1,5 +1,16 @@
 // taxus-generator/src/build/pipeline/pages.rs
 
+//! Stage 6 (analyse, emit): build template contexts and render every document.
+//!
+//! The analyse half is here: a section's listing is
+//! `taxus_domain::derivation::aggregate` sorted by
+//! `taxus_domain::tree::sort_pages`, and pagination slices that listing.
+//! The emit half builds a `TemplateContext` per document and runs its
+//! template. This module also fills what the `get_section` and
+//! `get_page` template functions resolve to. See the book's
+//! [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) and
+//! [Worked Example](https://crustyrustacean.github.io/taxus/theory/worked-example.html) chapters.
+
 use crate::build::{ProcessedPage, RenderedPage};
 use crate::error::Result;
 use crate::routes::RouteInfo;
@@ -305,7 +316,7 @@ fn render_paginated_section(
 ///
 /// Iterates through processed pages, builds template contexts, and renders each
 /// to HTML. For sections, the listed pages come from `tree` (see
-/// [`collect_child_pages`]); paginated sections are dispatched to
+/// `collect_child_pages`); paginated sections are dispatched to
 /// `render_paginated_section`. Regular pages and non-paginated sections are
 /// rendered directly.
 pub fn render_pages(

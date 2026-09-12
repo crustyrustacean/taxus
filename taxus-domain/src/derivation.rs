@@ -1,9 +1,21 @@
-//! Pure derivations over the Site Tree.
+//! Derivations: pure functions of the Site Tree that return a view.
 //!
-//! Each derivation is `(source set, filter, order, grouping)` — computed,
-//! never stored. Draft filtering is the caller's concern (the generator
-//! decides whether drafts participate in a given build), so every
-//! derivation that filters drafts takes an explicit `include_drafts`.
+//! Anything you can compute, you don't store. A derivation takes the tree
+//! (and plain values such as a `SortBy` or a list of node paths), reads
+//! nothing else, writes nothing, and returns borrowed nodes. Each one is a
+//! `(source set, filter, order, grouping)`: [`documents`] is the source
+//! set in tree order, [`descendant_pages`] is reachability,
+//! [`recent`] filters and orders, [`aggregate`] merges, and
+//! [`group_by_terms`] groups.
+//!
+//! Draft filtering is the caller's concern (the generator decides whether
+//! drafts participate in a given build), so every derivation that filters
+//! drafts takes an explicit `include_drafts`.
+//!
+//! See the book's
+//! [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html)
+//! chapter, including the rule for deciding whether something is a tree
+//! method or a derivation.
 
 use crate::identity::NodePath;
 use crate::schema::{Frontmatter, SortBy};
@@ -11,16 +23,42 @@ use crate::tree::{PageNode, SectionNode, SiteTree, sort_pages};
 use std::collections::BTreeMap;
 use std::path::Path;
 
-/// A rendered document in the tree: a page, or a section that has an
-/// `_index.md`. Derivations that range over "everything the site renders"
-/// (feeds, the sitemap, taxonomies) yield these.
+/// A document: a page, or a section that has an `_index.md`, borrowed
+/// from the tree.
+///
+/// Derivations that range over "everything the site renders" (routes,
+/// the sitemap, taxonomies) yield these, so their callers can treat a
+/// section's index file and a page alike without two code paths.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, SiteTreeBuilder};
+/// use taxus_domain::derivation::documents;
+///
+/// let builder = SiteTreeBuilder::new().root(
+///     Some(PathBuf::from("_index.md")),
+///     Frontmatter::default(),
+///     None,
+/// );
+/// let tree = builder.build()?;
+/// let root = documents(&tree)[0];
+/// assert!(root.is_section());
+/// assert_eq!(root.path(), &NodePath::root());
+/// assert_eq!(root.content_file(), std::path::Path::new("_index.md"));
+/// # Ok::<(), taxus_domain::TreeError>(())
+/// ```
 #[derive(Debug, Clone, Copy)]
 pub enum Node<'a> {
+    /// A section with an index file.
     Section(&'a SectionNode),
+    /// A page.
     Page(&'a PageNode),
 }
 
 impl<'a> Node<'a> {
+    /// The node path of either kind.
     pub fn path(&self) -> &'a NodePath {
         match self {
             Node::Section(s) => &s.path,
@@ -28,6 +66,7 @@ impl<'a> Node<'a> {
         }
     }
 
+    /// The frontmatter of either kind.
     pub fn meta(&self) -> &'a Frontmatter {
         match self {
             Node::Section(s) => &s.meta,
@@ -47,22 +86,47 @@ impl<'a> Node<'a> {
         }
     }
 
+    /// Is this a section (with an index file) rather than a page?
     pub fn is_section(&self) -> bool {
         matches!(self, Node::Section(_))
     }
 
+    /// Is this document a draft?
     pub fn is_draft(&self) -> bool {
         self.meta().draft
     }
 }
 
-/// Every rendered document in the site, in **tree order**: a section's
-/// own index (if it has one), then its pages in slug order, then each
-/// subsection in slug order, recursively. Drafts are included.
+/// Tree order: every document in the site, in the one canonical order.
 ///
-/// This is the canonical iteration order of a site — the order routes are
-/// registered in and the order every projection sees documents in — so
-/// anything that keeps input order downstream is deterministic.
+/// A section's own index (if it has one), then its pages in slug order,
+/// then each subsection in slug order, recursively. Drafts are included.
+/// Routes are registered in this order and every other derivation starts
+/// from it, so anything that keeps input order downstream is
+/// deterministic across machines.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, SiteTreeBuilder};
+/// use taxus_domain::derivation::documents;
+///
+/// let mut builder = SiteTreeBuilder::new();
+/// for path in ["zed", "about", "blog/post"] {
+///     builder.add_page(
+///         &NodePath::parse(path)?,
+///         PathBuf::from(format!("{path}.md")),
+///         Frontmatter::default(),
+///         String::new(),
+///     )?;
+/// }
+/// let tree = builder.build()?;
+/// let order: Vec<String> = documents(&tree).iter().map(|n| n.path().to_string()).collect();
+/// // Root pages by slug, then the blog subsection's page.
+/// assert_eq!(order, ["about", "zed", "blog/post"]);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn documents(tree: &SiteTree) -> Vec<Node<'_>> {
     fn walk<'a>(section: &'a SectionNode, out: &mut Vec<Node<'a>>) {
         if section.content_file.is_some() {
@@ -78,13 +142,37 @@ pub fn documents(tree: &SiteTree) -> Vec<Node<'_>> {
     out
 }
 
-/// Group documents by the terms `terms_of` reads from their frontmatter —
-/// the index behind tags, categories and series.
+/// Taxonomy grouping: documents grouped by the terms `terms_of` reads
+/// from their frontmatter. This is the index behind tags, categories and
+/// series.
 ///
 /// Terms come back sorted by name; the documents under a term keep
 /// [`documents`] order. A document that lists the same term twice appears
 /// twice, as the caller's term-counting expects. Sections with an
-/// `_index.md` participate like pages.
+/// `_index.md` participate like pages. Nothing is stored: add a tag to
+/// one page and the term exists on the next call; remove it and the term
+/// is gone.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, SiteTreeBuilder};
+/// use taxus_domain::derivation::group_by_terms;
+///
+/// let mut builder = SiteTreeBuilder::new();
+/// builder.add_page(
+///     &NodePath::parse("blog/project-launch")?,
+///     PathBuf::from("blog/2026-04-03-project-launch.md"),
+///     Frontmatter { tags: vec!["rust".into(), "ssg".into()], ..Frontmatter::default() },
+///     String::new(),
+/// )?;
+/// let tree = builder.build()?;
+/// let tags = group_by_terms(&tree, false, |m| m.tags.iter().map(String::as_str).collect());
+/// assert_eq!(tags.keys().collect::<Vec<_>>(), ["rust", "ssg"]);
+/// assert_eq!(tags["rust"].len(), 1);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn group_by_terms<'a, F>(
     tree: &'a SiteTree,
     include_drafts: bool,
@@ -105,12 +193,12 @@ where
     groups
 }
 
-/// Every page in a section's subtree, depth-first: the section's own pages
-/// (slug order), then each subsection's pages in turn.
+/// Reachability: every page in a section's subtree, depth-first.
 ///
-/// Reachability is a query, never a property of the structure: a section's
-/// `pages` field holds direct children only, and this is how a listing that
-/// wants the whole subtree asks for it.
+/// The section's own pages (slug order), then each subsection's pages in
+/// turn. Reachability is a query, never a field: a section's `pages`
+/// holds direct children only, and this is how a caller that wants the
+/// whole subtree asks for it.
 pub fn descendant_pages(section: &SectionNode) -> Vec<&PageNode> {
     fn walk<'a>(section: &'a SectionNode, out: &mut Vec<&'a PageNode>) {
         out.extend(section.pages.iter());
@@ -123,10 +211,11 @@ pub fn descendant_pages(section: &SectionNode) -> Vec<&PageNode> {
     out
 }
 
-/// Recent pages across the whole site: newest first, undated pages last.
+/// Recent pages: every page in the site, newest first, undated last.
 ///
-/// Drafts are excluded unless `include_drafts` is set — the generator
-/// decides per build whether drafts participate.
+/// This is what a feed starts from. Section index files are not pages
+/// and are not included. Drafts are excluded unless `include_drafts` is
+/// set; the generator decides per build whether drafts participate.
 pub fn recent(tree: &SiteTree, include_drafts: bool) -> Vec<&PageNode> {
     let mut pages: Vec<&PageNode> = tree
         .iter_pages()
@@ -136,14 +225,40 @@ pub fn recent(tree: &SiteTree, include_drafts: bool) -> Vec<&PageNode> {
     pages
 }
 
-/// Aggregation: declared membership beyond containment.
+/// Aggregation: the pages a section lists, including ones it does not
+/// contain, as declared by its `pages_from`.
 ///
 /// The receiving section's direct pages, followed by the direct pages of
 /// each donor section named in `from` (the `pages_from` frontmatter of the
 /// receiver, typically the root `_index.md` listing `["blog"]`), in tree
 /// order. Duplicates are removed by path; donors that do not exist are
-/// skipped. Ordering is the caller's — pass the result to
-/// [`sort_pages`] with the receiver's `sort_by`.
+/// skipped. Ordering is the caller's: pass the result to [`sort_pages`]
+/// with the receiver's `sort_by`. This is how a home page shows recent
+/// posts without listings ever reaching past direct children on their own.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, SiteTreeBuilder};
+/// use taxus_domain::derivation::aggregate;
+///
+/// let mut builder = SiteTreeBuilder::new();
+/// builder.add_page(
+///     &NodePath::parse("blog/project-launch")?,
+///     PathBuf::from("blog/2026-04-03-project-launch.md"),
+///     Frontmatter::default(),
+///     String::new(),
+/// )?;
+/// let tree = builder.build()?;
+///
+/// // The root contains no pages of its own...
+/// assert!(tree.root.pages.is_empty());
+/// // ...but with `pages_from = ["blog"]` it lists the blog's direct pages.
+/// let listed = aggregate(&tree.root, &tree, &[NodePath::parse("blog")?]);
+/// assert_eq!(listed[0].path.to_string(), "blog/project-launch");
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn aggregate<'a>(
     section: &'a SectionNode,
     tree: &'a SiteTree,

@@ -1,5 +1,7 @@
 // taxus-generator/src/highlighting/engine.rs
 
+//! The highlighter: runs tree-sitter queries and emits `<span class="hl-…">` markup (emit phase).
+
 use super::languages::LanguageRegistry;
 use std::collections::HashMap;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};

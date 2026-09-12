@@ -1,5 +1,13 @@
 // generator/src/build/pipeline/internal_links.rs
 
+//! Stage 3 (emit): resolve `@/path.md` links to URL paths.
+//!
+//! An internal link names a content file; the route registry (a
+//! projection of the Site Tree) maps it to the document's address, so a
+//! renamed or re-slugged page never leaves a broken link behind. A target
+//! that names no document fails the build. See the book's
+//! [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter.
+
 use crate::error::GeneratorError;
 use crate::routes::RouteRegistry;
 use std::path::{Path, PathBuf};

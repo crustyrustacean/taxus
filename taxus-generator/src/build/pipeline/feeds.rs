@@ -1,5 +1,14 @@
 // taxus-generator/src/build/pipeline/generate_feeds.rs
 
+//! Stage 11 (analyse, emit): RSS and Atom feeds.
+//!
+//! Membership and order are a derivation: [`feed_pages`] narrows
+//! `taxus_domain::derivation::recent` to dated, non-draft pages under the
+//! configured `[feed] sections`. Each page is joined to its rendered
+//! `ProcessedPage` by content file and handed to
+//! [`crate::feed::FeedGenerator`]. See the book's
+//! [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) chapter.
+
 use crate::build::ProcessedPage;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};

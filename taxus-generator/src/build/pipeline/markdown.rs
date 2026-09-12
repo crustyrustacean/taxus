@@ -1,5 +1,12 @@
 // taxus-generator/src/build/pipeline/markdown.rs
 
+//! Stage 3 (emit): Markdown to HTML, with heading ids and a table of contents.
+//!
+//! This is where a node's body becomes the `page.content` a template sees.
+//! The tree never holds rendered HTML; it lives on the `ProcessedPage`
+//! this stage produces. See the book's
+//! [Worked Example](https://crustyrustacean.github.io/taxus/theory/worked-example.html).
+
 use crate::highlighting::engine::escape_html;
 use crate::highlighting::{CodeHighlighter, HighlightResult};
 use crate::routes::slugify::slugify_segment;

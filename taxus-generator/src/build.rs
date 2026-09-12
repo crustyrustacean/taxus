@@ -1,10 +1,12 @@
 // taxus-generator/src/build.rs
 
-//! Build system for generating static sites.
+//! The build: all three phases, parse, analyse and emit, in fifteen stages.
 //!
-//! This module provides the main build orchestration for the static site generator.
-//! It coordinates configuration loading, content parsing, route discovery, template
-//! rendering, and asset processing into a unified build pipeline.
+//! [`SiteBuilder::build`] builds the Site Tree once (stage 1), then runs
+//! every other stage against that immutable tree. The stage list, with
+//! what each stage reads and produces, is in the book's
+//! [Architecture](https://crustyrustacean.github.io/taxus/architecture.html) chapter; the model behind it is
+//! the [Theory](https://crustyrustacean.github.io/taxus/theory/overview.html) section.
 //!
 //! # Overview
 //!

@@ -1,3 +1,5 @@
+//! Processed hero images keyed by source path (emit phase).
+
 use super::processor::ProcessedImage;
 use std::collections::HashMap;
 use std::path::PathBuf;

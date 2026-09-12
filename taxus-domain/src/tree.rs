@@ -1,19 +1,53 @@
 // taxus-domain/src/tree.rs
 
-//! The Site Tree: the in-memory model of a site's containment structure.
+//! The Site Tree: the in-memory model of a site, built once per build.
+//!
+//! A site is a tree of sections (directories) and pages (documents). This
+//! module defines the two node types, [`SectionNode`] and [`PageNode`],
+//! the [`SiteTree`] that holds them, the [`SiteTreeBuilder`] that
+//! assembles a tree from flat additions, and [`sort_pages`], the one
+//! ordering listings use.
 //!
 //! Invariants:
-//! - `pages` and `subsections` are **direct children only** — structure
-//!   contains only containment. Reachability is a query, never a property
-//!   of the structure (see [`crate::derivation`]).
+//! - `pages` and `subsections` are **direct children only**: structure is
+//!   containment. Reachability is a query, never a field (see
+//!   [`crate::derivation::descendant_pages`]).
 //! - Children are kept sorted by slug, so construction is deterministic.
+//! - The tree is immutable once built; there is no method that changes a
+//!   node after [`SiteTreeBuilder::build`] returns.
+//!
+//! See the book's
+//! [Site Tree](https://crustyrustacean.github.io/taxus/theory/site-tree.html)
+//! chapter.
 
 use crate::identity::NodePath;
 use crate::schema::{Frontmatter, SortBy};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-/// A leaf node: an authored document.
+/// A page: a leaf of the tree, one authored content file that is not an
+/// `_index.md`.
+///
+/// It holds what was read from disk and nothing computed from it: no
+/// rendered HTML, no URL, no summary. Those are derived downstream so
+/// that they can never go stale.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, PageNode};
+///
+/// let post = PageNode {
+///     path: NodePath::parse("blog/project-launch")?,
+///     content_file: PathBuf::from("blog/2026-04-03-project-launch.md"),
+///     meta: Frontmatter { title: "Project Launch".into(), ..Frontmatter::default() },
+///     body: String::from("### Ready, Set, Go!"),
+/// };
+/// assert!(!post.is_draft());
+/// assert_eq!(post.path.last().unwrap().as_str(), "project-launch");
+/// # Ok::<(), taxus_domain::identity::IdentityError>(())
+/// ```
 #[derive(Debug, Clone)]
 pub struct PageNode {
     /// Membership path from the root (e.g. `["blog", "my-post"]`).
@@ -24,19 +58,26 @@ pub struct PageNode {
     pub content_file: PathBuf,
     /// Schema (frontmatter).
     pub meta: Frontmatter,
-    /// Raw markdown body (Document Tree extraction happens downstream).
+    /// Raw Markdown body; rendering to HTML happens in the generator.
     pub body: String,
 }
 
 impl PageNode {
-    /// Is this page excluded from release builds?
+    /// Is this page a draft, excluded unless the build includes drafts?
     pub fn is_draft(&self) -> bool {
         self.meta.draft
     }
 }
 
-/// An inner node: a directory that groups pages and subsections, and is
-/// itself a document (its `_index.md`, if present).
+/// A section: a directory inside the content directory, which groups
+/// pages and other sections and is itself a document when it has an
+/// `_index.md`.
+///
+/// Every directory is a section, index file or not; one without an
+/// `_index.md` has default frontmatter, no body, and nothing to render,
+/// but its children are still in the tree. `pages` and `subsections` are
+/// direct children only, so a section's listing means "what this
+/// directory contains" and nothing deeper.
 #[derive(Debug, Clone)]
 pub struct SectionNode {
     /// Membership path from the root; the root section's path is empty.
@@ -55,14 +96,43 @@ pub struct SectionNode {
     pub subsections: Vec<SectionNode>,
 }
 
-/// A fully constructed site tree.
+/// The Site Tree: one site, fully parsed, as a tree of sections and pages.
+///
+/// It is built once per build by [`SiteTreeBuilder::build`] and read by
+/// every later stage; nothing mutates it afterwards. Because every list,
+/// feed and address is derived from this one value, they cannot disagree
+/// with each other.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, SiteTreeBuilder};
+///
+/// let mut builder = SiteTreeBuilder::new();
+/// builder.add_page(
+///     &NodePath::parse("blog/project-launch")?,
+///     PathBuf::from("blog/2026-04-03-project-launch.md"),
+///     Frontmatter::default(),
+///     String::new(),
+/// )?;
+/// let tree = builder.build()?;
+///
+/// // `blog` was created for the page even though no _index.md declared it.
+/// let blog = tree.get_section(&NodePath::parse("blog")?).unwrap();
+/// assert!(blog.content_file.is_none());
+/// assert_eq!(blog.pages.len(), 1);
+/// assert_eq!(tree.iter_pages().count(), 1);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Debug, Clone)]
 pub struct SiteTree {
+    /// The root section: the content directory itself, with node path `[]`.
     pub root: SectionNode,
 }
 
 impl SiteTree {
-    /// Look up a section by membership path.
+    /// Look up a section by its node path; `None` if no such section.
     pub fn get_section(&self, path: &NodePath) -> Option<&SectionNode> {
         let mut node = &self.root;
         for slug in path.segments() {
@@ -74,37 +144,83 @@ impl SiteTree {
         Some(node)
     }
 
-    /// Look up a page by membership path.
+    /// Look up a page by its node path; `None` if no such page.
     pub fn get_page(&self, path: &NodePath) -> Option<&PageNode> {
         let parent = path.parent()?;
         let section = self.get_section(&parent)?;
         section.pages.iter().find(|p| &p.path == path)
     }
 
-    /// Every page in the site, depth-first, including drafts.
+    /// Every page in the site, depth-first from the root, drafts included.
+    ///
+    /// This is [`crate::derivation::descendant_pages`] applied to the
+    /// root; draft filtering is the caller's choice.
     pub fn iter_pages(&self) -> impl Iterator<Item = &PageNode> {
         crate::derivation::descendant_pages(&self.root).into_iter()
     }
 }
 
-/// Errors from tree construction.
+/// Why a tree could not be built.
+///
+/// Every variant is a violation of "one node per node path". The builder
+/// reports them before any output is written, so a site with two files
+/// that resolve to the same address never half-builds.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum TreeError {
+    /// Two pages, or two sections, were declared at the same node path.
     #[error("duplicate node at `{path}`")]
-    Duplicate { path: String },
+    Duplicate {
+        /// The node path, as `a/b`.
+        path: String,
+    },
+    /// A page and a section were declared at the same node path.
     #[error("`{path}` collides with an existing {kind}")]
-    Collision { path: String, kind: &'static str },
+    Collision {
+        /// The node path, as `a/b`.
+        path: String,
+        /// What was already there: `"page"` or `"section"`.
+        kind: &'static str,
+    },
+    /// A page or a non-root section was declared at the root path.
     #[error("the root path is reserved")]
     RootReserved,
+    /// A segment could not be a slug.
     #[error(transparent)]
     Identity(#[from] crate::identity::IdentityError),
 }
 
 /// Assembles a [`SiteTree`] from flat node additions.
 ///
-/// Intermediate sections referenced by a page or section path but never
-/// declared are created with default frontmatter and no body — matching the
-/// generator's "sections without `_index.md` are still sections" behavior.
+/// The generator walks the content directory in whatever order the
+/// filesystem gives it and calls [`add_page`](Self::add_page) and
+/// [`add_section`](Self::add_section) as it goes; the builder turns that
+/// flat sequence into a tree with a fixed, slug-sorted shape. Intermediate
+/// sections referenced by a path but never declared are created with
+/// default frontmatter and no body, so a directory without `_index.md` is
+/// still a section.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, SiteTreeBuilder};
+///
+/// let mut builder = SiteTreeBuilder::new().root(
+///     Some(PathBuf::from("_index.md")),
+///     Frontmatter { title: "Home".into(), ..Frontmatter::default() },
+///     Some(String::from("# Welcome")),
+/// );
+/// builder.add_page(
+///     &NodePath::parse("about")?,
+///     PathBuf::from("about.md"),
+///     Frontmatter::default(),
+///     String::new(),
+/// )?;
+/// let tree = builder.build()?;
+/// assert_eq!(tree.root.meta.title, "Home");
+/// assert_eq!(tree.root.pages[0].path.to_string(), "about");
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 ///
 /// # Paths are final
 ///
@@ -322,10 +438,32 @@ impl SiteTreeBuilder {
     }
 }
 
-/// Deterministic ordering for derived listings.
+/// Sorting: put a list of pages in the order a section's `sort_by` asks for.
 ///
-/// Date: newest first, undated last. Title: case-insensitive ascending.
-/// Weight: lowest first. None: preserve order.
+/// This is the one ordering rule every listing, feed and `get_section`
+/// result shares, so two views of the same section can never disagree
+/// about order. Date: newest first, undated last. Title: case-insensitive
+/// ascending. Weight: lowest first. None: keep the input order. The sort
+/// is stable, so ties keep tree (slug) order.
+///
+/// # Example
+///
+/// ```
+/// use std::path::PathBuf;
+/// use taxus_domain::{Frontmatter, NodePath, PageNode, SortBy};
+/// use taxus_domain::tree::sort_pages;
+///
+/// let page = |slug: &str, weight: i32| PageNode {
+///     path: NodePath::parse(slug).unwrap(),
+///     content_file: PathBuf::from(format!("{slug}.md")),
+///     meta: Frontmatter { weight, ..Frontmatter::default() },
+///     body: String::new(),
+/// };
+/// let (a, b) = (page("a", 2), page("b", 1));
+/// let mut pages = vec![&a, &b];
+/// sort_pages(&mut pages, SortBy::Weight);
+/// assert_eq!(pages[0].path.to_string(), "b");
+/// ```
 pub fn sort_pages(pages: &mut [&PageNode], by: SortBy) {
     match by {
         SortBy::None => {}

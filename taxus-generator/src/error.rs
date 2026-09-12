@@ -1,4 +1,4 @@
-//! Error types for the generator library.
+//! Error types for the generator library (all phases).
 //!
 //! This module provides a comprehensive error hierarchy using `thiserror`
 //! for idiomatic error handling throughout the library.

@@ -1,8 +1,19 @@
 // taxus-generator/src/build/pipeline.rs
 
-//! Build pipeline stages.
+//! The build pipeline stages, one function per stage.
 //!
-//! This module provides the individual stages of the build pipeline.
+//! Phase: parse ([`discover_tree`], [`discover_routes`]), then emit
+//! ([`process_content`], [`process_images`], [`copy_colocated_assets`],
+//! [`process_assets`], [`write_output`]). The stages that derive something
+//! from the tree live in the submodules: [`pages`] (listings, pagination),
+//! [`taxonomy`], [`feeds`] and [`sitemap`]. Stage numbers and what each
+//! reads and produces are in the book's
+//! [Architecture](https://crustyrustacean.github.io/taxus/architecture.html) chapter.
+//!
+//! Two intermediate types flow between stages: [`ProcessedPage`] (a
+//! document after Markdown rendering) and [`RenderedPage`] (after its
+//! template ran). Stages join tree nodes to processed pages by content
+//! file, the one name a document keeps through every stage.
 
 pub mod alias;
 pub mod feeds;

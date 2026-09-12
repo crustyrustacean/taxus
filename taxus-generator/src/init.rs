@@ -1,9 +1,11 @@
 // generator/src/init/init.rs
 
-//! Site initialization module.
+//! Site initialization: `taxus init` (no build phase).
 //!
 //! This module provides functionality for scaffolding new static sites
-//! with a default directory structure and configuration files.
+//! with a default directory structure and configuration files. The
+//! scaffold has one content file, `content/_index.md`, so its Site Tree is
+//! a root section with no pages.
 
 mod scaffold;
 
