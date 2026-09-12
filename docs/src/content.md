@@ -436,7 +436,22 @@ rss_enabled = true
 atom_enabled = true
 limit = 20
 full_content = false
+sections = ["blog"]
 ```
+
+### What a feed contains
+
+Feeds syndicate **dated pages**: every non-draft page with a `date`, newest
+first, up to `limit` entries. Section index pages (`_index.md`) and undated
+pages such as `/about/` are never feed entries — an undated page has no
+publication date to announce, and stamping it with the build time would
+re-announce it to subscribers on every build.
+
+`sections` narrows the feed to pages under the named sections
+(content-relative paths such as `"blog"` or `"blog/2026"`; a page anywhere
+beneath a listed section counts). Leave it out to syndicate dated pages from
+the whole site. An entry that names no section is ignored with a warning in
+the build log.
 
 ### Feed Entry Fields
 
