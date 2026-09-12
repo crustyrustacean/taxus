@@ -253,12 +253,13 @@ whether `--drafts` was passed), so derivations take it as a parameter.
   of the tree, not a second source, and every stage that walks it sees
   documents in tree order.
 - **Section listings** (`build/pipeline/pages.rs`) look the section up in
-  the tree and list `descendant_pages` of that node — every page under the
-  section, as the previous URL-prefix scan did — sorted by the section's
-  `sort_by`. `sort_by = "weight"` now works and `weight` is exposed on
-  `page` in templates. Date and title ordering keep their historical
-  comparators (undated pages first, byte-order titles) until they are
-  moved to the domain's in a dedicated change.
+  the tree and list its direct children plus the direct pages of any
+  `pages_from` donors (`aggregate`), sorted by the section's `sort_by`.
+  Structure is containment only; anything a listing shows beyond that is
+  declared in frontmatter. `sort_by = "weight"` works and `weight` is
+  exposed on `page` in templates. Date and title ordering keep their
+  historical comparators (undated pages first, byte-order titles) until
+  they are moved to the domain's in a dedicated change.
 - **Taxonomies** (`build/pipeline/taxonomy.rs`) are `group_by_terms`
   over the tree for tags, categories and series. **Feeds** and the
   **sitemap** take their membership from `documents` and join the

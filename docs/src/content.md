@@ -144,6 +144,7 @@ Your markdown content here.
 | `sort_by` | string | No | `"date"` | Sort order for sections: `"date"`, `"title"`, `"weight"`, `"none"` |
 | `paginate_by` | number | No | `0` | Items per page (0 = no pagination) |
 | `paginate_template` | string | No | `None` | Template for paginated pages |
+| `pages_from` | array | No | `[]` | Sections whose direct pages this section also lists (e.g. `["blog"]`); see [Section listings](#section-listings) |
 | `weight` | number | No | `0` | Weight for manual ordering |
 | `hero_image` | string | No | `None` | Relative path to a co-located hero image |
 | `hero_alt` | string | No | `None` | Alt text for hero image (falls back to page title) |
@@ -353,6 +354,29 @@ Taxus generates taxonomy listing and term pages automatically when the correspon
 | `series_term.html` | `/series/learning-rust/` | Lists pages in "Learning Rust" series |
 
 If a template is missing, that particular page is skipped silently. See [Templates](./templates.md) for the full taxonomy template context and examples.
+
+## Section listings
+
+A section's `section.pages` are its **direct children**: the pages in its
+own directory, and nothing deeper. `blog/` lists `blog/my-post.md` but not
+`blog/2026/older-post.md`, and the root `_index.md` lists only pages at the
+top of `content/`.
+
+To list pages a section does not own — the classic "recent posts on the
+homepage" — declare where they come from:
+
+```markdown
++++
+title = "Home"
+pages_from = ["blog"]
++++
+```
+
+`pages_from` names sections by their content-relative path (`"blog"`,
+`"blog/2026"`). Each donor contributes its own direct pages; the merged list
+is deduplicated and sorted by this section's `sort_by`, and `paginate_by`
+slices it like any other listing. A `pages_from` entry that names a section
+that does not exist is ignored with a warning in the build log.
 
 ## Pagination
 

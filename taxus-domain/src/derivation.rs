@@ -138,10 +138,12 @@ pub fn recent(tree: &SiteTree, include_drafts: bool) -> Vec<&PageNode> {
 
 /// Aggregation: declared membership beyond containment.
 ///
-/// Merge the receiving section's direct pages with the pages of the named
-/// donor sections (e.g. `pages_from = ["blog"]` on the root `_index.md`).
-/// Duplicates are removed by path; the merged listing is sorted per the
-/// receiving section's `sort_by`.
+/// The receiving section's direct pages, followed by the direct pages of
+/// each donor section named in `from` (the `pages_from` frontmatter of the
+/// receiver, typically the root `_index.md` listing `["blog"]`), in tree
+/// order. Duplicates are removed by path; donors that do not exist are
+/// skipped. Ordering is the caller's — pass the result to
+/// [`sort_pages`] with the receiver's `sort_by`.
 pub fn aggregate<'a>(
     section: &'a SectionNode,
     tree: &'a SiteTree,
@@ -157,7 +159,6 @@ pub fn aggregate<'a>(
             }
         }
     }
-    sort_pages(&mut merged, section.meta.sort_by);
     merged
 }
 
@@ -371,16 +372,44 @@ mod tests {
     }
 
     #[test]
-    fn aggregate_merges_and_sorts_by_receiver() {
+    fn aggregate_merges_receiver_then_donors_in_tree_order() {
         let tree = fixture();
         let root = tree.get_section(&NodePath::root()).unwrap();
-        let merged = aggregate(root, &tree, &[NodePath::parse("blog").unwrap()]);
+        let mut merged = aggregate(root, &tree, &[NodePath::parse("blog").unwrap()]);
         let paths: Vec<&str> = merged
             .iter()
             .map(|p| p.path.last().unwrap().as_str())
             .collect();
-        // Newest first across both sources; the January root note is last.
-        assert_eq!(paths, ["newer", "older", "root-note"]);
+        // Membership only: the receiver's own page, then the donor's pages
+        // in slug order. Ordering is the caller's.
+        assert_eq!(paths, ["root-note", "newer", "older"]);
+
+        sort_pages(&mut merged, root.meta.sort_by);
+        let sorted: Vec<&str> = merged
+            .iter()
+            .map(|p| p.path.last().unwrap().as_str())
+            .collect();
+        assert_eq!(sorted, ["newer", "older", "root-note"]);
+    }
+
+    #[test]
+    fn aggregate_donor_pages_are_direct_children_only() {
+        let mut builder = SiteTreeBuilder::new();
+        add(
+            &mut builder,
+            "blog/top",
+            crate::schema::Frontmatter::default(),
+        );
+        add(
+            &mut builder,
+            "blog/2026/nested",
+            crate::schema::Frontmatter::default(),
+        );
+        let tree = builder.build().unwrap();
+        let root = tree.get_section(&NodePath::root()).unwrap();
+        let merged = aggregate(root, &tree, &[NodePath::parse("blog").unwrap()]);
+        let paths: Vec<String> = merged.iter().map(|p| p.path.to_string()).collect();
+        assert_eq!(paths, ["blog/top"]);
     }
 
     #[test]

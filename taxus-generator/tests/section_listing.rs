@@ -7,6 +7,8 @@
 //!   (beta = 1, gamma = 2, alpha = 3) — the #5 regression test.
 //! - `blog/` has a direct child (`top-level`, January) and a nested
 //!   section `blog/2026/` with one page (`post`, February).
+//! - the root `_index.md` declares `pages_from = ["blog", "blog/2026"]`,
+//!   the declared-membership bridge that replaces the old prefix scan (#70).
 
 use std::fs;
 use std::path::Path;
@@ -53,15 +55,13 @@ fn weight_sorted_section_lists_pages_by_weight() {
 }
 
 #[test]
-fn section_listing_includes_nested_descendants_like_trunk() {
+fn section_lists_direct_children_only() {
     let out = build_fixture();
-    // trunk listed every page under the section's URL prefix, so `blog/`
-    // shows its grandchild too; the tree port preserves that. Newest first.
+    // `blog/` lists its own page, not its grandchild in `blog/2026/` (#70).
     assert_eq!(
         listed_links(out.path(), "blog/index.html"),
-        ["/blog/2026/post/", "/blog/top-level/"]
+        ["/blog/top-level/"]
     );
-    // The nested section lists only its own page.
     assert_eq!(
         listed_links(out.path(), "blog/2026/index.html"),
         ["/blog/2026/post/"]
@@ -69,18 +69,13 @@ fn section_listing_includes_nested_descendants_like_trunk() {
 }
 
 #[test]
-fn root_listing_is_deterministic() {
-    // Date sort, trunk semantics: undated pages first (in tree slug order,
-    // which is what makes this stable), then dated pages newest first.
+fn root_lists_pages_from_donor_sections() {
+    // The root has no pages of its own; `pages_from = ["blog", "blog/2026"]`
+    // pulls in each donor's direct pages, then the root's sort_by (date,
+    // newest first) orders them.
     let out = build_fixture();
     assert_eq!(
         listed_links(out.path(), "index.html"),
-        [
-            "/docs/alpha/",
-            "/docs/beta/",
-            "/docs/gamma/",
-            "/blog/2026/post/",
-            "/blog/top-level/",
-        ]
+        ["/blog/2026/post/", "/blog/top-level/"]
     );
 }
