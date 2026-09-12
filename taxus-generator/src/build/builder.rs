@@ -181,7 +181,8 @@ impl SiteBuilder {
         // Stage 3: Process content
         let _content_span = info_span!("process_content").entered();
         info!("[3/15] Processing content...");
-        let processed = pipeline::process_content(
+        let (processed, drafts_skipped) = pipeline::process_content(
+            &tree,
             &registry,
             &self.config,
             self.include_drafts,
@@ -191,14 +192,6 @@ impl SiteBuilder {
         if processed.is_empty() {
             return Err(GeneratorError::NoContent);
         }
-
-        // Count drafts skipped
-        let total_routes = registry.len();
-        let drafts_skipped = if self.include_drafts {
-            0
-        } else {
-            total_routes - processed.len()
-        };
 
         debug!(
             pages = processed.len(),

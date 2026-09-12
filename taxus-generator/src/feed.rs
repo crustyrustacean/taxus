@@ -11,15 +11,15 @@
 //!
 //! # Overview
 //!
-//! - [`FeedGenerator`] - Main type for generating feeds from pages
+//! - [`FeedGenerator`] - Main type for generating feeds from pre-built entries
 //! - [`FeedEntry`] - A single entry in a feed (corresponds to a page)
 //! - [`FeedConfig`] - Configuration for feed generation
 //!
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::feed::{FeedGenerator, FeedConfig};
-//! use taxus_lib::content::Page;
+//! use taxus_lib::feed::{FeedEntry, FeedGenerator, FeedConfig};
+//! use taxus_lib::content::Frontmatter;
 //!
 //! let config = FeedConfig {
 //!     title: "My Blog".to_string(),
@@ -29,14 +29,19 @@
 //!     ..Default::default()
 //! };
 //!
-//! let pages: Vec<Page> = vec![]; // Your pages here
+//! let entries = vec![FeedEntry::from_parts(
+//!     &Frontmatter { title: "A post".into(), ..Default::default() },
+//!     "A summary of the body.".into(),
+//!     "https://example.com/a-post/".into(),
+//!     None,
+//! )];
 //! let generator = FeedGenerator::new(config);
 //!
 //! // Generate RSS feed
-//! let rss = generator.generate_rss(&pages)?;
+//! let rss = generator.generate_rss_from_entries(entries.clone())?;
 //!
 //! // Generate Atom feed
-//! let atom = generator.generate_atom(&pages)?;
+//! let atom = generator.generate_atom_from_entries(entries)?;
 //! # Ok::<(), taxus_lib::error::GeneratorError>(())
 //! ```
 
@@ -46,7 +51,7 @@ mod rss;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::content::Page;
+use crate::content::Frontmatter;
 use crate::error::Result;
 
 pub use atom::generate_atom_feed;
@@ -147,32 +152,33 @@ pub struct FeedEntry {
 }
 
 impl FeedEntry {
-    /// Create a feed entry from a page and its served URL.
+    /// Create a feed entry from a document's schema, its body-derived
+    /// summary, its served URL, and (optionally) its rendered content.
     ///
     /// `url` is the page's *effective* URL path (the served address, where
     /// a frontmatter `slug` override has already moved the page) joined to
-    /// `base_url`. Deriving it here from `page.path` would be wrong for
-    /// custom slugs (#19): `Page::path` is the filename-derived path. The
-    /// caller owns the URL because the Site Tree is its single derivation
-    /// point (`UrlPath::from_node_path`).
-    pub fn from_page(page: &Page, url: String) -> Self {
-        // #28: use the page's summary machinery — frontmatter.summary,
-        // `<!-- more -->` split, or first paragraph with markdown
-        // stripped — instead of truncating raw markdown into the feed.
-        // `frontmatter.description` is the fallback among authored fields
-        // when no explicit summary exists.
-        let summary = match (
-            page.frontmatter.summary.as_ref(),
-            page.frontmatter.description.as_ref(),
-        ) {
+    /// `base_url`. The caller owns the URL because the Site Tree is its
+    /// single derivation point (`UrlPath::from_node_path`); deriving it
+    /// here would be wrong for custom slugs (#19).
+    ///
+    /// `body_summary` is the caller's summary of the raw body (`<!-- more -->`
+    /// split, first paragraph, markdown stripped). It is the fallback in
+    /// the priority chain: `frontmatter.summary`, then
+    /// `frontmatter.description`, then `body_summary` (#28).
+    pub fn from_parts(
+        meta: &Frontmatter,
+        body_summary: String,
+        url: String,
+        content: Option<String>,
+    ) -> Self {
+        let summary = match (meta.summary.as_ref(), meta.description.as_ref()) {
             (Some(explicit), _) => explicit.clone(),
             (None, Some(description)) => description.clone(),
-            (None, None) => page.summary(),
+            (None, None) => body_summary,
         };
 
         // Convert date to DateTime<Utc>
-        let date = page
-            .frontmatter
+        let date = meta
             .date
             .map(|d| {
                 d.and_hms_opt(0, 0, 0)
@@ -181,8 +187,7 @@ impl FeedEntry {
             .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc))
             .unwrap_or_else(Utc::now);
 
-        let updated = page
-            .frontmatter
+        let updated = meta
             .updated
             .map(|d| {
                 d.and_hms_opt(0, 0, 0)
@@ -191,15 +196,15 @@ impl FeedEntry {
             .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc));
 
         Self {
-            title: page.frontmatter.title.clone(),
+            title: meta.title.clone(),
             url,
             summary,
-            content: page.content.clone(),
+            content,
             date,
             updated,
-            author: None, // Could be extended to use page.frontmatter.author
+            author: None, // Could be extended to use frontmatter.author
             author_email: None,
-            tags: page.frontmatter.tags.clone(),
+            tags: meta.tags.clone(),
         }
     }
 }
@@ -221,25 +226,6 @@ impl FeedGenerator {
         &self.config
     }
 
-    /// Generate an RSS 2.0 feed from pages.
-    ///
-    /// Pages are converted with [`FeedEntry::from_page`], deriving each
-    /// URL from `page.path` — the filename-derived path. Pages with a
-    /// frontmatter `slug` override serve at a different address (#19);
-    /// for those, build entries with the served URL yourself and use
-    /// [`FeedGenerator::generate_rss_from_entries`].
-    pub fn generate_rss(&self, pages: &[Page]) -> Result<String> {
-        let entries = self.pages_to_entries(pages);
-        generate_rss_feed(&entries, &self.config)
-    }
-
-    /// Generate an Atom feed from pages; see [`FeedGenerator::generate_rss`]
-    /// for the URL caveat.
-    pub fn generate_atom(&self, pages: &[Page]) -> Result<String> {
-        let entries = self.pages_to_entries(pages);
-        generate_atom_feed(&entries, &self.config)
-    }
-
     /// Generate an RSS 2.0 feed from pre-built entries.
     ///
     /// This is the form the build pipeline uses: it owns each page's
@@ -254,20 +240,6 @@ impl FeedGenerator {
     pub fn generate_atom_from_entries(&self, entries: Vec<FeedEntry>) -> Result<String> {
         let entries = self.apply_limit(entries);
         generate_atom_feed(&entries, &self.config)
-    }
-
-    /// Convert pages to feed entries.
-    fn pages_to_entries(&self, pages: &[Page]) -> Vec<FeedEntry> {
-        self.apply_limit(
-            pages
-                .iter()
-                .filter(|p| !p.frontmatter.draft) // Exclude drafts
-                .map(|p| {
-                    use crate::templates::compute_permalink;
-                    FeedEntry::from_page(p, compute_permalink(&self.config.base_url, &p.path))
-                })
-                .collect(),
-        )
     }
 
     /// Sort newest-first and apply the configured entry limit.
@@ -313,55 +285,82 @@ pub fn escape_xml(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::content::Frontmatter;
-    use std::path::PathBuf;
 
-    fn create_test_page(title: &str, date_str: &str) -> Page {
+    fn create_test_entry(title: &str, date_str: &str) -> FeedEntry {
         let date = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok();
-        Page {
-            frontmatter: Frontmatter {
-                title: title.to_string(),
-                date,
-                ..Default::default()
-            },
-            path: format!("/{}/", title.to_lowercase().replace(' ', "-")),
-            source: PathBuf::from(format!("{}.md", title)),
-            raw_content: format!("Content for {}", title),
-            content: Some(format!("<p>Content for {}</p>", title)),
+        let meta = Frontmatter {
+            title: title.to_string(),
+            date,
+            ..Default::default()
+        };
+        FeedEntry::from_parts(
+            &meta,
+            format!("Summary of {}", title),
+            format!(
+                "https://example.com/{}/",
+                title.to_lowercase().replace(' ', "-")
+            ),
+            Some(format!("<p>Content for {}</p>", title)),
+        )
+    }
+
+    fn meta_of(title: &str) -> Frontmatter {
+        Frontmatter {
+            title: title.to_string(),
+            ..Default::default()
         }
     }
 
-    #[test]
-    fn test_feed_entry_from_page() {
-        let page = create_test_page("Test Post", "2024-01-15");
-        let entry = FeedEntry::from_page(&page, "https://example.com/test-post/".to_string());
+    fn body_summary(raw: &str) -> String {
+        // The caller-side projection the pipeline computes from the raw
+        // body: first paragraph, markdown stripped (Page::summary logic).
+        crate::content::Page {
+            frontmatter: Frontmatter::default(),
+            raw_content: raw.to_string(),
+        }
+        .summary()
+    }
 
+    #[test]
+    fn test_feed_entry_from_parts() {
+        let entry = create_test_entry("Test Post", "2024-01-15");
         assert_eq!(entry.title, "Test Post");
         assert_eq!(entry.url, "https://example.com/test-post/");
         assert!(!entry.summary.is_empty());
     }
 
     #[test]
-    fn test_feed_entry_from_page_uses_the_url_it_is_given() {
+    fn test_feed_entry_from_parts_uses_the_url_it_is_given() {
         // #19: the served URL is the caller's, verbatim — a custom slug
-        // moves the page and the entry must follow it, whatever
-        // page.path says.
-        let mut page = create_test_page("Renamed Post", "2024-01-15");
-        page.frontmatter.slug = Some("custom-slug".to_string());
-        page.path = "/2024-01-15-renamed-post/".to_string(); // filename-derived
-
-        let entry = FeedEntry::from_page(&page, "https://example.com/custom-slug/".to_string());
-
+        // moves the page and the entry must follow it.
+        let meta = Frontmatter {
+            title: "Renamed Post".into(),
+            slug: Some("custom-slug".into()),
+            ..Default::default()
+        };
+        let entry = FeedEntry::from_parts(
+            &meta,
+            "Summary.".into(),
+            "https://example.com/custom-slug/".into(),
+            None,
+        );
         assert_eq!(entry.url, "https://example.com/custom-slug/");
     }
 
     #[test]
     fn test_feed_entry_summary_strips_markdown() {
         // #28: feed summaries must not leak raw markdown into <description>
-        let mut page = create_test_page("Md Post", "2024-01-15");
-        page.raw_content = "# A Heading\n\nSome *emphasized* prose here.".to_string();
+        let summary = body_summary(
+            "# A Heading
 
-        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
+Some *emphasized* prose here.",
+        );
+        let entry = FeedEntry::from_parts(
+            &meta_of("Md Post"),
+            summary,
+            "https://example.com/x/".into(),
+            None,
+        );
 
         assert!(
             !entry.summary.contains('#'),
@@ -377,11 +376,19 @@ mod tests {
 
     #[test]
     fn test_feed_entry_summary_respects_more_marker() {
-        let mut page = create_test_page("More Post", "2024-01-15");
-        page.raw_content = "Intro text only.\n\n<!-- more -->\n\nRest of the article.".to_string();
+        let summary = body_summary(
+            "Intro text only.
 
-        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
+<!-- more -->
 
+Rest of the article.",
+        );
+        let entry = FeedEntry::from_parts(
+            &meta_of("More Post"),
+            summary,
+            "https://example.com/x/".into(),
+            None,
+        );
         assert_eq!(entry.summary, "Intro text only.");
     }
 
@@ -389,12 +396,17 @@ mod tests {
     fn test_feed_entry_summary_prefers_description() {
         // description is user-authored prose for exactly this purpose;
         // it should outrank content-derived summaries
-        let mut page = create_test_page("Desc Post", "2024-01-15");
-        page.raw_content = "# Heading\n\nBody content.".to_string();
-        page.frontmatter.description = Some("An authored description.".to_string());
-
-        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
-
+        let meta = Frontmatter {
+            title: "Desc Post".into(),
+            description: Some("An authored description.".into()),
+            ..Default::default()
+        };
+        let entry = FeedEntry::from_parts(
+            &meta,
+            "The body summary.".into(),
+            "https://example.com/x/".into(),
+            None,
+        );
         assert_eq!(entry.summary, "An authored description.");
     }
 
@@ -402,13 +414,18 @@ mod tests {
     fn test_feed_entry_summary_prefers_explicit_summary_over_description() {
         // frontmatter.summary is the most specific signal; description
         // is the fallback among authored fields
-        let mut page = create_test_page("Both Post", "2024-01-15");
-        page.raw_content = "Body.".to_string();
-        page.frontmatter.description = Some("The description.".to_string());
-        page.frontmatter.summary = Some("The summary.".to_string());
-
-        let entry = FeedEntry::from_page(&page, "https://example.com/x/".to_string());
-
+        let meta = Frontmatter {
+            title: "Both Post".into(),
+            description: Some("The description.".into()),
+            summary: Some("The summary.".into()),
+            ..Default::default()
+        };
+        let entry = FeedEntry::from_parts(
+            &meta,
+            "The body summary.".into(),
+            "https://example.com/x/".into(),
+            None,
+        );
         assert_eq!(entry.summary, "The summary.");
     }
 
@@ -422,12 +439,12 @@ mod tests {
         };
 
         let generator = FeedGenerator::new(config);
-        let pages = vec![
-            create_test_page("First Post", "2024-01-01"),
-            create_test_page("Second Post", "2024-01-15"),
+        let entries = vec![
+            create_test_entry("First Post", "2024-01-01"),
+            create_test_entry("Second Post", "2024-01-15"),
         ];
 
-        let rss = generator.generate_rss(&pages).unwrap();
+        let rss = generator.generate_rss_from_entries(entries).unwrap();
         assert!(rss.contains("<?xml"));
         assert!(rss.contains("<rss"));
         assert!(rss.contains("Test Blog"));
@@ -443,12 +460,12 @@ mod tests {
         };
 
         let generator = FeedGenerator::new(config);
-        let pages = vec![
-            create_test_page("First Post", "2024-01-01"),
-            create_test_page("Second Post", "2024-01-15"),
+        let entries = vec![
+            create_test_entry("First Post", "2024-01-01"),
+            create_test_entry("Second Post", "2024-01-15"),
         ];
 
-        let atom = generator.generate_atom(&pages).unwrap();
+        let atom = generator.generate_atom_from_entries(entries).unwrap();
         assert!(atom.contains("<?xml"));
         assert!(atom.contains("<feed"));
         assert!(atom.contains("Test Blog"));
@@ -465,17 +482,17 @@ mod tests {
         };
 
         let generator = FeedGenerator::new(config);
-        let pages = vec![
-            create_test_page("First Post", "2024-01-01"),
-            create_test_page("Second Post", "2024-01-15"),
-            create_test_page("Third Post", "2024-02-01"),
+        let entries = vec![
+            create_test_entry("First Post", "2024-01-01"),
+            create_test_entry("Second Post", "2024-01-15"),
+            create_test_entry("Third Post", "2024-02-01"),
         ];
 
-        let entries = generator.pages_to_entries(&pages);
-        assert_eq!(entries.len(), 2);
+        let rss = generator.generate_rss_from_entries(entries).unwrap();
+        assert_eq!(rss.matches("<item>").count(), 2);
         // Should be sorted by date, newest first
-        assert_eq!(entries[0].title, "Third Post");
-        assert_eq!(entries[1].title, "Second Post");
+        assert!(rss.contains("Third Post"));
+        assert!(rss.contains("Second Post"));
     }
 
     #[test]
@@ -487,16 +504,16 @@ mod tests {
         };
 
         let generator = FeedGenerator::new(config);
-        let pages: Vec<Page> = (0..30)
+        let entries: Vec<FeedEntry> = (0..30)
             .map(|i| {
-                create_test_page(
+                create_test_entry(
                     &format!("Post {i}"),
                     &format!("2024-01-{:02}", (i % 28) + 1),
                 )
             })
             .collect();
 
-        let entries = generator.pages_to_entries(&pages);
-        assert_eq!(entries.len(), 30);
+        let rss = generator.generate_rss_from_entries(entries).unwrap();
+        assert_eq!(rss.matches("<item>").count(), 30);
     }
 }

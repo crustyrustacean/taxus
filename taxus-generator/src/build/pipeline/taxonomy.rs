@@ -533,6 +533,7 @@ Content 2
     fn test_write_taxonomy_pages_dry_run() {
         let taxonomy_pages = vec![RenderedTaxonomy {
             path: "/tags/rust/".to_string(),
+
             output_file: PathBuf::from("tags/rust/index.html"),
             content: "<html>Test</html>".to_string(),
         }];

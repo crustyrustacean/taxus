@@ -86,6 +86,16 @@ impl<'a> Node<'a> {
         }
     }
 
+    /// The raw Markdown body of either kind: a page's body, or the
+    /// section's `_index.md` body (empty when the section has no index
+    /// file, which [`documents`] never yields).
+    pub fn body(&self) -> &'a str {
+        match self {
+            Node::Section(s) => s.body.as_deref().unwrap_or_default(),
+            Node::Page(p) => &p.body,
+        }
+    }
+
     /// Is this a section (with an index file) rather than a page?
     pub fn is_section(&self) -> bool {
         matches!(self, Node::Section(_))
