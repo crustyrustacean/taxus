@@ -64,6 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **images**: The hero image cache key is a digest of the source file's
+  bytes and the encoding quality, not its absolute path and mtime. Variant
+  filenames are now identical on every machine and checkout, so unchanged
+  images keep stable URLs across deployments and the golden output test
+  records them as is
 - **build**: A page with a frontmatter `slug` is served at *section path +
   slug*, as documented (`content/blog/e.md` with `slug = "renamed-entry"` is
   `/blog/renamed-entry/`). It was served at the root (`/renamed-entry/`)

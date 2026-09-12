@@ -48,7 +48,7 @@ dist/images/sunset-a3b2c1-800w.webp
 dist/images/sunset-a3b2c1-1200w.webp
 ```
 
-If all variants already exist on disk (same source file and hash), processing is skipped — no redundant re-encoding.
+The hash is derived from the image's bytes (and the encoding quality), so the same image gets the same filenames on every machine. If all variants already exist on disk, processing is skipped — no redundant re-encoding.
 
 ### Rendering in Templates
 
@@ -135,7 +135,7 @@ This means hero image variants are generated before assets are copied and pages 
 
 ### Caching
 
-The image processor uses content-hash-based filenames. The hash covers the source path, modification time, size and (for lossy formats) the `quality` setting. If all expected variant files already exist on disk with the correct hash, the processor skips re-encoding and rebuilds the metadata from the cache. This makes subsequent builds fast, and changing `quality` in `site.toml` re-encodes lossy variants on the next build.
+The image processor uses content-hash-based filenames. The hash is a digest of the source file's bytes and (for lossy formats) the `quality` setting — not its path or modification time, so a fresh clone or a `touch` produces the same variant names. If all expected variant files already exist on disk with the correct hash, the processor skips re-encoding and rebuilds the metadata from the cache. This makes subsequent builds fast, editing the image or changing `quality` in `site.toml` re-encodes on the next build, and unchanged images keep stable URLs across deployments.
 
 ### Small Source Images
 
