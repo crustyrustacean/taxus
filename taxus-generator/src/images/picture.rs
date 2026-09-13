@@ -4,7 +4,10 @@ use super::processor::ProcessedImage;
 
 pub fn render_picture(processed: &ProcessedImage, alt: &str, loading: &str) -> String {
     let srcset = processed.srcset();
-    let fallback_src = processed.fallback_src();
+    // A processed image always has at least one variant when it came
+    // from the processor; an empty placeholder is the benign fallback
+    // for a hand-constructed one.
+    let fallback_src = processed.fallback_src().unwrap_or_default();
     let mime_type = processed.mime_type();
     let width = processed.meta.original_width;
     let height = processed.meta.original_height;

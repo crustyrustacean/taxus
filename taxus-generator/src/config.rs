@@ -291,8 +291,18 @@ impl ImageConfig {
         }
     }
 
-    /// Validate `quality` (1..=100) and `format` (`webp`, `jpeg`/`jpg`, `png`).
+    /// Validate `quality` (1..=100), `format` (`webp`, `jpeg`/`jpg`, `png`)
+    /// and `widths` (non-empty; every entry is a `u32` by construction).
     pub fn validate(&self) -> Result<()> {
+        if self.widths.is_empty() {
+            return Err(ConfigError::Invalid(
+                "images.widths must list at least one breakpoint; empty disables every \
+                 variant. Remove the key to use the defaults [400, 800, 1200]."
+                    .to_string(),
+            )
+            .into());
+        }
+
         if !(1..=100).contains(&self.quality) {
             return Err(ConfigError::Invalid(format!(
                 "images.quality must be between 1 and 100, got {}",

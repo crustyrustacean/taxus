@@ -30,13 +30,15 @@ use tracing::{debug, debug_span, info, warn};
 fn page_context_from(processed: &ProcessedPage, base_url: &str) -> PageContext {
     let url_path = processed.effective_url_path();
     let permalink = compute_permalink(base_url, &url_path);
-    let hero = processed.hero_image.as_ref().map(|img| HeroContext {
-        src: img.fallback_src(),
-        srcset: img.srcset(),
-        width: img.meta.original_width,
-        height: img.meta.original_height,
-        alt: img.meta.alt.clone(),
-        mime_type: img.mime_type(),
+    let hero = processed.hero_image.as_ref().and_then(|img| {
+        img.fallback_src().map(|src| HeroContext {
+            src,
+            srcset: img.srcset(),
+            width: img.meta.original_width,
+            height: img.meta.original_height,
+            alt: img.meta.alt.clone(),
+            mime_type: img.mime_type(),
+        })
     });
     PageContext {
         title: processed.page.frontmatter.title.clone(),
@@ -306,7 +308,11 @@ fn render_paginated_section(
             processed_page.route.kind,
         )?;
 
-        rendered.push(RenderedPage { route, content });
+        rendered.push(RenderedPage {
+            route,
+            content,
+            hero_image: None,
+        });
     }
 
     Ok(rendered)
@@ -416,7 +422,11 @@ pub fn render_pages(
             processed_page.route.kind,
         )?;
 
-        rendered.push(RenderedPage { route, content });
+        rendered.push(RenderedPage {
+            route,
+            content,
+            hero_image: processed_page.hero_image.clone(),
+        });
     }
 
     info!("Rendered {} pages", rendered.len());

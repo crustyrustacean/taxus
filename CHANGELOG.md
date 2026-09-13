@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **images**: hero variants deduplicate after clamping (#51). A width at
+  or beyond the original ships the original pixels, and several such
+  widths now produce one variant instead of encoding and writing the
+  same file repeatedly and listing its URL twice in the srcset. A source
+  smaller than every breakpoint short-circuits to a single variant.
+  `images.widths` must list at least one breakpoint — an empty list is
+  now a configuration error instead of a panic deep in the fallback-src
+  path — and `ProcessedImage::fallback_src` returns `Option<String>`,
+  `None` only for hand-built images with no variants. The processor
+  reads source dimensions once per image, not once per configured width.
+- **images**: `RenderedPage` carries `hero_image` metadata from
+  `ProcessedPage` (#17), so downstream consumers can inspect or
+  transform hero data after rendering without re-parsing HTML. The data
+  behind `page.hero` in templates is unchanged.
 - **serve**: `taxus serve` accepts `--include-drafts`, and `--verbose`
   now reaches the rebuilds instead of only initialising tracing (#40) —
   previously drafts could never be previewed in the dev server, which is

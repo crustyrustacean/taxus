@@ -74,14 +74,22 @@ impl ProcessedImage {
             .join(",\n                  ")
     }
 
-    pub fn fallback_src(&self) -> String {
+    /// The URL of the middle variant — a reasonable `src` fallback for
+    /// browsers without `srcset` support.
+    ///
+    /// `None` when there are no variants, which can only happen for a
+    /// `ProcessedImage` constructed by hand with empty variants: config
+    /// validation rejects `widths = []` (#51), and the processor always
+    /// emits at least one variant (the original size when every
+    /// configured width exceeds it).
+    pub fn fallback_src(&self) -> Option<String> {
         let mid = self.meta.variants.len() / 2;
         let variant = self
             .meta
             .variants
             .get(mid)
-            .unwrap_or_else(|| &self.meta.variants[0]);
-        self.url_path(variant)
+            .or_else(|| self.meta.variants.first())?;
+        Some(self.url_path(variant))
     }
 }
 
@@ -113,14 +121,40 @@ impl ImageProcessor {
 
         let prefix = Self::compute_prefix(source);
 
-        let expected_variants: Vec<(u32, u32, PathBuf)> = self
-            .config
-            .widths
+        let img = image::open(source).map_err(|e| ImageError::DecodeFailed {
+            path: source.to_path_buf(),
+            reason: e.to_string(),
+        })?;
+
+        let (original_width, original_height) = img.dimensions();
+        let aspect_ratio = original_width as f64 / original_height as f64;
+
+        // Resolve widths once, up front (#51): each configured width
+        // clamps to the original and the survivors dedupe, so a source
+        // smaller than several breakpoints yields one variant at the
+        // original size rather than the same file encoded repeatedly.
+        let targets = Self::resolve_targets(&self.config.widths, original_width);
+
+        let expected_variants: Vec<(u32, u32, PathBuf)> = targets
             .iter()
-            .map(|&target_width| {
-                let (w, h) = self.variant_dimensions(source, target_width);
-                let filename = format!("{}-{}-{}w.{}", prefix, hash, w, self.extension());
-                (w, h, image_output_dir.join(&filename))
+            .map(|&(target_width, variant_width)| {
+                let variant_height = if variant_width == original_width {
+                    original_height
+                } else {
+                    (target_width as f64 / aspect_ratio).round() as u32
+                };
+                let filename = format!(
+                    "{}-{}-{}w.{}",
+                    prefix,
+                    hash,
+                    variant_width,
+                    self.extension()
+                );
+                (
+                    variant_width,
+                    variant_height,
+                    image_output_dir.join(&filename),
+                )
             })
             .collect();
 
@@ -135,14 +169,6 @@ impl ImageProcessor {
             ));
         }
 
-        let img = image::open(source).map_err(|e| ImageError::DecodeFailed {
-            path: source.to_path_buf(),
-            reason: e.to_string(),
-        })?;
-
-        let (original_width, original_height) = img.dimensions();
-        let aspect_ratio = original_width as f64 / original_height as f64;
-
         std::fs::create_dir_all(&image_output_dir).map_err(|e| ImageError::Io {
             path: image_output_dir.clone(),
             source: e,
@@ -150,34 +176,11 @@ impl ImageProcessor {
 
         let mut variants = Vec::new();
 
-        for &target_width in &self.config.widths {
-            if target_width >= original_width {
-                let variant_width = original_width;
-                let variant_height = original_height;
-                let filename = format!(
-                    "{}-{}-{}w.{}",
-                    prefix,
-                    hash,
-                    variant_width,
-                    self.extension()
-                );
-                let out_path = image_output_dir.join(&filename);
-
-                let mut buf = std::io::Cursor::new(Vec::new());
-                self.encode(&img, &mut buf)?;
-                let data = buf.into_inner();
-
-                std::fs::write(&out_path, &data).map_err(|e| ImageError::Io {
-                    path: out_path.clone(),
-                    source: e,
-                })?;
-
-                variants.push(ImageVariant {
-                    path: out_path,
-                    width: variant_width,
-                    height: variant_height,
-                    file_size: data.len() as u64,
-                });
+        for &(target_width, variant_width) in &targets {
+            let (resized, variant_width, variant_height) = if variant_width == original_width {
+                // The target is at or beyond the original: ship the
+                // original pixels rather than upsampling.
+                (img.clone(), original_width, original_height)
             } else {
                 let variant_height = (target_width as f64 / aspect_ratio).round() as u32;
                 let resized = img.resize(
@@ -185,26 +188,33 @@ impl ImageProcessor {
                     variant_height,
                     image::imageops::FilterType::Lanczos3,
                 );
-                let filename =
-                    format!("{}-{}-{}w.{}", prefix, hash, target_width, self.extension());
-                let out_path = image_output_dir.join(&filename);
+                (resized, target_width, variant_height)
+            };
 
-                let mut buf = std::io::Cursor::new(Vec::new());
-                self.encode(&resized, &mut buf)?;
-                let data = buf.into_inner();
+            let filename = format!(
+                "{}-{}-{}w.{}",
+                prefix,
+                hash,
+                variant_width,
+                self.extension()
+            );
+            let out_path = image_output_dir.join(&filename);
 
-                std::fs::write(&out_path, &data).map_err(|e| ImageError::Io {
-                    path: out_path.clone(),
-                    source: e,
-                })?;
+            let mut buf = std::io::Cursor::new(Vec::new());
+            self.encode(&resized, &mut buf)?;
+            let data = buf.into_inner();
 
-                variants.push(ImageVariant {
-                    path: out_path,
-                    width: target_width,
-                    height: variant_height,
-                    file_size: data.len() as u64,
-                });
-            }
+            std::fs::write(&out_path, &data).map_err(|e| ImageError::Io {
+                path: out_path.clone(),
+                source: e,
+            })?;
+
+            variants.push(ImageVariant {
+                path: out_path,
+                width: variant_width,
+                height: variant_height,
+                file_size: data.len() as u64,
+            });
         }
 
         let source_relative = source.to_path_buf();
@@ -241,16 +251,15 @@ impl ImageProcessor {
 
         let prefix = Self::compute_prefix(source);
 
+        let targets = Self::resolve_targets(&self.config.widths, original_width);
+
         let mut variants = Vec::new();
 
-        for &target_width in &self.config.widths {
-            let (variant_width, variant_height) = if target_width >= original_width {
-                (original_width, original_height)
+        for &(target_width, variant_width) in &targets {
+            let variant_height = if variant_width == original_width {
+                original_height
             } else {
-                (
-                    target_width,
-                    (target_width as f64 / aspect_ratio).round() as u32,
-                )
+                (target_width as f64 / aspect_ratio).round() as u32
             };
 
             let filename = format!(
@@ -282,6 +291,37 @@ impl ImageProcessor {
             },
             format: self.config.format.clone(),
         })
+    }
+
+    /// Resolve configured widths against the original (#51).
+    ///
+    /// Each target clamps to the original when it would upsample, and
+    /// the resulting variant widths dedupe (ascending): an 800 px
+    /// original with `widths = [400, 800, 1200]` yields
+    /// `[(400, 400), (800, 800)]` — one 800 w variant, not two.
+    ///
+    /// `(target, variant)` keeps the requested breakpoint distinct from
+    /// the width that will actually be produced; they differ only in
+    /// the clamp case, where the original pixels ship unchanged.
+    fn resolve_targets(widths: &[u32], original_width: u32) -> Vec<(u32, u32)> {
+        let mut variant_widths: Vec<u32> = widths.iter().map(|&w| w.min(original_width)).collect();
+        variant_widths.sort_unstable();
+        variant_widths.dedup();
+
+        variant_widths
+            .into_iter()
+            .map(|variant| {
+                let target = if variant == original_width {
+                    // Any target at or beyond the original produces this
+                    // variant; record the smallest such target, which is
+                    // the original width itself.
+                    original_width
+                } else {
+                    variant
+                };
+                (target, variant)
+            })
+            .collect()
     }
 
     /// The quality the encoder will actually apply.
@@ -368,23 +408,6 @@ impl ImageProcessor {
         img.write_to(buf, image::ImageFormat::WebP)
             .map_err(|e| ImageError::EncodeFailed(e.to_string()))?;
         Ok(())
-    }
-
-    fn variant_dimensions(&self, source: &Path, target_width: u32) -> (u32, u32) {
-        if let Ok(img) = image::image_dimensions(source) {
-            let (original_width, original_height) = img;
-            let aspect_ratio = original_width as f64 / original_height as f64;
-            if target_width >= original_width {
-                (original_width, original_height)
-            } else {
-                (
-                    target_width,
-                    (target_width as f64 / aspect_ratio).round() as u32,
-                )
-            }
-        } else {
-            (target_width, target_width)
-        }
     }
 
     fn all_variants_exist(expected: &[(u32, u32, PathBuf)]) -> bool {
@@ -729,6 +752,8 @@ mod tests {
         assert_eq!(variant_400.height, expected_height);
     }
 
+    /// A source smaller than every breakpoint produces ONE variant at the
+    /// original size (#51) — previously three duplicate 300w variants.
     #[test]
     fn test_processor_skips_when_smaller() {
         let temp = TempDir::new().unwrap();
@@ -738,11 +763,9 @@ mod tests {
         let processor = ImageProcessor::new(default_config(), output_dir);
         let result = processor.process(&source, "Test alt").unwrap();
 
-        assert_eq!(result.meta.variants.len(), 3);
-        for variant in &result.meta.variants {
-            assert_eq!(variant.width, 300);
-            assert_eq!(variant.height, 200);
-        }
+        assert_eq!(result.meta.variants.len(), 1);
+        assert_eq!(result.meta.variants[0].width, 300);
+        assert_eq!(result.meta.variants[0].height, 200);
     }
 
     #[test]
@@ -871,7 +894,7 @@ mod tests {
         let processor = ImageProcessor::new(default_config(), output_dir);
         let result = processor.process(&source, "Test alt").unwrap();
 
-        let fallback = result.fallback_src();
+        let fallback = result.fallback_src().expect("variants exist");
         assert!(
             fallback.contains("800w"),
             "Fallback should use middle variant, got: {}",
@@ -903,7 +926,9 @@ mod tests {
         let processor = ImageProcessor::new(default_config(), output_dir);
         let result = processor.process(&source, "Test alt").unwrap();
 
-        assert_eq!(result.meta.variants.len(), 3);
+        // 400 is a real resize; 800 and 1200 both clamp to 600 and
+        // dedupe into one variant (#51).
+        assert_eq!(result.meta.variants.len(), 2);
         assert_eq!(result.meta.variants[0].width, 400);
         assert_eq!(
             result.meta.variants[0].height,
@@ -911,7 +936,99 @@ mod tests {
         );
         assert_eq!(result.meta.variants[1].width, 600);
         assert_eq!(result.meta.variants[1].height, 400);
-        assert_eq!(result.meta.variants[2].width, 600);
-        assert_eq!(result.meta.variants[2].height, 400);
+    }
+    /// #51: when several configured widths exceed the original, each clamps
+    /// to the original size and would produce the same variant twice —
+    /// same filename written twice, same URL in the srcset twice.
+    #[test]
+    fn test_clamped_widths_dedupe_to_one_variant() {
+        let temp = TempDir::new().unwrap();
+        // 800px source, widths [400, 800, 1200]: both 800 and 1200 clamp
+        // to 800 — one variant, not three (400 stays a real resize).
+        let source = create_test_image(temp.path(), "hero.jpg", 800, 600);
+        let output_dir = temp.path().join("dist");
+
+        let config = ImageConfig {
+            widths: vec![400, 800, 1200],
+            ..Default::default()
+        };
+        let processor = ImageProcessor::new(config, output_dir);
+        let result = processor.process(&source, "alt").unwrap();
+
+        assert_eq!(
+            result.meta.variants.len(),
+            2,
+            "variants: {:?}",
+            result.meta.variants
+        );
+        let widths: Vec<u32> = result.meta.variants.iter().map(|v| v.width).collect();
+        assert_eq!(widths, vec![400, 800]);
+
+        // srcset lists each URL once.
+        let srcset = result.srcset();
+        let parts: Vec<&str> = srcset.split(',').map(str::trim).collect();
+        let urls: std::collections::HashSet<&str> = parts
+            .iter()
+            .map(|p| p.split_whitespace().next().unwrap())
+            .collect();
+        assert_eq!(
+            urls.len(),
+            parts.len(),
+            "srcset has duplicate URLs: {srcset}"
+        );
+    }
+
+    /// #51: a source smaller than every breakpoint short-circuits to a
+    /// single variant at the original size.
+    #[test]
+    fn test_source_smaller_than_all_breakpoints_is_single_variant() {
+        let temp = TempDir::new().unwrap();
+        let source = create_test_image(temp.path(), "tiny.jpg", 300, 200);
+        let output_dir = temp.path().join("dist");
+
+        let processor = ImageProcessor::new(default_config(), output_dir);
+        let result = processor.process(&source, "alt").unwrap();
+
+        assert_eq!(result.meta.variants.len(), 1);
+        assert_eq!(result.meta.variants[0].width, 300);
+        assert_eq!(result.meta.variants[0].height, 200);
+    }
+
+    /// #51: empty `widths` must not panic in fallback_src — there is no
+    /// variant to point at. (Config validation rejects `widths = []`
+    /// separately; this is the library-level guarantee.)
+    #[test]
+    fn test_fallback_src_on_empty_variants_is_none() {
+        let meta = ImageMeta {
+            original_width: 100,
+            original_height: 50,
+            aspect_ratio: 2.0,
+            alt: String::new(),
+            variants: Vec::new(),
+        };
+        let processed = ProcessedImage {
+            source_path: PathBuf::from("hero.jpg"),
+            output_dir: PathBuf::from("dist"),
+            meta,
+            format: "webp".to_string(),
+        };
+        assert!(processed.fallback_src().is_none());
+    }
+
+    /// The dry-run path dedupes identically.
+    #[test]
+    fn test_dry_run_dedupes_clamped_widths() {
+        let temp = TempDir::new().unwrap();
+        let source = create_test_image(temp.path(), "hero.jpg", 800, 600);
+        let output_dir = temp.path().join("dist");
+
+        let config = ImageConfig {
+            widths: vec![400, 800, 1200],
+            ..Default::default()
+        };
+        let processor = ImageProcessor::new(config, output_dir);
+        let result = processor.process_dry(&source, "alt").unwrap();
+
+        assert_eq!(result.meta.variants.len(), 2);
     }
 }

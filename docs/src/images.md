@@ -35,10 +35,12 @@ The `hero_image` path is resolved relative to the content file's directory. If y
 When a page has a `hero_image`, the build pipeline:
 
 1. **Reads** the source image and records its dimensions
-2. **Generates** responsive variants at each configured width (default: 400, 800, 1200)
+2. **Generates** responsive variants at each configured width (default: 400, 800, 1200), clamped to the original — a width at or beyond the original ships the original pixels, and clamped widths deduplicate, so a small source yields fewer variants, never duplicates
 3. **Converts** to the configured format (default: WebP)
 4. **Writes** variant files to the output directory (default: `dist/images/`)
-5. **Attaches** image metadata to the page's template context as `page.hero`
+5. **Attaches** image metadata to the page's template context as `page.hero`, and carries it on the rendered page (`RenderedPage::hero_image`) for downstream consumers
+
+`images.widths` must list at least one breakpoint; an empty list is a configuration error.
 
 Variant filenames include a content hash for cache-busting:
 

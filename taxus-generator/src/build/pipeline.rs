@@ -85,6 +85,11 @@ pub struct RenderedPage {
     pub route: RouteInfo,
     /// Final HTML content
     pub content: String,
+    /// Structured hero-image metadata (#17): the data behind the
+    /// `<picture>` already embedded in `content`, kept for downstream
+    /// consumers (reports, sitemap image entries, plugins) that need to
+    /// inspect or transform it after rendering.
+    pub hero_image: Option<ProcessedImage>,
 }
 
 /// Load configuration from a directory.
