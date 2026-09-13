@@ -270,17 +270,22 @@ impl Default for TeraRenderer {
 
 impl TemplateRenderer for TeraRenderer {
     fn render(&self, template: &str, context: &TemplateContext) -> Result<String, TemplateError> {
+        // #53: classify structurally, never by message substring. A
+        // template that is not registered is NotFound — checked directly,
+        // so a render failure whose MESSAGE happens to contain "not
+        // found" (a missing variable, a missing macro) is no longer
+        // misreported as a missing template, which used to send users to
+        // check their templates/ directory when the problem was in the
+        // template body or the context.
+        if !self.tera.get_template_names().any(|name| name == template) {
+            return Err(TemplateError::NotFound(template.to_string()));
+        }
+
         let tera_ctx = self.to_tera_context(context);
 
-        self.tera.render(template, &tera_ctx).map_err(|e| {
-            // Check if the error message indicates template not found
-            let err_msg = e.to_string();
-            if err_msg.contains("not found") {
-                TemplateError::NotFound(template.to_string())
-            } else {
-                TemplateError::Render(err_msg)
-            }
-        })
+        self.tera
+            .render(template, &tera_ctx)
+            .map_err(|e| TemplateError::Render(e.to_string()))
     }
 
     fn register_template(&mut self, name: &str, content: &str) -> Result<(), TemplateError> {
@@ -372,6 +377,18 @@ impl TemplateRenderer for TeraRenderer {
 fn island(kwargs: Kwargs, _state: &State) -> TeraResult<Value> {
     let component = kwargs.get::<String>("component")?.unwrap_or_default();
 
+    // #50: consult the shared registry — the same list taxus-client
+    // hydrates from — before dispatching SSR.
+    if !taxus_common::islands::ISLANDS
+        .iter()
+        .any(|i| i.name == component)
+    {
+        // Escape the name: an unknown component containing `-->` would
+        // otherwise break out of the HTML comment (#50).
+        let safe = component.replace("-->", "-- >");
+        return Ok(Value::from(format!("<!-- unknown island: {safe} -->")));
+    }
+
     let html = match component.as_str() {
         "Counter" => {
             use crate::build::pipeline::render_island_counter;
@@ -390,14 +407,18 @@ fn island(kwargs: Kwargs, _state: &State) -> TeraResult<Value> {
                 .get::<String>("placeholder")?
                 .unwrap_or_else(|| "Search...".to_string());
             let class = kwargs.get::<String>("class")?.unwrap_or_default();
+            // The documented-but-never-wired `max_results` prop (#88
+            // audit): read it, default 5, clamp 1..=50.
+            let max_results = kwargs.get::<i64>("max_results")?.unwrap_or(5).clamp(1, 50) as usize;
 
             render_search_box(SearchBoxProps {
                 placeholder,
-                max_results: 5,
+                max_results,
                 class,
             })
         }
-        other => format!("<!-- unknown island: {other} -->"),
+        // Unreachable: the registry check above filters unknown names.
+        other => unreachable!("registry check passed for {other}"),
     };
 
     Ok(Value::from(html))
@@ -443,28 +464,102 @@ fn register_taxus_filters(tera: &mut Tera) {
 /// Extract the names of templates that `content` references via
 /// `{% extends "..." %}` and `{% include "..." %}`.
 fn template_references(content: &str) -> Vec<String> {
+    // #41: scan a copy with comments and raw blocks blanked out, so text
+    // Tera will not execute cannot contribute references.
+    let blanked = blank_non_source_regions(content);
     let mut refs = Vec::new();
-    for tag_open in ["{% extends", "{% include"] {
+    // `extends` / `include` / `import`, each optionally in the
+    // whitespace-control form (`{%- extends "..." -%}`).
+    for tag_open in ["extends", "include", "import"] {
         let mut search_from = 0;
-        while let Some(rel_pos) = content[search_from..].find(tag_open) {
-            let tag_start = search_from + rel_pos + tag_open.len();
+        while let Some(rel_pos) = blanked[search_from..].find(tag_open) {
+            let word_start = search_from + rel_pos;
+            let after_word = word_start + tag_open.len();
+            // The word must open a tag: the nearest `{%` before it must be
+            // followed only by `-` / whitespace, and the word itself must
+            // be followed by whitespace. Prose containing "extends"
+            // therefore never matches.
+            let before = &blanked[..word_start];
+            let opens_tag = before.rfind("{%").is_some_and(|open| {
+                before[open + 2..]
+                    .trim_matches(|c: char| c == '-' || c.is_whitespace())
+                    .is_empty()
+            });
+            let closes_word = blanked[after_word..].starts_with(char::is_whitespace);
+            if !(opens_tag && closes_word) {
+                search_from = after_word;
+                continue;
+            }
             // Find the first quote-delimited path in the tag.
-            let after_tag = &content[tag_start..];
+            let after_tag = &blanked[after_word..];
             let quote_start = match after_tag.find(['"', '\'']) {
-                Some(p) => tag_start + p,
-                None => break,
+                Some(p) => after_word + p,
+                None => {
+                    search_from = after_word;
+                    continue;
+                }
             };
-            let quote_char = content.as_bytes()[quote_start] as char;
+            let quote_char = blanked.as_bytes()[quote_start] as char;
             let path_start = quote_start + 1;
-            if let Some(rel_end) = content[path_start..].find(quote_char) {
-                refs.push(content[path_start..path_start + rel_end].to_string());
+            if let Some(rel_end) = blanked[path_start..].find(quote_char) {
+                refs.push(blanked[path_start..path_start + rel_end].to_string());
                 search_from = path_start + rel_end;
             } else {
-                break;
+                search_from = after_word;
             }
         }
     }
     refs
+}
+
+/// Replace `{# ... #}` comment bodies and `{% raw %}` block contents
+/// with spaces so reference scanning cannot match text Tera will not
+/// execute. Byte offsets are preserved (the result has the same
+/// length), keeping every other index into the source intact.
+fn blank_non_source_regions(content: &str) -> String {
+    let mut out = content.as_bytes().to_vec();
+
+    // {# ... #} comments (an unterminated comment blanks to the end).
+    let mut i = 0;
+    while let Some(rel) = content[i..].find("{#") {
+        let start = i + rel;
+        let end = content[start + 2..]
+            .find("#}")
+            .map_or(content.len(), |e| start + 2 + e + 2);
+        for b in &mut out[start..end] {
+            *b = b' ';
+        }
+        if end >= content.len() {
+            break;
+        }
+        i = end;
+    }
+
+    // {% raw %} ... {% endraw %} contents (the tags themselves survive).
+    let mut i = 0;
+    while let Some(rel) = content[i..].find("{% raw") {
+        let start = i + rel;
+        let Some(open_end) = content[start..].find("%}").map(|e| start + e + 2) else {
+            break;
+        };
+        let close = content[open_end..].find("{% endraw").map(|c| open_end + c);
+        match close {
+            Some(close) => {
+                for b in &mut out[open_end..close] {
+                    *b = b' ';
+                }
+                i = close + 1;
+            }
+            None => {
+                for b in &mut out[open_end..] {
+                    *b = b' ';
+                }
+                break;
+            }
+        }
+    }
+
+    String::from_utf8(out).expect("blanking replaces bytes with spaces")
 }
 
 /// Order templates so that each template appears after every template it
@@ -886,5 +981,120 @@ mod tests {
         // term_slug matches the term page rule; the contrib slugify
         // transliterates and would 404.
         assert_eq!(rendered, "café|cafe");
+    }
+    // ------------------------------------------------------------------
+    // #53: classification must be structural, not substring-matched.
+    // A render failure whose MESSAGE contains "not found" must still be
+    // TemplateError::Render, not misreported as a missing template.
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_missing_variable_is_render_error_not_notfound() {
+        let mut renderer = TeraRenderer::new().unwrap();
+        renderer
+            .register_template("missing-var.html", "<p>{{ page.nonexistent_field }}</p>")
+            .unwrap();
+
+        let result = renderer.render("missing-var.html", &create_test_context());
+        let err = result.expect_err("rendering a missing variable must fail");
+        match err {
+            TemplateError::Render(msg) => {
+                assert!(
+                    msg.contains("missing-var.html") || msg.contains("nonexistent_field"),
+                    "the message should carry useful context, got: {msg}"
+                );
+            }
+            TemplateError::NotFound(_) => {
+                panic!("a missing VARIABLE was classified as a missing TEMPLATE (#53)")
+            }
+            other => panic!("expected Render, got: {other}"),
+        }
+    }
+
+    #[test]
+    fn test_missing_filter_is_render_error_not_notfound() {
+        let mut renderer = TeraRenderer::new().unwrap();
+
+        // Tera validates filters at parse time: an unknown filter fails
+        // register_template as a Syntax error naming the template and the
+        // position — even earlier and better than a render-time Render
+        // error. Neither may be NotFound (#53).
+        let err = renderer
+            .register_template(
+                "missing-filter.html",
+                "<p>{{ page.title | nonexistent_filter }}</p>",
+            )
+            .expect_err("an unknown filter must fail");
+        match err {
+            TemplateError::Syntax { template, message } => {
+                assert_eq!(template, "missing-filter.html");
+                assert!(
+                    message.contains("nonexistent_filter"),
+                    "the message should name the filter, got: {message}"
+                );
+            }
+            TemplateError::NotFound(_) => {
+                panic!("a missing FILTER was classified as a missing TEMPLATE (#53)")
+            }
+            other => panic!("expected Syntax, got: {other}"),
+        }
+    }
+
+    /// The truly-missing-template case must still classify NotFound —
+    /// now via has_template, not the message.
+    #[test]
+    fn test_truly_missing_template_still_notfound() {
+        let renderer = TeraRenderer::new().unwrap();
+        let err = renderer
+            .render("does-not-exist.html", &create_test_context())
+            .expect_err("missing template must fail");
+        match err {
+            TemplateError::NotFound(name) => assert_eq!(name, "does-not-exist.html"),
+            other => panic!("expected NotFound, got: {other}"),
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // #41: whitespace-control forms, imports, comments, raw blocks.
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn references_include_whitespace_control_forms() {
+        let tpl =
+            "{%- extends \"base.html\" -%}\n{% block c %}{%- include \"x.html\" -%}{% endblock %}";
+        assert_eq!(
+            template_references(tpl),
+            vec!["base.html".to_string(), "x.html".to_string()]
+        );
+    }
+
+    #[test]
+    fn references_include_imports() {
+        let tpl = "{% import \"macros.html\" as m %}{{ m.hi() }}";
+        assert_eq!(template_references(tpl), vec!["macros.html".to_string()]);
+    }
+
+    #[test]
+    fn references_in_comments_are_ignored() {
+        let tpl = "{# {% extends \"ghost.html\" %} #}\n<p>plain</p>";
+        assert!(template_references(tpl).is_empty());
+    }
+
+    #[test]
+    fn references_in_raw_blocks_are_ignored() {
+        let tpl = "{% raw %}{% extends \"ghost.html\" %}{% endraw %}{{ real }}";
+        assert!(template_references(tpl).is_empty());
+    }
+
+    #[test]
+    fn prose_mentioning_extends_is_not_a_reference() {
+        let tpl = "<p>We extends the base; include everything; import nothing.</p>";
+        assert!(template_references(tpl).is_empty());
+    }
+
+    #[test]
+    fn single_quoted_references_are_found() {
+        let tpl = "{% extends 'base.html' %}";
+        assert_eq!(template_references(tpl), vec!["base.html".to_string()]);
     }
 }

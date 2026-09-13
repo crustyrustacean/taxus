@@ -55,9 +55,8 @@ The `SearchBox` island component provides a ready-to-use search interface. Add i
 | `placeholder` | string | `"Search..."` | Placeholder text for the input |
 | `class` | string | `""` | Custom CSS classes to append to the outer container |
 
-The component also has a `max_results` prop, but the `island()` function
-does not read it from the template: it is always 5. A `max_results=`
-argument in a template is ignored.
+The component also accepts a `max_results` prop (integer, default 5,
+clamped to 1–50): the number of results shown in the dropdown.
 
 Example with custom props:
 
