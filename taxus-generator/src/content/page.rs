@@ -258,233 +258,16 @@ impl Page {
     }
 
     /// Strip markdown formatting from text using simple string manipulation.
+    /// The plain text of a Markdown document (#10).
+    ///
+    /// Every construct the old hand-rolled stripper missed — tables,
+    /// footnotes, task lists, strikethrough, nested emphasis, HTML — is
+    /// handled structurally by walking the parsed document's `Text`
+    /// events (the same walk the search index uses). Link destinations,
+    /// image URLs, markup, and code fences contribute nothing; the words
+    /// a reader reads are everything that remains.
     fn strip_markdown(text: &str) -> String {
-        let mut result = text.to_string();
-
-        // Remove headers (## Header -> Header)
-        let mut new_result = String::new();
-        for line in result.lines() {
-            let trimmed = line.trim_start();
-            if let Some(rest) = trimmed.strip_prefix("# ") {
-                new_result.push_str(rest);
-            } else if let Some(rest) = trimmed.strip_prefix("## ") {
-                new_result.push_str(rest);
-            } else if let Some(rest) = trimmed.strip_prefix("### ") {
-                new_result.push_str(rest);
-            } else if let Some(rest) = trimmed.strip_prefix("#### ") {
-                new_result.push_str(rest);
-            } else if let Some(rest) = trimmed.strip_prefix("##### ") {
-                new_result.push_str(rest);
-            } else if let Some(rest) = trimmed.strip_prefix("###### ") {
-                new_result.push_str(rest);
-            } else {
-                new_result.push_str(line);
-            }
-            new_result.push('\n');
-        }
-        result = new_result.trim().to_string();
-
-        // Remove bold (**text** or __text__)
-        result = Self::remove_delimiters(&result, "**", "**");
-        result = Self::remove_delimiters(&result, "__", "__");
-
-        // Remove italic (*text* or _text_)
-        result = Self::remove_delimiters(&result, "*", "*");
-        result = Self::remove_delimiters(&result, "_", "_");
-
-        // Remove inline code (`code`)
-        result = Self::remove_delimiters(&result, "`", "`");
-
-        // Remove links [text](url) -> text
-        result = Self::remove_links(&result);
-
-        // Remove images ![alt](url) -> empty
-        result = Self::remove_images(&result);
-
-        result.trim().to_string()
-    }
-
-    /// Remove paired delimiters from text (e.g., **bold**, *italic*).
-    fn remove_delimiters(text: &str, start: &str, end: &str) -> String {
-        let mut result = String::new();
-        let mut chars = text.chars().peekable();
-        let start_chars: Vec<char> = start.chars().collect();
-        let end_chars: Vec<char> = end.chars().collect();
-
-        while let Some(c) = chars.next() {
-            // Check if we're at the start delimiter
-            if c == start_chars[0] {
-                let mut matched = true;
-                let mut temp: Vec<char> = vec![c];
-
-                for expected in &start_chars[1..] {
-                    if let Some(&next) = chars.peek() {
-                        if next == *expected {
-                            temp.push(chars.next().unwrap());
-                        } else {
-                            matched = false;
-                            break;
-                        }
-                    } else {
-                        matched = false;
-                        break;
-                    }
-                }
-
-                if matched && start_chars.len() > 1 {
-                    // Look for end delimiter
-                    let mut content = String::new();
-                    let mut found_end = false;
-
-                    while let Some(&next) = chars.peek() {
-                        if next == end_chars[0] {
-                            let mut end_match = true;
-                            let mut end_temp: Vec<char> = vec![];
-
-                            for expected in &end_chars {
-                                if let Some(&n) = chars.peek() {
-                                    if n == *expected {
-                                        end_temp.push(chars.next().unwrap());
-                                    } else {
-                                        end_match = false;
-                                        break;
-                                    }
-                                } else {
-                                    end_match = false;
-                                    break;
-                                }
-                            }
-
-                            if end_match {
-                                found_end = true;
-                                break;
-                            } else {
-                                content.extend(end_temp);
-                            }
-                        } else {
-                            content.push(chars.next().unwrap());
-                        }
-                    }
-
-                    if found_end {
-                        result.push_str(&content);
-                        continue;
-                    } else {
-                        result.extend(temp);
-                        result.push_str(&content);
-                        continue;
-                    }
-                } else if matched {
-                    // Single char delimiter, look for closing
-                    let mut content = String::new();
-                    let mut found_end = false;
-
-                    while let Some(&next) = chars.peek() {
-                        if next == end_chars[0] {
-                            chars.next(); // consume end delimiter
-                            found_end = true;
-                            break;
-                        } else {
-                            content.push(chars.next().unwrap());
-                        }
-                    }
-
-                    if found_end {
-                        result.push_str(&content);
-                        continue;
-                    } else {
-                        result.push(c);
-                        result.push_str(&content);
-                        continue;
-                    }
-                } else {
-                    result.extend(temp);
-                    continue;
-                }
-            }
-            result.push(c);
-        }
-
-        result
-    }
-
-    /// Remove markdown links [text](url) -> text.
-    fn remove_links(text: &str) -> String {
-        let mut result = String::new();
-        let chars: Vec<char> = text.chars().collect();
-        let mut i = 0;
-
-        while i < chars.len() {
-            if chars[i] == '[' {
-                // Find the closing bracket
-                let mut j = i + 1;
-                while j < chars.len() && chars[j] != ']' {
-                    j += 1;
-                }
-
-                if j < chars.len() && chars[j] == ']' {
-                    // Check if followed by (url)
-                    if j + 1 < chars.len() && chars[j + 1] == '(' {
-                        // Find closing paren
-                        let mut k = j + 2;
-                        while k < chars.len() && chars[k] != ')' {
-                            k += 1;
-                        }
-
-                        if k < chars.len() {
-                            // Extract the link text
-                            let link_text: String = chars[i + 1..j].iter().collect();
-                            result.push_str(&link_text);
-                            i = k + 1;
-                            continue;
-                        }
-                    }
-                }
-            }
-            result.push(chars[i]);
-            i += 1;
-        }
-
-        result
-    }
-
-    /// Remove markdown images ![alt](url) -> empty.
-    fn remove_images(text: &str) -> String {
-        let mut result = String::new();
-        let chars: Vec<char> = text.chars().collect();
-        let mut i = 0;
-
-        while i < chars.len() {
-            // Check for image syntax ![
-            if chars[i] == '!' && i + 1 < chars.len() && chars[i + 1] == '[' {
-                // Find the closing bracket
-                let mut j = i + 2;
-                while j < chars.len() && chars[j] != ']' {
-                    j += 1;
-                }
-
-                if j < chars.len() && chars[j] == ']' {
-                    // Check if followed by (url)
-                    if j + 1 < chars.len() && chars[j + 1] == '(' {
-                        // Find closing paren
-                        let mut k = j + 2;
-                        while k < chars.len() && chars[k] != ')' {
-                            k += 1;
-                        }
-
-                        if k < chars.len() {
-                            // Skip the entire image syntax
-                            i = k + 1;
-                            continue;
-                        }
-                    }
-                }
-            }
-            result.push(chars[i]);
-            i += 1;
-        }
-
-        result
+        crate::build::pipeline::markdown::markdown_text(text)
     }
 }
 
@@ -912,5 +695,137 @@ Content
         assert_eq!(page.tags(), &["rust", "yew"]);
         assert_eq!(page.categories(), &["Tutorial"]);
         assert_eq!(page.series(), Some("Yew SSG Guide"));
+    }
+    // ------------------------------------------------------------------
+    // #10: constructs the old hand-rolled stripper missed
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_summary_handles_issue10_constructs() {
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+> A quoted lead with ~~strikethrough~~ text.
+",
+            "test.md",
+        )
+        .unwrap();
+        let summary = page.summary();
+        // Event-walk joining may leave doubled spaces where delimiters
+        // stood; the words must all survive, the markers must not.
+        let collapsed: String = summary.split_whitespace().collect::<Vec<_>>().join(" ");
+        assert_eq!(
+            collapsed, "A quoted lead with strikethrough text.",
+            "blockquote/strikethrough text should survive cleanly, got: {summary}"
+        );
+        assert!(!summary.contains('>'), "marker characters must not survive");
+        assert!(
+            !summary.contains("~~"),
+            "strikethrough markers must not survive"
+        );
+    }
+
+    #[test]
+    fn test_word_count_counts_list_items_not_markers() {
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+- alpha
+- beta
+1. gamma
+2. delta
+",
+            "test.md",
+        )
+        .unwrap();
+        assert_eq!(page.word_count(), 4, "list words only, no markers/bullets");
+    }
+
+    #[test]
+    fn test_word_count_ignores_table_markup() {
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+| h1 | h2 |
+| --- | --- |
+| a | b |
+",
+            "test.md",
+        )
+        .unwrap();
+        // Cells only: h1 h2 a b — pipes and the delimiter row count for nothing.
+        assert_eq!(page.word_count(), 4, "got {}", page.word_count());
+    }
+
+    #[test]
+    fn test_word_count_ignores_horizontal_rules() {
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+before
+
+---
+
+after
+",
+            "test.md",
+        )
+        .unwrap();
+        assert_eq!(page.word_count(), 2);
+    }
+
+    #[test]
+    fn test_word_count_ignores_html_tags_and_task_markers() {
+        // Inline HTML is opaque to the parser (it emits one Html event
+        // whose interior text is invisible by CommonMark semantics), and
+        // the checkbox marker in a task list contributes no Text event.
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+<div class=\"x\">real words</div>
+
+- [x] done thing
+",
+            "test.md",
+        )
+        .unwrap();
+        assert_eq!(page.word_count(), 2, "got {}", page.word_count());
+
+        // Plain inline tags around real markdown text:
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+Visit <br> the <b>docs</b> page.
+",
+            "test.md",
+        )
+        .unwrap();
+        assert_eq!(page.word_count(), 4, "got {}", page.word_count());
+    }
+
+    #[test]
+    fn test_summary_footnote_reference_not_leaked() {
+        let page = Page::from_str(
+            "+++
+title = \"T\"
++++
+A claim[^1] with a note.
+
+[^1]: the source.
+",
+            "test.md",
+        )
+        .unwrap();
+        let summary = page.summary();
+        assert!(
+            !summary.contains("[^"),
+            "footnote markers must not leak into summaries, got: {summary}"
+        );
     }
 }

@@ -7,9 +7,18 @@
 //! renamed or re-slugged page never leaves a broken link behind. A target
 //! that names no document fails the build. See the book's
 //! [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter.
+//!
+//! Code immunity is structural (#6): `pulldown_cmark` reports the exact
+//! source range of every code construct — fenced (backtick or tilde, any
+//! fence length), indented, and inline spans — and the resolver skips
+//! `@/`-pattern matches falling inside any of those ranges. The old
+//! `split("```")` heuristic misclassified indented blocks, tilde fences,
+//! four-backtick fences, and inline backtick mentions.
 
 use crate::error::GeneratorError;
 use crate::routes::RouteRegistry;
+use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 /// Resolve internal links in content.
@@ -17,7 +26,9 @@ use std::path::{Path, PathBuf};
 /// Internal links use the syntax `](@/path/to/file.md)` where the path is relative
 /// to the content directory root. This function resolves them to the actual URL path.
 ///
-/// Code blocks (triple backticks) are skipped to avoid processing example code.
+/// Matches inside code — fenced (backtick or tilde, any length), indented,
+/// or inline spans — are left untouched: their byte ranges are reported
+/// by the Markdown parser and skipped (#6).
 ///
 /// # Errors
 ///
@@ -27,11 +38,16 @@ pub fn resolve_internal_links(
     source_file: &Path,
     registry: &RouteRegistry,
 ) -> std::result::Result<String, GeneratorError> {
-    let mut result = String::new();
+    let code_ranges = code_block_ranges(content);
+    let mut result = String::with_capacity(content.len());
     let mut remaining = content;
 
     while let Some(start) = remaining.find("](@/") {
-        if is_inside_code_block(content, remaining, start) {
+        // `start` is relative to `remaining`; the ranges are absolute
+        // into `content`. Same arithmetic as the old heuristic, minus
+        // the heuristic.
+        let absolute_start = content.len() - remaining.len() + start;
+        if in_ranges(&code_ranges, absolute_start) {
             let after_close = start + 4;
             result.push_str(&remaining[..after_close]);
             remaining = &remaining[after_close..];
@@ -85,6 +101,49 @@ pub fn resolve_internal_links(
     Ok(result)
 }
 
+/// Byte ranges of every code construct in the document (#6).
+///
+/// `pulldown_cmark` reports the source range of `Event::Code` (inline
+/// spans) and `Start(CodeBlock(..))`/`End(CodeBlock)` (fenced and
+/// indented blocks). Ranges are absolute into `content`, sorted by the
+/// event order, and non-overlapping.
+fn code_block_ranges(content: &str) -> Vec<Range<usize>> {
+    let parser = Parser::new_ext(content, Options::all());
+    let mut ranges = Vec::new();
+    let mut block_start: Option<usize> = None;
+
+    for (event, range) in parser.into_offset_iter() {
+        match event {
+            Event::Code(_) => ranges.push(range),
+            Event::Start(Tag::CodeBlock(_)) => block_start = Some(range.start),
+            Event::End(TagEnd::CodeBlock) => {
+                if let Some(start) = block_start.take() {
+                    ranges.push(start..range.end);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    ranges
+}
+
+/// Whether `pos` (an offset into the full content) falls inside any of
+/// the sorted, non-overlapping `ranges`.
+fn in_ranges(ranges: &[Range<usize>], pos: usize) -> bool {
+    ranges
+        .binary_search_by(|r| {
+            if pos < r.start {
+                std::cmp::Ordering::Greater
+            } else if pos >= r.end {
+                std::cmp::Ordering::Less
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        })
+        .is_ok()
+}
+
 /// Encode a URL path so the emitted markdown link destination is always
 /// parseable by CommonMark (#33).
 ///
@@ -110,27 +169,6 @@ fn encode_destination(path: &str) -> String {
         .replace('\r', "%0D");
 
     format!("<{encoded}>")
-}
-
-fn is_inside_code_block(full_content: &str, remaining: &str, pos: usize) -> bool {
-    let offset = full_content.len() - remaining.len();
-    let absolute_pos = offset + pos;
-
-    let mut in_code_block = false;
-    let mut byte_idx = 0;
-
-    for chunk in full_content.split("```") {
-        if byte_idx >= absolute_pos {
-            break;
-        }
-        if byte_idx + chunk.len() >= absolute_pos {
-            return in_code_block;
-        }
-        in_code_block = !in_code_block;
-        byte_idx += chunk.len() + 3;
-    }
-
-    in_code_block
 }
 
 // ============================================
@@ -371,5 +409,138 @@ No other links.
             html.contains(r#"href="/My%20Creative%20Post/""#),
             "rewritten markdown must render as an anchor to the route; got: {html}"
         );
+    }
+    // ------------------------------------------------------------------
+    // #6: structural code-block immunity — the old ```-split heuristic
+    // misclassifies these.
+    // ------------------------------------------------------------------
+
+    /// A link in an INDENTED (4-space) code block must not resolve.
+    #[test]
+    fn test_resolve_internal_links_indented_code_block() {
+        let registry = RouteRegistry::new();
+
+        let content = "Here is some text.
+
+    See my [example](@/nope.md) inside.
+
+Done.
+";
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(content, source_file, &registry);
+        assert!(
+            result.is_ok(),
+            "an @/ link in an indented code block must not resolve"
+        );
+        assert!(result.unwrap().contains("](@/nope.md)"));
+    }
+
+    /// A link inside INLINE code (single backticks) must not resolve —
+    /// the heuristic treats any backtick-bearing text as fence-adjacent.
+    #[test]
+    fn test_resolve_internal_links_inline_code_span() {
+        let registry = RouteRegistry::new();
+
+        let content = "Use the syntax `[x](@/nope.md)` carefully.
+";
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(content, source_file, &registry);
+        assert!(
+            result.is_ok(),
+            "an @/ link inside an inline code span must not resolve"
+        );
+        assert!(result.unwrap().contains("](@/nope.md)"));
+    }
+
+    /// Tilde fences are code blocks too.
+    #[test]
+    fn test_resolve_internal_links_tilde_fence() {
+        let registry = RouteRegistry::new();
+
+        let content = "~~~
+See [example](@/nope.md) inside.
+~~~
+";
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(content, source_file, &registry);
+        assert!(result.is_ok(), "tilde-fenced code must not resolve");
+        assert!(result.unwrap().contains("](@/nope.md)"));
+    }
+
+    /// Inline code MENTIONING triple backticks must not toggle the
+    /// heuristic's fence state and swallow later real links.
+    #[test]
+    fn test_resolve_internal_links_backtick_mention_does_not_toggle() {
+        let mut registry = RouteRegistry::new();
+        use crate::routes::{RouteInfo, RouteKind};
+        registry
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+
+        // The phrase "use ``` to fence" in inline code, then a REAL link.
+        // Built by concatenation so the triple backticks need no escapes.
+        let ticks: String = std::iter::repeat_n('`', 3).collect();
+        let content = format!("Use `{ticks}` to fence blocks. Then [about](@/about.md).\n");
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(&content, source_file, &registry);
+        assert!(
+            result.is_ok(),
+            "a real link after an inline backtick mention must resolve: {result:?}"
+        );
+        let result = result.unwrap();
+        assert!(
+            result.contains("](/about/)"),
+            "the real link should be rewritten, got: {result}"
+        );
+    }
+
+    /// FOUR-backtick fences contain triple-backtick bodies — the
+    /// ```-split heuristic desynchronises on these.
+    #[test]
+    fn test_resolve_internal_links_four_backtick_fence() {
+        let mut registry = RouteRegistry::new();
+        use crate::routes::{RouteInfo, RouteKind};
+        registry
+            .register(
+                RouteInfo::new(
+                    "/about/".to_string(),
+                    PathBuf::from("about.md"),
+                    PathBuf::from("about/index.html"),
+                    RouteKind::Page,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+
+        let content = "````
+```
+[example](@/nope.md)
+```
+````
+
+Then [about](@/about.md).
+";
+        let source_file = Path::new("test.md");
+
+        let result = resolve_internal_links(content, source_file, &registry);
+        assert!(
+            result.is_ok(),
+            "the inner nope.md link is inside the four-backtick fence; the real link must resolve"
+        );
+        let result = result.unwrap();
+        assert!(result.contains("](@/nope.md)"), "inner link untouched");
+        assert!(result.contains("](/about/)"), "real link rewritten");
     }
 }
