@@ -379,12 +379,7 @@ pub fn copy_colocated_assets(
 }
 
 /// Write rendered pages to output files.
-pub fn write_output(
-    rendered: &[RenderedPage],
-    output_dir: &Path,
-    dry_run: bool,
-    _verbose: bool,
-) -> Result<()> {
+pub fn write_output(rendered: &[RenderedPage], output_dir: &Path, dry_run: bool) -> Result<()> {
     if dry_run {
         debug!("Dry run - skipping file writes");
         return Ok(());

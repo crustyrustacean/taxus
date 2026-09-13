@@ -2,15 +2,40 @@
 //!
 //! This module provides file watching functionality to detect changes
 //! in content, templates, styles, static files, and configuration.
+//!
+//! ## Watch scope (#48)
+//!
+//! Only the source directories (`content/`, `templates/`, `styles/`,
+//! `static/`) and `site.toml` are watched — never the site directory
+//! recursively. A recursive watch would include the output directory,
+//! so every build's own writes would be classified as source changes
+//! and trigger another build: an infinite rebuild loop for any site
+//! with a section named like a source directory (`content/templates/`
+//! exists as a section in the wild).
+//!
+//! ## Debounce (#42)
+//!
+//! Editors emit 2–4 events per save (write, rename, metadata) and some
+//! tools emit bursts. Raw events are coalesced in a 150 ms window: the
+//! first event opens the window, every further event folds into it, and
+//! one coalesced [`WatchEvent`] is sent when it closes. Without this,
+//! each save queues one full rebuild per raw event. The coordinator
+//! additionally folds events that queue up *during* a build; the
+//! debounce exists so an ordinary save produces one event, not a burst.
 
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info};
 
 use super::error::ServeError;
+
+/// How long to wait after the first raw event before emitting one
+/// coalesced [`WatchEvent`].
+const DEBOUNCE_WINDOW: Duration = Duration::from_millis(150);
 
 /// The type of file that changed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -31,14 +56,18 @@ pub enum ChangeType {
 }
 
 impl ChangeType {
-    /// Determine the change type from a file path.
+    /// Determine the change type from a *site-relative* path.
     ///
-    /// Matches on path *components*, not substrings: `content/blog/...`
-    /// is Content, but a file at `my-content/notes.md` or one inside a
-    /// directory named `styles-archive/` must not misclassify (#11).
-    /// Substring matching also couldn't distinguish `content/static.md`
-    /// (a content file that happens to be named "static") from anything
-    /// under `static/`.
+    /// The first component must name a source directory (`content`,
+    /// `templates`, `styles`, `static`) and have something under it;
+    /// matching on path *components*, not substrings, so
+    /// `my-content/notes.md` or `styles-archive/old.scss` never
+    /// misclassify (#11), and a path under any other first component —
+    /// `dist/templates/index.html` above all — is `Unknown` (#48).
+    ///
+    /// Callers holding absolute paths must strip the site-directory
+    /// prefix first ([`FileWatcher`] does); an absolute path's first
+    /// component is the filesystem root, not a source directory.
     pub fn from_path(path: &Path) -> Self {
         // Check for config file first (exact match)
         if path.ends_with("site.toml") {
@@ -46,24 +75,27 @@ impl ChangeType {
         }
 
         let mut components = path.components().peekable();
-        // Tolerate absolute paths (site-dir prefix) and "." segments by
-        // scanning for the FIRST recognized component. A recognized name
-        // only classifies when it is a directory (has a further component);
-        // a file merely *named* "content"/"static" is not a directory hit.
-        while let Some(comp) = components.next() {
-            let matched = match comp.as_os_str().to_str() {
-                Some("content") => ChangeType::Content,
-                Some("templates") => ChangeType::Template,
-                Some("styles") => ChangeType::Style,
-                Some("static") => ChangeType::Static,
-                _ => continue,
-            };
-            if components.peek().is_some() {
-                return matched;
-            }
+        // Skip a leading "." (relative paths like "./content/a.md").
+        if components.peek() == Some(&std::path::Component::CurDir) {
+            components.next();
         }
 
-        ChangeType::Unknown
+        let matched = match components.next().map(|c| c.as_os_str().to_str()) {
+            Some(Some("content")) => ChangeType::Content,
+            Some(Some("templates")) => ChangeType::Template,
+            Some(Some("styles")) => ChangeType::Style,
+            Some(Some("static")) => ChangeType::Static,
+            _ => return ChangeType::Unknown,
+        };
+
+        // A recognized name only classifies when it is a directory (has a
+        // further component); a file merely *named* "content"/"static" at
+        // the site root is not a directory hit.
+        if components.peek().is_some() {
+            matched
+        } else {
+            ChangeType::Unknown
+        }
     }
 }
 
@@ -83,8 +115,15 @@ impl WatchEvent {
     }
 
     /// Create a watch event from a notify event.
-    pub fn from_notify_event(event: &Event) -> Self {
-        let paths: Vec<PathBuf> = event.paths.clone();
+    ///
+    /// `site_dir` is stripped from each path so classification sees
+    /// site-relative paths ([`ChangeType::from_path`]).
+    pub fn from_notify_event(site_dir: &Path, event: &Event) -> Self {
+        let paths: Vec<PathBuf> = event
+            .paths
+            .iter()
+            .map(|p| p.strip_prefix(site_dir).unwrap_or(p).to_path_buf())
+            .collect();
 
         // Determine the change type from the first path
         let change_type = paths
@@ -96,11 +135,46 @@ impl WatchEvent {
     }
 
     /// Check if this event should trigger a rebuild.
+    ///
+    /// Static files rebuild too (#42): the build's asset stage copies
+    /// `static/` into the output, so a change must be picked up for the
+    /// dev server to serve the new file.
     pub fn should_rebuild(&self) -> bool {
         matches!(
             self.change_type,
-            ChangeType::Content | ChangeType::Template | ChangeType::Style | ChangeType::Config
+            ChangeType::Content
+                | ChangeType::Template
+                | ChangeType::Style
+                | ChangeType::Static
+                | ChangeType::Config
         )
+    }
+}
+
+/// Coalesces raw notify events within [`DEBOUNCE_WINDOW`] into one
+/// `WatchEvent` on the shared channel.
+///
+/// The notify callback is synchronous (it fires on the watcher's own
+/// thread), so the window is a `Mutex<Option<...>>` shared between the
+/// callback and a timer thread: the first event in a quiet period opens
+/// the window and starts the timer; later events just fold in; when the
+/// timer fires the accumulated event is sent and the window closes.
+#[derive(Debug, Default)]
+struct Debouncer {
+    /// The event being accumulated, with the instant its window closes.
+    pending: Option<(WatchEvent, Instant)>,
+}
+
+impl Debouncer {
+    fn fold(&mut self, event: WatchEvent, deadline: Instant) {
+        match &mut self.pending {
+            Some((acc, _)) => {
+                acc.paths.extend(event.paths);
+                acc.paths.sort();
+                acc.paths.dedup();
+            }
+            None => self.pending = Some((event, deadline)),
+        }
     }
 }
 
@@ -118,10 +192,43 @@ impl FileWatcher {
     /// Create a new file watcher.
     pub fn new(site_dir: PathBuf) -> Result<Self, ServeError> {
         let (tx, rx) = mpsc::channel(64);
+        let debouncer = Arc::new(Mutex::new(Debouncer::default()));
+        let site_dir_for_cb = site_dir.clone();
+        // The timer thread waits out the debounce window and flushes the
+        // accumulated event. One thread lives for the watcher's lifetime.
+        {
+            let debouncer = Arc::clone(&debouncer);
+            std::thread::Builder::new()
+                .name("taxus-watch-debounce".into())
+                .spawn(move || {
+                    loop {
+                        // Sleep out the remaining window; a fresh window may
+                        // have opened in the meantime, so re-check.
+                        std::thread::sleep(DEBOUNCE_WINDOW);
+                        let mut guard = debouncer.lock().unwrap();
+                        let Some((_, deadline)) = guard.pending.as_ref() else {
+                            continue;
+                        };
+                        let now = Instant::now();
+                        if *deadline <= now {
+                            let (event, _) = guard.pending.take().expect("checked above");
+                            drop(guard);
+                            debug!("Debounced watch event: {:?}", event);
+                            if event.should_rebuild() && tx.blocking_send(event).is_err() {
+                                error!("Failed to send watch event - receiver dropped");
+                            }
+                        }
+                    }
+                })
+                .map_err(|e| ServeError::WatcherFailed(e.to_string()))?;
+        }
 
-        // Create the watcher with a callback that sends events to our channel
+        // Create the watcher with a callback that folds events into the
+        // debounce window.
+        let cb_debouncer = Arc::clone(&debouncer);
         let watcher = RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
+                let site_dir = &site_dir_for_cb;
                 match res {
                     Ok(event) => {
                         // Skip non-modification events
@@ -149,14 +256,12 @@ impl FileWatcher {
                             return;
                         }
 
-                        let watch_event = WatchEvent::from_notify_event(&Event { paths, ..event });
+                        let watch_event =
+                            WatchEvent::from_notify_event(site_dir, &Event { paths, ..event });
 
-                        // Only send if it should trigger a rebuild
                         if watch_event.should_rebuild() {
-                            debug!("File change detected: {:?}", watch_event);
-                            if tx.blocking_send(watch_event).is_err() {
-                                error!("Failed to send watch event - receiver dropped");
-                            }
+                            let mut guard = cb_debouncer.lock().unwrap();
+                            guard.fold(watch_event, Instant::now() + DEBOUNCE_WINDOW);
                         }
                     }
                     Err(e) => {
@@ -164,7 +269,7 @@ impl FileWatcher {
                     }
                 }
             },
-            Config::default().with_poll_interval(Duration::from_millis(100)),
+            Config::default(),
         )
         .map_err(|e| ServeError::WatcherFailed(e.to_string()))?;
 
@@ -175,14 +280,44 @@ impl FileWatcher {
         })
     }
 
-    /// Start watching the site directory.
+    /// Start watching the site's sources.
+    ///
+    /// Watches only the source directories that exist plus `site.toml`
+    /// (#48) — never the site directory recursively, which would include
+    /// the output directory and rebuild in a loop.
     pub fn start(&mut self) -> Result<(), ServeError> {
-        // Watch the site directory recursively
-        self.watcher
-            .watch(&self.site_dir, RecursiveMode::Recursive)
-            .map_err(|e| ServeError::WatcherFailed(e.to_string()))?;
+        let mut watched = 0;
+        for dir in self.watch_dirs() {
+            self.watcher
+                .watch(&dir, RecursiveMode::Recursive)
+                .map_err(|e| ServeError::WatcherFailed(e.to_string()))?;
+            watched += 1;
+        }
 
-        info!("Watching for changes in: {}", self.site_dir.display());
+        // The config file is watched as a single file, not its directory:
+        // a directory watch on the site root is exactly what #48 forbids.
+        let config = self.config_path();
+        if config.exists() {
+            if let Err(e) = self.watcher.watch(&config, RecursiveMode::NonRecursive) {
+                // Some platforms cannot watch single files; the site.toml
+                // sits in the site root, which we deliberately do not
+                // watch as a directory. Log and continue rather than
+                // failing the server over an optional convenience.
+                tracing::warn!(
+                    error = %e,
+                    "Cannot watch {} for changes; edits to it will not rebuild",
+                    config.display()
+                );
+            } else {
+                watched += 1;
+            }
+        }
+
+        info!(
+            site_dir = %self.site_dir.display(),
+            watches = watched,
+            "Watching site sources for changes"
+        );
         Ok(())
     }
 
@@ -334,11 +469,79 @@ mod tests {
         let config_event = WatchEvent::new(ChangeType::Config, vec![PathBuf::from("site.toml")]);
         assert!(config_event.should_rebuild());
 
+        // #42: static files are part of the build output; a change must
+        // rebuild so the copied asset is refreshed.
         let static_event =
             WatchEvent::new(ChangeType::Static, vec![PathBuf::from("static/img.png")]);
-        assert!(!static_event.should_rebuild());
+        assert!(static_event.should_rebuild());
 
         let unknown_event = WatchEvent::new(ChangeType::Unknown, vec![PathBuf::from("README.md")]);
         assert!(!unknown_event.should_rebuild());
+    }
+
+    /// #48: an event under the output directory must never classify as a
+    /// source change. With the narrowed watch scope `dist/` is not watched
+    /// at all; this test pins the classification contract regardless — if
+    /// scope ever widens again, an output write must stay inert.
+    #[test]
+    fn test_output_dir_event_does_not_classify_as_template() {
+        let path = PathBuf::from("dist/templates/index.html");
+        assert_ne!(ChangeType::from_path(&path), ChangeType::Template);
+    }
+
+    #[test]
+    fn test_output_dir_event_does_not_classify_as_content() {
+        let path = PathBuf::from("dist/content/post/index.html");
+        assert_ne!(ChangeType::from_path(&path), ChangeType::Content);
+    }
+
+    /// #42: events within one debounce window fold into a single event
+    /// with deduplicated paths.
+    #[test]
+    fn test_debouncer_folds_events_in_one_window() {
+        let mut d = Debouncer::default();
+        let deadline = Instant::now() + DEBOUNCE_WINDOW;
+
+        d.fold(
+            WatchEvent::new(ChangeType::Content, vec![PathBuf::from("content/a.md")]),
+            deadline,
+        );
+        d.fold(
+            WatchEvent::new(
+                ChangeType::Content,
+                vec![PathBuf::from("content/a.md"), PathBuf::from("content/b.md")],
+            ),
+            deadline + Duration::from_millis(10),
+        );
+
+        let (event, _) = d.pending.take().unwrap();
+        assert_eq!(event.change_type, ChangeType::Content);
+        assert_eq!(
+            event.paths,
+            vec![PathBuf::from("content/a.md"), PathBuf::from("content/b.md")]
+        );
+    }
+
+    /// A second burst after the window flushed starts fresh.
+    #[test]
+    fn test_debouncer_window_resets_after_flush() {
+        let mut d = Debouncer::default();
+        let deadline = Instant::now();
+        d.fold(
+            WatchEvent::new(ChangeType::Content, vec![PathBuf::from("content/a.md")]),
+            deadline,
+        );
+        let _ = d.pending.take();
+
+        d.fold(
+            WatchEvent::new(
+                ChangeType::Template,
+                vec![PathBuf::from("templates/x.html")],
+            ),
+            deadline,
+        );
+        let (event, _) = d.pending.take().unwrap();
+        assert_eq!(event.change_type, ChangeType::Template);
+        assert_eq!(event.paths, vec![PathBuf::from("templates/x.html")]);
     }
 }

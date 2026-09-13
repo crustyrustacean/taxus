@@ -324,7 +324,6 @@ pub fn render_pages(
     tree: &SiteTree,
     templates: &TeraRenderer,
     site_context: &SiteContext,
-    _verbose: bool,
 ) -> Result<Vec<RenderedPage>> {
     let span = debug_span!("render_pages", pages = processed.len());
     let _enter = span.enter();
@@ -488,7 +487,6 @@ This is the content.
             &tree_of(&processed),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -537,7 +535,6 @@ This is the content.
             &tree_of(&processed),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -647,7 +644,6 @@ This is the content.
             &tree_of(&processed),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -712,7 +708,6 @@ This is the content.
             &tree_of(&processed),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -814,7 +809,6 @@ This is the content.
             &tree_of(&all_pages),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -922,7 +916,6 @@ This is the content.
             &tree_of(&all_pages),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -986,7 +979,6 @@ Content here.
             &tree_of(&processed),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -1095,7 +1087,6 @@ Content here.
             &tree_of(&processed),
             &listing_template(),
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -1123,7 +1114,6 @@ Content here.
             &tree_of(&processed),
             &listing_template(),
             &test_site_context(),
-            false,
         )
         .unwrap();
 
@@ -1164,7 +1154,6 @@ Content here.
             &tree_of(&processed),
             &templates,
             &test_site_context(),
-            false,
         )
         .unwrap();
         // `docs/` has no _index.md and is still a section the tree knows.
@@ -1195,7 +1184,6 @@ Content here.
             &tree_of(&processed),
             &listing_template(),
             &test_site_context(),
-            false,
         )
         .unwrap();
         assert_eq!(listed(&result, "/notes/"), "[Newer][Older][Undated]");
@@ -1218,7 +1206,6 @@ Content here.
             &tree_of(&processed),
             &listing_template(),
             &test_site_context(),
-            false,
         )
         .unwrap();
         // Byte order would put "Banana" first.

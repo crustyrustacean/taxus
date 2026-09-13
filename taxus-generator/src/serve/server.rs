@@ -38,7 +38,7 @@ use axum::{
     extract::State,
     http::{HeaderValue, Request, StatusCode, header},
     middleware::{Next, from_fn_with_state},
-    response::Response,
+    response::{IntoResponse, Response},
     routing::get,
 };
 use futures_util::{SinkExt, StreamExt};
@@ -417,12 +417,16 @@ async fn inject_if_html(response: Response) -> Response {
     let status = response.status();
 
     // Buffer the body — acceptable for a dev server serving local HTML files.
-    let bytes = response
-        .into_body()
-        .collect()
-        .await
-        .expect("response body collection failed")
-        .to_bytes();
+    // A body read failure (client disconnect mid-stream, I/O error from
+    // ServeDir) must be a clean 500, not a panic that drops the connection
+    // with a stack trace (#49).
+    let bytes = match response.into_body().collect().await {
+        Ok(collected) => collected.to_bytes(),
+        Err(e) => {
+            tracing::warn!(error = %e, "Failed to collect response body");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "body read failed").into_response();
+        }
+    };
 
     let html = String::from_utf8_lossy(&bytes);
     let injected = inject_live_reload_script(&html);
