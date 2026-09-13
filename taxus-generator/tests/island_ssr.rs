@@ -142,3 +142,51 @@ fn build_with_island_template_writes_ssr_html_without_runtime() {
         "{about}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// #39: data-props JSON must survive a single quote in a prop value.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn island_props_with_quote_survive_attribute_embedding() {
+    use taxus_common::components::counter::CounterProps;
+    use taxus_common::components::search_box::SearchBoxProps;
+    use taxus_lib::build::pipeline::{render_island_counter, render_search_box};
+
+    // A placeholder containing a single quote — the #39 repro.
+    let html = render_search_box(SearchBoxProps {
+        placeholder: "What's new?".to_string(),
+        max_results: 5,
+        class: String::new(),
+    });
+    assert!(
+        !html.contains("'What's"),
+        "the raw quote must not appear inside data-props: {html}"
+    );
+    assert!(
+        html.contains("data-props='{&quot;placeholder&quot;:&quot;What&#39;s new?&quot;"),
+        "the JSON must be entity-escaped inside the attribute, got: {html}"
+    );
+
+    // A class with angle brackets exercises < / > escaping.
+    let html = render_island_counter(CounterProps {
+        initial: 1,
+        class: "a<b&c".to_string(),
+    });
+    assert!(
+        html.contains(
+            "data-props='{&quot;initial&quot;:1,&quot;class&quot;:&quot;a&lt;b&amp;c&quot;}'"
+        ),
+        "the JSON must be entity-escaped inside the attribute, got: {html}"
+    );
+
+    // The attribute itself must stay well-formed: exactly one
+    // data-props='...' span whose content is pure entities/safe chars.
+    let start = html.find("data-props='").unwrap() + "data-props='".len();
+    let end = html[start..].find('\'').unwrap() + start;
+    let attr = &html[start..end];
+    assert!(
+        !attr.contains(['\'', '<', '>', '&']) || attr.rsplit("&amp;").count() > 1,
+        "no unescaped delimiter characters in the attribute value: {attr}"
+    );
+}

@@ -439,7 +439,7 @@ pub fn render_island_counter(props: CounterProps) -> String {
     let ssr_html = block_on_ssr(ServerRenderer::<Counter>::with_props(move || props).render());
 
     // Emit the mount point wrapper around the SSR output
-    format!(r#"<div data-island="Counter" data-props='{props_json}'>{ssr_html}</div>"#)
+    island_mount("Counter", &props_json, &ssr_html)
 }
 
 pub fn render_search_box(props: SearchBoxProps) -> String {
@@ -449,7 +449,36 @@ pub fn render_search_box(props: SearchBoxProps) -> String {
 
     let ssr_html = block_on_ssr(ServerRenderer::<SearchBox>::with_props(move || props).render());
 
-    format!(r#"<div data-island="SearchBox" data-props='{props_json}'>{ssr_html}</div>"#)
+    island_mount("SearchBox", &props_json, &ssr_html)
+}
+
+/// The hydration mount point for an island (#39).
+///
+/// `data-props` carries the serialized props inside a single-quoted
+/// attribute, so the JSON must be HTML-escaped first: a `'` in any prop
+/// value would otherwise terminate the attribute early and leave the
+/// client parsing a truncated blob (falling back to default props).
+/// The browser's `dataset` accessor un-escapes entities when the client
+/// reads the attribute back, so `taxus-client` needs no change.
+fn island_mount(name: &str, props_json: &str, ssr_html: &str) -> String {
+    let escaped = escape_attribute(props_json);
+    format!(r#"<div data-island="{name}" data-props='{escaped}'>{ssr_html}</div>"#)
+}
+
+/// Escape a value for embedding in a single-quoted HTML attribute.
+fn escape_attribute(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for c in value.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '\'' => out.push_str("&#39;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            _ => out.push(c),
+        }
+    }
+    out
 }
 
 /// Test helpers shared by the stage modules.

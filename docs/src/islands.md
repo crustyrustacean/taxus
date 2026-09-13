@@ -21,7 +21,7 @@ When you use `{{ island(component="Counter", initial=5) | safe }}` in a template
 3. The output is wrapped in a mount point div with serialized props:
 
 ```html
-<div data-island="Counter" data-props='{"initial":5}'>
+<div data-island="Counter" data-props='{&quot;initial&quot;:5}'>
   <!-- Pre-rendered by Yew SSR: -->
   <div class="counter"><span>5</span><button>+</button></div>
 </div>
@@ -96,10 +96,16 @@ All island components accept an optional `class` prop that appends custom CSS cl
 This renders as:
 
 ```html
-<div data-island="SearchBox" data-props='{"placeholder":"Search...","max_results":5,"class":"docs-search"}'>
+<div data-island="SearchBox" data-props='{&quot;placeholder&quot;:&quot;Search...&quot;,&quot;max_results&quot;:5,&quot;class&quot;:&quot;docs-search&quot;}'>
   <!-- component content -->
 </div>
 ```
+
+The serialized props are HTML-entity-escaped inside the single-quoted
+attribute (#39), so a prop value containing `'`, `<`, `>`, or `&` cannot
+break out of the attribute. The browser's `dataset` accessor un-escapes
+the entities when the client reads the attribute, so hydration receives
+the original JSON unchanged.
 
 This enables template authors to pass CSS styling hooks for targeting descendant elements without modifying component source.
 
