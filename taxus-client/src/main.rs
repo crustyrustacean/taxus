@@ -57,6 +57,11 @@ fn console_error(msg: &str) {
     web_sys::console::error_1(&JsValue::from_str(msg));
 }
 
+/// Log a diagnostic message to the browser console.
+fn console_log(msg: &str) {
+    web_sys::console::log_1(&JsValue::from_str(msg));
+}
+
 /// WASM entry point — called by the JS shim when the module is instantiated.
 ///
 /// Walks the entire DOM for `[data-island]` elements and hydrates each one
@@ -121,6 +126,18 @@ pub fn hydrate_islands() {
 /// the component still mounts but uses its `#[prop_or_default]` values so
 /// the page remains functional even with malformed data.
 fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
+    // #50: names come from the shared registry compiled into both this
+    // client and the generator's `island()` function. An unknown name
+    // means a newer generator built the page than this client — skip it
+    // (logged) rather than fail the whole hydration pass.
+    if !taxus_common::islands::ISLANDS
+        .iter()
+        .any(|i| i.name == name)
+    {
+        console_log(&format!("skipping unknown island: {name}"));
+        return;
+    }
+
     match name {
         "Counter" => {
             let props: CounterProps = serde_json::from_str(props_json).unwrap_or(CounterProps {

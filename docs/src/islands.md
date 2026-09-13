@@ -83,7 +83,7 @@ keyword is ignored. The props are serialized to JSON and stored in
 | Component | Arguments read by `island()` |
 |-----------|------------------------------|
 | `Counter` | `initial` (integer, default 0), `class` |
-| `SearchBox` | `placeholder` (default `"Search..."`), `class`; `max_results` is fixed at 5 |
+| `SearchBox` | `placeholder` (default `"Search..."`), `class`, `max_results` (default 5, clamped 1–50) |
 
 ### The `class` Prop
 

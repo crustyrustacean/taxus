@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **templates**: render errors are classified structurally, not by
+  substring-matching the Tera message (#53). A template that is not
+  registered is the only case reported as `NotFound`; every failure out
+  of `tera.render` is a `Render` error carrying Tera's own message.
+  Previously any error whose message happened to contain "not found" —
+  a missing variable, a missing macro — was misreported as a missing
+  template and the CLI printed the "check your templates/ directory"
+  hint, sending users to the wrong place (and it would have broken
+  silently on a Tera message rewording). Unknown filters fail even
+  earlier: at registration, as `Syntax` errors naming the template and
+  position.
+- **templates**: the template dependency ordering recognises
+  whitespace-control tags (`{%- extends "base.html" -%}`) and
+  `{% import %}` (#41), and no longer treats `{# comments #}` or
+  `{% raw %}` contents as references. Editing an imported macro or a
+  whitespace-controlled parent now triggers correct ordering and dev
+  server rebuilds.
+- **islands**: island names live in one registry shared by the
+  generator and the WASM client (#50). The `island()` function
+  consults `taxus_common::islands::ISLANDS` before SSR; the client
+  hydrates against the same list and logs (rather than silently
+  skipping) unknown names. An unknown component name in the SSR
+  fallback comment can no longer break out of the comment.
+  `SearchBox`'s `max_results` template prop — documented but
+  previously ignored — is now read (default 5, clamped 1–50).
+
 - **links**: `@/` internal-link resolution is immune to code constructs
   structurally (#6). The resolver now asks the Markdown parser for the
   byte ranges of every code construct — fenced (backtick or tilde, any

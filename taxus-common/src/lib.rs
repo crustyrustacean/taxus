@@ -11,6 +11,7 @@
 // module declarations
 pub mod components;
 pub mod hooks;
+pub mod islands;
 pub mod search;
 
 // re-exports
