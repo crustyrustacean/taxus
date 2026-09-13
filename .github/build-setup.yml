@@ -1,0 +1,2 @@
+- name: Add wasm32 target
+  run: rustup target add wasm32-unknown-unknown

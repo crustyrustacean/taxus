@@ -8,6 +8,9 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 
+[package.metadata.dist]
+dist = false
+
 [[bin]]
 name = "client"
 path = "src/main.rs"
