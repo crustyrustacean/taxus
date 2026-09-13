@@ -27,10 +27,29 @@ every listing, feed and index from that tree, and writes the result. The
 
 ## Installation
 
+**Install a prebuilt binary** (macOS, Linux, Windows — ARM64 and x86-64):
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.ps1 | iex"
+```
+
+The installer puts `taxus` in `~/.cargo/bin` (beside `cargo`). See
+[Deployment](docs/src/deployment.md) for details.
+
+**Build from source:**
+
 ```bash
 git clone https://github.com/crustyrustacean/taxus.git
 cd taxus
 cargo build --release
+# the binary is target/release/taxus
 ```
 
 Prerequisites:
@@ -40,14 +59,20 @@ Prerequisites:
 
 ```bash
 # Create a new site
-cargo run -- init my-site
+taxus init my-site
 
 # Build the site
-cargo run -- build --dir my-site
+taxus build --dir my-site
 
 # Start development server with hot reload
-cargo run -- serve --dir my-site
+taxus serve --dir my-site
+
+# Deploy: upload my-site/dist/ to any static host
 ```
+
+When you're ready to publish, the `dist/` directory is a complete
+static site — see [Deployment](docs/src/deployment.md) for Cloudflare
+Pages, GitHub Pages and Netlify.
 
 ## CLI Commands
 
@@ -172,6 +197,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - [Islands Architecture](docs/src/islands.md)
 - [Search](docs/src/search.md)
 - [Styling](docs/src/styling.md)
+- [Deployment](docs/src/deployment.md)
 - [CLI Reference](docs/src/cli.md)
 - [Development Server](docs/src/serve.md)
 - [Development](docs/src/development.md)

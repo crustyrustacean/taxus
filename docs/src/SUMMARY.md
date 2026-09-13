@@ -21,5 +21,6 @@
 - [CLI Reference](./cli.md)
 - [Development Server](./serve.md)
 - [Styling](./styling.md)
+- [Deployment](./deployment.md)
 - [Development](./development.md)
 - [API Reference](./api-reference.md)

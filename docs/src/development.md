@@ -132,7 +132,19 @@ The changelog is written by hand: every change adds an entry under
 Added, Changed, Removed, Fixed). Releasing renames that section; nothing is
 generated from commit messages.
 
-Three commands. The only decision is the bump level.
+Releasing involves **two machines**, each triggered once:
+
+- **`cargo release`** (local) — bumps the workspace version, promotes the
+  changelog, commits, tags. Configured in `release.toml` with
+  `push = false` / `publish = false`: nothing leaves the machine on its own.
+- **`cargo-dist`** (CI, `.github/workflows/release.yml`) — watches for
+  version-tag pushes. On one, it builds the `taxus` binary on six
+  platforms (macOS/Linux/Windows × ARM64/x86-64), packages archives,
+  installers and checksums, and **creates the GitHub release** with
+  generated notes.
+
+The tag is the starting gun for the second machine. Four steps, one
+decision — the bump level:
 
 ```bash
 # 1. Read the [Unreleased] section — that is the release note
@@ -141,9 +153,24 @@ cargo xtask release --bump <level> --dry-run
 # 2. Cut the release (bumps all crates, writes the changelog, commits, tags)
 cargo release <level> --execute --no-confirm
 
-# 3. Push the branch and the tag together
-git push origin trunk --follow-tags
+# 3. Push the branch; CI runs on the commit as always
+git push origin trunk
+
+# 4. Push the tag — dist takes it from here: six-platform build, then
+#    the GitHub release is created with binaries and generated notes
+git push origin vX.Y.Z
 ```
+
+After the release exists, replace dist's generated notes with the
+hand-written ones (the same voice as every previous release):
+
+```bash
+gh release edit vX.Y.Z --title vX.Y.Z --notes-file <file>
+```
+
+The division of labour matters: **dist owns release creation** (running
+`gh release create` by hand races it and loses), and **we own the
+words**. Editing is safe at any time after creation.
 
 ### Choosing the bump level
 
@@ -163,9 +190,9 @@ Notes:
 
 - `--no-confirm` skips the interactive prompt (required for non-interactive terminals).
 - `cargo-release` runs `cargo xtask changelog --version <x.y.z>` as its pre-release hook, which turns `## [Unreleased]` into `## [x.y.z] - <date>` and leaves an empty `## [Unreleased]` above it. It fails if `[Unreleased]` is empty, and is a no-op if the version's section already exists, so re-running is safe.
-- `cargo release --dry-run` **skips the hook entirely**; use `cargo xtask release --bump <level> --dry-run` to check the changelog step, or `cargo release hook` to run the hook alone.
-- A plain `cargo release <level>` (no `--execute`) still modifies `Cargo.toml` and `CHANGELOG.md` before stopping — `git checkout -- .` to undo.
-- `push = false` and `publish = false` in `release.toml`: nothing leaves the machine until step 3.
+- `cargo release --dry-run` **skips the hook entirely**; use `cargo xtask release --bump <level> --dry-run` to check the changelog step, or `cargo release hook` to run the hook alone. A plain `cargo release <level>` (no `--execute`) still modifies `Cargo.toml` and `CHANGELOG.md` before stopping (the hook runs even without `--execute` — `git checkout -- .` to undo).
+- `push = false` and `publish = false` in `release.toml`: nothing leaves the machine until steps 3–4.
+- The dist workflow also runs in `plan` mode on pull requests — a free check that the dist configuration still resolves; the expensive build jobs skip PRs.
 - If `cargo build`/`test` fails with `Access is denied (os error 5)` on Windows, a running `taxus.exe` (usually a leftover `serve`) is holding the binary: `taskkill /F /IM taxus.exe` and retry.
 - CI runs on the push: build/test/clippy, security audit, docs, and the get-taxus.org deploy. Check with `gh run list`. The audit fails on **yanked** crates too, not just vulnerabilities — those appear unpredictably (they're other people's unpublish decisions, e.g. chacha20 0.10.1). If only the audit is red, run `cargo update -p <crate>` and push a lockfile-only follow-up.
 

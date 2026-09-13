@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 description = "Pure data model for Taxus sites: the Site Tree, its nodes, and the derivations computed over them."
 
+[package.metadata.dist]
+dist = false
+
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 serde = { workspace = true }

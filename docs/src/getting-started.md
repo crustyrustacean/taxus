@@ -73,6 +73,7 @@ You should see the home page rendered from the Markdown content in `content/_ind
 - Understand [Content](./content.md) for writing pages and posts
 - Explore [Templates](./templates.md) for customizing HTML output
 - Read the [CLI Reference](./cli.md) for all command options
+- [Deploy](./deployment.md) the built site to a static host
 
 ## Opting Out of Islands
 
