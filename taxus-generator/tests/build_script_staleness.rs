@@ -60,8 +60,27 @@ fn common_change_reruns_generator_build_script() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    // Cargo prints its progress lines on stderr.
-    let progress = format!("{stdout}{stderr}");
+    // Cargo prints progress on stderr, and in CI it colours the output:
+    // "Compiling <ESC>[1m<ESC>[92mtaxus v1.0.1..." — strip ANSI codes so
+    // the assertion sees the plain text.
+    let strip_ansi = |s: &str| {
+        let mut out = String::with_capacity(s.len());
+        let mut chars = s.chars();
+        while let Some(c) = chars.next() {
+            if c == '\u{1b}' {
+                // Skip [ ... letter (CSI sequence).
+                for c2 in chars.by_ref() {
+                    if c2.is_ascii_alphabetic() {
+                        break;
+                    }
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        out
+    };
+    let progress = format!("{}{}", strip_ansi(&stdout), strip_ansi(&stderr));
     assert!(
         progress.contains("Compiling taxus v"),
         "touching taxus-common did not recompile the generator — the embedded \
