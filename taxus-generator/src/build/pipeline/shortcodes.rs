@@ -35,8 +35,7 @@ use super::internal_links::{code_block_ranges, in_ranges};
 /// pair, an unclosed span — is left alone. Malformed shortcodes are the
 /// expansion pass's error to report; this helper only ever removes what
 /// is unambiguously a complete shortcode.
-#[cfg_attr(not(test), expect(dead_code))]
-fn strip_shortcode_spans(content: &str) -> String {
+pub(crate) fn strip_shortcode_spans(content: &str) -> String {
     let bytes = content.as_bytes();
     let mut out = String::with_capacity(content.len());
     let mut i = 0usize;

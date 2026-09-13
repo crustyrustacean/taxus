@@ -54,7 +54,11 @@ pub fn indexed_text(processed: &ProcessedPage) -> String {
             text.push(' ');
         }
     }
-    text.push_str(&markdown_text(&processed.page.raw_content));
+    // Shortcode spans are removed before tokenizing: markup and args
+    // (alt text included) are not the words a reader searches for.
+    let bare =
+        crate::build::pipeline::shortcodes::strip_shortcode_spans(&processed.page.raw_content);
+    text.push_str(&markdown_text(&bare));
     text
 }
 
