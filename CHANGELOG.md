@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **markdown**: ordered lists close with `</ol>` instead of `</ul>`.
+  The renderer's `TagEnd::List` arm discarded pulldown-cmark's
+  `is_ordered` flag and always emitted the unordered closing tag, so
+  `1. first` / `2. second` produced `<ol>…</ul>` — invalid HTML that
+  browsers recover from but that fails validation, degrades the
+  accessibility tree, and mis-nests ordered lists inside unordered
+  ones. The same defect existed in the fallback `end_tag_to_html`
+  helper and is fixed there too. Golden manifests re-baselined for
+  `get-taxus-org` (its two ordered-list posts; the diff is exactly
+  `</ul>` → `</ol>`, three lines across two files).
+
 ## [1.1.0] - 2026-09-13
 
 ### Fixed
