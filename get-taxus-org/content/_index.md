@@ -11,6 +11,8 @@ Building for the web has become unnecessarily difficult. Taxus is an opinionated
 
 Taxus stands on the following pillars:
 
+- **Install in one line** — prebuilt binaries for macOS, Linux and Windows. [Install taxus →](/install/)
+
 - **Author with power** — write with CommonMark-compliant markdown, via [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark). [Learn more →](/authoring/)
 
 - **Structure is easy and familiar** — HTML templates with [Tera](https://keats.github.io/tera). [Learn more →](/structure/)
