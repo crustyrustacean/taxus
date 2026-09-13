@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **config**: unknown keys are rejected in every `site.toml` section
+  (#46). A typo like `ouput_dir` in `[build]` or `qality` in `[images]`
+  previously parsed fine and silently left the real key at its default;
+  now the build fails naming the unknown field and the expected set.
+  `site.base_url` must start with `http://` or `https://` — `taxus init`
+  already enforced this at creation; the loader now enforces it too.
+- **build**: the generator's embedded WASM client rebuilds when
+  `taxus-common` changes (#45). `build.rs` declared rerun-if-changed
+  only for `taxus-client` sources, so editing an island component in
+  taxus-common recompiled the SSR code while the embedded
+  `client.js`/`client_bg.wasm` stayed stale. The nested cargo invocation
+  now uses `$CARGO` (respecting rustup overrides and CI matrices), and
+  `taxus-client`'s `wasm-bindgen` is pinned to `=0.2.126`, matching the
+  generator's `wasm-bindgen-cli-support`, so `cargo update` can no
+  longer skew them into a schema-version mismatch. A build-script
+  staleness test (opt-in via `TAXUS_TEST_BUILD_SCRIPT=1`, as it shells
+  out to cargo) proves a taxus-common touch recompiles the generator.
 - **images**: hero variants deduplicate after clamping (#51). A width at
   or beyond the original ships the original pixels, and several such
   widths now produce one variant instead of encoding and writing the

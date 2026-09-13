@@ -158,9 +158,16 @@ insert_anchor_links = false
 Configuration is validated when loaded:
 
 - `site.name` must not be empty
+- `site.base_url` must not be empty and must start with `http://` or `https://`
 - `images.quality` must be between 1 and 100
 - `images.format` must be `"webp"`, `"jpeg"`, `"jpg"`, or `"png"`
-- `site.base_url` must not be empty
+- `images.widths` must list at least one breakpoint
+- `[feed] limit` must not be `0` (unset means no limit)
+
+Unknown keys are rejected in every section (`[site]`, `[build]`, `[feed]`,
+`[highlight]`, `[images]`, `[markdown]`): a typo like `ouput_dir` fails the
+build naming the unknown field, rather than silently leaving the real key at
+its default.
 
 ## Feed URLs
 

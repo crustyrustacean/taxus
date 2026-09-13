@@ -6,6 +6,13 @@ use std::process::Command;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=../taxus-client/src");
+    // The client depends on taxus-common (every island component lives
+    // there); without this, editing taxus-common leaves the embedded
+    // client.js/client_bg.wasm stale while the SSR code recompiles —
+    // hydration silently disagrees with the server (#45).
+    println!("cargo:rerun-if-changed=../taxus-common/src");
+    println!("cargo:rerun-if-changed=../taxus-client/Cargo.toml");
+    println!("cargo:rerun-if-changed=../taxus-common/Cargo.toml");
 
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set — must be run by Cargo");
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))

@@ -27,7 +27,10 @@ js-sys = "0.3"
 taxus-common = { path = "../taxus-common" }
 serde_json = "1"
 serde-wasm-bindgen = "0.6"
-wasm-bindgen = "0.2"
+# Pinned to match wasm-bindgen-cli-support = "=0.2.126" in taxus-generator:
+# the bindgen step rejects a version skew between the macro crate and the
+# CLI support library (#45).
+wasm-bindgen = "=0.2.126"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["console", "Document", "Window", "HtmlElement", "DomStringMap", "NodeList", "Element"] }
 yew = { version = "0.23", features = [ "hydration" ] }
