@@ -206,13 +206,14 @@ Start a development server with live reload.
 taxus serve [OPTIONS]
 
 Options:
-  -d, --dir <PATH>     Root directory (must contain site.toml) [default: .]
-      --host <ADDR>    IP address to bind to [default: 127.0.0.1]
-  -p, --port <PORT>    Port to listen on [default: 3000]
-  -v, --verbose        Print detailed progress for each build stage
-  -q, --quiet          Suppress all output except errors
-  -o, --open           Open browser automatically
-  -h, --help           Print help
+  -d, --dir <PATH>        Root directory (must contain site.toml) [default: .]
+      --host <ADDR>       IP address to bind to [default: 127.0.0.1]
+  -p, --port <PORT>       Port to listen on [default: 3000]
+  -v, --verbose           Print detailed progress for each build stage
+  -q, --quiet             Suppress all output except errors
+  -o, --open              Open browser automatically
+      --include-drafts    Include draft pages in every rebuild
+  -h, --help              Print help
 ```
 
 The serve command performs an initial build automatically, then watches for file changes.
@@ -238,6 +239,9 @@ taxus serve --open
 
 # Serve from specific directory
 taxus serve --dir ./my-site
+
+# Preview drafts (rebuilds include them until restarted)
+taxus serve --dir ./my-site --include-drafts
 
 # Combined options
 taxus serve --dir ./my-site --port 8080 --open --verbose

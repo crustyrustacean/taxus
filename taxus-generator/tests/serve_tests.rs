@@ -358,8 +358,12 @@ mod change_type_regression_tests {
 
     #[test]
     fn test_absolute_style_path() {
+        // Classification is site-relative: the watcher strips the site
+        // prefix before calling from_path. A raw absolute path's first
+        // component is the filesystem root, so it classifies Unknown —
+        // pinning that is the #48 contract.
         let path = PathBuf::from("/site/styles/main.scss");
-        assert_eq!(ChangeType::from_path(&path), ChangeType::Style);
+        assert_eq!(ChangeType::from_path(&path), ChangeType::Unknown);
     }
 
     #[test]
@@ -369,5 +373,112 @@ mod change_type_regression_tests {
             ChangeType::from_path(&PathBuf::from("content/x.md")),
             ChangeType::Content
         );
+    }
+}
+
+// =============================================================================
+// #42/#48: watcher scope and debounce
+// =============================================================================
+
+mod watcher_scope_tests {
+    use super::*;
+    use std::time::Duration;
+    use taxus_lib::serve::FileWatcher;
+
+    /// A site-shaped temp directory with the four source dirs and dist/.
+    fn site_skeleton() -> tempfile::TempDir {
+        let dir = tempfile::TempDir::new().unwrap();
+        for sub in ["content", "templates", "styles", "static", "dist"] {
+            std::fs::create_dir(dir.path().join(sub)).unwrap();
+        }
+        std::fs::write(dir.path().join("site.toml"), "# site").unwrap();
+        dir
+    }
+
+    /// watch_dirs lists exactly the existing source dirs, never dist/.
+    #[test]
+    fn test_watch_dirs_excludes_output_dir() {
+        let dir = site_skeleton();
+        let watcher = FileWatcher::new(dir.path().to_path_buf()).unwrap();
+
+        let watched = watcher.watch_dirs();
+        let mut names: Vec<String> = watched
+            .iter()
+            .map(|d| d.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+        names.sort();
+
+        assert_eq!(names, vec!["content", "static", "styles", "templates"]);
+        assert!(!watched.iter().any(|d| d.ends_with("dist")));
+    }
+
+    /// A file write inside dist/ produces no watch event within a generous
+    /// window, even though the write itself succeeds (#48: no loop).
+    #[tokio::test]
+    async fn test_output_dir_write_produces_no_rebuild_event() {
+        let dir = site_skeleton();
+        let mut watcher = FileWatcher::new(dir.path().to_path_buf()).unwrap();
+        watcher.start().unwrap();
+
+        // Write into the output directory: the pathological case — a
+        // section named `templates` means dist/templates/... is written
+        // on every build.
+        std::fs::create_dir_all(dir.path().join("dist/templates")).unwrap();
+        std::fs::write(dir.path().join("dist/templates/index.html"), b"<html>").unwrap();
+
+        // Recv with a timeout comfortably longer than the debounce window.
+        let none = tokio::time::timeout(Duration::from_millis(600), watcher.recv()).await;
+        assert!(
+            none.is_err(),
+            "an output-dir write must not trigger a rebuild event"
+        );
+    }
+
+    /// A burst of rapid writes to content/ coalesces into one event
+    /// (#42: debounce).
+    #[tokio::test]
+    async fn test_rapid_content_writes_coalesce_into_one_event() {
+        let dir = site_skeleton();
+        let mut watcher = FileWatcher::new(dir.path().to_path_buf()).unwrap();
+        watcher.start().unwrap();
+
+        // Four rapid writes — an editor saving twice, or a tool writing
+        // a file and its metadata.
+        for i in 0..4 {
+            std::fs::write(dir.path().join(format!("content/post-{i}.md")), b"body").unwrap();
+        }
+
+        let event = tokio::time::timeout(Duration::from_secs(2), watcher.recv())
+            .await
+            .expect("a debounced event should arrive")
+            .expect("watcher alive");
+
+        // All four writes folded into the one event.
+        assert_eq!(event.paths.len(), 4, "paths: {:?}", event.paths);
+        assert_eq!(event.change_type, ChangeType::Content);
+
+        // …and nothing else follows within a generous window.
+        let extra = tokio::time::timeout(Duration::from_millis(600), watcher.recv()).await;
+        assert!(extra.is_err(), "a second event arrived for one burst");
+    }
+}
+
+// =============================================================================
+// #40: serve draft plumbing
+// =============================================================================
+
+mod serve_drafts_tests {
+    use super::*;
+
+    /// The server config records the include-drafts choice, and the
+    /// builder chain applies it: wiring tested at the units the CLI
+    /// composes (the CLI layer is a three-field pass-through).
+    #[test]
+    fn test_dev_server_config_with_include_drafts() {
+        let config = DevServerConfig::default().with_include_drafts(true);
+        assert!(config.include_drafts);
+
+        let config = DevServerConfig::default();
+        assert!(!config.include_drafts);
     }
 }

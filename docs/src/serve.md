@@ -55,15 +55,20 @@ browsable address (`127.0.0.1` or `[::1]`) rather than the wildcard.
 
 ### Hot Reloading
 
-The server watches for file changes and triggers a rebuild:
-
-- **Content files** (`.md` in `content/`)
-- **Templates** (`.html` in `templates/`)
-- **Styles** (`.scss`/`.sass` in `styles/`)
-- **Static files** (`static/`)
-- **Configuration** (`site.toml`)
+The server watches the source directories — `content/`, `templates/`,
+`styles/`, `static/`, and the `site.toml` file — and nothing else. The
+output directory is never watched, so a build's own writes cannot
+trigger another build.
 
 When a change is detected, the server rebuilds and sends a reload signal to connected browsers via WebSocket.
+
+#### Debouncing
+
+Editors emit several filesystem events per save, and some tools emit
+bursts. Events are coalesced in a 150 ms window: one save produces one
+rebuild, whatever the filesystem did underneath. Events that arrive
+while a rebuild is running are folded into a single follow-up rebuild
+rather than queueing N.
 
 ### Live Reload Protocol
 

@@ -112,9 +112,10 @@ async fn main() {
             dir,
             host,
             port,
-            verbose: _,
+            verbose,
             quiet,
             open,
+            include_drafts,
         } => {
             match run_serve(&ServeArgs {
                 dir,
@@ -122,6 +123,8 @@ async fn main() {
                 port,
                 quiet,
                 open,
+                include_drafts,
+                verbose,
             })
             .await
             {

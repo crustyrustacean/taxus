@@ -548,7 +548,7 @@ pub fn compute_permalink(base_url: &str, path: &str) -> String
 | `from_dir(dir: &Path) -> Result<Self>` | Create from directory |
 | `new(config: SiteConfig) -> Self` | Create from config |
 | `dry_run(self, bool) -> Self` | Set dry-run mode |
-| `verbose(self, bool) -> Self` | Set verbose mode |
+| `verbose(self, bool) -> Self` | No-op kept for API compatibility; verbosity is tracing `debug` level (#54) |
 | `include_drafts(self, bool) -> Self` | Include drafts |
 | `output_dir(self, dir: impl Into<PathBuf>) -> Self` | Override the output directory |
 | `build(self) -> Result<BuildReport>` | Run the fifteen-stage pipeline (see [Architecture](./architecture.md)) |
@@ -609,7 +609,7 @@ pub struct RenderedPage {
 | `process_content(&SiteTree, &RouteRegistry, &SiteConfig, include_drafts, highlighter) -> Result<(Vec<ProcessedPage>, usize)>` | 3 | Render Markdown from the tree; returns the pages and the observed skip count (#55) |
 | `process_images(&mut [ProcessedPage], &SiteConfig, dry_run) -> Result<ImageRegistry>` | 4 | Hero image variants |
 | `copy_colocated_assets(content_dir, output_dir, dry_run) -> Result<AssetReport>` | 5 | Copy non-`.md` files |
-| `pages::render_pages(&[ProcessedPage], &SiteTree, &TeraRenderer, &SiteContext, verbose) -> Result<Vec<RenderedPage>>` | 6 | Run templates |
+| `pages::render_pages(&[ProcessedPage], &SiteTree, &TeraRenderer, &SiteContext) -> Result<Vec<RenderedPage>>` | 6 | Run templates |
 | `robots::generate_robots`, `write_robots` | 7 | `robots.txt` |
 | `not_found::generate_404`, `write_404` | 8 | `404.html` |
 | `taxonomy::build_taxonomy_map(&SiteTree)`, `render_taxonomy_pages`, `write_taxonomy_pages` | 9 | Taxonomy pages |
@@ -618,7 +618,7 @@ pub struct RenderedPage {
 | `process_assets(&SiteConfig, output_dir, dry_run) -> Result<AssetReport>` | 12 | SCSS and static files |
 | `search::generate_search(&[ProcessedPage]) -> Result<GeneratedSearch>`, `write_search_index` | 13 | `search_index.bin` |
 | `wasm::build_wasm_client(output_dir, dry_run) -> Result<WasmBuildOutput>` | 14 | Write `dist/wasm/` |
-| `write_output(&[RenderedPage], output_dir, dry_run, verbose)`, `alias::write_aliases` | 15 | Write files |
+| `write_output(&[RenderedPage], output_dir, dry_run)`, `alias::write_aliases` | 15 | Write files |
 | `clean_output(output_dir)` | | Remove the output directory |
 | `markdown::markdown_to_html_with_toc(markdown, highlighter, &MarkdownOptions) -> (String, Vec<TocEntry>)` | 3 | Markdown rendering |
 | `internal_links::resolve_internal_links(content, source_file, &RouteRegistry)` | 3 | `@/` links |
@@ -778,7 +778,7 @@ pub struct DevServerConfig {
 | `with_port(self, port: u16) -> Self` | Set port |
 | `with_output_dir(self, dir: PathBuf) -> Self` | Set output dir |
 | `with_site_dir(self, dir: PathBuf) -> Self` | Set site dir |
-| `with_include_drafts(self, bool) -> Self` | Stored, not yet used by the rebuild |
+| `with_include_drafts(self, bool) -> Self` | Mirrored into every rebuild (#40) |
 | `with_open(self, bool) -> Self` | Open a browser after starting |
 
 Also exported: `browsable_url(SocketAddr) -> String`, `FileWatcher`,

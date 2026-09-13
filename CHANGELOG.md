@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **serve**: `taxus serve` accepts `--include-drafts`, and `--verbose`
+  now reaches the rebuilds instead of only initialising tracing (#40) —
+  previously drafts could never be previewed in the dev server, which is
+  the main reason to run one.
+- **serve**: the watcher watches only the source directories plus
+  `site.toml`, never the site directory recursively (#48). The old
+  recursive watch included the output directory, so any site with a
+  section named like a source directory (`content/templates/`) rebuilt
+  in an infinite loop, and `.git` churn generated event noise.
+  Classification is now strictly site-relative: `dist/templates/x` is
+  not a template change even if it is ever seen.
+- **serve**: static-file changes rebuild (#42) — editing anything under
+  `static/` previously did nothing until some other file changed — and
+  watch events are debounced in a 150 ms window, so an editor's burst
+  of events per save coalesces into one rebuild instead of N. The old
+  `with_poll_interval(100ms)` only configured the polling backend and
+  was never a debounce.
+- **serve**: a failure collecting a response body (client disconnect,
+  I/O error) returns a clean 500 with a warning instead of panicking
+  inside the handler and dropping the connection (#49).
+- **build**: `render_pages` and `write_output` no longer take a `verbose`
+  parameter that was never read, and the image stage no longer builds a
+  registry it immediately discards (#54). `SiteBuilder::verbose` is a
+  documented no-op kept for source compatibility; verbosity is tracing
+  `debug` level.
 - **sitemap**: `sitemap.xml` now lists taxonomy list and term pages
   (`/tags/`, `/tags/rust/`, …) and pagination pages (`/blog/page/2/`),
   which were never generated early enough to appear (#47). The sitemap

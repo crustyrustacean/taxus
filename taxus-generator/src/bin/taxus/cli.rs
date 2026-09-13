@@ -219,6 +219,11 @@ pub enum Commands {
         /// Open the site in a browser after starting the server.
         #[arg(short, long)]
         open: bool,
+
+        /// Include draft pages in every rebuild — the dev server is the
+        /// place to preview drafts before publishing.
+        #[arg(long)]
+        include_drafts: bool,
     },
 }
 

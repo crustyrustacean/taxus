@@ -28,7 +28,6 @@ use tracing::{debug, info, info_span};
 ///
 /// // Build from a directory containing site.toml
 /// let report = SiteBuilder::from_dir(Path::new("."))?
-///     .verbose(true)
 ///     .build()?;
 ///
 /// report.print_summary();
@@ -40,8 +39,6 @@ pub struct SiteBuilder {
     config: SiteConfig,
     /// Enable dry-run mode (no files written)
     dry_run: bool,
-    /// Enable verbose output
-    verbose: bool,
     /// Include draft pages in build
     include_drafts: bool,
 }
@@ -62,7 +59,6 @@ impl SiteBuilder {
         Self {
             config,
             dry_run: false,
-            verbose: false,
             include_drafts: false,
         }
     }
@@ -77,9 +73,11 @@ impl SiteBuilder {
 
     /// Enable or disable verbose output.
     ///
-    /// In verbose mode, detailed progress information is printed.
-    pub fn verbose(mut self, verbose: bool) -> Self {
-        self.verbose = verbose;
+    /// Verbose output is tracing `debug` level: pass `-v/--verbose` (or
+    /// `RUST_LOG=taxus=debug`) and every stage logs its detail. The
+    /// builder itself no longer carries a flag — the two pipeline
+    /// parameters it used to forward were never read (#54).
+    pub fn verbose(self, _verbose: bool) -> Self {
         self
     }
 
@@ -204,7 +202,7 @@ impl SiteBuilder {
         let _images_span = info_span!("process_images").entered();
         info!("[4/15] Processing images...");
         let mut processed = processed;
-        let _image_registry = pipeline::process_images(&mut processed, &self.config, self.dry_run)?;
+        pipeline::process_images(&mut processed, &self.config, self.dry_run)?;
 
         debug!(
             hero_images = processed.iter().filter(|p| p.hero_image.is_some()).count(),
@@ -237,13 +235,7 @@ impl SiteBuilder {
             author: self.config.site.author.clone(),
         };
 
-        let rendered = pipeline::pages::render_pages(
-            &processed,
-            &tree,
-            &templates,
-            &site_context,
-            self.verbose,
-        )?;
+        let rendered = pipeline::pages::render_pages(&processed, &tree, &templates, &site_context)?;
         drop(_render_span);
 
         // Stage 7: Generate robots.txt
@@ -348,7 +340,7 @@ impl SiteBuilder {
         // Stage 14: Write output
         let _write_span = info_span!("write_output").entered();
         info!("[15/15] Writing output...");
-        pipeline::write_output(&rendered, &output_dir, self.dry_run, self.verbose)?;
+        pipeline::write_output(&rendered, &output_dir, self.dry_run)?;
 
         // Write taxonomy pages
         if !taxonomy_pages.is_empty() {
@@ -457,7 +449,6 @@ mod tests {
         let config = test_config();
         let builder = SiteBuilder::new(config);
         assert!(!builder.dry_run);
-        assert!(!builder.verbose);
         assert!(!builder.include_drafts);
     }
 
@@ -466,13 +457,6 @@ mod tests {
         let config = test_config();
         let builder = SiteBuilder::new(config).dry_run(true);
         assert!(builder.dry_run);
-    }
-
-    #[test]
-    fn test_site_builder_verbose() {
-        let config = test_config();
-        let builder = SiteBuilder::new(config).verbose(true);
-        assert!(builder.verbose);
     }
 
     #[test]
@@ -502,13 +486,9 @@ mod tests {
     #[test]
     fn test_site_builder_builder_chain() {
         let config = test_config();
-        let builder = SiteBuilder::new(config)
-            .dry_run(true)
-            .verbose(true)
-            .include_drafts(true);
+        let builder = SiteBuilder::new(config).dry_run(true).include_drafts(true);
 
         assert!(builder.dry_run);
-        assert!(builder.verbose);
         assert!(builder.include_drafts);
     }
 }

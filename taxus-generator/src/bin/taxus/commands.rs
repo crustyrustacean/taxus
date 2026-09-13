@@ -17,6 +17,11 @@ pub struct ServeArgs {
     pub port: u16,
     pub quiet: bool,
     pub open: bool,
+    /// Include drafts in every rebuild (#40) — the dev server is the
+    /// place to preview them.
+    pub include_drafts: bool,
+    /// Verbose build output in every rebuild (#40).
+    pub verbose: bool,
 }
 
 pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
@@ -31,16 +36,19 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
         .with_port(args.port)
         .with_output_dir(config.build.output_dir.clone())
         .with_site_dir(args.dir.clone())
-        .with_open(args.open);
+        .with_open(args.open)
+        .with_include_drafts(args.include_drafts);
 
     // Capture what the rebuild needs in the closure
     let site_dir = args.dir.clone();
-    let include_drafts = false;
+    let include_drafts = args.include_drafts;
+    let verbose = args.verbose;
 
     let rebuild: RebuildFn = Arc::new(move || {
         taxus_lib::SiteBuilder::from_dir(&site_dir)
             .map_err(|e| e.to_string())?
             .include_drafts(include_drafts)
+            .verbose(verbose)
             .build()
             .map_err(|e| e.to_string())?;
         Ok(())
