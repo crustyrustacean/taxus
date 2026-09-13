@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **islands**: island `data-props` JSON is HTML-entity-escaped inside
+  the single-quoted attribute (#39). A prop value containing `'` —
+  `placeholder="What's new?"` — previously terminated the attribute
+  early, producing malformed markup and a client-side JSON parse
+  failure that silently fell back to default props. The browser's
+  `dataset` accessor un-escapes the entities, so hydration receives
+  the original JSON and `taxus-client` needs no change. Golden
+  manifests re-baselined for `get-taxus-org` (every page embeds the
+  SearchBox island; the only diff is the escaped attribute).
+
 ### Changed
 
 - **templates**: render errors are classified structurally, not by
