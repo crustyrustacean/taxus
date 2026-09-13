@@ -21,8 +21,15 @@ fn build_search_index() -> SearchIndex {
     let registry = discover_routes(&config).expect("routes");
     let tree = taxus_lib::build::pipeline::discover_tree(&config).expect("tree");
     let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
-    let (processed, _skipped) =
-        process_content(&tree, &registry, &config, false, Some(&mut highlighter)).expect("content");
+    let (processed, _skipped) = process_content(
+        &tree,
+        &registry,
+        &config,
+        false,
+        Some(&mut highlighter),
+        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+    )
+    .expect("content");
 
     let generated = generate_search(&processed).expect("search generation");
     SearchIndex::from_bytes(&generated.search_index).expect("index roundtrip")

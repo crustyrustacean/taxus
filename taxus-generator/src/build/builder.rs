@@ -164,6 +164,15 @@ impl SiteBuilder {
             templates_dir = %self.config.build.templates_dir.display(),
             "Templates loaded"
         );
+
+        // Shortcodes: built-ins plus shortcodes/*.html (a missing
+        // directory means built-ins only). Loaded with the templates —
+        // both are Tera sources the content stage will render through.
+        let mut shortcodes = pipeline::shortcodes::ShortcodeRenderer::new()?;
+        let shortcode_count = shortcodes.load_dir(&self.config.base_dir.join("shortcodes"))?;
+        if shortcode_count > 0 {
+            debug!(shortcodes = shortcode_count, "Shortcodes loaded");
+        }
         drop(_templates_span);
 
         // create a code syntax highlighter
@@ -185,6 +194,7 @@ impl SiteBuilder {
             &self.config,
             self.include_drafts,
             highlighter.as_mut(),
+            &shortcodes,
         )?;
 
         if processed.is_empty() {

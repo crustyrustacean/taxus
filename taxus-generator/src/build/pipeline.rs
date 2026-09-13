@@ -137,6 +137,7 @@ pub fn process_content(
     config: &SiteConfig,
     include_drafts: bool,
     mut highlighter: Option<&mut CodeHighlighter>,
+    shortcodes: &shortcodes::ShortcodeRenderer,
 ) -> Result<(Vec<ProcessedPage>, usize)> {
     let mut pages = Vec::new();
     let mut skipped = 0usize;
@@ -169,12 +170,24 @@ pub fn process_content(
         let resolved_content =
             resolve_internal_links(&page.raw_content, &route.content_file, registry)?;
 
+        // Expand shortcodes ({{ name(..) }} / {{% name %}}..{{% /name %}}).
+        // Code constructs are immune; the output joins the Markdown
+        // stream, so Markdown rendering wraps it correctly.
+        let expanded_content = shortcodes::expand_shortcodes_in_page(
+            &resolved_content,
+            &route.content_file,
+            shortcodes,
+            Some(&page),
+            &config.site.name,
+            &config.site.base_url,
+        )?;
+
         // Convert markdown to HTML (collecting heading TOC at the same time)
         let md_options = markdown::MarkdownOptions {
             insert_anchor_links: config.markdown.insert_anchor_links,
         };
         let (html_content, toc) = markdown::markdown_to_html_with_toc(
-            &resolved_content,
+            &expanded_content,
             highlighter.as_deref_mut(),
             &md_options,
         );

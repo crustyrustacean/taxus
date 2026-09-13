@@ -461,6 +461,15 @@ fn register_taxus_filters(tera: &mut Tera) {
     tera.register_filter("term_slug", term_slug);
 }
 
+/// Register just the filter set (contrib + taxus) on a Tera instance —
+/// no island function, no site functions. Consumers that render
+/// non-template contexts (the shortcode engine) get the shared
+/// vocabulary without template-only machinery.
+pub(crate) fn register_filters_only(tera: &mut Tera) {
+    register_contrib_filters(tera);
+    register_taxus_filters(tera);
+}
+
 /// Extract the names of templates that `content` references via
 /// `{% extends "..." %}` and `{% include "..." %}`.
 fn template_references(content: &str) -> Vec<String> {

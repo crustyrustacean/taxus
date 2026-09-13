@@ -445,9 +445,15 @@ fn test_rendered_page_carries_hero_image_metadata() {
     let registry = RouteRegistry::from_tree(&tree);
     let templates = TeraRenderer::from_dir(&config.build.templates_dir).unwrap();
     let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
-    let (mut processed, _skipped) =
-        pipeline::process_content(&tree, &registry, &config, false, Some(&mut highlighter))
-            .unwrap();
+    let (mut processed, _skipped) = pipeline::process_content(
+        &tree,
+        &registry,
+        &config,
+        false,
+        Some(&mut highlighter),
+        &pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+    )
+    .unwrap();
 
     pipeline::process_images(&mut processed, &config, false).unwrap();
     let hero_post = processed

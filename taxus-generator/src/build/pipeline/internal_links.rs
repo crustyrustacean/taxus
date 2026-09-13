@@ -133,7 +133,7 @@ pub(crate) fn code_block_ranges(content: &str) -> Vec<Range<usize>> {
 
 /// Whether `pos` (an offset into the full content) falls inside any of
 /// the sorted, non-overlapping `ranges`.
-fn in_ranges(ranges: &[Range<usize>], pos: usize) -> bool {
+pub(crate) fn in_ranges(ranges: &[Range<usize>], pos: usize) -> bool {
     ranges
         .binary_search_by(|r| {
             if pos < r.start {
