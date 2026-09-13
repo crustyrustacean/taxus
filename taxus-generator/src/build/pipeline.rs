@@ -23,6 +23,7 @@ pub mod not_found;
 pub mod pages;
 pub mod robots;
 pub mod search;
+pub mod shortcodes;
 pub mod sitemap;
 pub mod taxonomy;
 pub mod wasm;

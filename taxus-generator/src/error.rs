@@ -68,6 +68,12 @@ pub enum GeneratorError {
     #[error("Broken internal link in '{file}': target '{target}' not found")]
     BrokenInternalLink { file: String, target: String },
 
+    /// Content references a shortcode that is not defined
+    #[error(
+        "Unknown shortcode '{{{{{name}}}}}' in '{file}': no built-in or shortcodes/{name}.html"
+    )]
+    UnknownShortcode { file: String, name: String },
+
     /// Page rendering failed
     #[error("Failed to render page '{path}': {source}")]
     PageRenderFailed {

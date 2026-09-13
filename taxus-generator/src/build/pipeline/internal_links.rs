@@ -107,7 +107,10 @@ pub fn resolve_internal_links(
 /// spans) and `Start(CodeBlock(..))`/`End(CodeBlock)` (fenced and
 /// indented blocks). Ranges are absolute into `content`, sorted by the
 /// event order, and non-overlapping.
-fn code_block_ranges(content: &str) -> Vec<Range<usize>> {
+///
+/// Shared by every content pass that must skip code constructs:
+/// internal-link resolution and (shortly) shortcode expansion.
+pub(crate) fn code_block_ranges(content: &str) -> Vec<Range<usize>> {
     let parser = Parser::new_ext(content, Options::all());
     let mut ranges = Vec::new();
     let mut block_start: Option<usize> = None;
