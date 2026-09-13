@@ -674,3 +674,16 @@ footer p + p {
     padding-inline: 0;
   }
 }
+/* install page hint box (shortcodes/box.html) */
+.install-hint {
+  background-color: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-block: 1.5rem;
+  font-size: 0.95em;
+}
+
+.install-hint p {
+  margin: 0;
+}
