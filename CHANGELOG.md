@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **links**: `@/` internal-link resolution is immune to code constructs
+  structurally (#6). The resolver now asks the Markdown parser for the
+  byte ranges of every code construct — fenced (backtick or tilde, any
+  fence length), indented, and inline spans — and skips matches inside
+  them. The old `split("```")` heuristic misclassified indented code
+  blocks, tilde fences, four-backtick fences containing triple-backtick
+  bodies, and inline backtick mentions (which could toggle the fence
+  state and swallow later real links).
+- **content**: summaries and word counts come from a parsed-document
+  walk instead of a hand-rolled stripper (#10). Tables, footnotes, task
+  lists, strikethrough, nested emphasis, and horizontal rules now
+  contribute exactly their visible words. Block HTML is opaque to the
+  parser, so prose hidden inside raw HTML blocks contributes nothing.
+  Inline code now counts toward word counts and survives in summaries
+  (previously dropped); the search index gains the same text.
+- **content**: a frontmatter datetime with a non-midnight time or an
+  offset is truncated to its date part with a build-log warning (#32) —
+  previously silent. Dates stay day-granular (`NaiveDate`) by design:
+  feeds sort by date and templates display at day granularity.
 - **config**: unknown keys are rejected in every `site.toml` section
   (#46). A typo like `ouput_dir` in `[build]` or `qality` in `[images]`
   previously parsed fine and silently left the real key at its default;

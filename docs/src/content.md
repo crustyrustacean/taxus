@@ -131,8 +131,8 @@ Your markdown content here.
 |-------|------|----------|---------|-------------|
 | `title` | string | No\* | `""` | Page title |
 | `description` | string | No | `None` | Page description for SEO |
-| `date` | date | No | `None` | Publication date (YYYY-MM-DD). Falls back to a `YYYY-MM-DD-` filename prefix when omitted |
-| `updated` | date | No | `None` | Last updated date |
+| `date` | date | No | `None` | Publication date (YYYY-MM-DD). Falls back to a `YYYY-MM-DD-` filename prefix when omitted. A full TOML datetime (`2026-04-03T14:30:00Z`) is accepted but truncated to its date part, with a build-log warning — taxus dates are day-granular by design |
+| `updated` | date | No | `None` | Last updated date (same truncation rule as `date`) |
 | `template` | string | No | `"page.html"` | Template override |
 | `draft` | bool | No | `false` | Draft status |
 | `summary` | string | No | `None` | Custom summary/excerpt |

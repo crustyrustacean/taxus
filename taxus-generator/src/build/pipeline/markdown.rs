@@ -438,21 +438,29 @@ pub fn markdown_to_html(markdown: &str, highlighter: Option<&mut CodeHighlighter
     markdown_to_html_with_toc(markdown, highlighter, &MarkdownOptions::default()).0
 }
 
-/// The plain text of a Markdown document: every `Text` event, space-joined.
+/// The plain text of a Markdown document: every `Text` and inline-`Code`
+/// event, space-joined.
 ///
-/// What search indexes (#43): not rendered HTML, whose tags, attributes
-/// and highlighter classes would inflate the term space (`div`, `href`,
-/// `hl-keyword` → `keyword`), but the words a reader actually reads.
-/// Code blocks contribute their source text — a visitor searching
+/// What search indexes (#43) and summaries/word counts (#10) consume:
+/// not rendered HTML, whose tags, attributes and highlighter classes
+/// would inflate the term space (`div`, `href`, `hl-keyword` →
+/// `keyword`), but the words a reader actually reads. Code blocks
+/// contribute their source text as `Text` events; inline code arrives
+/// as `Code` events and is included the same way — a visitor searching
 /// `serde_json` should find the page whose snippet uses it.
 pub fn markdown_text(markdown: &str) -> String {
     let mut text = String::with_capacity(markdown.len());
-    for event in Parser::new(markdown) {
-        if let Event::Text(chunk) = event {
-            if !text.is_empty() {
-                text.push(' ');
+    // Full extension set so tables and strikethrough parse as structure
+    // (cells and struck text contribute their words; markers do not).
+    for event in Parser::new_ext(markdown, Options::all()) {
+        match event {
+            Event::Text(chunk) | Event::Code(chunk) => {
+                if !text.is_empty() {
+                    text.push(' ');
+                }
+                text.push_str(&chunk);
             }
-            text.push_str(&chunk);
+            _ => {}
         }
     }
     text
