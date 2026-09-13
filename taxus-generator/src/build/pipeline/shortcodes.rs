@@ -360,7 +360,7 @@ impl ShortcodeRenderer {
     }
 
     fn knows(&self, name: &str) -> bool {
-        self.names.iter().any(|n| n == name)
+        self.names.iter().any(|n| n == name) || RUST_BUILTINS.contains(&name)
     }
 
     /// Render one shortcode invocation.
@@ -413,6 +413,48 @@ impl ShortcodeRenderer {
                 ))))
             })
     }
+}
+
+/// Shortcodes rendered in Rust rather than Tera. `island` is the one:
+/// it SSRs a Yew component through the shared dispatch, which is code,
+/// not markup. Everything else (including both markup built-ins) is a
+/// Tera template; this list says which is which.
+const RUST_BUILTINS: &[&str] = &["island"];
+
+/// Render a Rust-side built-in. `island` resolves the component through
+/// the #50 ISLANDS registry — the same list the template `island()`
+/// function and taxus-client hydration consult — and SSRs it. An
+/// unknown component is a build error here (unlike templates, which
+/// emit an escaped comment): content authors get the loud failure.
+fn render_rust_builtin(
+    name: &str,
+    args: &BTreeMap<String, Value>,
+    source_file: &Path,
+) -> Result<String> {
+    debug_assert_eq!(name, "island");
+    let component = args
+        .get("component")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string();
+    if !taxus_common::islands::ISLANDS
+        .iter()
+        .any(|i| i.name == component)
+    {
+        return Err(GeneratorError::UnknownShortcode {
+            file: source_file.display().to_string(),
+            name: format!("island(component={component})"),
+        });
+    }
+    let mut map = serde_json::Map::new();
+    for (k, v) in args {
+        if k != "component" {
+            map.insert(k.clone(), v.clone());
+        }
+    }
+    Ok(crate::build::pipeline::render_island_by_name(
+        &component, &map,
+    ))
 }
 
 /// The built-in shortcode templates (v1: `image`, `youtube`).
@@ -513,10 +555,14 @@ pub fn expand_shortcodes_in_page(
             // Trim the closing `)` and whitespace up to `}}`.
             let arg_src = arg_src.trim_end().strip_suffix(')').unwrap_or(arg_src);
             let mut args = parse_args(arg_src, source_file)?;
-            if name == "image" {
-                rewrite_image_args(&mut args);
-            }
-            let html = renderer.render(name, &args, None, page, site_name, base_url)?;
+            let html = if RUST_BUILTINS.contains(&name) {
+                render_rust_builtin(name, &args, source_file)?
+            } else {
+                if name == "image" {
+                    rewrite_image_args(&mut args);
+                }
+                renderer.render(name, &args, None, page, site_name, base_url)?
+            };
             out.push_str(&html);
             i += open_end + total;
             continue;
@@ -990,5 +1036,65 @@ mod block_args_tests {
             "tip:<p>do this</p>
 "
         );
+    }
+}
+
+/// D.1 tests: the island shortcode closes the two-systems gap.
+#[cfg(test)]
+mod island_shortcode_tests {
+    use super::*;
+
+    fn file() -> &'static std::path::Path {
+        std::path::Path::new("blog/post.md")
+    }
+
+    #[test]
+    fn island_shortcode_renders_mount_point() {
+        let r = ShortcodeRenderer::new().unwrap();
+        let out = expand_shortcodes(
+            "Demo:\n\n{{ island(component=\"Counter\", initial=3) }}\n",
+            file(),
+            &r,
+        )
+        .unwrap();
+        assert!(out.contains(r#"data-island="Counter""#), "got: {out}");
+        // data-props is entity-escaped (#39); assert that form.
+        assert!(
+            out.contains(r#"&quot;initial&quot;:3"#),
+            "props serialized+escaped, got: {out}"
+        );
+    }
+
+    #[test]
+    fn island_shortcode_unknown_component_is_an_error() {
+        let r = ShortcodeRenderer::new().unwrap();
+        let err = expand_shortcodes("{{ island(component=\"Ghost\") }}", file(), &r).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("blog/post.md"), "names the file: {msg}");
+        assert!(msg.contains("Ghost"), "names the component: {msg}");
+    }
+
+    #[test]
+    fn island_shortcode_matches_template_function_output() {
+        // Same args, same output: the dispatch is genuinely shared.
+        let r = ShortcodeRenderer::new().unwrap();
+        let via_shortcode = expand_shortcodes(
+            "{{ island(component=\"SearchBox\", placeholder=\"Find\", max_results=7) }}",
+            file(),
+            &r,
+        )
+        .unwrap();
+        let mut args = serde_json::Map::new();
+        args.insert("placeholder".into(), "Find".into());
+        args.insert("max_results".into(), 7.into());
+        let via_dispatch = crate::build::pipeline::render_island_by_name("SearchBox", &args);
+        assert_eq!(via_shortcode, via_dispatch);
+    }
+
+    #[test]
+    fn island_shortcode_inside_code_is_immune() {
+        let r = ShortcodeRenderer::new().unwrap();
+        let src = "```\n{{ island(component=\"Counter\") }}\n```\n";
+        assert_eq!(expand_shortcodes(src, file(), &r).unwrap(), src);
     }
 }
