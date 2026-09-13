@@ -48,6 +48,11 @@ taxus supports two layers of interactivity:
 
 Use vanilla JS for simple interactions; reserve Yew islands for components that benefit from the Yew component model.
 
+Islands can be placed from **templates** (`{{ island(...) | safe }}`, below)
+or from **content** (`{{ island(component="...") }}` as a
+[shortcode](./shortcodes.md#the-island-shortcode)) — both funnel through
+the same dispatch and emit the same markup.
+
 ## Using Islands in Templates
 
 ### The `island()` Tera Function

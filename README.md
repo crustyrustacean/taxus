@@ -12,6 +12,7 @@ every listing, feed and index from that tree, and writes the result. The
 
 - **Static site generation**: pre-rendered HTML, no JavaScript needed to read a page
 - **Markdown with TOML frontmatter**: one file per page, `_index.md` per section
+- **Shortcodes**: `{{ youtube(id="...") }}` embeds and your own `shortcodes/*.html` macros in content — up to `{{ island(...) }}` for interactive components
 - **Site Tree**: sections and pages in memory; URLs, listings, feeds and the sitemap are derived from it
 - **Islands**: Yew components rendered to HTML at build time and hydrated by WASM in the browser
 - **Syntax highlighting**: tree-sitter, Rust grammar built in
@@ -191,6 +192,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - [Content Model](docs/src/content-model.md)
 - [Configuration](docs/src/configuration.md)
 - [Content](docs/src/content.md)
+- [Shortcodes](docs/src/shortcodes.md)
 - [Images](docs/src/images.md)
 - [Templates](docs/src/templates.md)
 - [Syntax Highlighting](docs/src/syntax-highlighting.md)

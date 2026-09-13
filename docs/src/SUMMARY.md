@@ -13,6 +13,7 @@
 - [Content Model](./content-model.md)
 - [Configuration](./configuration.md)
 - [Content](./content.md)
+- [Shortcodes](./shortcodes.md)
 - [Templates](./templates.md)
 - [Images](./images.md)
 - [Syntax Highlighting](./syntax-highlighting.md)

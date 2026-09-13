@@ -247,6 +247,14 @@ The `@/` prefix signals an internal link. Paths are relative to `content/`.
 
 If an internal link references a non-existent file, the build fails with a clear error.
 
+### Shortcodes
+
+Embeds and reusable markup live in [Shortcodes](./shortcodes.md):
+
+```markdown
+{{ youtube(id="dQw4w9WgXcQ") }}
+```
+
 ### Images
 
 ```markdown

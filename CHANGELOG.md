@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **shortcodes**: content-time macros in Markdown, rendered between
+  internal-link resolution and Markdown rendering. Hugo-shaped syntax:
+  `{{ name(arg="value") }}` inline and `{{% name %}}…{{% /name %}}`
+  blocks (bodies render as Markdown). Built-ins: `image` (`@/` refs
+  resolve to co-located asset paths), `youtube` (nocookie lazy
+  embed), and `island` — the same islands templates place, now
+  placeable from content through one shared dispatch. Custom
+  shortcodes are Tera templates in `shortcodes/*.html` (the
+  filesystem is the registry; `taxus init` deliberately does not
+  scaffold the directory). Code constructs are structurally immune
+  (the #6 parser-range machinery, shared). Shortcode spans never
+  reach summaries, word counts, reading times, or the search index.
+  Unknown names, malformed args, and built-in collisions fail the
+  build naming the file. No nesting in v1. Documented in a new book
+  chapter; pinned byte-for-byte by a golden fixture.
+
 ## [1.1.1] - 2026-09-13
 
 ### Fixed
