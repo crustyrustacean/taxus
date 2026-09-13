@@ -54,6 +54,9 @@ use taxus_lib::build::SiteBuilder;
 /// working directory for integration tests.
 const SITES: &[(&str, &str)] = &[
     ("feed_slug_site", "tests/fixtures/feed_slug_site"),
+    // no_islands_site pins #56: islands = false, search = false — the
+    // build must skip dist/wasm/ and dist/search_index.bin entirely.
+    ("no_islands_site", "tests/fixtures/no_islands_site"),
     ("highlight_site", "tests/fixtures/highlight_site"),
     ("internal_links_site", "tests/fixtures/internal_links_site"),
     ("search_slug_site", "tests/fixtures/search_slug_site"),
@@ -351,6 +354,11 @@ fn crlf_sources_build_to_the_same_manifest() {
         "CRLF sources changed the manifest for: {differing:?}"
     );
     assert_eq!(actual.len(), expected.len(), "file set differs");
+}
+
+#[test]
+fn golden_no_islands_site() {
+    check_site("no_islands_site");
 }
 
 #[test]

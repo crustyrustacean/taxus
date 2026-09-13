@@ -71,6 +71,22 @@ pub struct BuildConfig {
     /// Templates directory path
     #[serde(default = "default_templates_dir")]
     pub templates_dir: PathBuf,
+
+    /// Compile and embed the WASM hydration client (stage 14).
+    ///
+    /// `taxus init --no-islands` scaffolds a site whose templates never
+    /// call `island()` and writes `islands = false` here; the build then
+    /// skips the several hundred KB of `dist/wasm/` the site would never
+    /// load (#56). Default `true`.
+    #[serde(default = "default_islands")]
+    pub islands: bool,
+
+    /// Build and write the client-side search index (stage 13).
+    ///
+    /// A site without a search box never fetches `search_index.bin`;
+    /// with this `false` the build skips it (#56). Default `true`.
+    #[serde(default = "default_search")]
+    pub search: bool,
 }
 
 fn default_content_dir() -> PathBuf {
@@ -88,6 +104,12 @@ fn default_styles_dir() -> PathBuf {
 fn default_templates_dir() -> PathBuf {
     PathBuf::from("templates")
 }
+fn default_islands() -> bool {
+    true
+}
+fn default_search() -> bool {
+    true
+}
 
 impl Default for BuildConfig {
     fn default() -> Self {
@@ -97,6 +119,8 @@ impl Default for BuildConfig {
             static_dir: default_static_dir(),
             styles_dir: default_styles_dir(),
             templates_dir: default_templates_dir(),
+            islands: default_islands(),
+            search: default_search(),
         }
     }
 }

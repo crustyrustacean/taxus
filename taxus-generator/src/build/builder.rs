@@ -307,17 +307,30 @@ impl SiteBuilder {
 
         {
             let _search_index_span = info_span!("generate_search").entered();
-            info!("[13/15] Generating search index...");
-            let search_index = build::pipeline::search::generate_search(&processed)?;
-            build::pipeline::search::write_search_index(&search_index, &output_dir, self.dry_run)?;
+            if self.config.build.search {
+                info!("[13/15] Generating search index...");
+                let search_index = build::pipeline::search::generate_search(&processed)?;
+                build::pipeline::search::write_search_index(
+                    &search_index,
+                    &output_dir,
+                    self.dry_run,
+                )?;
+            } else {
+                info!("[13/15] Skipping search index (build.search = false)");
+            }
             drop(_search_index_span);
         }
 
         {
             let _wasm_span = info_span!("build_wasm").entered();
-            info!("[14/15] Writing WASM client...");
-            let wasm_output = build::pipeline::wasm::build_wasm_client(&output_dir, self.dry_run)?;
-            info!("WASM client written ({} bytes)", wasm_output.wasm_size);
+            if self.config.build.islands {
+                info!("[14/15] Writing WASM client...");
+                let wasm_output =
+                    build::pipeline::wasm::build_wasm_client(&output_dir, self.dry_run)?;
+                info!("WASM client written ({} bytes)", wasm_output.wasm_size);
+            } else {
+                info!("[14/15] Skipping WASM client (build.islands = false)");
+            }
             drop(_wasm_span);
         }
 
@@ -417,6 +430,8 @@ mod tests {
                 static_dir: PathBuf::from("tests/fixtures/content_site/static"),
                 styles_dir: PathBuf::from("tests/fixtures/content_site/styles"),
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
+                islands: true,
+                search: true,
             },
             feed: FeedConfig::default(),
             highlight: HighlightConfig::default(),

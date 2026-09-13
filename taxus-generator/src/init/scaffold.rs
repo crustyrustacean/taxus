@@ -95,6 +95,14 @@ impl InitScaffolder {
             return Ok(()); // Don't overwrite existing config
         }
 
+        let islands_setting = if self.options.islands {
+            ""
+        } else {
+            // The scaffold's templates never call island(); say so in
+            // the config so the build skips the WASM client (#56).
+            "\n# Plain Tera/Markdown site (--no-islands): no WASM hydration.\nislands = false"
+        };
+
         let content = format!(
             r#"[site]
 name = "{}"
@@ -105,7 +113,7 @@ content_dir = "content"
 output_dir = "dist"
 static_dir = "static"
 styles_dir = "styles"
-templates_dir = "templates"
+templates_dir = "templates"{islands_setting}
 
 [images]
 # Responsive hero image variants (widths in px).

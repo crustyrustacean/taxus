@@ -119,12 +119,17 @@ Compiles SCSS to `dist/css/` and copies static files to `dist/static/`.
 The co-located asset report from stage 5 is merged in here.
 
 **[13/15] Generating search index** (emit). Reads the processed pages in
-registry order. Produces `dist/search_index.bin`: one `SearchDocument`
-per page with its title, URL path, truncated summary and taxonomies, plus
-the TF-IDF postings over the rendered HTML.
+registry order — skipped entirely when `[build] search = false`. Produces
+`dist/search_index.bin`: one `SearchDocument` per page with its title,
+URL path, truncated summary and taxonomies, plus the TF-IDF postings
+over the page's Markdown text with its title and taxonomy terms
+repeated as a field boost (never the rendered HTML, whose markup would
+pollute the term space).
 
 **[14/15] Writing WASM client** (emit). Reads nothing from the site.
-Writes the embedded `client.js` and `client_bg.wasm` to `dist/wasm/`.
+Writes the embedded `client.js` and `client_bg.wasm` to `dist/wasm/` —
+skipped when `[build] islands = false` (what `taxus init --no-islands`
+writes; a plain Tera/Markdown site ships no hydration code).
 
 **[15/15] Writing output** (emit). Writes every `RenderedPage` to its
 output file, then the taxonomy pages, then the feeds, then one redirect

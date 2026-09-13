@@ -1,0 +1,16 @@
+[site]
+name = "No Islands Fixture"
+base_url = "https://example.com"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+static_dir = "static"
+styles_dir = "styles"
+templates_dir = "templates"
+
+# Plain Tera/Markdown site (--no-islands): no WASM hydration.
+islands = false
+
+# No search box anywhere in the templates.
+search = false
