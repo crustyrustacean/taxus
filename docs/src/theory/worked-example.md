@@ -271,7 +271,7 @@ dist/blog/project-launch/index.html
 
 The other outputs that mention the post, each written by its own stage:
 
-`dist/sitemap.xml` (stage 8):
+`dist/sitemap.xml` (stage 10):
 
 ```xml
 <url>

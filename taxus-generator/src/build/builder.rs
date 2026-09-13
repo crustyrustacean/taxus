@@ -110,9 +110,9 @@ impl SiteBuilder {
     /// 5. Copy co-located assets (emit)
     /// 6. Render pages: section listings and pagination are derived from the tree here (analyse, emit)
     /// 7. Generate robots.txt (emit)
-    /// 8. Generate sitemap.xml from the tree (analyse, emit)
-    /// 9. Generate 404.html (emit)
-    /// 10. Build and render taxonomy pages from the tree (analyse, emit)
+    /// 8. Generate 404.html (emit)
+    /// 9. Build and render taxonomy pages from the tree (analyse, emit)
+    /// 10. Generate sitemap.xml from the rendered pages and taxonomy pages (analyse, emit)
     /// 11. Generate feeds from the tree (analyse, emit)
     /// 12. Process assets: SCSS and static files (emit)
     /// 13. Generate the search index (emit)
@@ -255,25 +255,17 @@ impl SiteBuilder {
         }
         drop(_robots_span);
 
-        // Stage 8: Generate sitemap.xml
-        let _sitemap_span = info_span!("generate_sitemap").entered();
-        info!("[8/15] Generating sitemap.xml...");
-        let sitemap = pipeline::sitemap::generate_sitemap(&tree, &processed, &self.config)?;
-        debug!(urls = sitemap.url_count, "Sitemap generated");
-        pipeline::sitemap::write_sitemap(&sitemap, &output_dir, self.dry_run)?;
-        drop(_sitemap_span);
-
-        // Stage 9: Generate 404.html
+        // Stage 8: Generate 404.html
         let _404_span = info_span!("generate_404").entered();
-        info!("[9/15] Generating 404.html...");
+        info!("[8/15] Generating 404.html...");
         if let Some(ref page_404) = pipeline::not_found::generate_404(&templates, &site_context)? {
             pipeline::not_found::write_404(page_404, &output_dir, self.dry_run)?;
         }
         drop(_404_span);
 
-        // Stage 10: Build and render taxonomy pages
+        // Stage 9: Build and render taxonomy pages
         let _taxonomy_span = info_span!("render_taxonomy").entered();
-        info!("[10/15] Building taxonomy pages...");
+        info!("[9/15] Building taxonomy pages...");
         let taxonomy_map = pipeline::taxonomy::build_taxonomy_map(&tree);
         let taxonomy_pages = pipeline::taxonomy::render_taxonomy_pages(
             &processed,
@@ -286,6 +278,25 @@ impl SiteBuilder {
             "Taxonomy pages rendered"
         );
         drop(_taxonomy_span);
+
+        // Stage 10: Generate sitemap.xml
+        //
+        // Runs after rendering and taxonomy so the URL set composes from
+        // final outputs (#47): every `RenderedPage` (which includes the
+        // pagination pages stage 6 emits) plus every taxonomy list and
+        // term page. Alias redirects are excluded deliberately: they are
+        // redirects, not content — each targets a URL already in the set.
+        let _sitemap_span = info_span!("generate_sitemap").entered();
+        info!("[10/15] Generating sitemap.xml...");
+        let sitemap = pipeline::sitemap::generate_sitemap(
+            &rendered,
+            &taxonomy_pages,
+            &processed,
+            &self.config,
+        )?;
+        debug!(urls = sitemap.url_count, "Sitemap generated");
+        pipeline::sitemap::write_sitemap(&sitemap, &output_dir, self.dry_run)?;
+        drop(_sitemap_span);
 
         // Stage 11: Generate feeds
         let _feeds_span = info_span!("generate_feeds").entered();

@@ -611,9 +611,9 @@ pub struct RenderedPage {
 | `copy_colocated_assets(content_dir, output_dir, dry_run) -> Result<AssetReport>` | 5 | Copy non-`.md` files |
 | `pages::render_pages(&[ProcessedPage], &SiteTree, &TeraRenderer, &SiteContext, verbose) -> Result<Vec<RenderedPage>>` | 6 | Run templates |
 | `robots::generate_robots`, `write_robots` | 7 | `robots.txt` |
-| `sitemap::generate_sitemap(&SiteTree, &[ProcessedPage], &SiteConfig)`, `write_sitemap` | 8 | `sitemap.xml` |
-| `not_found::generate_404`, `write_404` | 9 | `404.html` |
-| `taxonomy::build_taxonomy_map(&SiteTree)`, `render_taxonomy_pages`, `write_taxonomy_pages` | 10 | Taxonomy pages |
+| `not_found::generate_404`, `write_404` | 8 | `404.html` |
+| `taxonomy::build_taxonomy_map(&SiteTree)`, `render_taxonomy_pages`, `write_taxonomy_pages` | 9 | Taxonomy pages |
+| `sitemap::generate_sitemap(&[RenderedPage], &[RenderedTaxonomy], &[ProcessedPage], &SiteConfig)`, `write_sitemap` | 10 | `sitemap.xml` from final outputs |
 | `feeds::feed_pages(&SiteTree, &[String])`, `generate_feeds`, `write_feeds` | 11 | Feeds |
 | `process_assets(&SiteConfig, output_dir, dry_run) -> Result<AssetReport>` | 12 | SCSS and static files |
 | `search::generate_search(&[ProcessedPage]) -> Result<GeneratedSearch>`, `write_search_index` | 13 | `search_index.bin` |
