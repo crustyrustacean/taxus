@@ -153,82 +153,56 @@ pub mod counter;
 
 ## Registering a New Island
 
-Two registries must be updated in sync:
+Adding an island touches one shared registry plus one explicit arm on
+each side; a mismatch is a loud failure, never a silent no-op
+([#50](https://github.com/crustyrustacean/taxus/issues/50) collapsed
+the free-floating name lists into this design):
 
-### 1. Generator SSR Registry
+1. **The component** lives in `taxus-common/src/components/` with
+   `#[derive(Deserialize, Serialize, Properties, PartialEq)]` props,
+   and its module is exported from `taxus-common/src/components.rs`.
 
-In `taxus-generator/src/templates/renderer.rs`, the `island()` Tera
-function (Tera v2 signature) matches on the component name. Add an arm
-for the new component, and a render helper next to `render_island_counter`
-in `taxus-generator/src/build/pipeline.rs`:
+2. **The registry** — `taxus_common::islands::ISLANDS` — gains one
+   entry (`IslandDef { name: "MyWidget" }`, entries kept lexically
+   sorted; tests enforce this). Both the generator's SSR dispatch and
+   the client's hydration consult this list, so an unregistered name
+   never renders at all, and a registered name the client does not
+   know is logged and skipped rather than vanishing.
 
-```rust
-fn island(kwargs: Kwargs, _state: &State) -> TeraResult<Value> {
-    let component = kwargs.get::<String>("component")?.unwrap_or_default();
-
-    let html = match component.as_str() {
-        "Counter" => {
-            use crate::build::pipeline::render_island_counter;
-            use taxus_common::components::counter::CounterProps;
-
-            let initial = kwargs.get::<i64>("initial")?.unwrap_or(0) as i32;
-            let class = kwargs.get::<String>("class")?.unwrap_or_default();
-
-            render_island_counter(CounterProps { initial, class })
-        }
-        "MyWidget" => {
-            use crate::build::pipeline::render_island_my_widget; // your helper
-            use taxus_common::components::my_widget::MyWidgetProps;
-
-            let label = kwargs.get::<String>("label")?.unwrap_or_default();
-            let count = kwargs.get::<i64>("count")?.unwrap_or(0) as i32;
-
-            render_island_my_widget(MyWidgetProps { label, count })
-        }
-        other => format!("<!-- unknown island: {other} -->"),
-    };
-
-    Ok(Value::from(html))
-}
-```
-
-The helper renders with `yew::ServerRenderer` on the island thread and
-wraps the output in the mount point:
+3. **The generator arm**: a match arm in `island()` reading the
+   template kwargs into props, plus a `render_island_my_widget`
+   helper in `taxus-generator/src/build/pipeline.rs`:
 
 ```rust
 pub fn render_island_my_widget(props: MyWidgetProps) -> String {
     let props_json = serde_json::to_string(&props).unwrap_or_else(|_| "{}".to_string());
     let ssr_html = block_on_ssr(ServerRenderer::<MyWidget>::with_props(move || props).render());
-    format!(r#"<div data-island="MyWidget" data-props='{props_json}'>{ssr_html}</div>"#)
+    island_mount("MyWidget", &props_json, &ssr_html) // escapes data-props (#39)
 }
 ```
 
-### 2. Client Hydration Registry
-
-In `taxus-client/src/main.rs`, add a match arm to `hydrate_island`:
+4. **The client arm**: a match arm in `taxus-client`'s
+   `hydrate_island`. Yew's `Renderer::<T>::hydrate()` needs a concrete
+   type per arm, so this step stays explicit — but the registry check
+   runs first, so a forgotten arm logs `skipping unknown island:
+   MyWidget` in the browser console instead of failing silently:
 
 ```rust
 fn hydrate_island(name: &str, el: HtmlElement, props_json: &str) {
+    if !taxus_common::islands::ISLANDS.iter().any(|i| i.name == name) {
+        console_log(&format!("skipping unknown island: {name}"));
+        return;
+    }
     match name {
-        "Counter" => {
-            let props: CounterProps = serde_json::from_str(props_json)
-                .unwrap_or(CounterProps { initial: 0, class: String::new() });
-            yew::Renderer::<Counter>::with_root_and_props(el.into(), props).hydrate();
-        }
         "MyWidget" => {
             let props: MyWidgetProps = serde_json::from_str(props_json)
-                .unwrap_or(MyWidgetProps { label: String::new(), count: 0 });
+                .unwrap_or(MyWidgetProps::default());
             yew::Renderer::<MyWidget>::with_root_and_props(el.into(), props).hydrate();
         }
-        _ => { /* ignore unknown islands */ }
+        _ => unreachable!("registry check ran first"),
     }
 }
 ```
-
-Three files change in lockstep for every new island: the component in
-`taxus-common`, the arm in the generator, and the arm in the client
-([#50](https://github.com/crustyrustacean/taxus/issues/50) tracks
-collapsing this).
 
 ## Built-in Islands
 
