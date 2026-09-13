@@ -153,11 +153,73 @@ fn block_open_len(s: &str) -> Option<usize> {
     let n = name_len(rest)?;
     let after_name = &rest[n..];
     let t2 = after_name.trim_start();
+    // Argless: name directly followed by `%}}`.
     if t2.starts_with("%}}") {
-        Some(3 + ws + n + (after_name.len() - t2.len()) + 3)
-    } else {
-        None
+        return Some(3 + ws + n + (after_name.len() - t2.len()) + 3);
     }
+    // With args: `{{% name(k=v) %}}` — a balanced, quote-aware arg
+    // list, then `%}}`.
+    if let Some(after_open) = t2.strip_prefix('(')
+        && let Some(args_end) = args_close_len(after_open)
+    {
+        let after_args = &after_open[args_end..];
+        let t3 = after_args.trim_start();
+        if t3.starts_with("%}}") {
+            return Some(
+                3 + ws
+                    + n
+                    + (after_name.len() - t2.len())
+                    + 1
+                    + args_end
+                    + (after_args.len() - t3.len())
+                    + 3,
+            );
+        }
+    }
+    None
+}
+
+/// Length of a balanced `k=v, k2=v2)` argument list (through the
+/// closing paren) starting just after `(`; quote-aware so parens in
+/// string values do not close early.
+fn args_close_len(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let mut i = 0usize;
+    let mut depth = 1usize;
+    let mut quote: Option<u8> = None;
+    while i < bytes.len() {
+        match quote {
+            Some(q) => {
+                if bytes[i] == b'\\' && i + 1 < bytes.len() {
+                    i += 2;
+                } else if bytes[i] == q {
+                    quote = None;
+                    i += 1;
+                } else {
+                    i += 1;
+                }
+            }
+            None => match bytes[i] {
+                b'"' | b'\'' => {
+                    quote = Some(bytes[i]);
+                    i += 1;
+                }
+                b'(' => {
+                    depth += 1;
+                    i += 1;
+                }
+                b')' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Some(i + 1);
+                    }
+                    i += 1;
+                }
+                _ => i += 1,
+            },
+        }
+    }
+    None
 }
 
 /// If `s` starts at the position just after a `{{% name %}}` opening,
@@ -460,13 +522,13 @@ pub fn expand_shortcodes_in_page(
             continue;
         }
 
-        // Block: `{{% name %}}` … `{{% /name %}}`
+        // Block: `{{% name %}}` or `{{% name(k=v) %}}` … `{{% /name %}}`
         if bytes[i..].starts_with(b"{{%")
             && let Some(open_end) = block_open_len(&content[i..])
             && let Some(total) = block_span_len(&content[i + open_end..])
             && !in_ranges(&code_ranges, i)
         {
-            let name = block_name_at(&content[i..i + open_end]);
+            let (name, args) = block_open_parts(&content[i..i + open_end])?;
             if !renderer.knows(&name) {
                 return Err(GeneratorError::UnknownShortcode {
                     file: source_file.display().to_string(),
@@ -475,13 +537,19 @@ pub fn expand_shortcodes_in_page(
             }
             // Body: from the end of the open tag to the start of the
             // closing `{{% /name %}}`. `block_close_start` locates it.
+            // The body is Markdown (Hugo `{{% %}}` semantics): render it
+            // to HTML before the template wraps it. v1 limitation: no
+            // syntax highlighting inside shortcode bodies (the
+            // highlighter is not threaded here).
             let close_start = block_close_start(&content[i + open_end..])
                 .expect("block_span_len matched, so a close exists");
             let body = &content[i + open_end..i + open_end + close_start];
+            let rendered_body =
+                crate::build::pipeline::markdown::markdown_to_html(body.trim(), None);
             let html = renderer.render(
                 &name,
-                &BTreeMap::new(),
-                Some(body),
+                &args,
+                Some(&rendered_body),
                 page,
                 site_name,
                 base_url,
@@ -499,13 +567,21 @@ pub fn expand_shortcodes_in_page(
     Ok(out)
 }
 
-/// The name inside a `{{% name %}}` opening tag of known length.
-fn block_name_at(open_tag: &str) -> String {
-    open_tag[3..]
-        .split_whitespace()
-        .next()
-        .unwrap_or("")
-        .to_string()
+/// The name and parsed args inside a validated block opening tag
+/// (`{{% name %}}` or `{{% name(k=v) %}}`) of known length.
+fn block_open_parts(open_tag: &str) -> Result<(String, BTreeMap<String, Value>)> {
+    let inner = open_tag[3..].trim_start();
+    let n = name_len(inner).unwrap_or(0);
+    let name = inner[..n].to_string();
+    let after_name = &inner[n..];
+    if let Some(args_src) = after_name.trim_start().strip_prefix('(') {
+        let args_src = args_src.trim_end().strip_suffix("%}}").unwrap_or(args_src);
+        let args_src = args_src.trim_end().strip_suffix(')').unwrap_or(args_src);
+        let args = parse_args(args_src, Path::new(""))?;
+        Ok((name, args))
+    } else {
+        Ok((name, BTreeMap::new()))
+    }
 }
 
 /// Byte offset of the `{{% /name %}}` closing tag that `block_span_len`
@@ -768,10 +844,14 @@ mod expansion_tests {
 
     #[test]
     fn expands_block_shortcode_with_body() {
-        let r = renderer_with(&[("wrap", "<div>{{ body }}</div>")]);
+        let r = renderer_with(&[("wrap", "<div>{{ body | safe }}</div>")]);
         let src = "{{% wrap %}}inner *text*{{% /wrap %}}";
         let out = expand_shortcodes(src, file(), &r).unwrap();
-        assert_eq!(out, "<div>inner *text*</div>");
+        assert_eq!(
+            out,
+            "<div><p>inner <em>text</em></p>
+</div>"
+        );
     }
 
     #[test]
@@ -873,5 +953,42 @@ mod expansion_tests {
         let r = renderer_with(&[("x", "[{{ args.v }}]")]);
         let out = expand_shortcodes("{{ x(v=1) }}{{ x(v=2) }}", file(), &r).unwrap();
         assert_eq!(out, "[1][2]");
+    }
+}
+
+/// Phase D fixture-driven tests: block shortcodes with arguments.
+#[cfg(test)]
+mod block_args_tests {
+    use super::*;
+
+    #[test]
+    fn block_shortcode_with_args_expands() {
+        let mut r = ShortcodeRenderer::new().unwrap();
+        r.add_template(
+            "box",
+            r#"<div class="box {{ args.class }}">{{ body | safe }}</div>"#,
+        )
+        .unwrap();
+        let src = "{{% box(class=\"callout\") %}}inner{{% /box %}}";
+        let out = expand_shortcodes(src, std::path::Path::new("p.md"), &r).unwrap();
+        assert_eq!(
+            out,
+            "<div class=\"box callout\"><p>inner</p>
+</div>"
+        );
+    }
+
+    #[test]
+    fn block_shortcode_mixed_args_and_body() {
+        let mut r = ShortcodeRenderer::new().unwrap();
+        r.add_template("callout", "{{ args.kind }}:{{ body | safe }}")
+            .unwrap();
+        let src = "{{% callout(kind=\"tip\", n=2) %}}do this{{% /callout %}}";
+        let out = expand_shortcodes(src, std::path::Path::new("p.md"), &r).unwrap();
+        assert_eq!(
+            out,
+            "tip:<p>do this</p>
+"
+        );
     }
 }

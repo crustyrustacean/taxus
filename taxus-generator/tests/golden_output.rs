@@ -64,6 +64,10 @@ const SITES: &[(&str, &str)] = &[
         "section_listing_site",
         "tests/fixtures/section_listing_site",
     ),
+    // shortcode_site pins the shortcode engine: built-ins (image with
+    // an @/ ref, youtube), a custom block shortcode with args, and
+    // code-construct immunity for both fenced and inline uses.
+    ("shortcode_site", "tests/fixtures/shortcode_site"),
     ("term_slug_site", "tests/fixtures/term_slug_site"),
     ("get-taxus-org", "../get-taxus-org"),
 ];
@@ -423,4 +427,9 @@ fn every_fixture_is_classified() {
             "no golden manifest for `{site}`; run with GOLDEN_UPDATE=1"
         );
     }
+}
+
+#[test]
+fn golden_shortcode_site() {
+    check_site("shortcode_site");
 }
