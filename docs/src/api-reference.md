@@ -591,12 +591,14 @@ pub struct ProcessedPage {
 pub struct RenderedPage {
     pub route: RouteInfo,
     pub content: String,
+    pub hero_image: Option<ProcessedImage>,
 }
 ```
 
 | Method | Description |
 |--------|-------------|
 | `ProcessedPage::effective_url_path(&self) -> String` | The served URL path (the route's path, derived from the tree) |
+| `ProcessedImage::fallback_src(&self) -> Option<String>` | The middle variant's URL — `None` only for hand-built images with no variants (#51) |
 
 ### `build::pipeline` functions
 

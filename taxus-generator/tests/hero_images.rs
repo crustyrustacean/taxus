@@ -425,3 +425,70 @@ fn test_image_registry() {
     assert_eq!(retrieved.meta.original_width, 800);
     assert_eq!(retrieved.meta.original_height, 600);
 }
+
+/// #17: `RenderedPage` carries the hero metadata from `ProcessedPage`, so
+/// downstream consumers can inspect it after rendering without re-parsing
+/// HTML. Exercised at the library seam `render_pages` consumes: build the
+/// site's processed pages, render, and check the threaded field.
+#[test]
+fn test_rendered_page_carries_hero_image_metadata() {
+    use taxus_lib::build::pipeline;
+    use taxus_lib::highlighting::{CodeHighlighter, LanguageRegistry};
+    use taxus_lib::routes::RouteRegistry;
+    use taxus_lib::templates::{SiteContext, TeraRenderer};
+
+    let temp = TempDir::new().unwrap();
+    let mut config = create_hero_site(&temp);
+    config.build.resolve_paths(&config.base_dir);
+
+    let tree = pipeline::discover_tree(&config).unwrap();
+    let registry = RouteRegistry::from_tree(&tree);
+    let templates = TeraRenderer::from_dir(&config.build.templates_dir).unwrap();
+    let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
+    let (mut processed, _skipped) =
+        pipeline::process_content(&tree, &registry, &config, false, Some(&mut highlighter))
+            .unwrap();
+
+    pipeline::process_images(&mut processed, &config, false).unwrap();
+    let hero_post = processed
+        .iter()
+        .find(|p| p.route.content_file.ends_with("hero-post.md"))
+        .expect("hero post processed");
+    let hero = hero_post.hero_image.as_ref().expect("hero image processed");
+
+    let site_context = SiteContext {
+        name: config.site.name.clone(),
+        base_url: config.site.base_url.clone(),
+        description: config.site.description.clone(),
+        author: config.site.author.clone(),
+    };
+    let rendered =
+        pipeline::pages::render_pages(&processed, &tree, &templates, &site_context).unwrap();
+
+    let rendered_hero_post = rendered
+        .iter()
+        .find(|r| r.route.content_file.ends_with("hero-post.md"))
+        .expect("hero post rendered");
+
+    let carried = rendered_hero_post
+        .hero_image
+        .as_ref()
+        .expect("#17: RenderedPage must carry the hero metadata");
+    assert_eq!(carried.source_path, hero.source_path);
+    assert_eq!(carried.meta.original_width, hero.meta.original_width);
+    assert!(
+        !carried.meta.variants.is_empty(),
+        "variant metadata carried through"
+    );
+
+    // Pages without a hero carry None, not a stale copy.
+    let home = rendered
+        .iter()
+        .find(|r| r.route.is_section() && r.route.path == "/")
+        .expect("home rendered");
+    assert!(
+        home.hero_image.is_none(),
+        "no hero on home: {:?}",
+        home.route.path
+    );
+}
