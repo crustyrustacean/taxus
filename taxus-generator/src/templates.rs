@@ -61,7 +61,7 @@
 //! ```
 
 mod context;
-mod renderer;
+pub(crate) mod renderer;
 
 pub use context::{
     HeroContext, PageContext, PaginationContext, SectionContext, SiteContext, SubsectionContext,

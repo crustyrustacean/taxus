@@ -23,6 +23,7 @@ pub mod not_found;
 pub mod pages;
 pub mod robots;
 pub mod search;
+pub mod shortcodes;
 pub mod sitemap;
 pub mod taxonomy;
 pub mod wasm;
@@ -136,6 +137,7 @@ pub fn process_content(
     config: &SiteConfig,
     include_drafts: bool,
     mut highlighter: Option<&mut CodeHighlighter>,
+    shortcodes: &shortcodes::ShortcodeRenderer,
 ) -> Result<(Vec<ProcessedPage>, usize)> {
     let mut pages = Vec::new();
     let mut skipped = 0usize;
@@ -168,12 +170,24 @@ pub fn process_content(
         let resolved_content =
             resolve_internal_links(&page.raw_content, &route.content_file, registry)?;
 
+        // Expand shortcodes ({{ name(..) }} / {{% name %}}..{{% /name %}}).
+        // Code constructs are immune; the output joins the Markdown
+        // stream, so Markdown rendering wraps it correctly.
+        let expanded_content = shortcodes::expand_shortcodes_in_page(
+            &resolved_content,
+            &route.content_file,
+            shortcodes,
+            Some(&page),
+            &config.site.name,
+            &config.site.base_url,
+        )?;
+
         // Convert markdown to HTML (collecting heading TOC at the same time)
         let md_options = markdown::MarkdownOptions {
             insert_anchor_links: config.markdown.insert_anchor_links,
         };
         let (html_content, toc) = markdown::markdown_to_html_with_toc(
-            &resolved_content,
+            &expanded_content,
             highlighter.as_deref_mut(),
             &md_options,
         );
@@ -427,6 +441,58 @@ pub fn clean_output(output_dir: &Path) -> Result<()> {
         })?;
     }
     Ok(())
+}
+
+/// Render an island by name from generic args (#50 registry + D.1).
+///
+/// The single dispatch point every island invocation funnels through:
+/// the template `island()` function (template kwargs) and the `island`
+/// shortcode (parsed shortcode args) both land here. Props are built
+/// per component from the generic map — the same names, defaults and
+/// clamps both surfaces document.
+///
+/// An unknown component is not an error here: the caller decides the
+/// failure mode (templates render an escaped comment, shortcodes fail
+/// the build — content authors get the loud error).
+pub fn render_island_by_name(
+    name: &str,
+    args: &serde_json::Map<String, serde_json::Value>,
+) -> String {
+    if !taxus_common::islands::ISLANDS
+        .iter()
+        .any(|i| i.name == name)
+    {
+        let safe = name.replace("-->", "-- >");
+        return format!("<!-- unknown island: {safe} -->");
+    }
+    let get_str = |k: &str, default: &str| -> String {
+        args.get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or(default)
+            .to_string()
+    };
+    match name {
+        "Counter" => {
+            let initial = args.get("initial").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+            let class = get_str("class", "");
+            render_island_counter(CounterProps { initial, class })
+        }
+        "SearchBox" => {
+            let placeholder = get_str("placeholder", "Search...");
+            let class = get_str("class", "");
+            let max_results = args
+                .get("max_results")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(5)
+                .clamp(1, 50) as usize;
+            render_search_box(SearchBoxProps {
+                placeholder,
+                max_results,
+                class,
+            })
+        }
+        other => unreachable!("registry check passed for {other}"),
+    }
 }
 
 /// SSR a Yew island component and wrap it in the hydration mount div.

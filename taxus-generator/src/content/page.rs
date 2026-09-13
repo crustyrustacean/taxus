@@ -198,29 +198,38 @@ impl Page {
     /// 1. Use frontmatter.summary if set
     /// 2. Split at `<!-- more -->` marker
     /// 3. Use first paragraph as fallback
+    ///
+    /// Shortcode spans are removed before extraction: `{{ image(alt="…") }}`
+    /// is not prose, and its args must not leak into feed summaries.
     pub fn summary(&self) -> String {
         // 1. Use frontmatter summary if set
         if let Some(ref summary) = self.frontmatter.summary {
             return summary.clone();
         }
 
+        let bare = crate::build::pipeline::shortcodes::strip_shortcode_spans(&self.raw_content);
+
         // 2. Check for <!-- more --> marker
-        if let Some(pos) = self.raw_content.find("<!-- more -->") {
-            let summary = self.raw_content[..pos].trim();
+        if let Some(pos) = bare.find("<!-- more -->") {
+            let summary = bare[..pos].trim();
             return Self::strip_markdown(summary);
         }
 
         // 3. Use first paragraph as fallback
-        let first_paragraph = self.raw_content.split("\n\n").next().unwrap_or("").trim();
+        let first_paragraph = bare.split("\n\n").next().unwrap_or("").trim();
 
         Self::strip_markdown(first_paragraph)
     }
 
     /// Calculate word count from the raw content.
     ///
-    /// Strips markdown formatting and counts words (whitespace-separated tokens).
+    /// Strips shortcode spans (markup, not words) and markdown
+    /// formatting, then counts whitespace-separated tokens. Shortcode
+    /// arguments — including alt text — are deliberately NOT counted:
+    /// they are attributes of embeds, not the page's prose.
     pub fn word_count(&self) -> usize {
-        let stripped = Self::strip_markdown(&self.raw_content);
+        let bare = crate::build::pipeline::shortcodes::strip_shortcode_spans(&self.raw_content);
+        let stripped = Self::strip_markdown(&bare);
         stripped.split_whitespace().count()
     }
 
@@ -827,5 +836,61 @@ A claim[^1] with a note.
             !summary.contains("[^"),
             "footnote markers must not leak into summaries, got: {summary}"
         );
+    }
+}
+
+/// Phase C tests (RED first): the text paths must not see shortcode
+/// markup. Written before the strip wiring exists.
+#[cfg(test)]
+mod shortcode_text_tests {
+    use super::Page;
+
+    fn page_with(content: &str) -> Page {
+        let mut page = Page::from_str("+++\ntitle = \"T\"\n+++\n", "post.md").unwrap();
+        page.raw_content = content.to_string();
+        page
+    }
+
+    #[test]
+    fn summary_excludes_shortcode_markup() {
+        let page = page_with(
+            "First paragraph words.\n\n{{ image(src=\"x.jpg\", alt=\"ignored words\") }}\n\nSecond.",
+        );
+        assert_eq!(page.summary(), "First paragraph words.");
+    }
+
+    #[test]
+    fn summary_before_more_marker_skips_shortcodes() {
+        let page =
+            page_with("Lead-in.\n\n{{ youtube(id=\"abc\") }}\n\n<!-- more -->\n\nRest of it.");
+        assert_eq!(page.summary(), "Lead-in.");
+    }
+
+    #[test]
+    fn word_count_excludes_shortcode_args() {
+        let bare = page_with("one two three four");
+        let with = page_with("one two {{ note(text=\"five six seven\") }} three four");
+        assert_eq!(bare.word_count(), 4);
+        assert_eq!(with.word_count(), 4, "shortcode args are not words");
+    }
+
+    #[test]
+    fn word_count_excludes_block_shortcode_bodies() {
+        // v1 decision: block bodies are markup, not prose — stripped
+        // wholesale like inline spans.
+        let with = page_with("{{% figure %}}body words{{% /figure %}}\n\ntwo words");
+        assert_eq!(with.word_count(), 2);
+    }
+
+    #[test]
+    fn reading_time_follows_word_count() {
+        // 201 words -> 2 minutes at 200 wpm; shortcodes add nothing.
+        let mut content = String::from("{{ image(src=\"a.png\") }}\n\n");
+        for i in 0..201 {
+            content.push_str(&format!("w{i} "));
+        }
+        let page = page_with(&content);
+        assert_eq!(page.word_count(), 201);
+        assert_eq!(page.reading_time(), 2);
     }
 }

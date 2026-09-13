@@ -377,51 +377,27 @@ impl TemplateRenderer for TeraRenderer {
 fn island(kwargs: Kwargs, _state: &State) -> TeraResult<Value> {
     let component = kwargs.get::<String>("component")?.unwrap_or_default();
 
-    // #50: consult the shared registry — the same list taxus-client
-    // hydrates from — before dispatching SSR.
-    if !taxus_common::islands::ISLANDS
-        .iter()
-        .any(|i| i.name == component)
-    {
-        // Escape the name: an unknown component containing `-->` would
-        // otherwise break out of the HTML comment (#50).
-        let safe = component.replace("-->", "-- >");
-        return Ok(Value::from(format!("<!-- unknown island: {safe} -->")));
+    // Everything funnels through render_island_by_name (#50 registry,
+    // shared dispatch with the `island` shortcode — one system).
+    let mut args = serde_json::Map::new();
+    for key in ["initial", "max_results"] {
+        if let Ok(v) = kwargs.get::<i64>(key)
+            && let Some(v) = v
+        {
+            args.insert(key.to_string(), v.into());
+        }
+    }
+    for key in ["class", "placeholder"] {
+        if let Ok(v) = kwargs.get::<String>(key)
+            && let Some(v) = v
+        {
+            args.insert(key.to_string(), v.into());
+        }
     }
 
-    let html = match component.as_str() {
-        "Counter" => {
-            use crate::build::pipeline::render_island_counter;
-            use taxus_common::components::counter::CounterProps;
-
-            let initial = kwargs.get::<i64>("initial")?.unwrap_or(0) as i32;
-            let class = kwargs.get::<String>("class")?.unwrap_or_default();
-
-            render_island_counter(CounterProps { initial, class })
-        }
-        "SearchBox" => {
-            use crate::build::pipeline::render_search_box;
-            use taxus_common::components::search_box::SearchBoxProps;
-
-            let placeholder = kwargs
-                .get::<String>("placeholder")?
-                .unwrap_or_else(|| "Search...".to_string());
-            let class = kwargs.get::<String>("class")?.unwrap_or_default();
-            // The documented-but-never-wired `max_results` prop (#88
-            // audit): read it, default 5, clamp 1..=50.
-            let max_results = kwargs.get::<i64>("max_results")?.unwrap_or(5).clamp(1, 50) as usize;
-
-            render_search_box(SearchBoxProps {
-                placeholder,
-                max_results,
-                class,
-            })
-        }
-        // Unreachable: the registry check above filters unknown names.
-        other => unreachable!("registry check passed for {other}"),
-    };
-
-    Ok(Value::from(html))
+    Ok(Value::from(crate::build::pipeline::render_island_by_name(
+        &component, &args,
+    )))
 }
 
 /// Register the `island()` Tera function on a Tera instance.
@@ -459,6 +435,15 @@ fn term_slug(val: &str, _kwargs: Kwargs, _state: &State) -> String {
 /// Register taxus's own filters (see [`term_slug`]).
 fn register_taxus_filters(tera: &mut Tera) {
     tera.register_filter("term_slug", term_slug);
+}
+
+/// Register just the filter set (contrib + taxus) on a Tera instance —
+/// no island function, no site functions. Consumers that render
+/// non-template contexts (the shortcode engine) get the shared
+/// vocabulary without template-only machinery.
+pub(crate) fn register_filters_only(tera: &mut Tera) {
+    register_contrib_filters(tera);
+    register_taxus_filters(tera);
 }
 
 /// Extract the names of templates that `content` references via

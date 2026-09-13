@@ -126,9 +126,15 @@ fn test_process_content_reports_observed_draft_count() {
     let tree = RouteDiscovery::new(&content_dir).discover_tree().unwrap();
     let registry = RouteRegistry::from_tree(&tree);
 
-    let (processed, skipped) =
-        taxus_lib::build::pipeline::process_content(&tree, &registry, &config, false, None)
-            .unwrap();
+    let (processed, skipped) = taxus_lib::build::pipeline::process_content(
+        &tree,
+        &registry,
+        &config,
+        false,
+        None,
+        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+    )
+    .unwrap();
 
     // The site's documents are three pages (about, draft-post,
     // first-post) plus two section indexes (root, blog); the one draft
@@ -136,8 +142,15 @@ fn test_process_content_reports_observed_draft_count() {
     assert_eq!(skipped, 1, "exactly the one draft is counted as skipped");
     assert_eq!(processed.len(), 4);
 
-    let (processed, skipped) =
-        taxus_lib::build::pipeline::process_content(&tree, &registry, &config, true, None).unwrap();
+    let (processed, skipped) = taxus_lib::build::pipeline::process_content(
+        &tree,
+        &registry,
+        &config,
+        true,
+        None,
+        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+    )
+    .unwrap();
     assert_eq!(skipped, 0, "including drafts skips nothing");
     assert_eq!(processed.len(), 5);
 }

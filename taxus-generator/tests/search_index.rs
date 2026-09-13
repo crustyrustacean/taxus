@@ -21,8 +21,15 @@ fn build_search_index() -> SearchIndex {
     let registry = discover_routes(&config).expect("routes");
     let tree = taxus_lib::build::pipeline::discover_tree(&config).expect("tree");
     let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
-    let (processed, _skipped) =
-        process_content(&tree, &registry, &config, false, Some(&mut highlighter)).expect("content");
+    let (processed, _skipped) = process_content(
+        &tree,
+        &registry,
+        &config,
+        false,
+        Some(&mut highlighter),
+        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+    )
+    .expect("content");
 
     let generated = generate_search(&processed).expect("search generation");
     SearchIndex::from_bytes(&generated.search_index).expect("index roundtrip")
@@ -182,4 +189,54 @@ fn test_no_islands_site_skips_wasm_and_search_output() {
         !temp.path().join("dist/wasm").exists(),
         "WASM client directory must not be written when build.islands = false"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Phase C: the search index must not see shortcode markup.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn search_index_excludes_shortcode_markup_and_args() {
+    let dir = tempfile::TempDir::new().unwrap();
+    std::fs::create_dir_all(dir.path().join("content")).unwrap();
+    std::fs::write(
+        dir.path().join("content/post.md"),
+        "+++\ntitle = \"Embedding\"\n+++\n\nProse about embedding.\n\n{{ image(src=\"x.jpg\", alt=\"zzzsecretzzz\") }}\n\n{{% figure %}}qqqhiddenqqq{{% /figure %}}\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.path().join("site.toml"),
+        "[site]\nname = \"S\"\nbase_url = \"https://e.com\"\n",
+    )
+    .unwrap();
+    // A custom block shortcode so the index test exercises load_dir too.
+    std::fs::create_dir_all(dir.path().join("shortcodes")).unwrap();
+    std::fs::write(
+        dir.path().join("shortcodes/figure.html"),
+        "<figure>{{ body }}</figure>",
+    )
+    .unwrap();
+
+    let config = taxus_lib::SiteConfig::from_dir(dir.path()).unwrap();
+    let discovery = taxus_lib::routes::RouteDiscovery::new(&config.build.content_dir);
+    let tree = discovery.discover_tree().unwrap();
+    let registry = taxus_lib::routes::RouteRegistry::from_tree(&tree);
+    let mut shortcodes = taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap();
+    shortcodes.load_dir(&dir.path().join("shortcodes")).unwrap();
+
+    let (processed, _) = taxus_lib::build::pipeline::process_content(
+        &tree,
+        &registry,
+        &config,
+        false,
+        None,
+        &shortcodes,
+    )
+    .unwrap();
+
+    let text = taxus_lib::build::pipeline::search::indexed_text(&processed[0]);
+    assert!(text.contains("Prose"), "prose indexed: {text}");
+    assert!(!text.contains("zzzsecretzzz"), "inline args leaked: {text}");
+    assert!(!text.contains("qqqhiddenqqq"), "block body leaked: {text}");
+    assert!(!text.contains("{{"), "markup leaked: {text}");
 }
