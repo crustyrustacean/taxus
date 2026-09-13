@@ -192,8 +192,15 @@ pub fn markdown_to_html_with_toc(
                     output.push_str(&format!("<ol start=\"{start}\">"));
                 }
             }
-            Event::End(TagEnd::List(false)) | Event::End(TagEnd::List(true)) => {
+            // `TagEnd::List(is_ordered)` carries the list kind: close
+            // with the tag that matches the opener. A blanket `</ul>`
+            // here produced `<ol>…</ul>` — invalid HTML that browsers
+            // recover from but breaks validation and nested lists.
+            Event::End(TagEnd::List(false)) => {
                 output.push_str("</ul>\n");
+            }
+            Event::End(TagEnd::List(true)) => {
+                output.push_str("</ol>\n");
             }
             Event::TaskListMarker(checked) => {
                 // Task lists arrive as List(None) + TaskListMarker events,
@@ -411,7 +418,13 @@ fn end_tag_to_html(tag: TagEnd) -> String {
         TagEnd::Heading(level) => format!("</h{}>\n", level as u8),
         TagEnd::BlockQuote(_) => "</blockquote>\n".to_string(),
         TagEnd::CodeBlock => String::new(),
-        TagEnd::List(_) => "</ul>\n".to_string(),
+        TagEnd::List(is_ordered) => {
+            if is_ordered {
+                "</ol>\n".to_string()
+            } else {
+                "</ul>\n".to_string()
+            }
+        }
         TagEnd::Item => "</li>\n".to_string(),
         TagEnd::FootnoteDefinition => "</div>\n".to_string(),
         TagEnd::DefinitionList => "</dl>\n".to_string(),
@@ -638,6 +651,52 @@ mod tests {
             markdown_to_html_with_toc("- one\n- two\n", None, &MarkdownOptions::default());
         assert!(!html.contains("task-list"), "got: {html}");
         assert!(html.contains("<li>one</li>"), "got: {html}");
+    }
+
+    #[test]
+    fn test_ordered_list_closes_with_ol() {
+        let (html, _) =
+            markdown_to_html_with_toc("1. first\n2. second\n", None, &MarkdownOptions::default());
+        assert!(html.contains("<ol>"), "got: {html}");
+        assert!(html.contains("</ol>"), "got: {html}");
+        assert!(!html.contains("</ul>"), "got: {html}");
+    }
+
+    #[test]
+    fn test_ordered_list_with_start_attribute_closes_with_ol() {
+        let (html, _) =
+            markdown_to_html_with_toc("3. third\n4. fourth\n", None, &MarkdownOptions::default());
+        assert!(html.contains("<ol start=\"3\">"), "got: {html}");
+        assert!(html.contains("</ol>"), "got: {html}");
+        assert!(!html.contains("</ul>"), "got: {html}");
+    }
+
+    #[test]
+    fn test_unordered_list_still_closes_with_ul() {
+        let (html, _) =
+            markdown_to_html_with_toc("- one\n- two\n", None, &MarkdownOptions::default());
+        assert!(html.contains("<ul>"), "got: {html}");
+        assert!(html.contains("</ul>"), "got: {html}");
+        assert!(!html.contains("<ol"), "got: {html}");
+    }
+
+    #[test]
+    fn test_ordered_list_nested_in_unordered_is_balanced() {
+        let (html, _) = markdown_to_html_with_toc(
+            "- outer one\n- outer two\n  1. inner a\n  2. inner b\n",
+            None,
+            &MarkdownOptions::default(),
+        );
+        // Every `<ol>` must be closed by `</ol>`, every `<ul>` by `</ul>`,
+        // regardless of nesting order.
+        let ols = html.matches("<ol").count();
+        let ol_ends = html.matches("</ol>").count();
+        let uls = html.matches("<ul").count();
+        let ul_ends = html.matches("</ul>").count();
+        assert_eq!(ols, ol_ends, "unbalanced <ol>/</ol>, got: {html}");
+        assert_eq!(uls, ul_ends, "unbalanced <ul>/</ul>, got: {html}");
+        assert_eq!(ols, 1, "expected one ordered list, got: {html}");
+        assert_eq!(uls, 1, "expected one unordered list, got: {html}");
     }
 
     #[test]
