@@ -37,7 +37,11 @@ pub struct SiteConfig {
 }
 
 /// Site metadata from the `[site]` section.
+///
+/// Unknown keys are rejected (#46): a typo like `autor` silently
+/// falling back to the default is worse than a loud failure.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SiteMeta {
     /// Site name/title
     pub name: String,
@@ -50,7 +54,11 @@ pub struct SiteMeta {
 }
 
 /// Build configuration from the `[build]` section.
+///
+/// Unknown keys are rejected (#46): `ouput_dir` must fail loudly
+/// rather than quietly leaving `output_dir` at its default.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BuildConfig {
     /// Content directory path
     #[serde(default = "default_content_dir")]
@@ -126,7 +134,10 @@ impl Default for BuildConfig {
 }
 
 /// Feed configuration from the `[feed]` section.
+///
+/// Unknown keys are rejected (#46).
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FeedConfig {
     /// Enable RSS feed generation
     #[serde(default = "default_rss_enabled")]
@@ -191,7 +202,10 @@ impl Default for FeedConfig {
 }
 
 /// Highlight configuration from the `[highlight]` section.
+///
+/// Unknown keys are rejected (#46).
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct HighlightConfig {
     /// Enable syntax highlighting
     #[serde(default = "default_highlight_enabled")]
@@ -226,6 +240,7 @@ impl Default for HighlightConfig {
 /// `webp-lossy` feature (on by default); without it WebP output is lossless
 /// and `quality` is ignored with a warning at build time.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImageConfig {
     /// Responsive width breakpoints for generated variants
     #[serde(default = "default_image_widths")]
@@ -451,6 +466,15 @@ impl SiteConfig {
             .into());
         }
 
+        if !self.site.base_url.starts_with("http://") && !self.site.base_url.starts_with("https://")
+        {
+            return Err(ConfigError::Invalid(format!(
+                "site.base_url must start with http:// or https:// (taxus init already                  enforces this); got \"{}\"",
+                self.site.base_url
+            ))
+            .into());
+        }
+
         if self.feed.limit == Some(0) {
             return Err(ConfigError::Invalid(
                 "[feed] limit = 0 has no meaning: unset means no limit. \
@@ -592,18 +616,17 @@ content_dir = "content"
         let result: std::result::Result<SiteConfig, toml::de::Error> = toml::from_str(toml);
         assert!(result.is_err());
     }
-}
 
-#[test]
-fn test_highlight_config_defaults() {
-    let config = HighlightConfig::default();
-    assert!(config.enabled);
-    assert_eq!(config.class_prefix, "hl-");
-}
+    #[test]
+    fn test_highlight_config_defaults() {
+        let config = HighlightConfig::default();
+        assert!(config.enabled);
+        assert_eq!(config.class_prefix, "hl-");
+    }
 
-#[test]
-fn test_highlight_config_from_toml() {
-    let toml = r#"
+    #[test]
+    fn test_highlight_config_from_toml() {
+        let toml = r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
@@ -613,36 +636,36 @@ enabled = false
 class_prefix = "syntax-"
 "#;
 
-    let config: SiteConfig = toml::from_str(toml).unwrap();
-    assert!(!config.highlight.enabled);
-    assert_eq!(config.highlight.class_prefix, "syntax-");
-}
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert!(!config.highlight.enabled);
+        assert_eq!(config.highlight.class_prefix, "syntax-");
+    }
 
-#[test]
-fn test_highlight_config_missing_uses_defaults() {
-    let toml = r#"
+    #[test]
+    fn test_highlight_config_missing_uses_defaults() {
+        let toml = r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
 "#;
 
-    let config: SiteConfig = toml::from_str(toml).unwrap();
-    assert!(config.highlight.enabled);
-    assert_eq!(config.highlight.class_prefix, "hl-");
-}
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert!(config.highlight.enabled);
+        assert_eq!(config.highlight.class_prefix, "hl-");
+    }
 
-#[test]
-fn test_image_config_defaults() {
-    let config = ImageConfig::default();
-    assert_eq!(config.widths, vec![400, 800, 1200]);
-    assert_eq!(config.quality, 80);
-    assert_eq!(config.format, "webp");
-    assert_eq!(config.output_dir, PathBuf::from("images"));
-}
+    #[test]
+    fn test_image_config_defaults() {
+        let config = ImageConfig::default();
+        assert_eq!(config.widths, vec![400, 800, 1200]);
+        assert_eq!(config.quality, 80);
+        assert_eq!(config.format, "webp");
+        assert_eq!(config.output_dir, PathBuf::from("images"));
+    }
 
-#[test]
-fn test_image_config_from_toml() {
-    let toml = r#"
+    #[test]
+    fn test_image_config_from_toml() {
+        let toml = r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
@@ -654,75 +677,75 @@ format = "jpeg"
 output_dir = "img"
 "#;
 
-    let config: SiteConfig = toml::from_str(toml).unwrap();
-    assert_eq!(config.images.widths, vec![300, 600, 900]);
-    assert_eq!(config.images.quality, 75);
-    assert_eq!(config.images.format, "jpeg");
-    assert_eq!(config.images.output_dir, PathBuf::from("img"));
-}
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert_eq!(config.images.widths, vec![300, 600, 900]);
+        assert_eq!(config.images.quality, 75);
+        assert_eq!(config.images.format, "jpeg");
+        assert_eq!(config.images.output_dir, PathBuf::from("img"));
+    }
 
-#[test]
-fn test_image_config_missing_uses_defaults() {
-    let toml = r#"
+    #[test]
+    fn test_image_config_missing_uses_defaults() {
+        let toml = r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
 "#;
 
-    let config: SiteConfig = toml::from_str(toml).unwrap();
-    assert_eq!(config.images.widths, vec![400, 800, 1200]);
-    assert_eq!(config.images.quality, 80);
-    assert_eq!(config.images.format, "webp");
-}
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert_eq!(config.images.widths, vec![400, 800, 1200]);
+        assert_eq!(config.images.quality, 80);
+        assert_eq!(config.images.format, "webp");
+    }
 
-#[test]
-fn test_image_config_validate_rejects_quality_out_of_range() {
-    for quality in [0u8, 101] {
+    #[test]
+    fn test_image_config_validate_rejects_quality_out_of_range() {
+        for quality in [0u8, 101] {
+            let mut config = SiteConfig::new("Test", "https://example.com");
+            config.images.quality = quality;
+            let err = config.validate().unwrap_err();
+            assert!(
+                matches!(&err, GeneratorError::Config(inner)
+                if matches!(**inner, ConfigError::Invalid(ref msg) if msg.contains("images.quality"))),
+                "quality {quality} should be rejected naming images.quality, got: {err}"
+            );
+        }
+        for quality in [1u8, 80, 100] {
+            let mut config = SiteConfig::new("Test", "https://example.com");
+            config.images.quality = quality;
+            assert!(
+                config.validate().is_ok(),
+                "quality {quality} should be valid"
+            );
+        }
+    }
+
+    #[test]
+    fn test_image_config_validate_rejects_unknown_format() {
         let mut config = SiteConfig::new("Test", "https://example.com");
-        config.images.quality = quality;
+        config.images.format = "gif".to_string();
         let err = config.validate().unwrap_err();
         assert!(
             matches!(&err, GeneratorError::Config(inner)
-                if matches!(**inner, ConfigError::Invalid(ref msg) if msg.contains("images.quality"))),
-            "quality {quality} should be rejected naming images.quality, got: {err}"
-        );
-    }
-    for quality in [1u8, 80, 100] {
-        let mut config = SiteConfig::new("Test", "https://example.com");
-        config.images.quality = quality;
-        assert!(
-            config.validate().is_ok(),
-            "quality {quality} should be valid"
-        );
-    }
-}
-
-#[test]
-fn test_image_config_validate_rejects_unknown_format() {
-    let mut config = SiteConfig::new("Test", "https://example.com");
-    config.images.format = "gif".to_string();
-    let err = config.validate().unwrap_err();
-    assert!(
-        matches!(&err, GeneratorError::Config(inner)
             if matches!(**inner, ConfigError::Invalid(ref msg) if msg.contains("images.format"))),
-        "format gif should be rejected naming images.format, got: {err}"
-    );
+            "format gif should be rejected naming images.format, got: {err}"
+        );
 
-    for format in ["webp", "jpeg", "jpg", "png"] {
-        let mut config = SiteConfig::new("Test", "https://example.com");
-        config.images.format = format.to_string();
-        assert!(config.validate().is_ok(), "format {format} should be valid");
+        for format in ["webp", "jpeg", "jpg", "png"] {
+            let mut config = SiteConfig::new("Test", "https://example.com");
+            config.images.format = format.to_string();
+            assert!(config.validate().is_ok(), "format {format} should be valid");
+        }
     }
-}
 
-#[test]
-fn test_image_config_from_file_normalises_jpg_and_validates() {
-    let temp = tempfile::TempDir::new().unwrap();
-    let path = temp.path().join("site.toml");
+    #[test]
+    fn test_image_config_from_file_normalises_jpg_and_validates() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let path = temp.path().join("site.toml");
 
-    std::fs::write(
-        &path,
-        r#"
+        std::fs::write(
+            &path,
+            r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
@@ -730,14 +753,14 @@ base_url = "https://example.com"
 [images]
 format = "jpg"
 "#,
-    )
-    .unwrap();
-    let config = SiteConfig::from_file(&path).unwrap();
-    assert_eq!(config.images.format, "jpeg", "jpg should normalise to jpeg");
+        )
+        .unwrap();
+        let config = SiteConfig::from_file(&path).unwrap();
+        assert_eq!(config.images.format, "jpeg", "jpg should normalise to jpeg");
 
-    std::fs::write(
-        &path,
-        r#"
+        std::fs::write(
+            &path,
+            r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
@@ -745,14 +768,14 @@ base_url = "https://example.com"
 [images]
 quality = 0
 "#,
-    )
-    .unwrap();
-    let err = SiteConfig::from_file(&path).unwrap_err();
-    assert!(err.to_string().contains("images.quality"), "got: {err}");
+        )
+        .unwrap();
+        let err = SiteConfig::from_file(&path).unwrap_err();
+        assert!(err.to_string().contains("images.quality"), "got: {err}");
 
-    std::fs::write(
-        &path,
-        r#"
+        std::fs::write(
+            &path,
+            r#"
 [site]
 name = "Test"
 base_url = "https://example.com"
@@ -760,8 +783,181 @@ base_url = "https://example.com"
 [images]
 format = "gif"
 "#,
-    )
-    .unwrap();
-    let err = SiteConfig::from_file(&path).unwrap_err();
-    assert!(err.to_string().contains("images.format"), "got: {err}");
+        )
+        .unwrap();
+        let err = SiteConfig::from_file(&path).unwrap_err();
+        assert!(err.to_string().contains("images.format"), "got: {err}");
+    }
+
+    // ------------------------------------------------------------------
+    // #46: unknown keys must fail loudly, per section
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_unknown_key_in_build_rejected() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[build]
+ouput_dir = "public"
+"#;
+        let err = toml::from_str::<SiteConfig>(toml).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("ouput_dir") && msg.contains("unknown field"),
+            "got: {msg}"
+        );
+        // The expected-field list proves the section: only [build] has content_dir.
+        assert!(msg.contains("content_dir"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_unknown_key_in_images_rejected() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[images]
+qality = 50
+"#;
+        let err = toml::from_str::<SiteConfig>(toml).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("qality") && msg.contains("unknown field"),
+            "got: {msg}"
+        );
+        assert!(msg.contains("widths"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_unknown_key_in_feed_rejected() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[feed]
+limmit = 10
+"#;
+        let err = toml::from_str::<SiteConfig>(toml).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("limmit") && msg.contains("unknown field"),
+            "got: {msg}"
+        );
+        assert!(msg.contains("rss_enabled"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_unknown_key_in_highlight_rejected() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[highlight]
+classprefix = "x-"
+"#;
+        let err = toml::from_str::<SiteConfig>(toml).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("classprefix") && msg.contains("unknown field"),
+            "got: {msg}"
+        );
+        assert!(msg.contains("enabled"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_unknown_key_in_site_rejected() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+autor = "Someone"
+"#;
+        let err = toml::from_str::<SiteConfig>(toml).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("autor") && msg.contains("unknown field"),
+            "got: {msg}"
+        );
+        assert!(msg.contains("base_url"), "got: {msg}");
+    }
+
+    /// #46: every known key round-trips — guards against a deny'd struct
+    /// locking out a real key via a field-name typo.
+    #[test]
+    fn test_every_known_key_accepted() {
+        let toml = r#"
+[site]
+name = "Full"
+base_url = "https://example.com"
+description = "d"
+author = "a"
+
+[build]
+content_dir = "c"
+output_dir = "o"
+static_dir = "s"
+styles_dir = "st"
+templates_dir = "t"
+islands = true
+search = true
+
+[feed]
+rss_enabled = true
+atom_enabled = true
+limit = 15
+full_content = false
+title = "Feed"
+rss_path = "feed.xml"
+atom_path = "feed.atom"
+sections = ["blog"]
+
+[highlight]
+enabled = true
+class_prefix = "hl-"
+
+[images]
+widths = [400]
+quality = 80
+format = "webp"
+output_dir = "images"
+
+[markdown]
+insert_anchor_links = false
+"#;
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert_eq!(config.site.name, "Full");
+        assert_eq!(config.feed.sections, vec!["blog".to_string()]);
+        assert!(config.build.islands && config.build.search);
+    }
+
+    // ------------------------------------------------------------------
+    // #46: base_url scheme validation
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_base_url_must_be_http_or_https() {
+        for url in ["example.com", "ftp://example.com", "httpx://example.com"] {
+            let config = SiteConfig::new("Test", url);
+            let err = config.validate().unwrap_err();
+            assert!(
+                matches!(&err, GeneratorError::Config(inner)
+                    if matches!(**inner, ConfigError::Invalid(ref msg) if msg.contains("base_url"))),
+                "{url} should be rejected naming site.base_url, got: {err}"
+            );
+        }
+        for url in ["https://example.com", "http://localhost:3000"] {
+            let config = SiteConfig::new("Test", url);
+            assert!(
+                config.validate().is_ok(),
+                "{url} should be valid, got: {:?}",
+                config.validate()
+            );
+        }
+    }
 }

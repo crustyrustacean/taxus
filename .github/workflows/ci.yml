@@ -8,6 +8,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Opt in the build-script staleness test (it shells out to cargo, so a
+  # plain `cargo test` must not nest it).
+  TAXUS_TEST_BUILD_SCRIPT: 1
 
 jobs:
   test:
