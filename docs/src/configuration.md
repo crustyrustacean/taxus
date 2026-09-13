@@ -51,6 +51,8 @@ Build configuration options. All fields have defaults.
 | `static_dir` | string | `"static"` | Directory containing static assets |
 | `styles_dir` | string | `"styles"` | Directory containing SCSS stylesheets |
 | `templates_dir` | string | `"templates"` | Directory containing HTML templates |
+| `islands` | bool | `true` | Compile and embed the WASM hydration client. `taxus init --no-islands` writes `false`; the build then skips `dist/wasm/` |
+| `search` | bool | `true` | Build `search_index.bin`. Set `false` on sites with no search box |
 
 
 ### `[feed]` Section

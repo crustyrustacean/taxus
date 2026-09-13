@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **search**: The index is built from a page's Markdown text — not its
+  rendered HTML, whose tags, attributes and highlighter classes polluted
+  the term space (`div`, `href`, `hl-keyword` → matches for "string" or
+  "class" on every page with a code block) — plus its title and
+  tags/categories, each repeated as a field boost so a query matching
+  only the title now finds the page (#43)
+- **search**: `SearchIndex::search` returns at most 10 results in
+  descending score order (`search_with_limit` for a caller-chosen cap).
+  A cap, not a score threshold: TF-IDF has no corpus-independent floor,
+  and a threshold that suppresses noise on a large site hides valid hits
+  on a small one (#22)
+- **build**: New `[build] islands` and `[build] search` config (both
+  default `true`). `taxus init --no-islands` writes `islands = false`;
+  a plain Tera/Markdown site no longer ships several hundred KB of
+  `dist/wasm/` and `dist/search_index.bin` it never loads (#56)
+
+### Fixed
+
+- **search**: the English stemmer is constructed once per thread instead
+  of once per document and once per query; result sorting uses
+  `f32::total_cmp`, which cannot panic on NaN scores (#57)
+
 - **build**: The Site Tree is the whole model: stage 3 no longer re-reads
   and re-parses every content file from disk — it walks the tree's
   documents in canonical order and builds `ProcessedPage`s from the node

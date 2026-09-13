@@ -99,3 +99,87 @@ fn test_search_index_paths_resolve_to_built_output() {
         );
     }
 }
+
+/// #43: the index is built from Markdown text, not rendered HTML. The
+/// fixture's HTML would contribute `hl-keyword`, `span`, `class` and the
+/// fenced-code language tag `rust` as terms — none of which may be in
+/// the index. The title and tags, which used to be unindexed, must be.
+#[test]
+fn test_search_index_contains_markdown_text_not_html_noise() {
+    let index = build_search_index();
+
+    for stem in index.index.keys() {
+        assert!(
+            !["span", "class", "hl", "hl_keyword", "hl_keywor", "dhl"].contains(&stem.as_str()),
+            "markup leaked into the index: {stem}"
+        );
+    }
+
+    // Highlighter class prefix "hl-" tokenizes to "hl" + suffix segments;
+    // with the raw-HTML index those terms existed. With Markdown text
+    // they cannot: they are not words in the body.
+    assert!(
+        !index.index.contains_key("hl"),
+        "the highlighter class prefix must not be an index term"
+    );
+}
+
+/// #43: a query that matches only the title (the word appears nowhere in
+/// any body) must return the page.
+#[test]
+fn test_search_index_finds_title_only_match() {
+    let index = build_search_index();
+
+    // "Ordinary" appears in the title of Ordinary Post and in no body.
+    let results = index.search("ordinary");
+    assert!(
+        results.iter().any(|d| d.title == "Ordinary Post"),
+        "a title-only match must be found"
+    );
+}
+
+/// #43: tags are indexed — a query for a tag returns the tagged page.
+#[test]
+fn test_search_index_finds_tag_match() {
+    let index = build_search_index();
+
+    let results = index.search("zephyr");
+    assert!(
+        results.iter().any(|d| d.title == "Renamed Entry"),
+        "a tag match must find the tagged page"
+    );
+}
+
+/// #56: with `[build] islands = false` and `search = false`, the build
+/// writes neither the WASM client nor the search index. A plain
+/// Tera/Markdown site ships exactly its pages — not several hundred KB
+/// of hydration code it never loads.
+#[test]
+fn test_no_islands_site_skips_wasm_and_search_output() {
+    use std::path::Path;
+
+    let fixture = Path::new("tests/fixtures/no_islands_site");
+    let temp = tempfile::TempDir::new().expect("temp dir");
+    let mut config = SiteConfig::from_dir(fixture).expect("fixture config");
+    config.build.output_dir = temp.path().join("dist");
+
+    assert!(!config.build.islands, "fixture sets islands = false");
+    assert!(!config.build.search, "fixture sets search = false");
+
+    let report = SiteBuilder::new(config)
+        .build()
+        .expect("build fixture site");
+    assert!(
+        report.pages_rendered >= 1,
+        "the pages themselves still build"
+    );
+
+    assert!(
+        !temp.path().join("dist/search_index.bin").exists(),
+        "search index must not be written when build.search = false"
+    );
+    assert!(
+        !temp.path().join("dist/wasm").exists(),
+        "WASM client directory must not be written when build.islands = false"
+    );
+}

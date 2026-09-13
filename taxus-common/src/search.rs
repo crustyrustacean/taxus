@@ -1,9 +1,27 @@
 // taxus-common/src/search.rs
 
+//! The client-side TF-IDF search index (#22, #43, #57).
+//!
+//! The index is built by the generator (from a page's Markdown text and
+//! its title/tags/categories — never its rendered HTML, which would fill
+//! the index with tag names and highlighter classes) and searched by the
+//! WASM client. Both run on the same types, in WASM and on the host.
+
 use postcard::{from_bytes, to_allocvec};
 use rust_stemmers::{Algorithm, Stemmer};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+
+// The English stemmer, constructed once per thread (#57).
+//
+// `Stemmer::create` is cheap but sits on the hot path — once per
+// document at index time and once per query at search time. A
+// `thread_local!` is the only hoist that works everywhere this crate
+// compiles (host and WASM alike); `OnceLock` in a `static` would work
+// on the host but not under `wasm-bindgen`'s threaded runtime rules.
+thread_local! {
+    static ENGLISH_STEMMER: Stemmer = Stemmer::create(Algorithm::English);
+}
 
 // struct type to represent the metadata record stored for each indexed page
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
@@ -43,6 +61,9 @@ pub struct SearchIndex {
     pub index: HashMap<String, Vec<(u32, f32)>>,
 }
 
+/// How many results [`SearchIndex::search`] returns at most (#22).
+pub const SEARCH_RESULT_LIMIT: usize = 10;
+
 impl SearchIndex {
     pub fn new() -> Self {
         Self::default()
@@ -71,7 +92,20 @@ impl SearchIndex {
         }
     }
 
+    /// Search the index, returning at most [`SEARCH_RESULT_LIMIT`] results
+    /// in descending score order.
+    ///
+    /// A cap, not a score threshold: TF-IDF scores have no corpus-independent
+    /// floor — on a three-page site every match is a good match — so a
+    /// threshold that works on one site suppresses valid results on another
+    /// (#22). The cap keeps noise out of large corpora while never hiding a
+    /// relevant hit on a small one.
     pub fn search(&self, query: &str) -> Vec<&SearchDocument> {
+        self.search_with_limit(query, SEARCH_RESULT_LIMIT)
+    }
+
+    /// [`search`](Self::search) with a caller-chosen result cap.
+    pub fn search_with_limit(&self, query: &str, limit: usize) -> Vec<&SearchDocument> {
         let tokens = tokenize(query);
         let stems = stem(&tokens);
 
@@ -84,11 +118,17 @@ impl SearchIndex {
             }
         }
 
+        // `total_cmp` orders NaN safely where `partial_cmp().unwrap()`
+        // would panic (#57). Scores of exactly 0 are kept deliberately:
+        // on a two-document corpus a term in both documents has IDF
+        // ln(2/2) = 0, and hiding every match for it would punish small
+        // sites — the cap, not a threshold, is the noise control.
         let mut results: Vec<(u32, f32)> = scores.into_iter().collect();
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        results.sort_by(|a, b| b.1.total_cmp(&a.1));
 
         results
             .iter()
+            .take(limit)
             .filter_map(|(id, _score)| self.documents.get(id))
             .collect()
     }
@@ -126,11 +166,12 @@ pub fn tokenize(text: &str) -> Vec<String> {
 
 // stemmer
 pub fn stem(tokens: &[String]) -> Vec<String> {
-    let en_stemmer = Stemmer::create(Algorithm::English);
-    tokens
-        .iter()
-        .map(|t| en_stemmer.stem(t).to_string())
-        .collect::<Vec<String>>()
+    ENGLISH_STEMMER.with(|stemmer| {
+        tokens
+            .iter()
+            .map(|t| stemmer.stem(t).to_string())
+            .collect::<Vec<String>>()
+    })
 }
 
 #[cfg(test)]
@@ -546,5 +587,77 @@ mod tests {
         // "Unique" should rank first because "ownership" only appears there
         assert_eq!(results[0].title, "Unique");
         assert_eq!(results[1].title, "Common");
+    }
+}
+
+#[cfg(test)]
+mod search_truth_tests {
+    use super::*;
+
+    fn doc(id: u32, title: &str) -> SearchDocument {
+        SearchDocument::new(
+            id,
+            title.to_string(),
+            format!("/{title}/"),
+            "summary".to_string(),
+            vec![],
+            vec![],
+        )
+    }
+
+    /// #22: the default search caps results; `search_with_limit` honours a
+    /// caller-chosen cap.
+    #[test]
+    fn search_caps_results_at_the_limit() {
+        let mut index = SearchIndex::new();
+        for i in 0..15 {
+            // Every document matches "rust"; each also has one unique word.
+            index.add_document(doc(i, &format!("Doc{i}")), "rust unique_word_{i}");
+        }
+        index.finalize();
+
+        let results = index.search("rust");
+        assert_eq!(results.len(), 10, "default cap is SEARCH_RESULT_LIMIT");
+        assert_eq!(results.len(), SEARCH_RESULT_LIMIT);
+
+        let results = index.search_with_limit("rust", 3);
+        assert_eq!(results.len(), 3, "explicit cap is honoured");
+    }
+
+    /// #22: a term present in every document carries no information
+    /// (IDF = ln(1) = 0) — but only on corpora larger than a site where
+    /// that is noise rather than the only thing the visitor asked for.
+    /// The match is returned at score 0; the cap, not a threshold, keeps
+    /// noise out. This test pins that small-site behaviour: a universal
+    /// term still matches everything.
+    #[test]
+    fn search_returns_universal_term_matches() {
+        let mut index = SearchIndex::new();
+        index.add_document(doc(0, "A"), "shared");
+        index.add_document(doc(1, "B"), "shared");
+        index.add_document(doc(2, "C"), "shared");
+        index.finalize();
+
+        let results = index.search("shared");
+        assert_eq!(results.len(), 3, "a universal term matches every document");
+    }
+
+    /// #57 regression: sorting must not panic when scores contain NaN
+    /// (poisoned via a NaN TF weight — constructible through finalize
+    /// arithmetic edge cases); `total_cmp` defines an order for them.
+    #[test]
+    fn search_with_nan_scores_does_not_panic() {
+        let mut index = SearchIndex::new();
+        index.add_document(doc(0, "A"), "rust");
+        index.add_document(doc(1, "B"), "rust also");
+        index.finalize();
+        // Inject a NaN score directly — the sort must tolerate it.
+        index
+            .index
+            .entry("rust".to_string())
+            .or_default()
+            .push((0, f32::NAN));
+
+        let _ = index.search("rust"); // must not panic
     }
 }

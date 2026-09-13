@@ -3,10 +3,16 @@
 //! Stage 13 (emit): the client-side search index, `search_index.bin`.
 //!
 //! One `SearchDocument` per processed page, in registry (tree) order,
-//! with the served URL path from the tree. See the book's
+//! with the served URL path from the tree. The indexed *text* is the
+//! page's Markdown body — not its rendered HTML — plus its title
+//! (repeated, a crude field boost) and tags/categories (#43): rendered
+//! HTML fills the term space with tag names, attribute names and
+//! highlighter classes, and a query matching only the title used to
+//! return nothing. See the book's
 //! [Search](https://crustyrustacean.github.io/taxus/search.html) chapter.
 
 use crate::build::ProcessedPage;
+use crate::build::pipeline::markdown::markdown_text;
 use crate::error::{GeneratorError, Result, SearchError};
 use std::fs;
 use std::path::Path;
@@ -16,9 +22,40 @@ use tracing::debug;
 // truncation limit, for summaries
 const TRUNCATION_LIMIT: usize = 25;
 
+/// How many times the title (and each tag/category) is repeated in the
+/// indexed text, raising its term frequency relative to the body.
+///
+/// A crude field boost — but TF-IDF only understands frequencies, and
+/// title matches are what the visitor most often means.
+const TITLE_BOOST: usize = 3;
+
 #[derive(Clone, Debug)]
 pub struct GeneratedSearch {
     pub search_index: Vec<u8>,
+}
+
+/// The text indexed for a page: its Markdown words, its title, and its
+/// taxonomy terms, the latter repeated as a field boost.
+pub fn indexed_text(processed: &ProcessedPage) -> String {
+    let mut text = String::new();
+    for _ in 0..TITLE_BOOST {
+        text.push_str(&processed.page.frontmatter.title);
+        text.push(' ');
+    }
+    for term in processed
+        .page
+        .frontmatter
+        .tags
+        .iter()
+        .chain(processed.page.frontmatter.categories.iter())
+    {
+        for _ in 0..TITLE_BOOST {
+            text.push_str(term);
+            text.push(' ');
+        }
+    }
+    text.push_str(&markdown_text(&processed.page.raw_content));
+    text
 }
 
 pub fn generate_search(processed_pages: &[ProcessedPage]) -> Result<GeneratedSearch> {
@@ -36,7 +73,7 @@ pub fn generate_search(processed_pages: &[ProcessedPage]) -> Result<GeneratedSea
             processed.page.frontmatter.tags.clone(),
             processed.page.frontmatter.categories.clone(),
         );
-        search_index.add_document(new_search_document, &processed.html_content);
+        search_index.add_document(new_search_document, &indexed_text(processed));
     }
 
     search_index.finalize();

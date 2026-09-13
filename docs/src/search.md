@@ -10,6 +10,11 @@ The build pipeline:
    processed page in tree order; see [Architecture](./architecture.md))
 2. The `SearchBox` component is available for use in templates
 
+The indexed text for each page is its **Markdown body** — not the rendered
+HTML, whose tags, attributes and highlighter classes would pollute the term
+space — plus its **title** and **tags/categories**, each repeated as a field
+boost so a query matching only the title finds the page.
+
 The binary index contains:
 
 - **Document metadata** — Title, path, summary, tags, and categories for each page
@@ -19,13 +24,19 @@ The index is serialized with `postcard` for compact storage and fast deserializa
 
 ## Enabling Search
 
-Search is always available. Build the site and the index is generated automatically:
+Search is on by default; the index is generated automatically:
 
 ```bash
 cargo run -- build --dir my-site
 ```
 
-This generates `dist/search_index.bin` alongside your static files.
+This generates `dist/search_index.bin` alongside your static files. A site
+with no search box can skip it — set `search = false` in `[build]`:
+
+```toml
+[build]
+search = false
+```
 
 ## Using the SearchBox Component
 
@@ -143,7 +154,9 @@ When a user searches:
 1. The query is tokenized and stemmed using the same process
 2. Each stem's postings are retrieved from the index
 3. TF-IDF scores are summed for matching documents
-4. Results are returned sorted by relevance score
+4. Results are returned sorted by relevance score, capped at 10 — a cap,
+   not a score threshold, because TF-IDF has no corpus-independent floor:
+   on a three-page site every match is a good match
 
 ### Component Architecture
 

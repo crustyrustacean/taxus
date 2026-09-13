@@ -438,6 +438,26 @@ pub fn markdown_to_html(markdown: &str, highlighter: Option<&mut CodeHighlighter
     markdown_to_html_with_toc(markdown, highlighter, &MarkdownOptions::default()).0
 }
 
+/// The plain text of a Markdown document: every `Text` event, space-joined.
+///
+/// What search indexes (#43): not rendered HTML, whose tags, attributes
+/// and highlighter classes would inflate the term space (`div`, `href`,
+/// `hl-keyword` → `keyword`), but the words a reader actually reads.
+/// Code blocks contribute their source text — a visitor searching
+/// `serde_json` should find the page whose snippet uses it.
+pub fn markdown_text(markdown: &str) -> String {
+    let mut text = String::with_capacity(markdown.len());
+    for event in Parser::new(markdown) {
+        if let Event::Text(chunk) = event {
+            if !text.is_empty() {
+                text.push(' ');
+            }
+            text.push_str(&chunk);
+        }
+    }
+    text
+}
+
 /// Produce a unique id for a heading within a page.
 ///
 /// First occurrence keeps the base id; later duplicates get `-1`, `-2`, …
