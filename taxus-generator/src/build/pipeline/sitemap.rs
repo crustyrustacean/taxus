@@ -1,21 +1,25 @@
 // generator/src/build/pipeline/sitemap.rs
 
-//! Stage 8 (analyse, emit): `sitemap.xml`.
+//! Stage 10 (analyse, emit): `sitemap.xml`.
 //!
-//! Membership is a derivation: every non-draft document from
-//! `taxus_domain::derivation::documents`, joined to its rendered page by
-//! content file. See the book's
+//! The URL set composes from final outputs (#47): every `RenderedPage`
+//! — which includes the pagination pages stage 6 emits — plus every
+//! taxonomy list and term page from stage 9. Alias redirects are
+//! excluded deliberately: they are redirects, not content — each
+//! targets a URL already in the set. `<loc>` is XML-escaped (#47).
+//! See the book's
 //! [Derivations](https://crustyrustacean.github.io/taxus/theory/derivations.html) chapter.
 
 use crate::build::ProcessedPage;
+use crate::build::RenderedPage;
+use crate::build::pipeline::taxonomy::RenderedTaxonomy;
 use crate::config::SiteConfig;
 use crate::error::{GeneratorError, Result};
+use crate::feed::escape_xml;
 use crate::templates::compute_permalink;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use taxus_domain::SiteTree;
-use taxus_domain::derivation::documents;
 use tracing::{debug, info};
 
 /// Sitemap URL entry.
@@ -43,64 +47,69 @@ pub struct GeneratedSitemap {
 /// Generate sitemap.xml.
 ///
 /// Creates a sitemap with:
-/// - Every non-draft document in the tree ([`documents`]: pages and
-///   indexed sections), joined to its rendered `ProcessedPage`
+/// - Every rendered page (pages, sections and the pagination pages
+///   `render_pages` emits for paginated sections)
+/// - Every taxonomy list and term page (`/tags/`, `/tags/rust/`, …)
 /// - lastmod from page date if available
-/// - Priority: 1.0 for home, 0.8 for sections, 0.7 for pages
+/// - Priority: 1.0 for home, 0.8 for sections and taxonomy pages, 0.7 for pages
 /// - changefreq: weekly for home, monthly for others
+///
+/// Alias redirect pages are excluded deliberately (#47): they redirect
+/// to URLs already present.
 pub fn generate_sitemap(
-    tree: &SiteTree,
+    rendered: &[RenderedPage],
+    taxonomy_pages: &[RenderedTaxonomy],
     processed: &[ProcessedPage],
     config: &SiteConfig,
 ) -> Result<GeneratedSitemap> {
     let base_url = config.site.base_url.trim_end_matches('/');
     let mut urls: Vec<SitemapUrl> = Vec::new();
 
-    let processed_by_file: HashMap<&Path, &ProcessedPage> = processed
+    // Dates come from the processed pages, joined by content file —
+    // `RenderedPage` carries only what writing needs.
+    let date_by_file: HashMap<&Path, String> = processed
         .iter()
-        .map(|p| (p.route.content_file.as_path(), p))
+        .filter_map(|p| {
+            p.page
+                .frontmatter
+                .date
+                .map(|d| d.format("%Y-%m-%d").to_string())
+                .map(|d| (p.route.content_file.as_path(), d))
+        })
         .collect();
 
-    for node in documents(tree) {
-        // Skip drafts
-        if node.is_draft() {
-            continue;
-        }
-        let Some(processed_page) = processed_by_file.get(node.content_file()) else {
-            continue;
-        };
-
-        // Get the URL path (respecting custom slugs)
-        let url_path = processed_page.effective_url_path();
-
-        // Build full URL using compute_permalink for proper slash handling
-        let loc = compute_permalink(base_url, &url_path);
-
-        // Get lastmod from page date
-        let lastmod = processed_page
-            .page
-            .frontmatter
-            .date
-            .map(|d| d.format("%Y-%m-%d").to_string());
-
-        // Determine priority and changefreq based on route type
-        let (priority, changefreq) = if url_path == "/" {
-            ("1.0".to_string(), "weekly".to_string())
-        } else if processed_page.route.is_section() {
-            ("0.8".to_string(), "monthly".to_string())
-        } else {
-            ("0.7".to_string(), "monthly".to_string())
-        };
-
+    // Pages, sections and pagination — stage 6's full output.
+    for page in rendered {
+        let lastmod = date_by_file.get(page.route.content_file.as_path()).cloned();
         urls.push(SitemapUrl {
-            loc,
+            loc: compute_permalink(base_url, &page.route.path),
             lastmod,
-            changefreq,
-            priority,
+            changefreq: if page.route.path == "/" {
+                "weekly".to_string()
+            } else {
+                "monthly".to_string()
+            },
+            priority: if page.route.path == "/" {
+                "1.0".to_string()
+            } else if page.route.is_section() {
+                "0.8".to_string()
+            } else {
+                "0.7".to_string()
+            },
         });
     }
 
-    // Sort URLs by path for consistent output
+    // Taxonomy list and term pages — stage 9's output.
+    for taxonomy in taxonomy_pages {
+        urls.push(SitemapUrl {
+            loc: compute_permalink(base_url, &taxonomy.path),
+            lastmod: None,
+            changefreq: "monthly".to_string(),
+            priority: "0.8".to_string(),
+        });
+    }
+
+    // Sort URLs by path for consistent output.
     urls.sort_by(|a, b| a.loc.cmp(&b.loc));
 
     // Generate XML
@@ -113,7 +122,7 @@ pub fn generate_sitemap(
 
     for url in &urls {
         xml.push_str("  <url>\n");
-        xml.push_str(&format!("    <loc>{}</loc>\n", url.loc));
+        xml.push_str(&format!("    <loc>{}</loc>\n", escape_xml(&url.loc)));
         if let Some(ref lastmod) = url.lastmod {
             xml.push_str(&format!("    <lastmod>{}</lastmod>\n", lastmod));
         }

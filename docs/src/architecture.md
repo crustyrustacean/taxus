@@ -94,20 +94,23 @@ Produces one `RenderedPage` per output file.
 `static/robots.txt`. If none exists, produces a default `robots.txt`
 pointing at the sitemap and writes it.
 
-**[8/15] Generating sitemap.xml** (analyse and emit). Reads the tree, the
-processed pages and the base URL. Walks `derivation::documents`, skips
-drafts, joins each document to its processed page by content file, and
-writes `sitemap.xml`.
-
-**[9/15] Generating 404.html** (emit). Reads the templates. If
+**[8/15] Generating 404.html** (emit). Reads the templates. If
 `404.html` exists, renders it with the site context and writes it.
 
-**[10/15] Building taxonomy pages** (analyse and emit). Reads the tree,
+**[9/15] Building taxonomy pages** (analyse and emit). Reads the tree,
 the processed pages and the templates. `derivation::group_by_terms` fills
 a `TaxonomyMap` for tags, categories and series. For each kind whose
 templates exist, renders `/tags/` and `/tags/<term>/` and the same for
 the other two. Produces `RenderedTaxonomy` values; they are written in
 stage 15.
+
+**[10/15] Generating sitemap.xml** (analyse and emit). Reads the rendered
+pages, the taxonomy pages and the base URL — the final outputs, not the
+tree (#47). The URL set is every `RenderedPage` (which includes the
+pagination pages stage 6 emits) plus every taxonomy list and term page;
+each entry's date is joined from its processed page by content file.
+`<loc>` is XML-escaped. Alias redirects are excluded deliberately: a
+redirect is not content, and each targets a URL already in the set.
 
 **[11/15] Generating feeds** (analyse and emit). Reads the tree, the
 processed pages and `[feed]` config. `feed_pages` selects dated, non-draft

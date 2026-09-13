@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **sitemap**: `sitemap.xml` now lists taxonomy list and term pages
+  (`/tags/`, `/tags/rust/`, …) and pagination pages (`/blog/page/2/`),
+  which were never generated early enough to appear (#47). The sitemap
+  stage moved from 8 to 10 — after rendering and taxonomy — and builds
+  its URL set from the final outputs (every `RenderedPage`, including
+  pagination, plus every `RenderedTaxonomy`) instead of re-deriving from
+  the tree. Alias redirects remain excluded deliberately: a redirect is
+  not content. `<loc>` is now XML-escaped, so a base URL or path
+  containing `&` no longer produces invalid XML.
 - **search**: The index is built from a page's Markdown text — not its
   rendered HTML, whose tags, attributes and highlighter classes polluted
   the term space (`div`, `href`, `hl-keyword` → matches for "string" or
