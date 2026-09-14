@@ -33,3 +33,5 @@ test-site/
 # Projects
 jeff-mitchell-dev/
 crusty-metallian-net/
+# debtmap baselines: local-only artifacts used with 'debtmap compare'
+.debtmap/
