@@ -1,5 +1,6 @@
 +++
 title = "Interactivity"
+description = "Add interactivity to a Taxus site with plain JavaScript or WebAssembly islands powered by Yew — lightweight, performant, and dependency-free."
 
 [extra]
 counter = true

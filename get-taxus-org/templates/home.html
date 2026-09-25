@@ -1,6 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}{{ site.name }}{% endblock %}
+{% block title %}Taxus — A Rust Static Site Generator with WASM Islands{% endblock %}
+
+{% block opengraph %}
+<meta property="og:title" content="Taxus — A Rust Static Site Generator with WASM Islands">
+<meta property="og:description" content="{{ site.description | default(value="Taxus — a static site generator built in Rust.") }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "{{ site.name }}",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Linux, Windows",
+  "url": "{{ site.base_url }}/",
+  "description": "{{ site.description | default(value='') | replace(from='"', to='\"') }}",
+  "author": { "@type": "Person", "name": "{{ site.author | default(value='Jeffery D. Mitchell') }}" },
+  "downloadUrl": "https://github.com/crustyrustacean/taxus/releases/latest",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <article class="section-content">

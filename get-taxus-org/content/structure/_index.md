@@ -1,5 +1,6 @@
 +++
 title = "Structure"
+description = "Organize a Taxus site with a content directory, Tera templates, sections, pages, and taxonomies — how the Taxus static site generator structures a website."
 +++
 
 ## Template Power

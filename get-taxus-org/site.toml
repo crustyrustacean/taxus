@@ -1,6 +1,8 @@
 [site]
 name = "Taxus"
 base_url = "https://get-taxus.org"
+description = "Taxus is a static site generator built in Rust — markdown in, a complete website out, with WebAssembly islands for interactivity."
+author = "Jeffery D. Mitchell"
 
 [build]
 content_dir = "content"

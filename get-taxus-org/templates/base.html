@@ -10,7 +10,7 @@
     {% elif section?.description %}
     <meta name="description" content="{{ section.description }}">
     {% else %}
-    <meta name="description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
+    <meta name="description" content="{{ site.description | default(value="Taxus — A static site generator built in Rust, founded on Tera and Yew.") }}">
     {% endif %}
     
     <link rel="canonical" href="{{ site.base_url }}{{ page?.path | default(value='/') }}">
@@ -26,19 +26,31 @@
     {% if page?.description %}
     <meta property="og:description" content="{{ page.description }}">
     {% else %}
-    <meta property="og:description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
+    <meta property="og:description" content="{{ site.description | default(value="Taxus — A static site generator built in Rust, founded on Tera and Yew.") }}">
     {% endif %}
     {% endblock %}
     
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ page?.title | default(value=site.name) }}">
     {% if page?.description %}
     <meta name="twitter:description" content="{{ page.description }}">
     {% else %}
-    <meta name="twitter:description" content="Taxus — A static site generator built in Rust, founded on Tera and Yew.">
+    <meta name="twitter:description" content="{{ site.description | default(value="Taxus — A static site generator built in Rust, founded on Tera and Yew.") }}">
     {% endif %}
+    {% block social_image %}
+    {% if page?.hero %}
+    <meta property="og:image" content="{{ site.base_url }}{{ page.hero.src }}">
+    <meta name="twitter:image" content="{{ site.base_url }}{{ page.hero.src }}">
+    {% else %}
+    <meta property="og:image" content="{{ site.base_url }}/static/og-image.png">
+    <meta name="twitter:image" content="{{ site.base_url }}/static/og-image.png">
+    {% endif %}
+    <meta property="og:image:alt" content="Taxus — a static site generator built in Rust">
+    <meta name="twitter:image:alt" content="Taxus — a static site generator built in Rust">
+    {% endblock %}
     
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="alternate" type="application/rss+xml" title="{{ site.name }} Blog" href="{{ site.base_url }}/feed.xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">

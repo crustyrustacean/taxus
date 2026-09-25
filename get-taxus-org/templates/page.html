@@ -11,6 +11,20 @@
 {% endif %}
 {% if page.date %}
 <meta property="article:published_time" content="{{ page.date }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{{ page.title | replace(from='"', to='\"') }}",
+  "url": "{{ site.base_url }}{{ page.path }}",
+  {% if page.description %}"description": "{{ page.description | replace(from='"', to='\"') }}",
+  {% endif %}"image": "{{ site.base_url }}{% if page.hero %}{{ page.hero.src }}{% else %}/static/og-image.png{% endif %}",
+  "datePublished": "{{ page.date }}",
+  "author": { "@type": "Person", "name": "{{ site.author | default(value='Jeffery D. Mitchell') }}" },
+  "publisher": { "@type": "Organization", "name": "{{ site.name }}" },
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "{{ site.base_url }}{{ page.path }}" }
+}
+</script>
 {% endif %}
 {% endblock %}
 

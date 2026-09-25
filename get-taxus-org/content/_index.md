@@ -1,5 +1,5 @@
 +++
-title = "Home"
+title = "Taxus — A Rust Static Site Generator with WASM Islands"
 template = "home.html"
 +++
 

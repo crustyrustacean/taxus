@@ -1,5 +1,6 @@
 +++
 title = "Appearance"
+description = "Style a Taxus site your way with built-in SCSS compilation — fonts, colors, and layout are yours to control. Appearance documentation for the Taxus SSG."
 +++
 
 ### Themes (Nope)

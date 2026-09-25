@@ -1,5 +1,6 @@
 +++
 title = "Authoring"
+description = "Write content in CommonMark markdown with frontmatter metadata, shortcodes, and syntax highlighting — authoring documentation for the Taxus static site generator."
 +++
 
 ### Write with Ease
