@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while the other five targets shipped 1.90+ and broke the v1.2.1
   build).
 
+- **deps (dev)**: dropped the unused `reqwest` dev-dependency, which
+  dragged `aws-lc-sys` (system CMake, and NASM on Windows) into every
+  contributor's `cargo test` build. The shipped binary never depended
+  on it — `cargo install` / `cargo build` never compiled aws-lc — but
+  the test graph did, so a bare Rust toolchain now suffices for
+  running the suite.
+
 ## [1.2.1] - 2026-09-25
 
 ### Changed

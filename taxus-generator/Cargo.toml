@@ -71,6 +71,5 @@ wasm-bindgen-cli-support = "=0.2.126"
 [dev-dependencies]
 tempfile = "3"
 tokio = { version = "1.50", features = ["test-util"] }
-reqwest = { version = "0.13", features = ["json"] }
 tokio-tungstenite = "0.29"
 quick-xml = "0.42"
