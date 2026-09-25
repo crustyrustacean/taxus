@@ -1,2 +1,10 @@
-- name: Add wasm32 target
-  run: rustup target add wasm32-unknown-unknown
+# Shared steps injected into every cargo-dist build job
+# (dist-workspace.toml: github-build-setup). Pin the toolchain explicitly:
+# runner images drift between targets (windows-aarch64 shipped rustc 1.89
+# while the others shipped 1.90+), which broke the v1.2.1 release build
+# when tree-sitter-language 0.1.8 required rustc 1.90. Installing stable
+# here makes all six targets build on the same current toolchain.
+- name: Install Rust toolchain
+  uses: dtolnay/rust-toolchain@stable
+  with:
+    targets: wasm32-unknown-unknown

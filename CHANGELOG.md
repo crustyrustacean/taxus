@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **msrv**: raised the declared MSRV from 1.89 to 1.90, letting
+  tree-sitter-language float back to 0.1.8. Release CI now installs the
+  current stable toolchain explicitly in every dist build job
+  (`.github/build-setup.yml`) instead of trusting each runner image's
+  preinstalled rustc, which had drifted (windows-aarch64 shipped 1.89
+  while the other five targets shipped 1.90+ and broke the v1.2.1
+  build).
+
 ## [1.2.1] - 2026-09-25
 
 ### Changed
