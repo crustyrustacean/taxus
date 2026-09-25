@@ -1,2 +1,7 @@
 [alias]
 xtask = "run --package xtask --"
+# cargo update falls back to versions compatible with the declared
+# rust-version (1.89) instead of the active toolchain, so a newer local
+# rustc cannot float deps past the MSRV the CI runners build on.
+[resolver]
+incompatible-rust-versions = "fallback"
