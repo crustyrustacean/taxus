@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **deps**: full `cargo update` refresh (67 crates), the notable ones
+  being tera 2.1.1 → 2.4.0, syn 3.0.3 → 3.0.6, rustls 0.23.43 → 0.23.45,
+  aws-lc-sys 0.44.0 → 0.45.0, hyper 1.11.0 → 1.11.1, quinn-proto
+  0.11.16 → 0.11.18, and reqwest 0.13.4 → 0.13.5. The golden fixtures
+  verify that rendered output is byte-identical across the jump.
+
 ## [1.2.0] - 2026-09-13
 
 ### Added
