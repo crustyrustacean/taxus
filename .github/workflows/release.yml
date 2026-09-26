@@ -127,8 +127,10 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
-      - name: "Add wasm32 target"
-        run: "rustup target add wasm32-unknown-unknown"
+      - name: "Install Rust toolchain"
+        uses: "dtolnay/rust-toolchain@stable"
+        with:
+          "targets": "wasm32-unknown-unknown"
       - name: Install dist
         run: ${{ matrix.install_dist.run }}
       # Get the dist-manifest
