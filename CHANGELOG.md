@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **init**: the scaffolded files are described in one manifest
+  (`init/manifest.rs`) rather than by the strings in `scaffold.rs`. The 10 Tera
+  templates and `static/scripts.js` are now real files under `init/`, read with
+  `include_str!`, so they are lintable and syntax-highlighted instead of `format!`
+  strings with every literal brace doubled. `taxus init --help` renders its file
+  table from the same manifest, so the help and the scaffolder cannot disagree
+  — the old hardcoded list named 8 of the 17 files written and none of the six
+  taxonomy templates (#111). Scaffolded output is byte-for-byte unchanged.
 - **msrv**: raised the declared MSRV from 1.89 to 1.90, letting
   tree-sitter-language float back to 0.1.8. Release CI now installs the
   current stable toolchain explicitly in every dist build job
@@ -23,6 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on it — `cargo install` / `cargo build` never compiled aws-lc — but
   the test graph did, so a bare Rust toolchain now suffices for
   running the suite.
+
+### Fixed
+
+- **init**: `taxus init` wrote an unparseable `site.toml` when the site name
+  contained a `"` or `\`, and the same for a `"` in `--base-url`. The name is
+  interpolated unescaped into `site.toml` and into the `+++` front matter of
+  `content/_index.md`, both TOML, so a quote terminated the string early.
+  Windows permits both characters in directory names and `derive_site_name`
+  copies a directory name in verbatim, so `taxus init "My \"Cool\" Site"`
+  reproduced it with no `--name` at all. `InitOptions::validate` now rejects
+  them, with a message that says why.
 
 ## [1.2.1] - 2026-09-25
 

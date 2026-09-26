@@ -7,6 +7,7 @@
 //! scaffold has one content file, `content/_index.md`, so its Site Tree is
 //! a root section with no pages.
 
+pub mod manifest;
 mod scaffold;
 
 use crate::error::{GeneratorError, InitError, Result};
@@ -75,6 +76,20 @@ impl InitOptions {
             ));
         }
 
+        // The name is interpolated into `site.toml` and into the `+++` front
+        // matter of `content/_index.md`, both of which are TOML, both of which
+        // quote the value with `"`. A name carrying a quote or a backslash
+        // would produce a file that no longer parses, so refuse it here rather
+        // than write a broken site. `derive_site_name` feeds directory names in
+        // verbatim, and every platform allows a quote in one.
+        if let Some(bad) = self.name.chars().find(|c| matches!(c, '"' | '\\')) {
+            return Err(InitError::InvalidName(format!(
+                "Site name cannot contain {:?} — it is written into site.toml \
+                 and the home page's front matter",
+                bad
+            )));
+        }
+
         if self.base_url.trim().is_empty() {
             return Err(InitError::InvalidBaseUrl(
                 "Base URL cannot be empty".to_string(),
@@ -85,6 +100,14 @@ impl InitOptions {
         if !self.base_url.starts_with("http://") && !self.base_url.starts_with("https://") {
             return Err(InitError::InvalidBaseUrl(
                 "Base URL must start with http:// or https://".to_string(),
+            ));
+        }
+
+        // Same TOML constraint as the name, for the same reason: the URL lands
+        // in `site.toml` inside quotes.
+        if self.base_url.contains('"') {
+            return Err(InitError::InvalidBaseUrl(
+                "Base URL cannot contain a quote character".to_string(),
             ));
         }
 
@@ -236,6 +259,34 @@ mod tests {
     fn test_init_options_validate_whitespace_name() {
         let opts = InitOptions::new("   ", "https://example.com");
         assert!(matches!(opts.validate(), Err(InitError::InvalidName(_))));
+    }
+
+    #[test]
+    fn test_init_options_validate_quote_in_name() {
+        // The name is interpolated into TOML without escaping, so a quote would
+        // produce a site.toml that no longer parses. Refuse the name instead.
+        let opts = InitOptions::new("My \"Cool\" Site", "https://example.com");
+        assert!(matches!(opts.validate(), Err(InitError::InvalidName(_))));
+    }
+
+    #[test]
+    fn test_init_options_validate_backslash_in_name() {
+        let opts = InitOptions::new("My \\ Site", "https://example.com");
+        assert!(matches!(opts.validate(), Err(InitError::InvalidName(_))));
+    }
+
+    #[test]
+    fn test_init_options_validate_quote_in_base_url() {
+        let opts = InitOptions::new("Test", "https://example.com/\"x\"");
+        assert!(matches!(opts.validate(), Err(InitError::InvalidBaseUrl(_))));
+    }
+
+    #[test]
+    fn test_init_options_validate_allows_ordinary_name() {
+        // Apostrophes and dashes are common in real site names and are not TOML
+        // metacharacters, so the new check must not reject them.
+        let opts = InitOptions::new("O'Brien's Website - 2024", "https://example.com");
+        assert!(opts.validate().is_ok(), "{:?}", opts.validate());
     }
 
     #[test]

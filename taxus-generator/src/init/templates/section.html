@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
+
+{% block meta %}
+    {% if section.description %}<meta name="description" content="{{ section.description }}">{% endif %}
+    <meta property="og:title" content="{{ section.title }}">
+    {% if section.description %}<meta property="og:description" content="{{ section.description }}">{% endif %}
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ section.permalink }}">
+{% endblock meta %}
+
+{% block content %}
+<section>
+    <h1>{{ section.title }}</h1>
+    {% if section.description %}
+    <p class="description">{{ section.description }}</p>
+    {% endif %}
+    
+    {% if section.pages %}
+    <ul class="page-list">
+        {% for page in section.pages %}
+        <li>
+            <a href="{{ page.path }}">
+                <h2>{{ page.title }}</h2>
+                {% if page.description %}
+                <p>{{ page.description }}</p>
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    {{ section.content | safe }}
+</section>
+{{ island_demo }}{% endblock %}

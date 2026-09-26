@@ -1,7 +1,10 @@
 // generator/src/init/scaffold.rs
-
-//! Site scaffolding functionality.
-
+//
+//! Site scaffolding: writes the files named in the [manifest].
+//!
+//! Nothing here decides *what* a new site contains — that is the manifest's
+//! job, and this module only writes what it lists (#111).
+use super::manifest;
 use super::{InitOptions, InitReport};
 use crate::error::{InitError, Result};
 use std::path::Path;
@@ -49,10 +52,10 @@ impl InitScaffolder {
     }
 
     /// Create the directory structure.
+    ///
+    /// The list is [`manifest::DIRECTORIES`](super::manifest::DIRECTORIES).
     fn create_directories(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        let directories = ["content", "templates", "static", "styles"];
-
-        for dir in &directories {
+        for (dir, _) in manifest::DIRECTORIES {
             let dir_path = path.join(dir);
             if !dir_path.exists() {
                 std::fs::create_dir_all(&dir_path).map_err(|e| InitError::DirectoryCreation {
@@ -67,21 +70,32 @@ impl InitScaffolder {
         Ok(())
     }
 
-    /// Create all default files.
+    /// Create all scaffolded files.
+    ///
+    /// The file list is [`manifest`], not this function: templates come from
+    /// [`manifest::TEMPLATES`] and the rest from [`manifest::OTHER_FILES`],
+    /// alongside the two files whose contents are built rather than read
+    /// (`site.toml` and `_index.md`, both of which interpolate the site name).
     fn create_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        // Create site.toml
-        self.create_site_config(path, report)?;
+        // Templates: contents come from init/templates/ on disk, with the
+        // islands-dependent placeholders resolved from the manifest row.
+        for template in manifest::TEMPLATES {
+            let contents = manifest::resolve(template, self.options.islands);
+            self.write_if_absent(
+                &path.join("templates").join(template.name),
+                contents.as_ref(),
+                report,
+            )?;
+        }
 
-        // Create content/_index.md
+        // site.toml and content/_index.md carry the site name, so they are
+        // rendered here rather than read from disk.
+        self.create_site_config(path, report)?;
         self.create_index_content(path, report)?;
 
-        // Create templates
-        self.create_templates(path, report)?;
-
-        // Create styles/main.scss
+        // Stylesheets and static files: copied verbatim from init/styles/ and
+        // the bytes below.
         self.create_stylesheet(path, report)?;
-
-        // Create static files
         self.create_static_files(path, report)?;
 
         Ok(())
@@ -176,408 +190,20 @@ This is your new static site. Start editing this file to add your content.
         Ok(())
     }
 
-    /// Create the default templates.
-    fn create_templates(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        // Create base.html
-        let base_path = path.join("templates/base.html");
-        if !base_path.exists() {
-            // Conditionally include WASM hydration script based on islands flag
-            let wasm_script = if self.options.islands {
-                r#"
-    <!-- WASM hydration client.
-         client.js is a wasm-bindgen ES module; it must be loaded via
-         `import init` inside a type="module" script, not via a plain src= tag. -->
-    <script type="module">
-        import init, * as bindings from '/wasm/client.js';
-        const wasm = await init({ module_or_path: '/wasm/client_bg.wasm' });
-        window.wasmBindings = bindings;
-        bindings.hydrate_islands();
-    </script>
-"#
-            } else {
-                ""
-            };
-
-            let content = format!(
-                r#"<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{{% block title %}}{{{{ site.name }}}}{{% endblock %}}</title>
-        <link rel="icon" type="image/png" href="/static/favicon.png">
-        <link rel="stylesheet" href="/css/main.css">
-        {{% block meta %}}{{% endblock meta %}}
-    </head>
-<body>
-    <header>
-        <h1>{{{{ site.name }}}}</h1>
-        <nav>
-            <a href="/">Home</a>
-        </nav>
-    </header>
-    <main>
-        {{% block content %}}{{% endblock %}}
-    </main>
-    <footer>
-        <p>&copy; {{{{ now.year }}}} {{{{ site.name }}}}</p>
-    </footer>
-    <!-- General interactivity via plain JavaScript -->
-    <script src="/static/scripts.js"></script>{}
-</body>
-</html>
-"#,
-                wasm_script
-            );
-            std::fs::write(&base_path, content).map_err(|e| InitError::FileWrite {
-                path: base_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(base_path);
+    /// Write a file unless it is already there.
+    ///
+    /// Never overwrites: `taxus init` into a populated directory is additive,
+    /// which is why the CLI warns but does not stop.
+    fn write_if_absent(&self, path: &Path, contents: &str, report: &mut InitReport) -> Result<()> {
+        if path.exists() {
+            return Ok(());
         }
-
-        // Create page.html
-        let page_path = path.join("templates/page.html");
-        if !page_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}{{ page.title }} - {{ site.name }}{% endblock %}
-
-{% block meta %}
-    {% if page.description %}<meta name="description" content="{{ page.description }}">{% endif %}
-    <meta property="og:title" content="{{ page.title }}">
-    {% if page.description %}<meta property="og:description" content="{{ page.description }}">{% endif %}
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="{{ page.permalink }}">
-    {% if page.hero %}{% set origin = page.permalink | trim_end(pat=page.path) %}<meta property="og:image" content="{{ origin }}{{ page.hero.src }}">{% endif %}
-{% endblock meta %}
-
-{% block content %}
-<article>
-    {% if page.hero %}
-    <picture>
-      <source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type | safe }}">
-      <img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
-           width="{{ page.hero.width }}" height="{{ page.hero.height }}"
-           loading="eager" decoding="async">
-    </picture>
-    {% endif %}
-    <h1>{{ page.title }}</h1>
-    {% if page.date %}
-    <time datetime="{{ page.date }}">{{ page.date }}</time>
-    {% endif %}
-    {% if page.description %}
-    <p class="description">{{ page.description }}</p>
-    {% endif %}
-    {{ page.content | safe }}
-</article>
-{% endblock %}
-"#;
-            std::fs::write(&page_path, content).map_err(|e| InitError::FileWrite {
-                path: page_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(page_path);
-        }
-
-        // Create section.html
-        let section_path = path.join("templates/section.html");
-        if !section_path.exists() {
-            // Include a Counter island only when islands support is enabled.
-            let island_demo = if self.options.islands {
-                r#"
-{# Place a Counter island on the page #}
-{{ island(component="Counter", initial=3) | safe }}
-"#
-            } else {
-                ""
-            };
-
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
-
-{% block meta %}
-    {% if section.description %}<meta name="description" content="{{ section.description }}">{% endif %}
-    <meta property="og:title" content="{{ section.title }}">
-    {% if section.description %}<meta property="og:description" content="{{ section.description }}">{% endif %}
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ section.permalink }}">
-{% endblock meta %}
-
-{% block content %}
-<section>
-    <h1>{{ section.title }}</h1>
-    {% if section.description %}
-    <p class="description">{{ section.description }}</p>
-    {% endif %}
-    
-    {% if section.pages %}
-    <ul class="page-list">
-        {% for page in section.pages %}
-        <li>
-            <a href="{{ page.path }}">
-                <h2>{{ page.title }}</h2>
-                {% if page.description %}
-                <p>{{ page.description }}</p>
-                {% endif %}
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    
-    {{ section.content | safe }}
-</section>
-"#
-            .to_string()
-                + island_demo
-                + r#"{% endblock %}
-"#;
-            std::fs::write(&section_path, content).map_err(|e| InitError::FileWrite {
-                path: section_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(section_path);
-        }
-
-        // Create 404.html
-        let notfound_path = path.join("templates/404.html");
-        if !notfound_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}404 - Page Not Found{% endblock %}
-
-{% block content %}
-<article class="error-page">
-    <h1>404</h1>
-    <h2>Page Not Found</h2>
-    <p>Sorry, the page you're looking for doesn't exist.</p>
-    <p><a href="/">Return to the home page</a></p>
-</article>
-{% endblock %}
-"#;
-            std::fs::write(&notfound_path, content).map_err(|e| InitError::FileWrite {
-                path: notfound_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(notfound_path);
-        }
-
-        // Create tags.html
-        let tags_path = path.join("templates/tags.html");
-        if !tags_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}Tags - {{ site.name }}{% endblock %}
-
-{% block content %}
-<section>
-    <h1>Tags</h1>
-    {% if extra.taxonomy.terms %}
-    <ul class="taxonomy-list">
-        {% for term in extra.taxonomy.terms %}
-        <li>
-            <a href="{{ term.path }}">
-                {{ term.name }} ({{ term.page_count }})
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No tags yet.</p>
-    {% endif %}
-</section>
-{% endblock %}
-"#;
-            std::fs::write(&tags_path, content).map_err(|e| InitError::FileWrite {
-                path: tags_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(tags_path);
-        }
-
-        // Create categories.html
-        let categories_path = path.join("templates/categories.html");
-        if !categories_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}Categories - {{ site.name }}{% endblock %}
-
-{% block content %}
-<section>
-    <h1>Categories</h1>
-    {% if extra.taxonomy.terms %}
-    <ul class="taxonomy-list">
-        {% for term in extra.taxonomy.terms %}
-        <li>
-            <a href="{{ term.path }}">
-                {{ term.name }} ({{ term.page_count }})
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No categories yet.</p>
-    {% endif %}
-</section>
-{% endblock %}
-"#;
-            std::fs::write(&categories_path, content).map_err(|e| InitError::FileWrite {
-                path: categories_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(categories_path);
-        }
-
-        // Create series.html
-        let series_path = path.join("templates/series.html");
-        if !series_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}Series - {{ site.name }}{% endblock %}
-
-{% block content %}
-<section>
-    <h1>Series</h1>
-    {% if extra.taxonomy.terms %}
-    <ul class="taxonomy-list">
-        {% for term in extra.taxonomy.terms %}
-        <li>
-            <a href="{{ term.path }}">
-                {{ term.name }} ({{ term.page_count }})
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No series yet.</p>
-    {% endif %}
-</section>
-{% endblock %}
-"#;
-            std::fs::write(&series_path, content).map_err(|e| InitError::FileWrite {
-                path: series_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(series_path);
-        }
-
-        // Create tags_term.html
-        let tags_term_path = path.join("templates/tags_term.html");
-        if !tags_term_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}Tag: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
-
-{% block content %}
-<section>
-    <h1>Tagged "{{ extra.taxonomy.name }}"</h1>
-    <p>{{ extra.taxonomy.page_count }} post(s)</p>
-    {% if extra.taxonomy.pages %}
-    <ul class="page-list">
-        {% for page in extra.taxonomy.pages %}
-        <li>
-            <a href="{{ page.path }}">
-                <h2>{{ page.title }}</h2>
-                {% if page.description %}
-                <p>{{ page.description }}</p>
-                {% endif %}
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-</section>
-{% endblock %}
-"#;
-            std::fs::write(&tags_term_path, content).map_err(|e| InitError::FileWrite {
-                path: tags_term_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(tags_term_path);
-        }
-
-        // Create categories_term.html
-        let categories_term_path = path.join("templates/categories_term.html");
-        if !categories_term_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}Category: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
-
-{% block content %}
-<section>
-    <h1>Category: {{ extra.taxonomy.name }}</h1>
-    <p>{{ extra.taxonomy.page_count }} post(s)</p>
-    {% if extra.taxonomy.pages %}
-    <ul class="page-list">
-        {% for page in extra.taxonomy.pages %}
-        <li>
-            <a href="{{ page.path }}">
-                <h2>{{ page.title }}</h2>
-                {% if page.description %}
-                <p>{{ page.description }}</p>
-                {% endif %}
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-</section>
-{% endblock %}
-"#;
-            std::fs::write(&categories_term_path, content).map_err(|e| InitError::FileWrite {
-                path: categories_term_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(categories_term_path);
-        }
-
-        // Create series_term.html
-        let series_term_path = path.join("templates/series_term.html");
-        if !series_term_path.exists() {
-            let content = r#"{% extends "base.html" %}
-
-{% block title %}Series: {{ extra.taxonomy.name }} - {{ site.name }}{% endblock %}
-
-{% block content %}
-<section>
-    <h1>Series: {{ extra.taxonomy.name }}</h1>
-    <p>{{ extra.taxonomy.page_count }} post(s)</p>
-    {% if extra.taxonomy.pages %}
-    <ol class="page-list">
-        {% for page in extra.taxonomy.pages %}
-        <li>
-            <a href="{{ page.path }}">
-                <h2>{{ page.title }}</h2>
-                {% if page.description %}
-                <p>{{ page.description }}</p>
-                {% endif %}
-            </a>
-        </li>
-        {% endfor %}
-    </ol>
-    {% endif %}
-</section>
-{% endblock %}
-"#;
-            std::fs::write(&series_term_path, content).map_err(|e| InitError::FileWrite {
-                path: series_term_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(series_term_path);
-        }
-
+        std::fs::write(path, contents).map_err(|e| InitError::FileWrite {
+            path: path.to_path_buf(),
+            source: e,
+        })?;
+        report.files_created += 1;
+        report.created_files.push(path.to_path_buf());
         Ok(())
     }
 
@@ -623,20 +249,14 @@ This is your new static site. Start editing this file to add your content.
     }
 
     /// Create the static files (scripts.js and favicon.png).
+    ///
+    /// `scripts.js` is read from `init/static/` like the other copied assets.
+    /// `favicon.png` stays a byte array: it is binary, and a 1x1 transparent
+    /// pixel is a placeholder the user replaces immediately, so a literal in
+    /// the source says more than a file on disk would.
     fn create_static_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        // Create scripts.js
-        let scripts_path = path.join("static/scripts.js");
-        if !scripts_path.exists() {
-            let content = r#"// Site scripts
-console.log('Site loaded');
-"#;
-            std::fs::write(&scripts_path, content).map_err(|e| InitError::FileWrite {
-                path: scripts_path.clone(),
-                source: e,
-            })?;
-            report.files_created += 1;
-            report.created_files.push(scripts_path);
-        }
+        let scripts = include_str!("static/scripts.js");
+        self.write_if_absent(&path.join("static/scripts.js"), scripts, report)?;
 
         // Create favicon.png (a minimal 16x16 PNG)
         let favicon_path = path.join("static/favicon.png");

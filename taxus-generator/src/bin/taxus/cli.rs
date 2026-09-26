@@ -1,5 +1,15 @@
 // generator/src/bin/taxus/cli.rs
-
+//
+//! The taxus command-line interface.
+//!
+//! # Where the help text comes from
+//!
+//! Most subcommand help is a doc comment on the variant, which clap picks up
+//! via `#[derive(Parser)]`. The `init` subcommand is the exception: the table of
+//! files it creates is derived from the scaffold manifest at *runtime* via
+//! [`init_layout`], because clap's derive needs the text at compile time and the
+//! manifest is built from `include_str!` and a `const` list — neither available as
+//! a doc comment. Deriving it means the help and the scaffolder cannot drift.
 use clap::{Parser, Subcommand};
 use std::net::IpAddr;
 use std::path::PathBuf;
@@ -105,22 +115,16 @@ pub enum Commands {
 
     /// Initialize a new site with a default directory structure.
     ///
-    /// Creates the following layout in PATH (defaults to the current directory):
-    ///
-    ///   site.toml               site configuration
-    ///   content/_index.md       home page content
-    ///   templates/base.html     base HTML layout
-    ///   templates/page.html     single-page template
-    ///   templates/section.html  section/listing template
-    ///   styles/main.scss        starter stylesheet
-    ///   static/scripts.js       placeholder scripts file
-    ///   static/favicon.png      placeholder favicon
+    /// Creates a layout in PATH (defaults to the current directory). The table at
+    /// the end of this help is generated from the scaffold manifest, so it always
+    /// matches what `taxus init` actually writes (#111).
     ///
     /// Examples:
     ///   taxus init
     ///   taxus init my-site
     ///   taxus init my-site --name "My Blog" --base-url `<https://myblog.com>`
     ///   taxus init my-site --force
+    #[command(after_help = init_layout())]
     Init {
         /// Directory to initialize (defaults to the current directory).
         ///
@@ -225,6 +229,30 @@ pub enum Commands {
         #[arg(long)]
         include_drafts: bool,
     },
+}
+
+/// The file table printed at the end of `taxus init --help`.
+///
+/// Built from [`taxus_lib::init::manifest`], the same source the scaffolder walks
+/// when writing files. The hardcoded list this replaces was already wrong: it
+/// named eight of the seventeen files `init` writes, and none of the six taxonomy
+/// templates. Deriving it makes the table correct by construction.
+///
+/// Clap evaluates `after_help` at runtime. A doc comment could not, because the
+/// manifest is assembled from `include_str!` and a `const` list — neither of
+/// which can be expanded into a doc comment.
+fn init_layout() -> String {
+    let layout = taxus_lib::init::manifest::layout();
+
+    // Compute the column width rather than hardcoding it, so a newly added file
+    // cannot silently break the alignment.
+    let width = layout.iter().map(|(path, _)| path.len()).max().unwrap_or(0);
+
+    let mut out = String::from("\nCreates the following files:\n\n");
+    for (path, description) in &layout {
+        out.push_str(&format!("  {path:<width$}  {description}\n", width = width));
+    }
+    out
 }
 
 #[cfg(test)]

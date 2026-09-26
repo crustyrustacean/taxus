@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - {{ site.name }}{% endblock %}
+
+{% block meta %}
+    {% if page.description %}<meta name="description" content="{{ page.description }}">{% endif %}
+    <meta property="og:title" content="{{ page.title }}">
+    {% if page.description %}<meta property="og:description" content="{{ page.description }}">{% endif %}
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ page.permalink }}">
+    {% if page.hero %}{% set origin = page.permalink | trim_end(pat=page.path) %}<meta property="og:image" content="{{ origin }}{{ page.hero.src }}">{% endif %}
+{% endblock meta %}
+
+{% block content %}
+<article>
+    {% if page.hero %}
+    <picture>
+      <source srcset="{{ page.hero.srcset | safe }}" type="{{ page.hero.mime_type | safe }}">
+      <img src="{{ page.hero.src | safe }}" alt="{{ page.hero.alt }}"
+           width="{{ page.hero.width }}" height="{{ page.hero.height }}"
+           loading="eager" decoding="async">
+    </picture>
+    {% endif %}
+    <h1>{{ page.title }}</h1>
+    {% if page.date %}
+    <time datetime="{{ page.date }}">{{ page.date }}</time>
+    {% endif %}
+    {% if page.description %}
+    <p class="description">{{ page.description }}</p>
+    {% endif %}
+    {{ page.content | safe }}
+</article>
+{% endblock %}
