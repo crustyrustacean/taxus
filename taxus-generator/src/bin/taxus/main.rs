@@ -101,13 +101,12 @@ async fn main() {
                 }
             }
         }
-        Commands::Routes { dir } => match run_routes(&dir) {
-            Ok(()) => {}
-            Err(e) => {
+        Commands::Routes { dir } => {
+            if let Err(e) = run_routes(&dir) {
                 render_error(&e);
                 std::process::exit(1);
             }
-        },
+        }
         Commands::Serve {
             dir,
             host,
@@ -117,7 +116,7 @@ async fn main() {
             open,
             include_drafts,
         } => {
-            match run_serve(&ServeArgs {
+            if let Err(e) = run_serve(&ServeArgs {
                 dir,
                 host,
                 port,
@@ -128,11 +127,8 @@ async fn main() {
             })
             .await
             {
-                Ok(()) => {}
-                Err(e) => {
-                    render_error(&e);
-                    std::process::exit(1);
-                }
+                render_error(&e);
+                std::process::exit(1);
             }
         }
     }
