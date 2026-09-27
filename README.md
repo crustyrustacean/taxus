@@ -223,7 +223,7 @@ cd docs && mdbook serve
 
 ## License
 
-MIT — see [License.txt](License.txt).
+Dual-licensed under either [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE) — your choice.
 
 ## Contributing
 

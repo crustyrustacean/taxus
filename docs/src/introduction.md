@@ -61,4 +61,4 @@ Taxus is ideal for:
 
 ## License
 
-This project is licensed under the MIT License - see the [License.txt](https://github.com/crustyrustacean/taxus/blob/trunk/License.txt) file for details.
+This project is dual-licensed under the [MIT](https://github.com/crustyrustacean/taxus/blob/trunk/LICENSE-MIT) and [Apache-2.0](https://github.com/crustyrustacean/taxus/blob/trunk/LICENSE-APACHE) licenses.
