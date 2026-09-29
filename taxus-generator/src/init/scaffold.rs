@@ -97,6 +97,7 @@ impl InitScaffolder {
         // the bytes below.
         self.create_stylesheet(path, report)?;
         self.create_static_files(path, report)?;
+        self.create_agents_md(path, report)?;
 
         Ok(())
     }
@@ -283,6 +284,13 @@ This is your new static site. Start editing this file to add your content.
 
         Ok(())
     }
+
+    fn create_agents_md(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+        let agents_md = include_str!("AGENTS.md");
+        self.write_if_absent(&path.join("AGENTS.md"), agents_md, report)?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -417,6 +425,42 @@ mod tests {
     }
 
     #[test]
+    fn test_scaffold_creates_agents_md() {
+        let temp_dir = TempDir::new().unwrap();
+        let scaffolder = InitScaffolder::new(test_options());
+
+        scaffolder.scaffold(temp_dir.path()).unwrap();
+
+        assert!(temp_dir.path().join("AGENTS.md").exists());
+    }
+
+    #[test]
+    fn test_scaffold_creates_agents_md_content() {
+        let temp_dir = TempDir::new().unwrap();
+        let scaffolder = InitScaffolder::new(test_options());
+
+        scaffolder.scaffold(temp_dir.path()).unwrap();
+
+        let expected_agents_md_contents = include_str!("AGENTS.md");
+        let agents_md_contents =
+            std::fs::read_to_string(temp_dir.path().join("AGENTS.md")).unwrap();
+        assert_eq!(expected_agents_md_contents, agents_md_contents);
+    }
+
+    #[test]
+    fn test_scaffold_locates_agents_md_in_root() {
+        let temp_dir = TempDir::new().unwrap();
+        let new_site_path = temp_dir.path().join("new-site");
+
+        let scaffolder = InitScaffolder::new(test_options());
+
+        scaffolder.scaffold(&new_site_path).unwrap();
+
+        assert!(new_site_path.exists());
+        assert!(new_site_path.join("AGENTS.md").exists());
+    }
+
+    #[test]
     fn test_scaffold_report_counts() {
         let temp_dir = TempDir::new().unwrap();
         let scaffolder = InitScaffolder::new(test_options());
@@ -426,7 +470,7 @@ mod tests {
         // 4 directories + 12 files (site.toml, _index.md, base.html, page.html, section.html, 404.html, tags_term.html, categories_term.html, series_term.html, main.scss, scripts.js, favicon.png)
         // Note: _highlight-dark.scss and _highlight-light.scss are also created but counted as part of the stylesheet set
         assert_eq!(report.directories_created, 4);
-        assert_eq!(report.files_created, 17);
+        assert_eq!(report.files_created, 18);
     }
 
     #[test]

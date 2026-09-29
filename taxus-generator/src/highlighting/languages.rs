@@ -32,6 +32,15 @@ impl LanguageRegistry {
         #[cfg(feature = "lang-rust")]
         registry.register_rust();
 
+        #[cfg(feature = "lang-javascript")]
+        registry.register_javascript();
+
+        #[cfg(feature = "lang-css")]
+        registry.register_css();
+
+        #[cfg(feature = "lang-html")]
+        registry.register_html();
+
         registry
     }
 
@@ -62,6 +71,48 @@ impl LanguageRegistry {
         };
 
         self.register(spec, &["rs"]);
+    }
+
+    #[cfg(feature = "lang-javascript")]
+    fn register_javascript(&mut self) {
+        let spec = LanguageSpec {
+            name: "javascript",
+            language: tree_sitter_javascript::LANGUAGE.into(),
+            highlight_query: include_str!("queries/javascript/highlights.scm"),
+            injection_query: None,
+            locals_query: None,
+        };
+
+        self.register(spec, &["js", "mjs", "cjs"]);
+    }
+
+    #[cfg(feature = "lang-css")]
+    fn register_css(&mut self) {
+        let spec = LanguageSpec {
+            name: "css",
+            language: tree_sitter_css::LANGUAGE.into(),
+            highlight_query: include_str!("queries/css/highlights.scm"),
+            injection_query: None,
+            locals_query: None,
+        };
+
+        self.register(spec, &[]);
+    }
+
+    #[cfg(feature = "lang-html")]
+    fn register_html(&mut self) {
+        // The injection query is the point: an `html` block highlights
+        // its markup and, through the javascript and css grammars, the
+        // script and style bodies inside it.
+        let spec = LanguageSpec {
+            name: "html",
+            language: tree_sitter_html::LANGUAGE.into(),
+            highlight_query: include_str!("queries/html/highlights.scm"),
+            injection_query: Some(include_str!("queries/html/injections.scm")),
+            locals_query: None,
+        };
+
+        self.register(spec, &["htm"]);
     }
 
     pub fn get(&self, name: &str) -> Option<&LanguageSpec> {
@@ -116,5 +167,50 @@ mod tests {
         let count = registry.iter().count();
         // "rust" and "rs" entries
         assert!(count >= 2, "should have at least rust and rs entries");
+    }
+}
+
+#[cfg(test)]
+mod query_tests {
+    use super::*;
+    use crate::highlighting::engine::HIGHLIGHT_NAMES;
+
+    /// Every registered query must compile against the shared
+    /// highlight vocabulary. A node type that does not exist in the
+    /// grammar is a *query* error, and `CodeHighlighter::new` turns that
+    /// into a panic — so this test is the guard that catches a bad
+    /// query at the nearest possible point rather than mid-build.
+    #[test]
+    fn every_registered_query_compiles() {
+        for (name, spec) in LanguageRegistry::new().iter() {
+            tree_sitter_highlight::HighlightConfiguration::new(
+                spec.language.clone(),
+                spec.name,
+                spec.highlight_query,
+                spec.injection_query.unwrap_or(""),
+                spec.locals_query.unwrap_or(""),
+            )
+            .unwrap_or_else(|e| panic!("highlight query for `{name}` is invalid: {e}"));
+        }
+    }
+
+    /// And it must also configure against `HIGHLIGHT_NAMES` — a capture
+    /// name outside the shared vocabulary is rejected at `configure`
+    /// time, just as fatally.
+    #[test]
+    fn every_registered_query_uses_only_known_capture_names() {
+        for (name, spec) in LanguageRegistry::new().iter() {
+            let mut config = tree_sitter_highlight::HighlightConfiguration::new(
+                spec.language.clone(),
+                spec.name,
+                spec.highlight_query,
+                spec.injection_query.unwrap_or(""),
+                spec.locals_query.unwrap_or(""),
+            )
+            .unwrap_or_else(|e| panic!("highlight query for `{name}` is invalid: {e}"));
+            // `configure` panics on an unknown capture name; the test
+            // exists so the panic is attributable to this file.
+            config.configure(HIGHLIGHT_NAMES);
+        }
     }
 }

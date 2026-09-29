@@ -7,7 +7,7 @@
 //! Every file the scaffolder writes is named here exactly once. The
 //! scaffolder walks this list to create files; `taxus init --help` walks the
 //! same list to describe them. Nothing else in the tree may name a scaffolded
-//! file — that duplication is the drift class this module exists to close
+//! file — that duplication is the drift this module exists to close
 //! (#111). Adding a template is one row in [`TEMPLATES`]; the help text
 //! follows automatically.
 //!
@@ -199,6 +199,7 @@ pub const DIRECTORIES: &[(&str, &str)] = &[
 /// writes.
 pub const OTHER_FILES: &[(&str, &str)] = &[
     ("site.toml", "site configuration"),
+    ("AGENTS.md", "instructions for AI agents"),
     ("content/_index.md", "home page content"),
     ("styles/main.scss", "starter stylesheet"),
     (

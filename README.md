@@ -15,7 +15,7 @@ every listing, feed and index from that tree, and writes the result. The
 - **Shortcodes**: `{{ youtube(id="...") }}` embeds and your own `shortcodes/*.html` macros in content — up to `{{ island(...) }}` for interactive components
 - **Site Tree**: sections and pages in memory; URLs, listings, feeds and the sitemap are derived from it
 - **Islands**: Yew components rendered to HTML at build time and hydrated by WASM in the browser
-- **Syntax highlighting**: tree-sitter, Rust grammar built in
+- **Syntax highlighting**: tree-sitter, with Rust, JavaScript, CSS and HTML built in (embedded `<script>`/`<style>` inside HTML highlight as themselves)
 - **Full-text search**: a TF-IDF index searched in the browser by the `SearchBox` island
 - **Development server**: rebuilds on change and reloads the browser over a WebSocket
 - **RSS and Atom feeds**: dated pages, newest first
@@ -130,6 +130,9 @@ build, test, lint, doc, and release workflows — see
 | Feature | Default | Description |
 |---------|---------|-------------|
 | `lang-rust` | on | Rust syntax highlighting via tree-sitter |
+| `lang-javascript` | on | JavaScript syntax highlighting (aliases `js`, `mjs`, `cjs`) |
+| `lang-css` | on | CSS syntax highlighting |
+| `lang-html` | on | HTML syntax highlighting, with script/style/style-attribute injections |
 | `webp-lossy` | on | Lossy WebP hero image variants via libwebp; without it WebP output is lossless and `images.quality` is ignored for WebP |
 
 Islands (Yew SSR + WASM hydration) are always compiled in. No feature flag is required; `taxus init --no-islands` only leaves the hydration script out of the scaffold.

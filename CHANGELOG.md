@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **highlighting**: HTML, CSS and JavaScript grammars ship enabled by
+  default (`lang-html`, `lang-css`, `lang-javascript`; each optional
+  for trimmed builds). An `html` code block now highlights embedded
+  languages as themselves: a `<script>` body as JavaScript, a
+  `<style>` body and a `style="…"` attribute as CSS. Queries use the
+  existing highlight vocabulary, so both shipped themes style the new
+  languages with no CSS changes.
+
 ## [1.2.2] - 2026-09-26
 
 ### Changed

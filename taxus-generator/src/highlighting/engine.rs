@@ -84,9 +84,15 @@ impl CodeHighlighter {
             None => return HighlightResult::Unsupported(escape_html(code)),
         };
 
+        // The injection callback resolves an embedded language by name
+        // against the same config map. Without it, injections are
+        // silently skipped: html's injections.scm asks for "javascript"
+        // and "css" and would be handed `None` every time. (Rust's
+        // macro injections ask for "rust" inside "rust", so this path
+        // was never exercised until a cross-language injection existed.)
         let events = match self
             .highlighter
-            .highlight(config, code.as_bytes(), None, |_| None)
+            .highlight(config, code.as_bytes(), None, |name| self.configs.get(name))
         {
             Ok(events) => events,
             Err(_) => return HighlightResult::Unsupported(escape_html(code)),
@@ -465,5 +471,84 @@ where
             }
             _ => panic!("should highlight successfully"),
         }
+    }
+}
+
+#[cfg(test)]
+mod web_lang_tests {
+    use super::*;
+    use crate::highlighting::languages::LanguageRegistry;
+
+    fn hl(code: &str, lang: &str) -> String {
+        let mut h = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
+        match h.highlight(code, lang) {
+            HighlightResult::Highlighted(s) => s,
+            HighlightResult::Unsupported(s) => format!("UNSUPPORTED: {s}"),
+        }
+    }
+
+    #[test]
+    fn javascript_highlights_keywords_strings_and_calls() {
+        let out = hl("const msg = \"hi\";", "js");
+        assert!(out.contains("hl-keyword"), "{out}");
+        assert!(out.contains("hl-string"), "{out}");
+        assert!(out.contains("hl-variable"), "{out}");
+    }
+
+    #[test]
+    fn css_highlights_selectors_properties_and_values() {
+        let out = hl(".card { color: red; }", "css");
+        assert!(out.contains("hl-type"), "selector: {out}");
+        assert!(out.contains("hl-property"), "{out}");
+        assert!(out.contains("hl-string"), "{out}");
+    }
+
+    #[test]
+    fn html_highlights_tags_and_attributes() {
+        let out = hl("<a href=\"/x\">y</a>", "html");
+        assert!(out.contains("hl-tag"), "{out}");
+        assert!(out.contains("hl-attribute"), "{out}");
+    }
+
+    /// The cross-language injection: an html block must highlight the
+    /// markup *and* the script body inside it. This is what the
+    /// injection resolver in `highlight` exists for — the first
+    /// cross-language injection in the project (Rust's inject rust
+    /// into rust, so the callback was never consulted for anything
+    /// other than the top language).
+    #[test]
+    fn html_injects_javascript_highlighting_into_script_bodies() {
+        let out = hl("<script>const x = 1;</script>", "html");
+        assert!(out.contains("hl-keyword"), "script keyword: {out}");
+        assert!(out.contains("hl-number"), "script number: {out}");
+    }
+
+    #[test]
+    fn html_injects_css_highlighting_into_style_bodies() {
+        let out = hl("<style>.a { color: red; }</style>", "html");
+        assert!(out.contains("hl-property"), "style property: {out}");
+        assert!(out.contains("hl-type"), "style selector: {out}");
+    }
+
+    #[test]
+    fn html_injects_css_highlighting_into_style_attributes() {
+        let out = hl("<p style=\"color: red;\">x</p>", "html");
+        assert!(out.contains("hl-property"), "style attr property: {out}");
+        assert!(out.contains("hl-string"), "style attr value: {out}");
+    }
+
+    /// A quoted attribute must produce exactly one span around the
+    /// value, not a span inside a span (invalid HTML, and a styling
+    /// bug — the outer span is what the theme targets).
+    #[test]
+    fn quoted_attribute_values_are_not_nested() {
+        let out = hl("<a href=\"/x\">y</a>", "html");
+        assert!(!out.contains("<span class=\"hl-string\"><span"), "{out}");
+    }
+
+    #[test]
+    fn aliases_resolve_to_the_same_highlighting() {
+        assert_eq!(hl("const a=1;", "js"), hl("const a=1;", "javascript"));
+        assert_eq!(hl("<p>x</p>", "htm"), hl("<p>x</p>", "html"));
     }
 }
