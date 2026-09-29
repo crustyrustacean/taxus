@@ -58,6 +58,10 @@ const SITES: &[(&str, &str)] = &[
     // build must skip dist/wasm/ and dist/search_index.bin entirely.
     ("no_islands_site", "tests/fixtures/no_islands_site"),
     ("highlight_site", "tests/fixtures/highlight_site"),
+    // highlight_web_site pins the web grammars: javascript, css, html
+    // with its script/style injections, a style= attribute injection,
+    // the js alias, and the unknown-language fallback.
+    ("highlight_web_site", "tests/fixtures/highlight_web_site"),
     ("internal_links_site", "tests/fixtures/internal_links_site"),
     ("search_slug_site", "tests/fixtures/search_slug_site"),
     (
@@ -368,6 +372,11 @@ fn golden_no_islands_site() {
 #[test]
 fn golden_highlight_site() {
     check_site("highlight_site");
+}
+
+#[test]
+fn golden_highlight_web_site() {
+    check_site("highlight_web_site");
 }
 
 #[test]

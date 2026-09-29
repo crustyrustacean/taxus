@@ -18,12 +18,26 @@ name = "taxus_lib"
 path = "src/lib.rs"
 
 [features]
+# Syntax-highlighting grammars. All default-on: a new site should get
+# working highlighting for the languages it most likely contains
+# without the author discovering a feature flag first. Each is optional
+# so a distributor can trim the binary (`--no-default-features` plus
+# the features it wants).
 lang-rust = ["dep:tree-sitter-rust"]
+lang-html = ["dep:tree-sitter-html"]
+lang-css = ["dep:tree-sitter-css"]
+lang-javascript = ["dep:tree-sitter-javascript"]
 # Lossy WebP encoding via libwebp (the `webp` crate). Without this feature
 # WebP output falls back to the `image` crate's lossless encoder and
 # `images.quality` is ignored for WebP.
 webp-lossy = ["dep:webp"]
-default = ["lang-rust", "webp-lossy"]
+default = [
+    "lang-rust",
+    "lang-html",
+    "lang-css",
+    "lang-javascript",
+    "webp-lossy",
+]
 
 [dependencies]
 deunicode = "1"
@@ -43,6 +57,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tree-sitter = "0.26"
 tree-sitter-highlight = "0.26"
 tree-sitter-rust = { version = "0.24", optional = true }
+tree-sitter-html = { version = "0.23", optional = true }
+tree-sitter-css = { version = "0.25", optional = true }
+tree-sitter-javascript = { version = "0.25", optional = true }
 walkdir = "2.5"
 image = "0.25"
 webp = { version = "0.3.1", optional = true }
