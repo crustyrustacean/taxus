@@ -13,7 +13,7 @@ Taxus sites are built with [Tera](https://keats.github.io/tera) templates. Sensi
 
 Frontmatter content becomes variables injected into templates. Site configuration from `site.toml` is also available:
 
-```html
+```tera
 <h1>{{ page.title }}</h1>
 <p>{{ site.description }}</p>
 ```
@@ -22,7 +22,7 @@ Frontmatter content becomes variables injected into templates. Site configuratio
 
 Create reusable template components in `templates/partials/`. Reference them with standard Tera syntax:
 
-```html
+```tera
 {% include "partials/nav.html" %}
 ```
 

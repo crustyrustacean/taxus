@@ -34,11 +34,45 @@ fn main() {
 
 Languages are enabled via Cargo features when building Taxus:
 
-| Language | Identifier | Aliases |
-|----------|------------|---------|
-| Rust | `rust` | `rs` |
+| Language | Identifier | Aliases | Feature |
+|----------|------------|---------|---------|
+| Rust | `rust` | `rs` | `lang-rust` (default) |
+| JavaScript | `javascript` | `js`, `mjs`, `cjs` | `lang-javascript` (default) |
+| CSS | `css` | — | `lang-css` (default) |
+| HTML | `html` | `htm` | `lang-html` (default) |
 
-Additional languages can be added by enabling more tree-sitter grammar features.
+### Embedded languages in HTML
+
+An `html` code block highlights its markup *and* the languages inside
+it — a `<script>` body is parsed as JavaScript, a `<style>` body and a
+`style="…"` attribute as CSS:
+
+```html
+<button class="counter" onclick="bump()">0</button>
+<script>
+  function bump() { count += 1; }
+</script>
+```
+
+This is an *injection*: the markup is parsed as HTML, and the embedded
+bodies are handed to their own grammars, exactly the mechanism Rust's
+`macro_rules!` highlighting uses. A language that is not registered is
+simply not injected, so an `html` block on a site built with
+`--no-default-features --features lang-rust` still highlights its tags
+but leaves the script body as plain text.
+
+One consequence worth knowing: a block mixing markup with a
+*template* language (for example `<h1>{{ page.title }}</h1>` in a Tera
+template) is not valid HTML, so it falls back to plain, unstyled text.
+Label such blocks for the language they actually contain.
+
+### Feature flags
+
+All four grammars are enabled by default. To build without some:
+
+```bash
+cargo build --release --no-default-features --features lang-rust,webp-lossy
+```
 
 ## Configuration
 
@@ -191,23 +225,43 @@ Example for adding JavaScript support:
 ```toml
 # Cargo.toml
 [dependencies]
-tree-sitter-javascript = { version = "0.20", optional = true }
+tree-sitter-json = { version = "0.24", optional = true }
 
 [features]
-lang-javascript = ["tree-sitter-javascript"]
+lang-json = ["dep:tree-sitter-json"]
+
+# ...and add it to `default` if it should ship enabled
 ```
 
 ```rust
 // languages.rs
-#[cfg(feature = "lang-javascript")]
-fn register_javascript(&mut self) {
+#[cfg(feature = "lang-json")]
+fn register_json(&mut self) {
     let spec = LanguageSpec {
-        name: "javascript",
-        language: tree_sitter_javascript::LANGUAGE.into(),
-        highlight_query: include_str!("queries/javascript/highlights.scm"),
+        name: "json",
+        language: tree_sitter_json::LANGUAGE.into(),
+        highlight_query: include_str!("queries/json/highlights.scm"),
         injection_query: None,
         locals_query: None,
     };
-    self.register(spec, &["js", "javascript"]);
+    self.register(spec, &[]);
 }
 ```
+
+And call `registry.register_json();` from `LanguageRegistry::new`.
+
+Three things the web-language PR made concrete:
+
+- **Node names are not guessable.** A capture that is not a real node
+  type in the grammar is a *query* error, and `CodeHighlighter::new`
+  turns that into a panic. `queries::every_registered_query_compiles`
+  in `languages.rs` now guards this for every registered language —
+  add a query there and you get the same guard for free.
+- **Capture names are a closed set.** Only the names in
+  `engine::HIGHLIGHT_NAMES` are accepted; anything else fails at
+  `configure`. Reusing the shared vocabulary also means the shipped
+  light/dark themes style the new language with no CSS changes.
+- **`injection_query` needs the target grammar registered.** An
+  injection names a language with `#set! injection.language "..."`,
+  and an unregistered name resolves to nothing — the injected range is
+  left unhighlighted rather than failing the build.
