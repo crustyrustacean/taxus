@@ -108,6 +108,48 @@ pub struct WatchEvent {
     pub paths: Vec<PathBuf>,
 }
 
+/// The site-relative form of a path notify reported.
+///
+/// notify emits absolute paths. When `site_dir` is absolute — the
+/// invariant [`FileWatcher::new`] establishes by canonicalizing before
+/// any event arrives — a plain prefix strip is exact. When a caller
+/// passes a relative or differently-spelled `site_dir`, fall back to
+/// locating the site directory by name and taking everything after it,
+/// or, for a name-less `site_dir` like `.`, cut at the first
+/// source-directory component. A path matching neither is returned
+/// unchanged, which classifies `Unknown` and is dropped: inert, never
+/// misattributed to some other source directory.
+fn strip_site_prefix(path: &Path, site_dir: &Path) -> PathBuf {
+    if let Ok(rel) = path.strip_prefix(site_dir) {
+        return rel.to_path_buf();
+    }
+
+    let comps: Vec<_> = path.components().collect();
+    let source_dirs = ["content", "templates", "styles", "static"];
+
+    if let Some(site_name) = site_dir.file_name() {
+        if let Some(i) = comps.iter().rposition(|c| c.as_os_str() == site_name)
+            && i + 1 < comps.len()
+        {
+            return comps[i + 1..].iter().collect();
+        }
+        // A named site_dir that does not appear in this path at all:
+        // the path is not ours.
+        return path.to_path_buf();
+    }
+
+    // Name-less site_dir (`.`, `..`, a filesystem root): the watch roots
+    // are the authority — cut at the first source-directory component.
+    if let Some(i) = comps
+        .iter()
+        .position(|c| source_dirs.contains(&c.as_os_str().to_str().unwrap_or("")))
+    {
+        return comps[i..].iter().collect();
+    }
+
+    path.to_path_buf()
+}
+
 impl WatchEvent {
     /// Create a new watch event.
     pub fn new(change_type: ChangeType, paths: Vec<PathBuf>) -> Self {
@@ -117,12 +159,14 @@ impl WatchEvent {
     /// Create a watch event from a notify event.
     ///
     /// `site_dir` is stripped from each path so classification sees
-    /// site-relative paths ([`ChangeType::from_path`]).
+    /// site-relative paths ([`ChangeType::from_path`]) — see
+    /// [`strip_site_prefix`] for why that strip needs an absolute
+    /// `site_dir` and what happens without one.
     pub fn from_notify_event(site_dir: &Path, event: &Event) -> Self {
         let paths: Vec<PathBuf> = event
             .paths
             .iter()
-            .map(|p| p.strip_prefix(site_dir).unwrap_or(p).to_path_buf())
+            .map(|p| strip_site_prefix(p, site_dir))
             .collect();
 
         // Determine the change type from the first path
@@ -190,7 +234,26 @@ pub struct FileWatcher {
 
 impl FileWatcher {
     /// Create a new file watcher.
+    ///
+    /// `site_dir` is canonicalized here. Two things depend on it: the
+    /// watch roots (where a relative path works) and the strip in
+    /// [`WatchEvent::from_notify_event`], which must remove the site
+    /// prefix from the ABSOLUTE paths notify reports. With a relative
+    /// `site_dir` — the CLI default is `.` — that strip silently
+    /// failed, every event classified `Unknown`, and hot reload did
+    /// nothing. Canonicalizing once fixes both callers.
     pub fn new(site_dir: PathBuf) -> Result<Self, ServeError> {
+        // `canonicalize` needs the directory to exist; `serve` has
+        // already read site.toml from it, so it does. `dunce`-style
+        // Windows paths are avoided by `canonicalize` normalising the
+        // UNC prefix.
+        let site_dir = std::fs::canonicalize(&site_dir).map_err(|e| {
+            ServeError::WatcherFailed(format!(
+                "Cannot resolve site directory {}: {e}",
+                site_dir.display()
+            ))
+        })?;
+
         let (tx, rx) = mpsc::channel(64);
         let debouncer = Arc::new(Mutex::new(Debouncer::default()));
         let site_dir_for_cb = site_dir.clone();
@@ -493,6 +556,57 @@ mod tests {
     fn test_output_dir_event_does_not_classify_as_content() {
         let path = PathBuf::from("dist/content/post/index.html");
         assert_ne!(ChangeType::from_path(&path), ChangeType::Content);
+    }
+
+    /// #48 follow-up: a relative site_dir ("." is the CLI default) must
+    /// still classify events. notify reports ABSOLUTE paths, so the
+    /// site-relative strip in `from_notify_event` cannot use a relative
+    /// `site_dir` as a prefix — the strip silently fails and the
+    /// absolute path's first component is never a source directory, so
+    /// every event classified `Unknown` and was dropped: hot reload
+    /// appeared dead.
+    #[test]
+    fn from_notify_event_classifies_with_relative_site_dir() {
+        // `taxus serve` in a site root passes site_dir = "."; with a
+        // named relative dir (`-d mysite`) notify still reports absolute
+        // paths. Both must classify.
+        for site_dir in [PathBuf::from("."), PathBuf::from("mysite")] {
+            let event = Event {
+                kind: EventKind::Modify(notify::event::ModifyKind::Any),
+                paths: vec![PathBuf::from("/abs/mysite/content/blog/post.md")],
+                attrs: Default::default(),
+            };
+            let we = WatchEvent::from_notify_event(&site_dir, &event);
+            assert_eq!(
+                we.change_type,
+                ChangeType::Content,
+                "site_dir {site_dir:?}: absolute event path must classify"
+            );
+            assert!(we.should_rebuild());
+        }
+    }
+
+    /// A bare `.` site_dir with an absolute event path: the strip cannot
+    /// prefix-match, so classification falls back to locating the first
+    /// source-directory component.
+    ///
+    /// The fixture is assembled from `std::path::MAIN_SEPARATOR` so it
+    /// is a real multi-component path on every platform — a hard-coded
+    /// Windows string has no separators on POSIX, where it parses as one
+    /// component and the fallback (correctly) cannot fire. That failure
+    /// mode reads exactly like a code bug, which is why the fixture
+    /// cannot be a literal.
+    #[test]
+    fn from_notify_event_classifies_bare_dot_site_dir() {
+        let sep = std::path::MAIN_SEPARATOR_STR;
+        let abs = ["/home", "me", "site", "templates", "base.html"].join(sep);
+        let event = Event {
+            kind: EventKind::Modify(notify::event::ModifyKind::Any),
+            paths: vec![PathBuf::from(abs)],
+            attrs: Default::default(),
+        };
+        let we = WatchEvent::from_notify_event(Path::new("."), &event);
+        assert_eq!(we.change_type, ChangeType::Template, "got {we:?}");
     }
 
     /// #42: events within one debounce window fold into a single event

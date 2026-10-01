@@ -461,6 +461,54 @@ mod watcher_scope_tests {
         let extra = tokio::time::timeout(Duration::from_millis(600), watcher.recv()).await;
         assert!(extra.is_err(), "a second event arrived for one burst");
     }
+
+    /// The regression, end to end.
+    ///
+    /// Every other watcher test passes an absolute `TempDir` path. The
+    /// CLI does not: `taxus serve` defaults to `-d .`, and `-d mysite`
+    /// is relative too. With a relative site_dir, notify's absolute
+    /// event paths could not be stripped, every event classified
+    /// `Unknown`, and hot reload silently did nothing — while all the
+    /// absolute-path tests stayed green. This one watches through a
+    /// relative site_dir exactly as the CLI does.
+    #[tokio::test]
+    async fn test_relative_site_dir_still_rebuilds_on_content_change() {
+        // cwd is process-global and integration tests share the process,
+        // so it is restored on every exit path, including panics.
+        struct CwdGuard(Option<PathBuf>);
+        impl Drop for CwdGuard {
+            fn drop(&mut self) {
+                if let Some(dir) = &self.0 {
+                    let _ = std::env::set_current_dir(dir);
+                }
+            }
+        }
+
+        let dir = site_skeleton();
+        let abs = dir.path().canonicalize().unwrap();
+        let original_cwd = std::env::current_dir().ok();
+        let _guard = CwdGuard(original_cwd.clone());
+
+        // Reach the site by a relative path, as if the user had `cd`'d
+        // into it. `taxus serve` in a site root is the default and the
+        // exact invocation that was broken.
+        let parent = abs.parent().expect("temp dir has a parent");
+        let name = abs.file_name().expect("temp dir has a name").to_owned();
+        std::env::set_current_dir(parent).expect("enter the site parent");
+        let relative = PathBuf::from(name);
+        assert!(relative.is_relative(), "test setup: {relative:?}");
+
+        let mut watcher = FileWatcher::new(relative.clone()).expect("watcher");
+        watcher.start().expect("start");
+
+        std::fs::write(relative.join("content/post.md"), b"body").expect("write content");
+
+        let event = tokio::time::timeout(Duration::from_secs(5), watcher.recv())
+            .await
+            .expect("a relative site_dir must still deliver a rebuild event")
+            .expect("watcher alive");
+        assert_eq!(event.change_type, ChangeType::Content);
+    }
 }
 
 // =============================================================================
