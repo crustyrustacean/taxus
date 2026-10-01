@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **serve**: hot reload works again. `taxus serve` passes its `-d`
+  directory straight through, so the common invocations (`taxus serve`
+  in a site root, or `-d mysite`) gave the watcher a *relative* site
+  directory — but `notify` reports absolute paths, so the site-prefix
+  strip silently failed, every event classified as an unknown file
+  type, and every rebuild was dropped without a word. The site
+  directory is now canonicalized once when the watcher is created, and
+  the strip falls back to locating the site directory by name. Editing
+  a post, adding one, or touching a template all rebuild again.
+  (Found by dogfooding; every watcher test had passed an absolute
+  path, which is the only thing the CLI does not do.)
+
 ## [1.3.0] - 2026-09-30
 
 ### Added

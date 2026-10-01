@@ -461,6 +461,46 @@ mod watcher_scope_tests {
         let extra = tokio::time::timeout(Duration::from_millis(600), watcher.recv()).await;
         assert!(extra.is_err(), "a second event arrived for one burst");
     }
+
+    /// The regression, end to end.
+    ///
+    /// Every other watcher test passes an absolute `TempDir` path. The
+    /// CLI does not: `taxus serve` defaults to `-d .`, and `-d mysite`
+    /// is relative too. With a relative site_dir, notify's absolute
+    /// event paths could not be stripped, every event classified
+    /// `Unknown`, and hot reload silently did nothing — while all the
+    /// absolute-path tests stayed green. This one watches through a
+    /// relative site_dir exactly as the CLI does.
+    #[tokio::test]
+    async fn test_relative_site_dir_still_rebuilds_on_content_change() {
+        let dir = site_skeleton();
+        let abs = dir.path().canonicalize().unwrap();
+
+        // Make the site reachable by a relative path, as if the user had
+        // `cd`'d into it. On Windows a temp dir may live on another
+        // drive; skip rather than fail for an unrelated reason.
+        let parent = abs.parent().unwrap();
+        let name = abs.file_name().unwrap().to_string_lossy().to_string();
+        if std::env::set_current_dir(parent).is_err() {
+            return;
+        }
+        let relative = PathBuf::from(&name);
+        assert!(relative.is_relative(), "test setup: {relative:?}");
+
+        let mut watcher = FileWatcher::new(relative.clone()).expect("watcher");
+        watcher.start().expect("start");
+
+        std::fs::write(relative.join("content/post.md"), b"body").unwrap();
+
+        let event = tokio::time::timeout(Duration::from_secs(5), watcher.recv())
+            .await
+            .expect("a relative site_dir must still deliver a rebuild event")
+            .expect("watcher alive");
+        assert_eq!(event.change_type, ChangeType::Content);
+
+        // Restore the cwd for the rest of the suite.
+        let _ = std::env::set_current_dir(std::env::current_dir().unwrap());
+    }
 }
 
 // =============================================================================
