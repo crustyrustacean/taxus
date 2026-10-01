@@ -586,18 +586,27 @@ mod tests {
         }
     }
 
-    /// The watched roots are absolute, so an event path that shares no
-    /// prefix with a bare `.` site_dir still classifies by locating the
-    /// first source-directory component.
+    /// A bare `.` site_dir with an absolute event path: the strip cannot
+    /// prefix-match, so classification falls back to locating the first
+    /// source-directory component.
+    ///
+    /// The fixture is assembled from `std::path::MAIN_SEPARATOR` so it
+    /// is a real multi-component path on every platform — a hard-coded
+    /// Windows string has no separators on POSIX, where it parses as one
+    /// component and the fallback (correctly) cannot fire. That failure
+    /// mode reads exactly like a code bug, which is why the fixture
+    /// cannot be a literal.
     #[test]
     fn from_notify_event_classifies_bare_dot_site_dir() {
+        let sep = std::path::MAIN_SEPARATOR_STR;
+        let abs = ["/home", "me", "site", "templates", "base.html"].join(sep);
         let event = Event {
             kind: EventKind::Modify(notify::event::ModifyKind::Any),
-            paths: vec![PathBuf::from(r"C:\Users\me\site\templates\base.html")],
+            paths: vec![PathBuf::from(abs)],
             attrs: Default::default(),
         };
         let we = WatchEvent::from_notify_event(Path::new("."), &event);
-        assert_eq!(we.change_type, ChangeType::Template);
+        assert_eq!(we.change_type, ChangeType::Template, "got {we:?}");
     }
 
     /// #42: events within one debounce window fold into a single event
