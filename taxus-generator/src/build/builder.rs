@@ -445,6 +445,7 @@ mod tests {
                 templates_dir: PathBuf::from("tests/fixtures/template_site/templates"),
                 islands: true,
                 search: true,
+                flatten: Vec::new(),
             },
             feed: FeedConfig::default(),
             highlight: HighlightConfig::default(),

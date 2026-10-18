@@ -79,7 +79,8 @@ content directory itself; it groups pages and other sections. Example:
 `content/blog/` is the section `blog`. Type: `taxus_domain::SectionNode`.
 **Zola:** a directory is a section only if it contains `_index.md`; in
 Taxus every directory is a section, and one without an index file has
-default frontmatter and nothing to render.
+default frontmatter and nothing to render. The exception is a directory
+matched by `[build] flatten`: it is storage-only and never a section.
 
 **Root section.** The section that is the content directory itself; its
 node path is empty and its address is `/`. Example: `content/_index.md`

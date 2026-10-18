@@ -1,0 +1,14 @@
+[site]
+name = "Flatten Fixture"
+base_url = "https://example.com"
+
+[build]
+content_dir = "content"
+output_dir = "dist"
+templates_dir = "templates"
+# blog/2025, blog/2026 and blog/drafts are storage-only: their pages
+# belong to `blog` and are served at /blog/<slug>/.
+flatten = ["blog/*"]
+
+[feed]
+atom_enabled = true

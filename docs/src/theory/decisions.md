@@ -120,3 +120,17 @@ convention the parser interprets.
 segment of the node path and nothing else: `/blog/renamed-entry/`. A site
 that relied on the old address keeps it with `aliases`.
 [PR #79](https://github.com/crustyrustacean/taxus/pull/79).
+
+## Why flattening is site config, in `[build]`
+
+A flattened directory has no `_index.md`, since one would declare a
+section, so there is no frontmatter to put the setting in. Listing the
+patterns in `site.toml` also puts the whole storage-to-URL mapping in one
+file. The table matters as well. `SiteConfig` ignores unknown top-level
+tables, so a new `[content]` table would be silently skipped by an older
+taxus, which would then build the site and publish `/blog/2026/…` URLs
+with no warning. `[build]` rejects unknown fields, so an older binary
+fails with ``unknown field `flatten` `` before it writes anything. When a
+setting changes URLs, an old binary should fail rather than publish
+wrong addresses. Patterns allow one `*` per segment and no `**`;
+`blog/*/*` covers year/month folders, and nothing has needed more.

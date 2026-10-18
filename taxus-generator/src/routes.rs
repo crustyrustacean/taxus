@@ -15,6 +15,7 @@
 //! - [`RouteInfo`]: Information about a single route
 //! - [`RouteRegistry`]: Collection of all routes with query methods
 //! - [`RouteDiscovery`]: Discovers routes from content directory
+//! - [`FlattenPattern`]: A `[build] flatten` storage-only directory pattern
 //!
 //! # Example
 //!
@@ -46,9 +47,11 @@
 //! ```
 
 mod discovery;
+mod flatten;
 mod registry;
 pub mod slugify;
 
 pub use discovery::RouteDiscovery;
+pub use flatten::FlattenPattern;
 pub use registry::{RouteInfo, RouteKind, RouteRegistry};
 pub use slugify::{slugify_path, slugify_segment};

@@ -53,6 +53,37 @@ Build configuration options. All fields have defaults.
 | `templates_dir` | string | `"templates"` | Directory containing HTML templates |
 | `islands` | bool | `true` | Compile and embed the WASM hydration client. `taxus init --no-islands` writes `false`; the build then skips `dist/wasm/` |
 | `search` | bool | `true` | Build `search_index.bin`. Set `false` on sites with no search box |
+| `flatten` | array | `[]` | Content directories that are storage only: no section, no URL segment. See [below](#flatten) |
+
+#### `flatten`
+
+Directories matching a `flatten` pattern organise files on disk without
+appearing in the site. A page in a flattened directory belongs to the
+nearest ancestor section that is not flattened:
+
+```toml
+[build]
+flatten = ["blog/*"]
+```
+
+With this setting, `content/blog/2026/2026-04-07-rust-fundamentals-comments.md`
+is served at `/blog/rust-fundamentals-comments/`, and `blog/2026` is not a
+section.
+
+Pattern rules:
+
+- A pattern is a directory path relative to `content_dir`, separated by `/`
+  (also on Windows).
+- It is matched against the directory name as it is on disk, before
+  slugification, and the match is case-sensitive.
+- `*` matches exactly one path segment. There is no `**`; write
+  `"blog/*/*"` for year/month folders.
+- A literal path such as `"blog/drafts"` is a valid pattern.
+- The default, `[]`, flattens nothing.
+
+The practical guide, with the rules for `@/` links, co-located assets and
+duplicate URLs, is in
+[Content: Organising files without changing URLs](./content.md#organising-files-without-changing-urls).
 
 
 ### `[feed]` Section
@@ -129,6 +160,7 @@ output_dir = "dist"
 static_dir = "static"
 styles_dir = "styles"
 templates_dir = "templates"
+flatten = ["blog/*"]
 
 [feed]
 rss_enabled = true
@@ -163,6 +195,9 @@ Configuration is validated when loaded:
 - `images.format` must be `"webp"`, `"jpeg"`, `"jpg"`, or `"png"`
 - `images.widths` must list at least one breakpoint
 - `[feed] limit` must not be `0` (unset means no limit)
+- each `[build] flatten` pattern must be non-empty and must not start with
+  `/`, contain `..`, contain an empty segment (`blog//x`), or use `**`; the
+  error names the offending pattern
 
 Unknown keys are rejected in every section (`[site]`, `[build]`, `[feed]`,
 `[highlight]`, `[images]`, `[markdown]`): a typo like `ouput_dir` fails the

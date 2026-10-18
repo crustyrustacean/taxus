@@ -3,14 +3,21 @@
 //! [`RouteDiscovery::discover_tree`] is the one place a file name becomes
 //! a node path: directory segments are slugified, a `YYYY-MM-DD-` prefix
 //! is stripped, and a frontmatter `slug` replaces the last segment, all
-//! before the path enters the Site Tree. [`RouteDiscovery::discover`] is
-//! the legacy file walk that keys routes by file name without reading
-//! frontmatter; the build does not use it.
+//! before the path enters the Site Tree. It is also where `[build]
+//! flatten` is applied: directories matching a [`FlattenPattern`] are
+//! storage-only and are dropped from a file's membership path before
+//! slugifying, so they never become sections or URL segments (the
+//! file's `content_file` stays its real storage path).
+//! [`RouteDiscovery::discover`] is the legacy file walk that keys routes
+//! by file name without reading frontmatter; the build does not use it,
+//! and it ignores flattening.
 
 use crate::content::{ContentSource, FilesystemContentSource, Page, split_date_prefix};
 use crate::error::{GeneratorError, RouteError};
+use crate::routes::FlattenPattern;
 use crate::routes::slugify::{slugify_path, slugify_segment};
 use crate::routes::{RouteInfo, RouteKind, RouteRegistry};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use taxus_domain::{NodePath, SiteTree, SiteTreeBuilder, Slug, TreeError, UrlPath};
 use tracing::{debug, debug_span, info, instrument};
@@ -19,6 +26,7 @@ use walkdir::WalkDir;
 /// Discovers routes from content directory structure.
 pub struct RouteDiscovery {
     content_dir: PathBuf,
+    flatten: Vec<FlattenPattern>,
 }
 
 impl RouteDiscovery {
@@ -26,7 +34,20 @@ impl RouteDiscovery {
     pub fn new<P: Into<PathBuf>>(content_dir: P) -> Self {
         Self {
             content_dir: content_dir.into(),
+            flatten: Vec::new(),
         }
+    }
+
+    /// Treat directories matching any of `patterns` as storage-only
+    /// (`[build] flatten`).
+    ///
+    /// Applies to [`discover_tree`](Self::discover_tree) and
+    /// [`discover_tree_from_source`](Self::discover_tree_from_source)
+    /// only; the legacy [`discover`](Self::discover) walk ignores it.
+    /// Default: no patterns.
+    pub fn with_flatten(mut self, patterns: Vec<FlattenPattern>) -> Self {
+        self.flatten = patterns;
+        self
     }
 
     /// Discover all routes from the content directory.
@@ -128,6 +149,10 @@ impl RouteDiscovery {
     ///   the content directory itself). Directories without one are still
     ///   sections — the builder creates them with default frontmatter and
     ///   no `content_file`;
+    /// - a directory matching a [`with_flatten`](Self::with_flatten)
+    ///   pattern is storage-only: it is dropped from the membership path,
+    ///   so its pages join the nearest non-flattened ancestor and it is
+    ///   never a section. `content_file` stays the real storage path;
     /// - a page's last segment is its frontmatter `slug`, verbatim, if set;
     ///   otherwise the file stem with any `YYYY-MM-DD-` prefix stripped
     ///   ([`split_date_prefix`]) and slugified.
@@ -144,9 +169,12 @@ impl RouteDiscovery {
     /// - a file cannot be read or its frontmatter does not parse
     ///   ([`crate::error::ContentError`])
     /// - two files resolve to the same path, or a page and a section do
-    ///   ([`RouteError::Duplicate`], same message as the legacy registry)
+    ///   ([`RouteError::Duplicate`]: `/url/ (first.md and second.md)`,
+    ///   naming both content files)
     /// - a frontmatter `slug` is not a valid path segment
     ///   ([`RouteError::InvalidPath`])
+    /// - an `_index.md` sits in a flattened directory
+    ///   ([`RouteError::InvalidPath`], naming the file and the pattern)
     #[instrument(skip(self), fields(content_dir = %self.content_dir.display()))]
     pub fn discover_tree(&self) -> crate::error::Result<SiteTree> {
         if !self.content_dir.exists() {
@@ -175,6 +203,9 @@ impl RouteDiscovery {
         debug!(file_count = files.len(), "Building site tree");
 
         let mut builder = SiteTreeBuilder::new();
+        // Which file claimed each node path, so a duplicate can name both
+        // files without the domain error carrying storage paths.
+        let mut claimed: HashMap<NodePath, PathBuf> = HashMap::new();
         for relative in files {
             let file_name = relative
                 .file_name()
@@ -184,10 +215,20 @@ impl RouteDiscovery {
                 })?;
             let content = source.load(&relative)?;
             let page = Page::from_str(&content, &relative.to_string_lossy())?;
-            let parent = relative.parent().unwrap_or(Path::new(""));
-            let parent_path = Self::parent_to_node_path(parent)?;
+            let storage_parent = relative.parent().unwrap_or(Path::new(""));
+            let (parent, flattened_by) = self.membership_parent(storage_parent);
+            let parent_path = Self::parent_to_node_path(&parent)?;
 
             if file_name == "_index.md" {
+                if let Some(pattern) = flattened_by {
+                    return Err(RouteError::InvalidPath(format!(
+                        "{} is inside a flattened directory (pattern \"{}\"); \
+                         flattened directories cannot have an _index.md",
+                        display_path(&relative),
+                        pattern.as_str()
+                    ))
+                    .into());
+                }
                 if parent_path.is_root() {
                     debug!(path = "/", kind = "section", "Discovered node");
                     builder = builder.root(
@@ -204,7 +245,14 @@ impl RouteDiscovery {
                             page.frontmatter,
                             Some(page.raw_content),
                         )
-                        .map_err(|e| Self::map_tree_error(e, &parent_path))?;
+                        .map_err(|e| {
+                            Self::map_tree_error(
+                                e,
+                                &parent_path,
+                                Some((claimed.get(&parent_path), &relative)),
+                            )
+                        })?;
+                    claimed.insert(parent_path, relative);
                 }
             } else {
                 let stem = file_name.strip_suffix(".md").ok_or_else(|| {
@@ -221,15 +269,41 @@ impl RouteDiscovery {
                 debug!(path = %path, kind = "page", "Discovered node");
                 builder
                     .add_page(&path, relative.clone(), page.frontmatter, page.raw_content)
-                    .map_err(|e| Self::map_tree_error(e, &path))?;
+                    .map_err(|e| {
+                        Self::map_tree_error(e, &path, Some((claimed.get(&path), &relative)))
+                    })?;
+                claimed.insert(path, relative);
             }
         }
 
         let tree = builder
             .build()
-            .map_err(|e| Self::map_tree_error(e, &NodePath::root()))?;
+            .map_err(|e| Self::map_tree_error(e, &NodePath::root(), None))?;
         info!(page_count = tree.iter_pages().count(), "Site tree built");
         Ok(tree)
+    }
+
+    /// The membership parent of a file whose storage parent directory is
+    /// `storage_parent` (content-relative), with `[build] flatten`
+    /// applied.
+    ///
+    /// Walks the components, building the raw (pre-slugify) prefix; a
+    /// segment is dropped when its prefix path matches a pattern. With
+    /// `blog/*`, `blog/2026` becomes `blog`. Also returns the pattern
+    /// that flattened `storage_parent` itself, if any: an `_index.md`
+    /// there is an error.
+    fn membership_parent(&self, storage_parent: &Path) -> (PathBuf, Option<&FlattenPattern>) {
+        let mut prefix = PathBuf::new();
+        let mut kept = PathBuf::new();
+        let mut last_match = None;
+        for component in storage_parent.components() {
+            prefix.push(component);
+            last_match = self.flatten.iter().find(|p| p.matches(&prefix));
+            if last_match.is_none() {
+                kept.push(component);
+            }
+        }
+        (kept, last_match)
     }
 
     /// Slugify each directory segment into a membership path, exactly as
@@ -242,16 +316,33 @@ impl RouteDiscovery {
             .map_err(|e| RouteError::InvalidPath(e.to_string()).into())
     }
 
-    /// Translate a tree construction error into the [`RouteError`] the
-    /// legacy registry would have produced for the same input, so error
-    /// messages do not change.
-    fn map_tree_error(err: TreeError, path: &NodePath) -> GeneratorError {
+    /// Translate a tree construction error into a [`RouteError`].
+    ///
+    /// The message starts as the legacy registry's did
+    /// (`Duplicate route: /blog/a/`). For a duplicate or collision,
+    /// `files` is `(file that claimed the path first, file being added)`
+    /// and both are appended: `/blog/a/ (blog/2026/a.md and blog/2027/a.md)`.
+    /// The domain [`TreeError`] stays free of storage paths.
+    fn map_tree_error(
+        err: TreeError,
+        path: &NodePath,
+        files: Option<(Option<&PathBuf>, &PathBuf)>,
+    ) -> GeneratorError {
         let url = UrlPath::from_node_path(path).to_string();
         match err {
             // A page and a section at the same path were one `Duplicate`
             // route in the registry too.
             TreeError::Duplicate { .. } | TreeError::Collision { .. } => {
-                RouteError::Duplicate(url).into()
+                let detail = match files {
+                    Some((Some(first), second)) => format!(
+                        "{url} ({} and {})",
+                        display_path(first),
+                        display_path(second)
+                    ),
+                    Some((None, second)) => format!("{url} ({})", display_path(second)),
+                    None => url,
+                };
+                RouteError::Duplicate(detail).into()
             }
             TreeError::RootReserved => RouteError::InvalidPath(url).into(),
             TreeError::Identity(e) => RouteError::InvalidPath(e.to_string()).into(),
@@ -376,6 +467,11 @@ fn parent_segments(parent: &Path) -> String {
         .map(|c| c.as_os_str().to_string_lossy().into_owned())
         .collect::<Vec<_>>()
         .join("/")
+}
+
+/// A content-relative path for messages: `/`-separated on every platform.
+fn display_path(path: &Path) -> String {
+    parent_segments(path)
 }
 
 /// Internal helper function for testing path conversion.
@@ -668,7 +764,13 @@ mod tests {
             ("blog/my-post.md", "+++\ntitle = \"A\"\n+++\n"),
             ("blog/My Post.md", "+++\ntitle = \"B\"\n+++\n"),
         ]);
-        assert_eq!(err, "Route error: Duplicate route: /blog/my-post/");
+        // Order of `list()` is unspecified (HashMap), so accept either.
+        assert!(
+            err == "Route error: Duplicate route: /blog/my-post/ (blog/my-post.md and blog/My Post.md)"
+                || err
+                    == "Route error: Duplicate route: /blog/my-post/ (blog/My Post.md and blog/my-post.md)",
+            "{err}"
+        );
     }
 
     #[test]
@@ -677,7 +779,206 @@ mod tests {
             ("blog.md", "+++\ntitle = \"A\"\n+++\n"),
             ("blog/_index.md", "+++\ntitle = \"B\"\n+++\n"),
         ]);
-        assert_eq!(err, "Route error: Duplicate route: /blog/");
+        assert!(
+            err.starts_with("Route error: Duplicate route: /blog/ ("),
+            "{err}"
+        );
+        assert!(err.contains("blog.md"), "{err}");
+        assert!(err.contains("blog/_index.md"), "{err}");
+    }
+
+    // Flatten tests
+
+    const FLAT: &str = "+++\ntitle = \"T\"\n+++\n";
+
+    fn flat_discovery(patterns: &[&str]) -> RouteDiscovery {
+        let patterns = patterns
+            .iter()
+            .map(|p| FlattenPattern::parse(p).unwrap())
+            .collect();
+        RouteDiscovery::new("content").with_flatten(patterns)
+    }
+
+    fn flat_source(files: &[(&str, &str)]) -> MockContentSource {
+        let mut source = MockContentSource::new();
+        for (path, content) in files {
+            source.add(path, content);
+        }
+        source
+    }
+
+    fn flat_tree(patterns: &[&str], files: &[(&str, &str)]) -> SiteTree {
+        flat_discovery(patterns)
+            .discover_tree_from_source(&flat_source(files))
+            .unwrap()
+    }
+
+    fn flat_error(patterns: &[&str], files: &[(&str, &str)]) -> String {
+        flat_discovery(patterns)
+            .discover_tree_from_source(&flat_source(files))
+            .unwrap_err()
+            .to_string()
+    }
+
+    fn node(path: &str) -> NodePath {
+        NodePath::parse(path).unwrap()
+    }
+
+    #[test]
+    fn test_membership_parent_drops_flattened_segments() {
+        let d = flat_discovery(&["blog/*"]);
+        let (p, m) = d.membership_parent(Path::new("blog/2026"));
+        assert_eq!(p, PathBuf::from("blog"));
+        assert_eq!(m.map(|m| m.as_str()), Some("blog/*"));
+        // Below a flattened dir: segment dropped, deeper one kept.
+        let (p, m) = d.membership_parent(&Path::new("blog").join("2026").join("x"));
+        assert_eq!(p, PathBuf::from("blog").join("x"));
+        assert!(m.is_none());
+        let (p, m) = d.membership_parent(Path::new("notes/2026"));
+        assert_eq!(p, PathBuf::from("notes").join("2026"));
+        assert!(m.is_none());
+        let (p, _) = d.membership_parent(Path::new(""));
+        assert_eq!(p, PathBuf::new());
+    }
+
+    #[test]
+    fn test_flattened_page_joins_parent_section() {
+        let tree = flat_tree(
+            &["blog/*"],
+            &[
+                ("_index.md", FLAT),
+                ("blog/_index.md", FLAT),
+                ("blog/2026/2026-04-07-x.md", FLAT),
+                ("blog/2025/2025-12-01-old.md", FLAT),
+                ("notes/2026/kept.md", FLAT),
+            ],
+        );
+        let x = tree.get_page(&node("blog/x")).expect("flattened to blog/x");
+        assert_eq!(
+            x.content_file,
+            PathBuf::from("blog/2026/2026-04-07-x.md"),
+            "storage identity unchanged"
+        );
+        assert!(tree.get_page(&node("blog/old")).is_some());
+        assert!(tree.get_section(&node("blog/2026")).is_none());
+        assert!(tree.get_section(&node("blog/2025")).is_none());
+        assert!(tree.get_page(&node("blog/2026/x")).is_none());
+
+        let blog = tree.get_section(&node("blog")).unwrap();
+        assert_eq!(blog.pages.len(), 2);
+        assert!(blog.subsections.is_empty(), "no year sections");
+
+        // Non-matching directory unaffected.
+        assert!(tree.get_section(&node("notes/2026")).is_some());
+        assert!(tree.get_page(&node("notes/2026/kept")).is_some());
+
+        let routes = RouteRegistry::from_tree(&tree);
+        assert!(routes.contains("/blog/x/"));
+        assert!(routes.contains("/notes/2026/kept/"));
+        assert!(!routes.contains("/blog/2026/x/"));
+    }
+
+    #[test]
+    fn test_flatten_star_matches_drafts_dir() {
+        let tree = flat_tree(&["blog/*"], &[("blog/drafts/2026-11-01-wip.md", FLAT)]);
+        let wip = tree.get_page(&node("blog/wip")).unwrap();
+        assert_eq!(
+            wip.content_file,
+            PathBuf::from("blog/drafts/2026-11-01-wip.md")
+        );
+        assert!(tree.get_section(&node("blog/drafts")).is_none());
+    }
+
+    #[test]
+    fn test_flatten_literal_pattern() {
+        let tree = flat_tree(
+            &["blog/drafts"],
+            &[("blog/drafts/wip.md", FLAT), ("blog/2026/kept.md", FLAT)],
+        );
+        assert!(tree.get_page(&node("blog/wip")).is_some());
+        assert!(tree.get_page(&node("blog/2026/kept")).is_some());
+    }
+
+    #[test]
+    fn test_flatten_root_level_pattern() {
+        // `archive` at the content root: its pages join the root.
+        let tree = flat_tree(&["archive"], &[("archive/old.md", FLAT)]);
+        assert!(tree.get_page(&node("old")).is_some());
+        assert!(tree.get_section(&node("archive")).is_none());
+    }
+
+    #[test]
+    fn test_no_patterns_is_unchanged() {
+        let tree = tree_of(&[("blog/2026/x.md", FLAT)]);
+        assert!(tree.get_section(&node("blog/2026")).is_some());
+        assert!(tree.get_page(&node("blog/2026/x")).is_some());
+    }
+
+    #[test]
+    fn test_index_in_flattened_dir_is_an_error() {
+        let err = flat_error(
+            &["blog/*"],
+            &[("blog/_index.md", FLAT), ("blog/2026/_index.md", FLAT)],
+        );
+        assert_eq!(
+            err,
+            "Route error: Invalid route path: blog/2026/_index.md is inside a flattened \
+             directory (pattern \"blog/*\"); flattened directories cannot have an _index.md"
+        );
+    }
+
+    #[test]
+    fn test_same_slug_in_two_flattened_dirs_names_both_files() {
+        let err = flat_error(
+            &["blog/*"],
+            &[
+                ("blog/2026/2026-01-01-a.md", FLAT),
+                ("blog/2027/a.md", FLAT),
+            ],
+        );
+        assert!(
+            err.starts_with("Route error: Duplicate route: /blog/a/ ("),
+            "{err}"
+        );
+        assert!(err.contains("blog/2026/2026-01-01-a.md"), "{err}");
+        assert!(err.contains("blog/2027/a.md"), "{err}");
+        assert!(err.contains(" and "), "{err}");
+    }
+
+    #[test]
+    fn test_flattened_page_colliding_with_unflattened_page_names_both() {
+        let err = flat_error(
+            &["blog/*"],
+            &[("blog/a.md", FLAT), ("blog/2026/a.md", FLAT)],
+        );
+        assert!(err.contains("/blog/a/"), "{err}");
+        assert!(err.contains("blog/a.md"), "{err}");
+        assert!(err.contains("blog/2026/a.md"), "{err}");
+    }
+
+    #[test]
+    fn test_flatten_matches_native_windows_paths() {
+        // MockContentSource keys are whatever the caller passes; a
+        // native-joined path exercises component matching.
+        let mut source = MockContentSource::new();
+        let native = PathBuf::from("blog").join("2026").join("x.md");
+        source.add(native.to_str().unwrap(), FLAT);
+        let tree = flat_discovery(&["blog/*"])
+            .discover_tree_from_source(&source)
+            .unwrap();
+        assert_eq!(tree.get_page(&node("blog/x")).unwrap().content_file, native);
+    }
+
+    #[test]
+    fn test_index_error_uses_forward_slashes_for_native_paths() {
+        let mut source = MockContentSource::new();
+        let native = PathBuf::from("blog").join("2026").join("_index.md");
+        source.add(native.to_str().unwrap(), FLAT);
+        let err = flat_discovery(&["blog/*"])
+            .discover_tree_from_source(&source)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("blog/2026/_index.md"), "{err}");
     }
 
     #[test]
@@ -714,6 +1015,8 @@ mod tests {
         );
         source.add("docs/Guide.md", "+++\ntitle = \"Guide\"\n+++\n");
 
+        // No `with_flatten`: the legacy walk ignores flattening, so the
+        // parity only holds for an unflattened discovery.
         let discovery = RouteDiscovery::new("content");
         let legacy = discovery.discover_from_source(&source).unwrap();
         let tree = discovery.discover_tree_from_source(&source).unwrap();

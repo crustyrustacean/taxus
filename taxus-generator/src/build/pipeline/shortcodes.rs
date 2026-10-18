@@ -490,6 +490,12 @@ fn builtin_templates() -> Vec<(&'static str, &'static str)> {
 
 /// `@/path` image sources resolve to the content-relative path — the
 /// exact destination stage 5 copies co-located assets to.
+///
+/// Contract: co-located asset URL = storage path under `content/`,
+/// deliberately independent of `[build] flatten`. `@/blog/2026/x.jpg`
+/// becomes `/blog/2026/x.jpg` even when `blog/*` is flattened, because
+/// `copy_colocated_assets` keeps the storage path: `@/` and root-absolute
+/// `/blog/2026/x.jpg` references name the real file, as `@/` page links do.
 fn rewrite_image_args(args: &mut BTreeMap<String, Value>) {
     if let Some(Value::String(src)) = args.get_mut("src")
         && let Some(stripped) = src.strip_prefix("@/")

@@ -95,6 +95,23 @@ pub struct BuildConfig {
     /// with this `false` the build skips it (#56). Default `true`.
     #[serde(default = "default_search")]
     pub search: bool,
+
+    /// Storage-only content directories (`[build] flatten`).
+    ///
+    /// Each entry is a content-relative directory pattern
+    /// ([`FlattenPattern`](crate::routes::FlattenPattern)): `/`-separated,
+    /// `*` matches exactly one segment, other segments are literal and
+    /// case-sensitive. A matching directory never becomes a section or a
+    /// URL segment; its pages belong to the nearest non-flattened
+    /// ancestor, so `flatten = ["blog/*"]` publishes
+    /// `content/blog/2026/x.md` at `/blog/x/`. The file's storage path
+    /// (and so `@/` links and co-located asset URLs) is unchanged.
+    /// Patterns are validated at load. Default `[]`.
+    ///
+    /// Lives in `[build]` (which rejects unknown keys) so an older taxus
+    /// fails loudly instead of silently publishing unflattened URLs.
+    #[serde(default)]
+    pub flatten: Vec<String>,
 }
 
 fn default_content_dir() -> PathBuf {
@@ -129,6 +146,7 @@ impl Default for BuildConfig {
             templates_dir: default_templates_dir(),
             islands: default_islands(),
             search: default_search(),
+            flatten: Vec::new(),
         }
     }
 }
@@ -487,6 +505,9 @@ impl SiteConfig {
 
         self.images.validate()?;
 
+        crate::routes::FlattenPattern::parse_all(&self.build.flatten)
+            .map_err(ConfigError::Invalid)?;
+
         Ok(())
     }
 }
@@ -792,6 +813,67 @@ format = "gif"
     // ------------------------------------------------------------------
     // #46: unknown keys must fail loudly, per section
     // ------------------------------------------------------------------
+
+    #[test]
+    fn test_build_flatten_defaults_to_empty() {
+        assert!(BuildConfig::default().flatten.is_empty());
+        let config: SiteConfig = toml::from_str(
+            "[site]
+name = \"T\"
+base_url = \"https://e.com\"
+",
+        )
+        .unwrap();
+        assert!(config.build.flatten.is_empty());
+    }
+
+    #[test]
+    fn test_build_flatten_parses_and_validates() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[build]
+flatten = ["blog/*", "notes/drafts"]
+"#;
+        let config: SiteConfig = toml::from_str(toml).unwrap();
+        assert_eq!(config.build.flatten, vec!["blog/*", "notes/drafts"]);
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_build_flatten_invalid_pattern_names_it() {
+        for bad in ["blog/**", "/blog", "blog//x", "../x", ""] {
+            let mut config = SiteConfig::new("Test", "https://example.com");
+            config.build.flatten = vec!["blog/*".to_string(), bad.to_string()];
+            let err = config.validate().unwrap_err();
+            assert!(
+                matches!(&err, GeneratorError::Config(inner)
+                if matches!(**inner, ConfigError::Invalid(ref msg)
+                    if msg.contains("build.flatten") && msg.contains(&format!("\"{bad}\"")))),
+                "pattern {bad:?} should be rejected naming build.flatten and the pattern, got: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_unknown_key_in_build_still_rejected_with_flatten() {
+        let toml = r#"
+[site]
+name = "Test"
+base_url = "https://example.com"
+
+[build]
+flatten = ["blog/*"]
+flaten = ["x"]
+"#;
+        let msg = toml::from_str::<SiteConfig>(toml).unwrap_err().to_string();
+        assert!(
+            msg.contains("flaten") && msg.contains("unknown field"),
+            "got: {msg}"
+        );
+    }
 
     #[test]
     fn test_unknown_key_in_build_rejected() {
