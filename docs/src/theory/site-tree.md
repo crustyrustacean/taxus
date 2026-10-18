@@ -36,7 +36,9 @@ pub struct SectionNode {
 }
 ```
 
-A directory without an `_index.md` is still a section. Its `content_file`
+A directory without an `_index.md` is still a section (unless it is
+matched by `[build] flatten`, which makes it storage-only: its pages join
+the nearest non-flattened ancestor and no section is created). Its `content_file`
 is `None`, its `meta` is the default frontmatter, and it has nothing to
 render, so no HTML file is written for it. Its pages are still rendered,
 and templates can still fetch it with `get_section`.

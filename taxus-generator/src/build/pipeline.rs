@@ -34,9 +34,9 @@ use crate::build::pipeline::internal_links::resolve_internal_links;
 use crate::build::ssr::block_on_ssr;
 use crate::config::SiteConfig;
 use crate::content::Page;
-use crate::error::{GeneratorError, Result, RouteError};
+use crate::error::{ConfigError, GeneratorError, Result, RouteError};
 use crate::images::{ImageProcessor, ImageRegistry, ProcessedImage};
-use crate::routes::{RouteDiscovery, RouteInfo, RouteRegistry};
+use crate::routes::{FlattenPattern, RouteDiscovery, RouteInfo, RouteRegistry};
 use crate::templates::TeraRenderer;
 use std::fs;
 use std::path::Path;
@@ -103,8 +103,15 @@ pub fn load_config(dir: &Path) -> std::result::Result<SiteConfig, GeneratorError
 /// The tree is the source of truth for the build: the [`RouteRegistry`]
 /// is derived from it with [`RouteRegistry::from_tree`], and stages that
 /// need membership (section listings) query it. It is immutable once built.
+///
+/// `[build] flatten` patterns are applied here, so build, serve and
+/// `taxus routes` all see the same flattened tree. They were validated at
+/// config load; a config built in code is re-checked with the same message.
 pub fn discover_tree(config: &SiteConfig) -> Result<SiteTree> {
-    RouteDiscovery::new(&config.build.content_dir).discover_tree()
+    let flatten = FlattenPattern::parse_all(&config.build.flatten).map_err(ConfigError::Invalid)?;
+    RouteDiscovery::new(&config.build.content_dir)
+        .with_flatten(flatten)
+        .discover_tree()
 }
 
 /// The route registry the build runs on: [`discover_tree`] projected
@@ -304,6 +311,18 @@ pub fn process_images(
 /// If content directory contains:
 /// - `content/blog/post.md` → processed as HTML
 /// - `content/blog/photo.jpg` → copied to `output/blog/photo.jpg`
+///
+/// # Contract: asset URL = storage path
+///
+/// A co-located asset's URL is its storage path under `content/`,
+/// deliberately independent of `[build] flatten`: with
+/// `flatten = ["blog/*"]`, `content/blog/2026/photo.jpg` still lands at
+/// `output/blog/2026/photo.jpg`, even though the pages beside it are
+/// published under `/blog/`. Both supported references name the real
+/// file — `{{ image(src="@/blog/2026/photo.jpg") }}` (rewritten by
+/// `shortcodes::rewrite_image_args` to `/blog/2026/photo.jpg`) and
+/// root-absolute `![P](/blog/2026/photo.jpg)` — the same rule as `@/`
+/// page links. Mapping destinations through flattening would break them.
 ///
 /// # Arguments
 ///

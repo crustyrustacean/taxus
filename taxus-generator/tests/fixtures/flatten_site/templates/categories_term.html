@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Category: {{ extra.taxonomy.name }}</h1>
+<ul class="term-pages">
+  {% for page in extra.taxonomy.pages %}
+  <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -54,6 +54,10 @@ use taxus_lib::build::SiteBuilder;
 /// working directory for integration tests.
 const SITES: &[(&str, &str)] = &[
     ("feed_slug_site", "tests/fixtures/feed_slug_site"),
+    // flatten_site pins `[build] flatten = ["blog/*"]`: posts stored in
+    // blog/<year>/ and blog/drafts/ are served at /blog/<slug>/, while
+    // co-located assets keep their storage path (blog/2026/diagram.png).
+    ("flatten_site", "tests/fixtures/flatten_site"),
     // no_islands_site pins #56: islands = false, search = false — the
     // build must skip dist/wasm/ and dist/search_index.bin entirely.
     ("no_islands_site", "tests/fixtures/no_islands_site"),
@@ -402,6 +406,11 @@ fn golden_search_slug_site() {
 #[test]
 fn golden_term_slug_site() {
     check_site("term_slug_site");
+}
+
+#[test]
+fn golden_flatten_site() {
+    check_site("flatten_site");
 }
 
 #[test]

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ section.title }} - {{ site.name }}{% endblock %}
+{% block content %}
+<section>
+  <h1>{{ section.title }}</h1>
+  {{ section.content | safe }}
+  <ul class="subsections">
+  {% for sub in section.subsections %}
+    <li><a href="{{ sub.path }}">{{ sub.title }}</a></li>
+  {% endfor %}
+  </ul>
+  {% set blog = get_section(path="blog/_index.md") %}
+  <ul class="recent">
+  {% for page in blog.pages %}
+    <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+  {% endfor %}
+  </ul>
+</section>
+{% endblock %}

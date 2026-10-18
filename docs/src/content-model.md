@@ -55,7 +55,8 @@ In a database, a row points at its parent with a `parent_id` column. In Taxus,
 sits in.
 
 Every directory becomes a `SectionNode` in the Site Tree
-(`taxus-domain/src/tree.rs`):
+(`taxus-domain/src/tree.rs`), except a directory matched by `[build] flatten`
+(see [Storage-only directories](#storage-only-directories) below):
 
 ```rust
 pub struct SectionNode {
@@ -74,7 +75,7 @@ frontmatter and a body, and its frontmatter carries section *behaviour* —
 result is a tree: the root section (the content directory itself) contains
 pages and subsections, recursively.
 
-This is why content organization requires no configuration. You never declare
+This is why content organization requires no configuration by default. You never declare
 "this post belongs to the blog"; the tree shape *is* the declaration, and URL
 paths, membership, and section indexes all follow from it.
 
@@ -89,6 +90,20 @@ them apart:
 | Slug         | the tree (`NodePath::last`) | `my-post`                    |
 | Section path | the tree            | `/blog/`                             |
 | URL          | *derived, never stored* | `/blog/my-post/`                 |
+
+Usually the storage path and the section path agree, since the directory
+is the section. A flattened directory is where they differ:
+
+| Concept      | Example, with `[build] flatten = ["blog/*"]`          |
+|--------------|-------------------------------------------------------|
+| Storage path | `content/blog/2026/2026-04-07-my-post.md`             |
+| Slug         | `my-post`                                             |
+| Section path | `/blog/` (not `/blog/2026/`)                          |
+| URL          | `/blog/my-post/`                                      |
+
+The storage path is still the page's identity on disk. `@/` links name it
+(`@/blog/2026/2026-04-07-my-post.md`), and hero images resolve from its
+directory. Only membership, and so the URL, skips the flattened segment.
 
 The slug is a computed value: the `slug` frontmatter field if set, otherwise
 derived from the filename (`file_stem()`, date prefix stripped, slugified).
@@ -107,6 +122,19 @@ in filenames.** A filename is a storage detail; the model should not depend on
 encoding data (such as dates) into it. Filenames that carry data are a storage
 convention, and the loader — not the model — is the right place to interpret
 them.
+
+## Storage-only directories
+
+`[build] flatten` in `site.toml` lists directory patterns (`"blog/*"`)
+that are storage only. During discovery, `RouteDiscovery::discover_tree`
+drops each flattened segment from a file's parent directory before
+computing its node path, so `blog/2026/x.md` joins the `blog` section. The
+tree never contains the flattened directory, and every projection follows
+without knowing about it. Two consequences are enforced as build errors:
+an `_index.md` inside a flattened directory, and two files that end up at
+the same node path (for example `blog/2025/a.md` and `blog/2026/a.md`).
+Co-located assets are not pages and keep their storage path.
+See [Organising files without changing URLs](./content.md#organising-files-without-changing-urls).
 
 ## Taxonomies Are Indexes
 
@@ -199,9 +227,13 @@ Rules the codebase tries to hold onto — useful when evaluating new features:
    each is computed in one place and shared. Fixing a derivation fixes all
    consumers.
 3. **Membership by location, meaning by frontmatter, aboutness by taxonomy.**
-   Three orthogonal axes; don't blend them.
+   Three orthogonal axes; don't blend them. "Location" means the directory
+   after flattening: a page in a `[build] flatten` directory belongs to the
+   nearest ancestor that is not flattened.
 4. **URLs are derived, never stored.** Addressability is a projection of the
    model. Use `aliases` when a derived URL must change in the wild.
 5. **Storage stays dumb.** Conventions that smuggle data into filenames or
    directory names belong in the loader, interpreted *into* frontmatter — the
-   model itself should never depend on them.
+   model itself should never depend on them. Date prefixes and flattened
+   directories are both handled this way: the loader interprets them, and
+   the tree never sees the date prefix or the flattened segment.

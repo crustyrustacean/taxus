@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **content**: `[build] flatten = ["blog/*"]` in `site.toml` marks content
+  directories as storage only. A flattened directory is not a section and
+  adds no URL segment, and its pages join the nearest ancestor section that
+  is not flattened: `content/blog/2026/2026-04-07-post.md` is served at
+  `/blog/post/`. Listings, `get_section`, pagination, feeds, the sitemap,
+  search, taxonomies and aliases all follow from the Site Tree. Patterns
+  are content-relative, `/`-separated and case-sensitive, matched against
+  the on-disk path. `*` matches one segment and there is no `**`. Invalid
+  patterns fail config loading, naming the pattern. Storage identity does
+  not change: `@/` links and hero images use the real path, and co-located
+  assets keep their storage path (`/blog/2026/diagram.png`). An
+  `_index.md` inside a flattened directory, or two files that map to the
+  same URL, fails the build. The default `[]` changes nothing. An older
+  taxus rejects the key (``unknown field `flatten` ``) instead of silently
+  publishing the year-folder URLs.
+
+### Changed
+
+- **routes**: a duplicate-URL build error now names both content files
+  that produce the URL, not just the URL.
+
 ## [1.3.1] - 2026-10-01
 
 ### Fixed
