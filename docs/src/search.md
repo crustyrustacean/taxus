@@ -27,7 +27,7 @@ The index is serialized with `postcard` for compact storage and fast deserializa
 Search is on by default; the index is generated automatically:
 
 ```bash
-cargo run -- build --dir my-site
+taxus build --dir my-site
 ```
 
 This generates `dist/search_index.bin` alongside your static files. A site
@@ -56,7 +56,10 @@ The `SearchBox` island component provides a ready-to-use search interface. Add i
 | `class` | string | `""` | Custom CSS classes to append to the outer container |
 
 The component also accepts a `max_results` prop (integer, default 5,
-clamped to 1–50): the number of results shown in the dropdown.
+clamped to 1–50): the number of results shown in the dropdown. Values
+above 10 have no effect: every query is capped at 10 results by the
+index (see [Search Query Processing](#search-query-processing)), and
+`max_results` only truncates what the cap let through.
 
 Example with custom props:
 
@@ -155,7 +158,10 @@ When a user searches:
 3. TF-IDF scores are summed for matching documents
 4. Results are returned sorted by relevance score, capped at 10 — a cap,
    not a score threshold, because TF-IDF has no corpus-independent floor:
-   on a three-page site every match is a good match
+   on a three-page site every match is a good match. This cap
+   (`SEARCH_RESULT_LIMIT` in `taxus-common`) is also the effective
+   ceiling on the `SearchBox` `max_results` prop: the client fetches the
+   capped list, then truncates it to `max_results`
 
 ### Component Architecture
 

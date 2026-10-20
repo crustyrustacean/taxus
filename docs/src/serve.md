@@ -27,11 +27,13 @@ The serve command performs an initial build automatically before starting the se
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
+| `--dir` | `-d` | `.` | Root directory (must contain `site.toml`) |
 | `--host` | | 127.0.0.1 | IP address to listen on |
 | `--port` | `-p` | 3000 | Port to listen on |
 | `--verbose` | `-v` | false | Print detailed build progress |
 | `--quiet` | `-q` | false | Suppress all output except errors |
 | `--open` | `-o` | false | Open browser automatically |
+| `--include-drafts` | | false | Include draft pages in every rebuild |
 
 ## Network Access
 

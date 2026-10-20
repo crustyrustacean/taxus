@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **docs**: pipeline stage numbers now match the build log everywhere —
+  `robots.txt` is stage 7, `404.html` stage 8, taxonomy pages stage 9,
+  `sitemap.xml` stage 10 (was inconsistent in the CLI reference, the
+  theory chapters and the architecture key-types table)
+- **docs**: the frontmatter example in Content no longer puts `tags`
+  under `[extra]`, where the build would ignore them
+- **docs**: the Content Model worked example draws `about/_index.md` as
+  a `SectionNode` (it was drawn as a `PageNode`) and fetches it with
+  `get_section`
+- **docs**: the API reference's `config::FeedConfig` matches `site.toml`:
+  `limit` is `Option<usize>` (unset = no limit, `0` rejected) with the
+  `title`/`rss_path`/`atom_path`/`sections` fields
+- **docs**: syntax highlighting lists all four default languages
+  (Rust, JavaScript, CSS, HTML) consistently in the introduction,
+  feature-flag table and API reference
+- **docs**: the SearchBox `max_results` prop documents the index's hard
+  cap of 10 results per query, which bounds the prop's effect
+- **docs**: the GitHub Pages branch recipe no longer claims relative
+  links; it explains the scaffold's root-absolute asset paths on
+  project sites and how to prefix them
+- **docs**: the styling page recommends `taxus serve` instead of an
+  external `sass --watch` writing into `dist/`
+
+### Changed
+
+- **docs**: Getting Started installs the released binary first and
+  demotes building from source to a final section; user-facing pages
+  (`getting-started`, `islands`, `search`) use the `taxus` command
+  instead of `cargo run --`
+- **docs**: the Content Model's four-names table uses the glossary
+  vocabulary (content file, node path); the glossary records
+  "storage path" and "section path" as older synonyms
+- **docs**: the Development Server option table lists `--dir` and
+  `--include-drafts`
+- **docs**: Getting Started mentions the scaffold's Counter island demo
+  and how to remove it
+
 ## [1.4.0] - 2026-10-18
 
 ### Added

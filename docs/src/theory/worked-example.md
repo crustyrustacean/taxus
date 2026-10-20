@@ -158,7 +158,7 @@ Project Launch                             2026-04-03
 The root section lists nothing: its `_index.md` has no `pages_from`, and
 the post is not its direct child.
 
-**Taxonomies** (stage 10, `group_by_terms`). The post's frontmatter puts
+**Taxonomies** (stage 9, `group_by_terms`). The post's frontmatter puts
 it under three terms. `TaxonomyMap` records its content file under each:
 
 | Kind | Term | Page appears at |
@@ -175,7 +175,7 @@ posts newest first; the post has a `date`, so it stays; no `[feed]
 sections` is configured, so nothing is scoped out. It is the last of five
 items.
 
-**Sitemap** (stage 8). The post is one of eleven documents, none of them
+**Sitemap** (stage 10). The post is one of eleven documents, none of them
 drafts, so it gets an entry.
 
 **Search** (stage 13). Every processed page gets a `SearchDocument`.

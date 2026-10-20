@@ -32,7 +32,7 @@ named by its path relative to that directory. Example:
 `blog/2026-04-03-project-launch.md`. Fields: `PageNode::content_file`,
 `SectionNode::content_file`, `Page::source`, `RouteInfo::content_file`.
 These four fields hold the same value; it is the storage identity of a
-document.
+document. Older text calls this the storage path.
 
 **Index file.** A content file named `_index.md`; it gives a section its
 frontmatter and body. Example: `content/blog/_index.md`. Field:
@@ -122,7 +122,8 @@ dashes) or taken verbatim from the frontmatter `slug` field.
 **Node path.** The list of slugs from the root section to a node; the
 tree's name for the node. Example: `["blog", "project-launch"]`, written
 `blog/project-launch`. Type: `taxus_domain::NodePath`. Older text calls
-this the membership path or the tree path; they are the same thing.
+this the membership path, the tree path or the section path; they are the
+same thing.
 
 **URL path.** The address a document is served at, derived from its node
 path in one place. Example: `/blog/project-launch/`. Type:

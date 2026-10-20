@@ -99,9 +99,15 @@ Two shapes:
 
 **Branch-based:** build locally, push `dist/` to the `gh-pages` branch
 (a tool like `git subtree push` works), and set Pages to that branch.
-Remember to set `base_url` to the project-site path
-(`https://user.github.io/repo`) — pages link relatively, so the site
-works from a subdirectory.
+Set `base_url` to the project-site path (`https://user.github.io/repo`):
+that fixes permalinks, feeds, the sitemap and canonical links.
+
+Asset URLs are a separate matter: the scaffold's `base.html` loads
+styles and scripts from the domain root (`/css/main.css`,
+`/static/…`), which misses under `/repo/`. Point those `href`/`src`
+values at the prefix — `{{ site.base_url }}/css/main.css` resolves
+correctly on both user and project sites — or hard-code
+`/repo/css/main.css`.
 
 ### Netlify / Vercel
 

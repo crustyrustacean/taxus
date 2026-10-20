@@ -29,7 +29,7 @@ is processed in, and the order every later list starts from. It is what
 makes builds deterministic.
 
 **Consumed by.** `RouteRegistry::from_tree` (stage 1), the sitemap
-(stage 8), taxonomy grouping (stage 10), and `iter_pages` on the tree.
+(stage 10), taxonomy grouping (stage 9), and `iter_pages` on the tree.
 
 ## Reachability: `derivation::descendant_pages`
 
@@ -111,7 +111,7 @@ participate like pages. A document that repeats a term appears twice
 under it.
 
 **Consumed by.** `build::pipeline::taxonomy::build_taxonomy_map` (stage
-10) calls it three times, once per kind, and fills a `TaxonomyMap`. The
+9) calls it three times, once per kind, and fills a `TaxonomyMap`. The
 term pages `/tags/rust/` and the list pages `/tags/` are rendered from
 that map, with `extra.taxonomy` as the template variable.
 
@@ -165,7 +165,7 @@ permalink, the `date` as `lastmod`, priority 1.0 for the root, 0.8 for
 sections and 0.7 for pages, sorted by URL. Taxonomy and pagination pages
 are not documents and are not listed.
 
-**Consumed by.** `dist/sitemap.xml` (stage 8).
+**Consumed by.** `dist/sitemap.xml` (stage 10).
 
 ## Prev/next and ancestors
 

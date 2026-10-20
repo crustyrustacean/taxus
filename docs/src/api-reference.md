@@ -256,14 +256,14 @@ pub struct BuildConfig {
 
 ```rust
 pub struct FeedConfig {
-    pub rss_enabled: bool,       // default: true
-    pub atom_enabled: bool,      // default: false
-    pub limit: usize,            // default: 20 (0 is treated as 20)
-    pub full_content: bool,      // default: false
-    pub title: Option<String>,
+    pub rss_enabled: bool,          // default: true
+    pub atom_enabled: bool,         // default: false
+    pub limit: Option<usize>,       // unset = no limit; 0 is rejected by validation
+    pub full_content: bool,         // default: false
+    pub title: Option<String>,      // defaults to site name
     pub rss_path: Option<String>,   // default file: feed.xml
     pub atom_path: Option<String>,  // default file: feed.atom
-    pub sections: Vec<String>,   // default: [] (whole site)
+    pub sections: Vec<String>,      // default: [] (whole site)
 }
 ```
 
@@ -685,7 +685,7 @@ pub struct AssetReport {
 
 | Item | Description |
 |------|-------------|
-| `LanguageRegistry::new()`, `get(name)`, `iter()` | Registered tree-sitter grammars (`rust`, alias `rs`) |
+| `LanguageRegistry::new()`, `get(name)`, `iter()` | Registered tree-sitter grammars: `rust` (alias `rs`), `javascript` (`js`, `mjs`, `cjs`), `css`, `html` (`htm`) — the four default `lang-*` features |
 | `CodeHighlighter::new(LanguageRegistry, class_prefix)` | Create a highlighter |
 | `CodeHighlighter::highlight(&mut self, code, language) -> HighlightResult` | Highlight one block; unknown languages are escaped plain text |
 

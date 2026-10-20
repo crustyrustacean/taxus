@@ -227,10 +227,10 @@ description = "A brief description"
 date = 2024-01-15
 template = "custom.html"
 draft = false
+tags = ["rust", "web"]
 
 [extra]
 author = "John Doe"
-tags = ["rust", "web"]
 +++
 
 # Page Content

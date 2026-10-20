@@ -18,7 +18,7 @@ The key insight: pages are immediately visible with no JavaScript required. Inte
 - **Static-first**: Pre-rendered HTML for optimal performance and SEO
 - **Islands Architecture**: Interactive Yew WASM components embedded within static pages
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
-- **Syntax Highlighting**: Tree-sitter based code highlighting (Rust built in)
+- **Syntax Highlighting**: Tree-sitter based code highlighting (Rust, JavaScript, CSS and HTML built in)
 - **Co-located Assets**: Images and files in the content directory are automatically copied to output
 - **Hero Images**: Responsive variants, WebP conversion, and `<picture>`/srcset markup generated automatically
 - **Internal Links**: Reference other pages by content file path with build-time validation

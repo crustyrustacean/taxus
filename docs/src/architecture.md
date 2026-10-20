@@ -150,8 +150,8 @@ pixel work and stage 12 still compiles SCSS so errors surface.
 | `ProcessedPage` | 3, 4 | route, parsed `Page`, rendered `html_content`, `toc`, `hero_image` |
 | `TemplateContext` | 6 | `site`, `page`, `section`, `now`, `extra` for one render |
 | `RenderedPage` | 6 | route and final HTML `content` |
-| `TaxonomyMap` | 10 | terms per kind, each with its documents' content files |
-| `GeneratedFeed`, `GeneratedSitemap`, `GeneratedSearch` | 11, 8, 13 | the bytes of one output file |
+| `TaxonomyMap` | 9 | terms per kind, each with its documents' content files |
+| `GeneratedFeed`, `GeneratedSitemap`, `GeneratedSearch` | 11, 10, 13 | the bytes of one output file |
 | `BuildReport` | 15 | counts, duration, asset report |
 
 Stages join the tree to the processed pages by **content file**: a
@@ -201,6 +201,9 @@ islands are plain HTML. See [Islands Architecture](./islands.md).
 | Feature | Default | Effect |
 |---------|---------|--------|
 | `lang-rust` | on | Rust syntax highlighting via tree-sitter |
+| `lang-javascript` | on | JavaScript syntax highlighting via tree-sitter |
+| `lang-css` | on | CSS syntax highlighting via tree-sitter |
+| `lang-html` | on | HTML syntax highlighting via tree-sitter, with JS/CSS injections |
 | `webp-lossy` | on | Lossy WebP hero variants via libwebp; without it WebP is lossless and `images.quality` is ignored for WebP |
 
 Islands are not a feature flag. The WASM client is always compiled and

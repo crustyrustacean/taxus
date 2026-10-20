@@ -63,9 +63,9 @@ described in [Architecture](./architecture.md).
 5. Copy co-located assets
 6. Render pages with templates
 7. Generate `robots.txt`
-8. Generate `sitemap.xml`
-9. Generate `404.html`
-10. Build and render taxonomy pages
+8. Generate `404.html`
+9. Build and render taxonomy pages
+10. Generate `sitemap.xml`
 11. Generate feeds (RSS/Atom)
 12. Process assets (SCSS, static files)
 13. Generate search index

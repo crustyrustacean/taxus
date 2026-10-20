@@ -232,7 +232,7 @@ hydration script in the generated `templates/base.html` and a `Counter`
 island demo in `templates/section.html`:
 
 ```bash
-cargo run -- init my-site
+taxus init my-site
 ```
 
 The generated `base.html` includes the WASM hydration script:
@@ -250,7 +250,7 @@ To generate a plain Tera/Markdown scaffold with no WASM hydration, pass
 `--no-islands`:
 
 ```bash
-cargo run -- init my-site --no-islands
+taxus init my-site --no-islands
 ```
 
 ## Building the WASM Client
@@ -264,13 +264,13 @@ No separate build step or external tooling (such as Trunk) is required.
 ### 1. Create a Site
 
 ```bash
-cargo run -- init my-site --name "My Site" --base-url "https://example.com"
+taxus init my-site --name "My Site" --base-url "https://example.com"
 ```
 
 ### 2. Build the Static Site (includes WASM client)
 
 ```bash
-cargo run -- build --dir my-site --verbose
+taxus build --dir my-site --verbose
 ```
 
 The WASM client is compiled as part of the Cargo build and embedded in the binary. During the `taxus build` pipeline, the embedded `client.js` and `client_bg.wasm` are written to `dist/wasm/` automatically — no separate build step needed.
@@ -278,7 +278,7 @@ The WASM client is compiled as part of the Cargo build and embedded in the binar
 ### 3. Serve and Test
 
 ```bash
-cargo run -- serve --dir my-site --open
+taxus serve --dir my-site --open
 ```
 
 The page should:

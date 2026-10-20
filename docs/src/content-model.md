@@ -86,22 +86,22 @@ them apart:
 
 | Concept      | Lives in            | Example                              |
 |--------------|---------------------|--------------------------------------|
-| Storage path | the filesystem      | `content/blog/my-post.md`            |
+| Content file | the filesystem      | `content/blog/my-post.md`            |
 | Slug         | the tree (`NodePath::last`) | `my-post`                    |
-| Section path | the tree            | `/blog/`                             |
+| Node path    | the tree            | `blog/my-post`                       |
 | URL          | *derived, never stored* | `/blog/my-post/`                 |
 
-Usually the storage path and the section path agree, since the directory
-is the section. A flattened directory is where they differ:
+Usually the node path mirrors the content file's directories, since the
+directory is the section. A flattened directory is where they differ:
 
 | Concept      | Example, with `[build] flatten = ["blog/*"]`          |
 |--------------|-------------------------------------------------------|
-| Storage path | `content/blog/2026/2026-04-07-my-post.md`             |
+| Content file | `content/blog/2026/2026-04-07-my-post.md`             |
 | Slug         | `my-post`                                             |
-| Section path | `/blog/` (not `/blog/2026/`)                          |
+| Node path    | `blog/my-post` (the flattened segment is skipped)     |
 | URL          | `/blog/my-post/`                                      |
 
-The storage path is still the page's identity on disk. `@/` links name it
+The content file is still the page's identity on disk. `@/` links name it
 (`@/blog/2026/2026-04-07-my-post.md`), and hero images resolve from its
 directory. Only membership, and so the URL, skips the flattened segment.
 
@@ -109,8 +109,8 @@ The slug is a computed value: the `slug` frontmatter field if set, otherwise
 derived from the filename (`file_stem()`, date prefix stripped, slugified).
 It is computed once, in `RouteDiscovery::discover_tree`, before the page
 enters the tree; see [Identity](./theory/identity.md).
-The URL is then composed as *section path + slug*: the Site Tree records the
-membership path when discovery builds it
+The URL is derived from the node path — the section's node path plus the
+slug: the Site Tree records the node path when discovery builds it
 (`RouteDiscovery::discover_tree`), and `UrlPath::from_node_path` derives the
 address from it. `ProcessedPage::effective_url_path()` is that derived
 address, and the single accessor every downstream consumer uses. A `slug`
@@ -155,7 +155,7 @@ feed entries, the sitemap, `@/` internal links — is
 computed at build time from the same formula:
 
 ```
-URL = section path + slug
+URL = UrlPath::from_node_path(node path)
 ```
 
 This has a practical consequence that is easy to underestimate: because the
@@ -199,7 +199,7 @@ The model after the walk:
 
 ```
 root (SectionNode, path [])
-├── about (PageNode, path ["about"])
+├── about (SectionNode, path ["about"])
 └── blog (SectionNode, path ["blog"], sort_by = date)
     └── my-post (PageNode { title: "My Post", date: 2026-04-06, tags: ["rust"] })
 ```
@@ -214,8 +214,8 @@ Every output follows:
 - `/tags/rust/` exists because the taxonomy index says so
 - `feed.xml` and `sitemap.xml` read the same tree through `effective_url_path()`
 - a template reads the same tree: `section.subsections` for a section's
-  children, `get_section(path="blog")` and `get_page(path="about")` for any
-  other node
+  children, `get_section(path="blog")` and `get_section(path="about")` for
+  any other node
 
 ## Design Invariants
 

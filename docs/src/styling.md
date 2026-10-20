@@ -177,15 +177,17 @@ Include the stylesheet in your template:
 
 ## Development
 
-For development, you can use the `sass` CLI for live compilation:
+No external tooling is needed: `taxus serve` recompiles SCSS on every
+change and live-reloads the browser.
 
 ```bash
-# Install sass
-npm install -g sass
-
-# Watch for changes
-sass --watch styles/main.scss dist/css/main.css
+taxus serve
 ```
+
+An SCSS error fails the build and shows in the browser error overlay;
+fix the file and the next rebuild clears it. Do not write into `dist/`
+by hand — the dev server never watches the output directory, so
+anything placed there is overwritten on the next build.
 
 ## Future Enhancements
 
