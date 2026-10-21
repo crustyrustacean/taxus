@@ -6,6 +6,7 @@ This guide covers development workflows for contributing to Taxus.
 
 - **Rust** — [Install Rust](https://rustup.rs/)
 - **mdbook** — Documentation: `cargo install mdbook --version 0.5.4 --locked`. The docs workflow in CI pins the same version (`MDBOOK_VERSION` in `.github/workflows/doc.yml`); bump both together
+- **mdbook-mermaid** — Renders the book's ```` ```mermaid ```` diagrams: `cargo install mdbook-mermaid --version 0.17.1 --locked`. Needs the 0.17 line for mdBook 0.5. CI pins it as `MDBOOK_MERMAID_VERSION`. The book does not build without it
 
 ## Setup
 

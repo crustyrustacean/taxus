@@ -355,7 +355,16 @@ fn cmd_doc(open: bool) -> i32 {
 }
 
 fn cmd_book(serve: bool) -> i32 {
-    require_tool("mdbook", "Install with: cargo install mdbook");
+    require_tool(
+        "mdbook",
+        "Install with: cargo install mdbook --version 0.5.4 --locked",
+    );
+    // docs/book.toml runs the mermaid preprocessor; without it mdbook fails
+    // with a less helpful "unable to run the preprocessor" error.
+    require_tool(
+        "mdbook-mermaid",
+        "Install with: cargo install mdbook-mermaid --version 0.17.1 --locked",
+    );
     if serve {
         let label = "mdbook serve";
         run(label, "mdbook", &["serve", "docs/"])

@@ -28,14 +28,18 @@ taxus/
 
 How the crates depend on each other:
 
-```text
- taxus-domain ◄── taxus-generator ──► taxus-common ◄── taxus-client
-   (model)          (the build)        (islands,        (hydration,
-                         │              search)           compiled to
-                         │ build.rs compiles taxus-client   wasm32)
-                         │ and embeds client.js + client_bg.wasm
-                         ▼
-                       dist/
+```mermaid
+flowchart LR
+    domain["taxus-domain<br/>(model)"]
+    generator["taxus-generator<br/>(the build)"]
+    common["taxus-common<br/>(islands, search)"]
+    client["taxus-client<br/>(hydration, compiled to wasm32)"]
+    dist["dist/"]
+    generator --> domain
+    generator --> common
+    client --> common
+    generator -. "build.rs compiles taxus-client<br/>and embeds client.js + client_bg.wasm" .-> client
+    generator --> dist
 ```
 
 ## The three phases

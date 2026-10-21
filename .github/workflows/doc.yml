@@ -20,15 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Keep MDBOOK_VERSION in step with the mdbook used locally, so CI
+      # Keep these versions in step with the tools used locally, so CI
       # renders the book the way `mdbook build docs` does on a dev machine.
-      - name: Install mdbook
+      # mdbook-mermaid 0.17.x is the line built for mdBook 0.5; the 0.16.x
+      # line only works with mdBook 0.4.
+      - name: Install mdbook and mdbook-mermaid
         env:
           MDBOOK_VERSION: v0.5.4
+          MDBOOK_MERMAID_VERSION: v0.17.1
         run: |
           curl -sSfL "https://github.com/rust-lang/mdBook/releases/download/${MDBOOK_VERSION}/mdbook-${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz
-          mv mdbook /usr/local/bin/
+          curl -sSfL "https://github.com/badboy/mdbook-mermaid/releases/download/${MDBOOK_MERMAID_VERSION}/mdbook-mermaid-${MDBOOK_MERMAID_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz
+          mv mdbook mdbook-mermaid /usr/local/bin/
           mdbook --version
+          mdbook-mermaid --version
 
       - name: Build docs
         run: mdbook build docs/

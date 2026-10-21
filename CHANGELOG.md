@@ -50,6 +50,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changed. The one visible difference is that 0.5 turns on smart
   punctuation by default, so straight quotes, apostrophes and `--`/`---`
   render as curly quotes and en/em dashes. Text inside code is unchanged
+- **docs**: The three flow diagrams in the book (the build phases in
+  Theory, the crate dependencies in Architecture, and the content file to
+  output file chain in Identity) are Mermaid diagrams instead of
+  box-drawing text. Building the book now needs `mdbook-mermaid` 0.17.x;
+  `cargo xtask book` says so if it is missing
+
+### Fixed
+
+- **docs**: The API reference link to `ProcessedPage` pointed at an
+  anchor that does not exist; it now goes to the
+  "`ProcessedPage` and `RenderedPage`" section
 
 ## [1.4.0] - 2026-10-18
 
