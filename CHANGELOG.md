@@ -45,6 +45,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--include-drafts`
 - **docs**: Getting Started mentions the scaffold's Counter island demo
   and how to remove it
+- **docs**: The documentation book is built with mdBook 0.5.4 in CI, up
+  from 0.4.40, matching the version used locally. No book configuration
+  changed. The one visible difference is that 0.5 turns on smart
+  punctuation by default, so straight quotes, apostrophes and `--`/`---`
+  render as curly quotes and en/em dashes. Text inside code is unchanged
+- **docs**: The three flow diagrams in the book (the build phases in
+  Theory, the crate dependencies in Architecture, and the content file to
+  output file chain in Identity) are Mermaid diagrams instead of
+  box-drawing text. Building the book now needs `mdbook-mermaid` 0.17.x;
+  `cargo xtask book` says so if it is missing
+
+### Fixed
+
+- **docs**: The API reference link to `ProcessedPage` pointed at an
+  anchor that does not exist; it now goes to the
+  "`ProcessedPage` and `RenderedPage`" section
 
 ## [1.4.0] - 2026-10-18
 

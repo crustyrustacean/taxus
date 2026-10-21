@@ -577,7 +577,8 @@ re-announce it to subscribers on every build.
 
 `sections` narrows the feed to pages under the named sections
 (content-relative paths such as `"blog"` or `"blog/2026"`; a page anywhere
-beneath a listed section counts). Leave it out to syndicate dated pages from
+beneath a listed section counts). A flattened directory is not a section,
+so name its parent instead. Leave it out to syndicate dated pages from
 the whole site. An entry that names no section is ignored with a warning in
 the build log.
 

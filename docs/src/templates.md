@@ -183,7 +183,7 @@ Each receives `extra.taxonomy` with:
 | Variable | Type | Description |
 |----------|------|-------------|
 | `extra.taxonomy.kind` | String | Taxonomy kind: "Tags", "Categories", or "Series" |
-| `extra.taxonomy.path` | String | URL path (e.g., "/tags/") |
+| `extra.taxonomy.path` | String | URL path (e.g., `/tags/`) |
 | `extra.taxonomy.terms` | Array | List of term contexts |
 
 Example `tags.html`:
@@ -224,7 +224,7 @@ Each receives `extra.taxonomy` with:
 | `extra.taxonomy.kind` | String | Taxonomy kind: "Tags", "Categories", or "Series" |
 | `extra.taxonomy.name` | String | Display name (e.g., "Rust") |
 | `extra.taxonomy.slug` | String | URL-safe slug (e.g., "rust") |
-| `extra.taxonomy.path` | String | URL path (e.g., "/tags/rust/") |
+| `extra.taxonomy.path` | String | URL path (e.g., `/tags/rust/`) |
 | `extra.taxonomy.page_count` | Number | Number of pages with this term |
 | `extra.taxonomy.pages` | Array | List of page objects with `title`, `path`, `description`, etc. |
 
@@ -435,7 +435,9 @@ Paths are content-relative tree paths, the same form `pages_from` uses:
 ignored, a section can also be named by its index file (`blog/_index.md`),
 a page by its content file (`blog/2026-04-06-my-post.md`), and the root is
 `""`, `/` or `_index.md`. A directory without an `_index.md` is still a
-section (with an empty title and no content). Drafts are absent unless the
+section (with an empty title and no content), unless `[build] flatten`
+makes it storage-only; a flattened directory is not a section, so
+`get_section` cannot name it. Drafts are absent unless the
 build includes them. A path that names nothing fails the render, so a typo
 stops the build instead of producing an empty list.
 

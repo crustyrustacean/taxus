@@ -298,7 +298,7 @@ pub struct Page {
 A `Page` is the parsed form of one tree node's document — exactly what
 discovery read from disk, nothing computed. The build constructs them
 from the tree in stage 3; the served URL lives on
-[`ProcessedPage`](#processedpage), never here.
+[`ProcessedPage`](#processedpage-and-renderedpage), never here.
 
 | Method | Description |
 |--------|-------------|

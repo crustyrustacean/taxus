@@ -27,34 +27,17 @@ pure function of the tree and the config. Nothing is written back.
 HTML, run templates, resize hero images, compile SCSS, copy assets, and
 write everything under the output directory.
 
-```text
-   content/  templates/  styles/  static/  site.toml
-        │
-        ▼
-  ┌──────────────────────────────────────────────────────┐
-  │ PARSE     filesystem ──► Site Tree                    │
-  │           taxus-generator (routes::discovery) builds  │
-  │           taxus-domain   (tree, identity, schema) owns│
-  └──────────────────────────┬───────────────────────────┘
-                             │  SiteTree (immutable)
-                             ▼
-  ┌──────────────────────────────────────────────────────┐
-  │ ANALYSE   derivations over (tree, config)             │
-  │           taxus-domain   (derivation) owns the pure   │
-  │           functions; taxus-generator calls them       │
-  └──────────────────────────┬───────────────────────────┘
-                             │  lists, groupings, orders
-                             ▼
-  ┌──────────────────────────────────────────────────────┐
-  │ EMIT      tree + derivations ──► files                │
-  │           taxus-generator (build, templates, images,  │
-  │           assets, feed); taxus-common supplies island │
-  │           components; taxus-client is written to      │
-  │           dist/wasm/                                  │
-  └──────────────────────────┬───────────────────────────┘
-                             │
-                             ▼
-                          dist/
+```mermaid
+flowchart TD
+    src["content/ · templates/ · styles/ · static/ · site.toml"]
+    parse["<b>Parse</b><br/>filesystem → Site Tree<br/>taxus-generator (routes::discovery) builds<br/>taxus-domain (tree, identity, schema) owns"]
+    analyse["<b>Analyse</b><br/>derivations over (tree, config)<br/>taxus-domain (derivation) owns the pure functions;<br/>taxus-generator calls them"]
+    emit["<b>Emit</b><br/>tree + derivations → files<br/>taxus-generator (build, templates, images, assets, feed);<br/>taxus-common supplies island components;<br/>taxus-client is written to dist/wasm/"]
+    dist["dist/"]
+    src --> parse
+    parse -- "SiteTree (immutable)" --> analyse
+    analyse -- "lists, groupings, orders" --> emit
+    emit --> dist
 ```
 
 Which crate owns which phase:

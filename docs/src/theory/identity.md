@@ -91,12 +91,15 @@ from the node path when it builds the routes.
 The node path. It is stored on the node, it is what the builder checks
 for duplicates, and everything downstream is a function of it:
 
-```text
-content file ──(slugify, strip date, apply slug override)──► node path
-                                                                │
-                                          UrlPath::from_node_path
-                                                                ▼
-                                                            URL path ──► output file
+```mermaid
+flowchart LR
+    file["content file"]
+    node["node path"]
+    url["URL path"]
+    out["output file"]
+    file -- "slugify, strip date,<br/>apply slug override" --> node
+    node -- "UrlPath::from_node_path" --> url
+    url --> out
 ```
 
 The arrow from content file to node path runs once, during parse. The
