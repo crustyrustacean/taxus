@@ -183,7 +183,7 @@ Each receives `extra.taxonomy` with:
 | Variable | Type | Description |
 |----------|------|-------------|
 | `extra.taxonomy.kind` | String | Taxonomy kind: "Tags", "Categories", or "Series" |
-| `extra.taxonomy.path` | String | URL path (e.g., "/tags/") |
+| `extra.taxonomy.path` | String | URL path (e.g., `/tags/`) |
 | `extra.taxonomy.terms` | Array | List of term contexts |
 
 Example `tags.html`:
@@ -224,7 +224,7 @@ Each receives `extra.taxonomy` with:
 | `extra.taxonomy.kind` | String | Taxonomy kind: "Tags", "Categories", or "Series" |
 | `extra.taxonomy.name` | String | Display name (e.g., "Rust") |
 | `extra.taxonomy.slug` | String | URL-safe slug (e.g., "rust") |
-| `extra.taxonomy.path` | String | URL path (e.g., "/tags/rust/") |
+| `extra.taxonomy.path` | String | URL path (e.g., `/tags/rust/`) |
 | `extra.taxonomy.page_count` | Number | Number of pages with this term |
 | `extra.taxonomy.pages` | Array | List of page objects with `title`, `path`, `description`, etc. |
 
