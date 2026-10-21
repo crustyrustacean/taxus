@@ -53,11 +53,11 @@ cargo run -- serve --dir my-site --open
 ## Documentation
 
 ```bash
-cd docs
-mdbook serve
+cargo xtask book --serve
 ```
 
-Open `http://localhost:3000` to view.
+This checks that `mdbook` and `mdbook-mermaid` are installed, then runs
+`mdbook serve docs/`. Open `http://localhost:3000` to view.
 
 ## Code Commands
 

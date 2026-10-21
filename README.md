@@ -208,10 +208,11 @@ Comprehensive documentation is available in the `docs/` directory:
 - [Development](docs/src/development.md)
 - [API Reference](docs/src/api-reference.md)
 
-Build and serve docs locally:
+Build and serve docs locally (needs `mdbook` 0.5 and `mdbook-mermaid` 0.17;
+see [Development](docs/src/development.md#prerequisites)):
 
 ```bash
-cd docs && mdbook serve
+cargo xtask book --serve
 ```
 
 ## Workspace Crates

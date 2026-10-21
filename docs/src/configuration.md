@@ -72,14 +72,19 @@ section.
 
 Pattern rules:
 
-- A pattern is a directory path relative to `content_dir`, separated by `/`
-  (also on Windows).
+- A pattern is a directory path relative to `content_dir`, separated by `/`.
+  Write `/` on Windows too; a `\` in a pattern is read as `/`.
 - It is matched against the directory name as it is on disk, before
   slugification, and the match is case-sensitive.
 - `*` matches exactly one path segment. There is no `**`; write
   `"blog/*/*"` for year/month folders.
 - A literal path such as `"blog/drafts"` is a valid pattern.
 - The default, `[]`, flattens nothing.
+
+`flatten` needs taxus 1.4.0 or later. An older taxus stops with
+``unknown field `flatten` `` instead of building the site with the wrong
+URLs, so pin your deploy to 1.4.0 or later before you move files into
+flattened directories.
 
 The practical guide, with the rules for `@/` links, co-located assets and
 duplicate URLs, is in
