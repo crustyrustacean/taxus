@@ -5,7 +5,7 @@ This guide covers development workflows for contributing to Taxus.
 ## Prerequisites
 
 - **Rust** — [Install Rust](https://rustup.rs/)
-- **mdbook** — Documentation: `cargo install mdbook --locked` (the docs workflow in CI pins 0.4.40; the book builds with 0.4 and 0.5)
+- **mdbook** — Documentation: `cargo install mdbook --version 0.5.4 --locked`. The docs workflow in CI pins the same version (`MDBOOK_VERSION` in `.github/workflows/doc.yml`); bump both together
 
 ## Setup
 

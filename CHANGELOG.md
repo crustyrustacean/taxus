@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--include-drafts`
 - **docs**: Getting Started mentions the scaffold's Counter island demo
   and how to remove it
+- **docs**: The documentation book is built with mdBook 0.5.4 in CI, up
+  from 0.4.40, matching the version used locally. No book configuration
+  changed. The one visible difference is that 0.5 turns on smart
+  punctuation by default, so straight quotes, apostrophes and `--`/`---`
+  render as curly quotes and en/em dashes. Text inside code is unchanged
 
 ## [1.4.0] - 2026-10-18
 

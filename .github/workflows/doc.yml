@@ -20,10 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Keep MDBOOK_VERSION in step with the mdbook used locally, so CI
+      # renders the book the way `mdbook build docs` does on a dev machine.
       - name: Install mdbook
+        env:
+          MDBOOK_VERSION: v0.5.4
         run: |
-          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+          curl -sSfL "https://github.com/rust-lang/mdBook/releases/download/${MDBOOK_VERSION}/mdbook-${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz
           mv mdbook /usr/local/bin/
+          mdbook --version
 
       - name: Build docs
         run: mdbook build docs/
