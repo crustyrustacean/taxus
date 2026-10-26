@@ -1,6 +1,6 @@
 +++
 title = "Where Taxus Stands: A Feature Comparison"
-date = 2026-10-20
+date = 2026-10-25
 description = "An honest look at how Taxus compares to Hugo, Zola, and Jekyll: what we have, what we don't, and what we think is the right trade."
 tags = ["rust", "ssg", "hugo", "zola", "jekyll"]
 categories = ["announcements"]
