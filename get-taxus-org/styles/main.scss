@@ -361,6 +361,33 @@ pre {
   margin-block: 1rem;
 }
 
+/* A long one-liner (the Windows installer is 1352px of content in a 718px
+   box) scrolls, but the default overlay scrollbar is invisible until you
+   hover — so the command silently ends in a half-word and looks broken.
+   Always draw the scrollbar track, and thin it so it reads as an
+   affordance rather than a border. */
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}
+
 code {
   font-family: var(--font-mono);
   font-size: 0.9em;
