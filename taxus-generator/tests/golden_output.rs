@@ -17,6 +17,13 @@
 //! rewrites the manifests. Only do this in a dedicated commit whose message
 //! says which files changed and why; a manifest change is a behaviour change.
 //!
+//! `GOLDEN_UPDATE` takes exactly two values. `1` re-baselines; `0` and
+//! unset verify; anything else is an error. In particular `GOLDEN_UPDATE=0`
+//! **verifies** — it must never re-baseline, because a run that rewrites its
+//! own expectation cannot fail, and a green result would then say nothing
+//! about the committed baseline. [`mode_from_var`] owns that rule and
+//! `golden_update_zero_verifies_instead_of_rewriting` pins it end to end.
+//!
 //! # What is and is not covered
 //!
 //! - `wasm/*` and `search_index.bin` are excluded: they depend on the
@@ -97,6 +104,42 @@ const NOT_BUILDABLE: &[&str] = &[
 const UPDATE_RUNS: usize = 5;
 
 const UNSTABLE: &str = "<unstable>";
+
+/// What the harness does with a manifest: compare against it, or rewrite it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    /// Compare generated output against the committed manifest.
+    Verify,
+    /// Rewrite the committed manifest from generated output.
+    Update,
+}
+
+/// Resolve [`Mode`] from a `GOLDEN_UPDATE` lookup.
+///
+/// Only `1` re-baselines and only `0` or an unset variable verifies.
+/// Everything else panics: a typo such as `GOLDEN_UPDATE=true` must be a
+/// loud error, never a silent re-baseline. This test's guarantee is that a
+/// green run compared the build against a reviewed baseline, so a mode the
+/// harness only half-understands is worse than a failure.
+///
+/// Takes the lookup result rather than reading the environment so the
+/// decision is testable in-process; [`mode`] supplies the real environment.
+fn mode_from_var(value: Result<String, std::env::VarError>) -> Mode {
+    match value.as_deref() {
+        Ok("1") => Mode::Update,
+        Ok("0") | Err(std::env::VarError::NotPresent) => Mode::Verify,
+        Ok(other) => panic!(
+            "GOLDEN_UPDATE={other:?} is not a recognised value; \
+             use `GOLDEN_UPDATE=1` to re-baseline or `GOLDEN_UPDATE=0` (or unset) to verify"
+        ),
+        Err(e) => panic!("GOLDEN_UPDATE is not valid unicode: {e}"),
+    }
+}
+
+/// [`Mode`] for this process, from the real environment.
+fn mode() -> Mode {
+    mode_from_var(std::env::var("GOLDEN_UPDATE"))
+}
 
 fn golden_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden")
@@ -260,7 +303,7 @@ fn check_site(site: &str) {
     let site_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(dir);
     let manifest_file = manifest_path(site);
 
-    if std::env::var_os("GOLDEN_UPDATE").is_some() {
+    if mode() == Mode::Update {
         let manifest = update_manifest(&site_dir);
         write_manifest(&manifest_file, &manifest);
         eprintln!("wrote {}", manifest_file.display());
@@ -450,4 +493,70 @@ fn every_fixture_is_classified() {
 #[test]
 fn golden_shortcode_site() {
     check_site("shortcode_site");
+}
+
+/// `GOLDEN_UPDATE` is read per-process, so its off-state has to be pinned
+/// here: a falsy value must verify, not re-baseline. `var_os(..).is_some()`
+/// matched `"0"`, which silently rewrote the manifests and passed.
+#[test]
+fn golden_update_only_accepts_one() {
+    use std::env::VarError;
+
+    assert_eq!(mode_from_var(Ok("1".into())), Mode::Update);
+    assert_eq!(mode_from_var(Ok("0".into())), Mode::Verify);
+    assert_eq!(mode_from_var(Err(VarError::NotPresent)), Mode::Verify);
+}
+
+/// A value the harness does not recognise must fail loudly rather than
+/// quietly rewriting the baseline. Both strings here are ones a person
+/// reaches for intending "on".
+#[test]
+fn golden_update_rejects_unrecognised_values() {
+    for value in ["true", "yes", ""] {
+        let result = std::panic::catch_unwind(|| mode_from_var(Ok(value.to_owned())));
+        assert!(
+            result.is_err(),
+            "GOLDEN_UPDATE={value:?} must panic, not pick a mode"
+        );
+    }
+}
+
+/// The end-to-end guard: with `GOLDEN_UPDATE=0` the test binary must take
+/// the verify path. Run as a subprocess, because the harness reads the
+/// variable from the process environment, which a test cannot safely
+/// mutate for its own siblings.
+///
+/// Update mode prints `wrote <manifest>` for every site and never compares;
+/// verify mode never prints it. So the presence of that line is a direct
+/// signal of which branch ran, and it holds whether or not the manifest is
+/// currently in sync — unlike a byte comparison, which would only notice a
+/// rewrite if the content had actually changed.
+#[test]
+fn golden_update_zero_verifies_instead_of_rewriting() {
+    let exe = std::env::current_exe().expect("test binary path");
+    // A fixture whose manifest is in sync: the run must succeed, which
+    // proves the verify branch compared rather than bailing out.
+    let site = "no_islands_site";
+    let before = fs::read(manifest_path(site)).expect("read manifest");
+
+    let output = std::process::Command::new(&exe)
+        .args([&format!("golden_{site}"), "--exact", "--nocapture"])
+        .env("GOLDEN_UPDATE", "0")
+        .output()
+        .expect("run test binary");
+
+    let after = fs::read(manifest_path(site)).expect("read manifest");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr.contains("wrote "),
+        "GOLDEN_UPDATE=0 took the update path (printed `wrote`):\n{stderr}"
+    );
+    assert_eq!(
+        before, after,
+        "GOLDEN_UPDATE=0 rewrote the manifest; it must only verify"
+    );
+    assert!(
+        output.status.success(),
+        "GOLDEN_UPDATE=0 must verify an in-sync manifest successfully:\n{stderr}"
+    );
 }

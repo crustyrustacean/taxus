@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-29
+
 ### Fixed
 
+- **tests**: `GOLDEN_UPDATE` re-baselines only on `=1`. It was read with
+  `var_os(..).is_some()`, which matches `"0"`, so `GOLDEN_UPDATE=0` rewrote
+  the manifests and reported success without comparing anything — a green
+  run that proves nothing about the committed baseline. `0` and unset now
+  verify; any other value fails with a message naming the accepted ones
+- **site**: code blocks show a scrollbar track, so a long command that
+  scrolls horizontally reads as truncated by design rather than broken. The
+  Windows installer one-liner is 1352px of content in a 718px box and the
+  default overlay scrollbar is invisible until hover
 - **docs**: pipeline stage numbers now match the build log everywhere —
   `robots.txt` is stage 7, `404.html` stage 8, taxonomy pages stage 9,
   `sitemap.xml` stage 10 (was inconsistent in the CLI reference, the
