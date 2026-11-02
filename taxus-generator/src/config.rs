@@ -31,9 +31,23 @@ pub struct SiteConfig {
     /// Markdown rendering configuration
     #[serde(default)]
     pub markdown: MarkdownConfig,
+    /// Optional TypeScript compilation configuration
+    #[serde(default)]
+    pub typescript: TypeScriptConfig,
     /// Base directory containing site.toml (not serialized)
     #[serde(skip)]
     pub base_dir: PathBuf,
+}
+
+/// Optional TypeScript compilation using Microsoft's `tsc` command-line
+/// compiler. Disabled by default so existing sites need no extra tooling.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct TypeScriptConfig {
+    /// Compile `.ts` files under `scripts/` using `tsconfig.json`.
+    pub enabled: bool,
+    /// Optional `tsc` executable override; unset uses Taxus's bundled compiler.
+    pub compiler: Option<PathBuf>,
 }
 
 /// Site metadata from the `[site]` section.
@@ -465,6 +479,7 @@ impl SiteConfig {
             highlight: HighlightConfig::default(),
             images: ImageConfig::default(),
             markdown: MarkdownConfig::default(),
+            typescript: TypeScriptConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

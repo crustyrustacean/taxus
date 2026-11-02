@@ -162,6 +162,10 @@ pub enum Commands {
         /// generate a plain scaffold with no Yew/WASM hydration.
         #[arg(long)]
         no_islands: bool,
+
+        /// Enable the bundled TypeScript type-check and browser-JS compile step.
+        #[arg(long)]
+        typescript: bool,
     },
 
     /// List all routes that would be discovered from the content directory.

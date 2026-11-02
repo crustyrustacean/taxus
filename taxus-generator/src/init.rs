@@ -26,6 +26,8 @@ pub struct InitOptions {
     pub force: bool,
     /// Include islands support (Yew/WASM hydration)
     pub islands: bool,
+    /// Include a TypeScript browser-script starter.
+    pub typescript: bool,
 }
 
 impl Default for InitOptions {
@@ -35,6 +37,7 @@ impl Default for InitOptions {
             base_url: "https://example.com".to_string(),
             force: false,
             islands: true,
+            typescript: false,
         }
     }
 }
@@ -47,6 +50,7 @@ impl InitOptions {
             base_url: base_url.into(),
             force: false,
             islands: true,
+            typescript: false,
         }
     }
 
@@ -59,6 +63,12 @@ impl InitOptions {
     /// Set the islands flag.
     pub fn with_islands(mut self, islands: bool) -> Self {
         self.islands = islands;
+        self
+    }
+
+    /// Include TypeScript starter files and enable compilation.
+    pub fn with_typescript(mut self, typescript: bool) -> Self {
+        self.typescript = typescript;
         self
     }
 

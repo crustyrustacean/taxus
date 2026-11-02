@@ -426,6 +426,7 @@ mod tests {
     use super::*;
     use crate::config::{
         BuildConfig, FeedConfig, HighlightConfig, ImageConfig, MarkdownConfig, SiteMeta,
+        TypeScriptConfig,
     };
     use std::path::PathBuf;
 
@@ -451,6 +452,7 @@ mod tests {
             highlight: HighlightConfig::default(),
             images: ImageConfig::default(),
             markdown: MarkdownConfig::default(),
+            typescript: TypeScriptConfig::default(),
             base_dir: PathBuf::new(),
         }
     }

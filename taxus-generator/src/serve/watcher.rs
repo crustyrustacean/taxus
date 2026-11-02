@@ -6,7 +6,7 @@
 //! ## Watch scope (#48)
 //!
 //! Only the source directories (`content/`, `templates/`, `styles/`,
-//! `static/`) and `site.toml` are watched — never the site directory
+//! `static/`, `scripts/`) and `site.toml` are watched — never the site directory
 //! recursively. A recursive watch would include the output directory,
 //! so every build's own writes would be classified as source changes
 //! and trigger another build: an infinite rebuild loop for any site
@@ -49,6 +49,8 @@ pub enum ChangeType {
     Style,
     /// Static file (in static/).
     Static,
+    /// TypeScript source (in scripts/).
+    Script,
     /// Configuration file (site.toml).
     Config,
     /// Unknown file type.
@@ -59,7 +61,7 @@ impl ChangeType {
     /// Determine the change type from a *site-relative* path.
     ///
     /// The first component must name a source directory (`content`,
-    /// `templates`, `styles`, `static`) and have something under it;
+    /// `templates`, `styles`, `static`, `scripts`) and have something under it;
     /// matching on path *components*, not substrings, so
     /// `my-content/notes.md` or `styles-archive/old.scss` never
     /// misclassify (#11), and a path under any other first component —
@@ -69,8 +71,8 @@ impl ChangeType {
     /// prefix first ([`FileWatcher`] does); an absolute path's first
     /// component is the filesystem root, not a source directory.
     pub fn from_path(path: &Path) -> Self {
-        // Check for config file first (exact match)
-        if path.ends_with("site.toml") {
+        // Config files live at the site root, not under a watched source dir.
+        if path == Path::new("site.toml") || path == Path::new("tsconfig.json") {
             return ChangeType::Config;
         }
 
@@ -85,6 +87,7 @@ impl ChangeType {
             Some(Some("templates")) => ChangeType::Template,
             Some(Some("styles")) => ChangeType::Style,
             Some(Some("static")) => ChangeType::Static,
+            Some(Some("scripts")) => ChangeType::Script,
             _ => return ChangeType::Unknown,
         };
 
@@ -125,7 +128,7 @@ fn strip_site_prefix(path: &Path, site_dir: &Path) -> PathBuf {
     }
 
     let comps: Vec<_> = path.components().collect();
-    let source_dirs = ["content", "templates", "styles", "static"];
+    let source_dirs = ["content", "templates", "styles", "static", "scripts"];
 
     if let Some(site_name) = site_dir.file_name() {
         if let Some(i) = comps.iter().rposition(|c| c.as_os_str() == site_name)
@@ -190,6 +193,7 @@ impl WatchEvent {
                 | ChangeType::Template
                 | ChangeType::Style
                 | ChangeType::Static
+                | ChangeType::Script
                 | ChangeType::Config
         )
     }
@@ -357,15 +361,12 @@ impl FileWatcher {
             watched += 1;
         }
 
-        // The config file is watched as a single file, not its directory:
-        // a directory watch on the site root is exactly what #48 forbids.
-        let config = self.config_path();
-        if config.exists() {
+        // Root config files are watched individually, never by watching the
+        // site root (which would include output and cause rebuild loops).
+        for config in self.config_paths().into_iter().filter(|path| path.exists()) {
             if let Err(e) = self.watcher.watch(&config, RecursiveMode::NonRecursive) {
-                // Some platforms cannot watch single files; the site.toml
-                // sits in the site root, which we deliberately do not
-                // watch as a directory. Log and continue rather than
-                // failing the server over an optional convenience.
+                // Some platforms cannot watch single files. Log and continue
+                // rather than failing the server over an optional convenience.
                 tracing::warn!(
                     error = %e,
                     "Cannot watch {} for changes; edits to it will not rebuild",
@@ -391,14 +392,20 @@ impl FileWatcher {
             self.site_dir.join("templates"),
             self.site_dir.join("styles"),
             self.site_dir.join("static"),
+            self.site_dir.join("scripts"),
         ];
 
         dirs.into_iter().filter(|d| d.exists()).collect()
     }
 
-    /// Get the config file path.
+    /// Get the site configuration file path.
     pub fn config_path(&self) -> PathBuf {
         self.site_dir.join("site.toml")
+    }
+
+    /// Root-level build configuration files watched individually.
+    pub fn config_paths(&self) -> [PathBuf; 2] {
+        [self.config_path(), self.site_dir.join("tsconfig.json")]
     }
 
     /// Receive the next watch event.
@@ -462,10 +469,50 @@ mod tests {
     }
 
     #[test]
+    fn test_categorize_typescript_source() {
+        let path = PathBuf::from("scripts/main.ts");
+        let change_type = ChangeType::from_path(&path);
+        assert_eq!(change_type, ChangeType::Script);
+        assert!(WatchEvent::new(change_type, vec![path]).should_rebuild());
+    }
+
+    #[test]
+    fn test_typescript_config_is_a_root_config_file() {
+        assert_eq!(
+            ChangeType::from_path(Path::new("tsconfig.json")),
+            ChangeType::Config
+        );
+        assert_eq!(
+            ChangeType::from_path(Path::new("nested/tsconfig.json")),
+            ChangeType::Unknown
+        );
+    }
+
+    #[test]
+    fn typescript_source_and_config_are_in_watch_scope() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join("scripts")).unwrap();
+        std::fs::write(dir.path().join("tsconfig.json"), "{}").unwrap();
+        let watcher = FileWatcher::new(dir.path().to_path_buf()).unwrap();
+
+        assert!(watcher.watch_dirs().contains(&dir.path().join("scripts")));
+        assert!(
+            watcher
+                .config_paths()
+                .contains(&dir.path().join("tsconfig.json"))
+        );
+        assert!(!watcher.watch_dirs().contains(&dir.path().to_path_buf()));
+    }
+
+    #[test]
     fn test_categorize_config_file() {
         let path = PathBuf::from("site.toml");
         let change_type = ChangeType::from_path(&path);
         assert_eq!(change_type, ChangeType::Config);
+        assert_eq!(
+            ChangeType::from_path(Path::new("tsconfig.json")),
+            ChangeType::Config
+        );
     }
 
     #[test]

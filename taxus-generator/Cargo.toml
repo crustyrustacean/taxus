@@ -81,6 +81,8 @@ tokio-stream = "0.1"
 webbrowser = "1.0"
 tera-contrib = { version = "0.2.0", features = ["date", "slug"] }
 sha2 = "0.10"
+flate2 = "1"
+tar = "0.4"
 
 [build-dependencies]
 wasm-bindgen-cli-support = "=0.2.126"

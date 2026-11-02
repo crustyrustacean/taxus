@@ -84,6 +84,7 @@ async fn main() {
             base_url,
             force,
             no_islands,
+            typescript,
         } => {
             match run_init(&InitArgs {
                 path,
@@ -91,6 +92,7 @@ async fn main() {
                 base_url,
                 force,
                 islands: !no_islands,
+                typescript,
             }) {
                 Ok(report) => {
                     report.print_summary();

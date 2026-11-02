@@ -77,10 +77,13 @@ impl InitScaffolder {
     /// alongside the two files whose contents are built rather than read
     /// (`site.toml` and `_index.md`, both of which interpolate the site name).
     fn create_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        // Templates: contents come from init/templates/ on disk, with the
-        // islands-dependent placeholders resolved from the manifest row.
+        // Resolve optional script placeholders as well as islands.
         for template in manifest::TEMPLATES {
-            let contents = manifest::resolve(template, self.options.islands);
+            let contents = manifest::resolve_with_typescript(
+                template,
+                self.options.islands,
+                self.options.typescript,
+            );
             self.write_if_absent(
                 &path.join("templates").join(template.name),
                 contents.as_ref(),
@@ -92,6 +95,9 @@ impl InitScaffolder {
         // rendered here rather than read from disk.
         self.create_site_config(path, report)?;
         self.create_index_content(path, report)?;
+        if self.options.typescript {
+            self.create_typescript_files(path, report)?;
+        }
 
         // Stylesheets and static files: copied verbatim from init/styles/ and
         // the bytes below.
@@ -118,6 +124,12 @@ impl InitScaffolder {
             "\n# Plain Tera/Markdown site (--no-islands): no WASM hydration.\nislands = false"
         };
 
+        let typescript_setting = if self.options.typescript {
+            "\n\n[typescript]\n# Type-check and emit browser JavaScript with Taxus's bundled compiler.\nenabled = true"
+        } else {
+            ""
+        };
+
         let content = format!(
             r#"[site]
 name = "{}"
@@ -138,6 +150,7 @@ format = "webp"
 # Encoding quality 1-100. Applies to jpeg and webp only; png is lossless
 # and ignores it. Changing this re-encodes variants on the next build.
 quality = 80
+{typescript_setting}
 "#,
             self.options.name, self.options.base_url
         );
@@ -249,15 +262,38 @@ This is your new static site. Start editing this file to add your content.
         Ok(())
     }
 
-    /// Create the static files (scripts.js and favicon.png).
+    /// Create TypeScript starter files for `taxus init --typescript`.
+    fn create_typescript_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+        let scripts_dir = path.join("scripts");
+        if !scripts_dir.exists() {
+            std::fs::create_dir_all(&scripts_dir).map_err(|source| {
+                InitError::DirectoryCreation {
+                    path: scripts_dir.clone(),
+                    source,
+                }
+            })?;
+            report.directories_created += 1;
+            report.created_dirs.push(scripts_dir);
+        }
+
+        for (relative, _, contents) in manifest::TYPESCRIPT_FILES {
+            self.write_if_absent(&path.join(relative), contents, report)?;
+        }
+        Ok(())
+    }
+
+    /// Create JavaScript-mode static files and the favicon.
     ///
-    /// `scripts.js` is read from `init/static/` like the other copied assets.
-    /// `favicon.png` stays a byte array: it is binary, and a 1x1 transparent
+    /// `scripts.js` is read from `init/static/` like the other copied assets,
+    /// but is omitted when the TypeScript scaffold is selected. `favicon.png`
+    /// stays a byte array: it is binary, and a 1x1 transparent
     /// pixel is a placeholder the user replaces immediately, so a literal in
     /// the source says more than a file on disk would.
     fn create_static_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
-        let scripts = include_str!("static/scripts.js");
-        self.write_if_absent(&path.join("static/scripts.js"), scripts, report)?;
+        if !self.options.typescript {
+            let scripts = include_str!("static/scripts.js");
+            self.write_if_absent(&path.join("static/scripts.js"), scripts, report)?;
+        }
 
         // Create favicon.png (a minimal 16x16 PNG)
         let favicon_path = path.join("static/favicon.png");
@@ -422,6 +458,46 @@ mod tests {
 
         assert!(temp_dir.path().join("static/scripts.js").exists());
         assert!(temp_dir.path().join("static/favicon.png").exists());
+        let base = std::fs::read_to_string(temp_dir.path().join("templates/base.html")).unwrap();
+        assert!(base.contains("<script src=\"/static/scripts.js\"></script>"));
+    }
+
+    #[test]
+    fn test_typescript_scaffold_is_opt_in_and_complete() {
+        let temp_dir = TempDir::new().unwrap();
+        let options = test_options().with_typescript(true);
+        let report = InitScaffolder::new(options)
+            .scaffold(temp_dir.path())
+            .unwrap();
+
+        assert!(temp_dir.path().join("tsconfig.json").is_file());
+        assert!(temp_dir.path().join("scripts/main.ts").is_file());
+        assert!(!temp_dir.path().join("static/scripts.js").exists());
+        let site_config = std::fs::read_to_string(temp_dir.path().join("site.toml")).unwrap();
+        assert!(site_config.contains("[typescript]"));
+        assert!(site_config.contains("enabled = true"));
+        let base = std::fs::read_to_string(temp_dir.path().join("templates/base.html")).unwrap();
+        assert!(base.contains("/static/ts/main.js"));
+        assert!(!base.contains("/static/scripts.js"));
+        assert_eq!(report.files_created, 19);
+        assert_eq!(report.directories_created, 5);
+    }
+
+    #[test]
+    fn test_typescript_scaffold_is_not_enabled_by_default() {
+        let temp_dir = TempDir::new().unwrap();
+        InitScaffolder::new(test_options())
+            .scaffold(temp_dir.path())
+            .unwrap();
+
+        assert!(!temp_dir.path().join("tsconfig.json").exists());
+        assert!(!temp_dir.path().join("scripts").exists());
+        let site_config = std::fs::read_to_string(temp_dir.path().join("site.toml")).unwrap();
+        assert!(!site_config.contains("[typescript]"));
+        let base = std::fs::read_to_string(temp_dir.path().join("templates/base.html")).unwrap();
+        assert!(!base.contains("{{ typescript_script }}"));
+        assert!(!base.contains("/static/ts/main.js"));
+        assert!(base.contains("/static/scripts.js"));
     }
 
     #[test]
@@ -467,7 +543,7 @@ mod tests {
 
         let report = scaffolder.scaffold(temp_dir.path()).unwrap();
 
-        // 4 directories + 12 files (site.toml, _index.md, base.html, page.html, section.html, 404.html, tags_term.html, categories_term.html, series_term.html, main.scss, scripts.js, favicon.png)
+        // 4 directories + 12 core files (site.toml, _index.md, base.html, page.html, section.html, 404.html, tags_term.html, categories_term.html, series_term.html, main.scss, scripts.js, favicon.png)
         // Note: _highlight-dark.scss and _highlight-light.scss are also created but counted as part of the stylesheet set
         assert_eq!(report.directories_created, 4);
         assert_eq!(report.files_created, 18);
