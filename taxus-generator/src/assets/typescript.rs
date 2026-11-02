@@ -1,21 +1,82 @@
 //! Optional TypeScript build step using Microsoft's native `tsc` compiler.
 //!
-//! Taxus embeds Microsoft's native TypeScript 7 compiler for Linux x64, so site
-//! builds need no JavaScript runtime or package manager. Other platforms can
-//! provide an explicit compiler path until matching native archives are bundled.
+//! TypeScript-enabled Taxus binaries embed Microsoft's native TypeScript 7
+//! compiler for their release target, so site builds need no JavaScript runtime
+//! or package manager. Binaries without the feature can use an explicit
+//! compiler path.
 
 use crate::config::TypeScriptConfig;
 use crate::error::AssetError;
+#[cfg(feature = "typescript")]
 use flate2::read::GzDecoder;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
+#[cfg(feature = "typescript")]
 use tar::Archive;
 use tracing::info;
 
-const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-linux-x64-v7.0.2.tgz");
+// The compiler is a build-time opt-in. A default Taxus binary contains no
+// TypeScript archive; these constants are compiled only with the `typescript`
+// Cargo feature and only for a target that has a matching official archive.
+#[cfg(all(feature = "typescript", target_os = "macos", target_arch = "aarch64"))]
+const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-darwin-arm64.tgz");
+#[cfg(all(feature = "typescript", target_os = "macos", target_arch = "x86_64"))]
+const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-darwin-x64.tgz");
+#[cfg(all(feature = "typescript", target_os = "linux", target_arch = "aarch64"))]
+const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-linux-arm64.tgz");
+#[cfg(all(feature = "typescript", target_os = "linux", target_arch = "x86_64"))]
+const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-linux-x64.tgz");
+#[cfg(all(feature = "typescript", target_os = "windows", target_arch = "aarch64"))]
+const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-win32-arm64.tgz");
+#[cfg(all(feature = "typescript", target_os = "windows", target_arch = "x86_64"))]
+const BUNDLED_TSC: &[u8] = include_bytes!("../../vendor/typescript-win32-x64.tgz");
+
+#[cfg(all(feature = "typescript", target_os = "macos", target_arch = "aarch64"))]
+const BUNDLED_SHA256: &str = "902e2fe1cf0799198ef902c6b8c310a450fef629a6baba41d45641ef75c04ebd";
+#[cfg(all(feature = "typescript", target_os = "macos", target_arch = "x86_64"))]
+const BUNDLED_SHA256: &str = "eba158cb54050f723d5ff781438f33de5640054440bb4f2bd170cfe9bc2eb551";
+#[cfg(all(feature = "typescript", target_os = "linux", target_arch = "aarch64"))]
+const BUNDLED_SHA256: &str = "c83d931ac9dd7549cde6e71246aa9d6a9812843023df3e277fe3b5dcf41dd0ea";
+#[cfg(all(feature = "typescript", target_os = "linux", target_arch = "x86_64"))]
 const BUNDLED_SHA256: &str = "7ecad6f67377e831856367ab062ef394f21506a611405bf8ac0ff039348637d3";
+#[cfg(all(feature = "typescript", target_os = "windows", target_arch = "aarch64"))]
+const BUNDLED_SHA256: &str = "0a73534e6ee50cdbb2a29ac48657ca0ad13cf0f424cf63808e4df7baeb87b8be";
+#[cfg(all(feature = "typescript", target_os = "windows", target_arch = "x86_64"))]
+const BUNDLED_SHA256: &str = "61fc4e141d2bc687db580e71bbfa63b9c209f0310645d82ca1b457eb3a24fd19";
+
+#[cfg(all(feature = "typescript", target_os = "macos", target_arch = "aarch64"))]
+const BUNDLED_CACHE_NAME: &str = "taxus-typescript-7.0.2-darwin-arm64";
+#[cfg(all(feature = "typescript", target_os = "macos", target_arch = "x86_64"))]
+const BUNDLED_CACHE_NAME: &str = "taxus-typescript-7.0.2-darwin-x64";
+#[cfg(all(feature = "typescript", target_os = "linux", target_arch = "aarch64"))]
+const BUNDLED_CACHE_NAME: &str = "taxus-typescript-7.0.2-linux-arm64";
+#[cfg(all(feature = "typescript", target_os = "linux", target_arch = "x86_64"))]
+const BUNDLED_CACHE_NAME: &str = "taxus-typescript-7.0.2-linux-x64";
+#[cfg(all(feature = "typescript", target_os = "windows", target_arch = "aarch64"))]
+const BUNDLED_CACHE_NAME: &str = "taxus-typescript-7.0.2-win32-arm64";
+#[cfg(all(feature = "typescript", target_os = "windows", target_arch = "x86_64"))]
+const BUNDLED_CACHE_NAME: &str = "taxus-typescript-7.0.2-win32-x64";
+
+#[cfg(all(
+    feature = "typescript",
+    target_os = "windows",
+    any(target_arch = "aarch64", target_arch = "x86_64")
+))]
+const BUNDLED_COMPILER_PATH: &str = "package/lib/tsc.exe";
+#[cfg(all(
+    feature = "typescript",
+    not(target_os = "windows"),
+    any(
+        all(target_os = "macos", target_arch = "aarch64"),
+        all(target_os = "macos", target_arch = "x86_64"),
+        all(target_os = "linux", target_arch = "aarch64"),
+        all(target_os = "linux", target_arch = "x86_64"),
+    )
+))]
+const BUNDLED_COMPILER_PATH: &str = "package/lib/tsc";
+
 static NEXT_TEMP_ID: AtomicU64 = AtomicU64::new(0);
 
 /// TypeScript compiler integration.
@@ -202,15 +263,27 @@ fn replace_compiled_output(staging: &Path, output: &Path) -> Result<(), AssetErr
     Ok(())
 }
 
+#[cfg(not(feature = "typescript"))]
 fn bundled_compiler() -> Result<PathBuf, AssetError> {
-    if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        return Err(AssetError::TypeScript(
-            "the bundled TypeScript compiler currently supports Linux x64 only; set `typescript.compiler` to a compatible Microsoft tsc executable on this platform".to_string(),
-        ));
-    }
+    Err(AssetError::TypeScript(
+        "this Taxus binary was built without bundled TypeScript support; rebuild with `--features typescript` or set `typescript.compiler` to a compatible Microsoft tsc executable".to_string(),
+    ))
+}
 
-    let root = std::env::temp_dir().join("taxus-typescript-7.0.2-linux-x64");
-    let compiler = root.join("package/lib/tsc");
+#[cfg(all(
+    feature = "typescript",
+    any(
+        all(target_os = "macos", target_arch = "aarch64"),
+        all(target_os = "macos", target_arch = "x86_64"),
+        all(target_os = "linux", target_arch = "aarch64"),
+        all(target_os = "linux", target_arch = "x86_64"),
+        all(target_os = "windows", target_arch = "aarch64"),
+        all(target_os = "windows", target_arch = "x86_64"),
+    )
+))]
+fn bundled_compiler() -> Result<PathBuf, AssetError> {
+    let root = std::env::temp_dir().join(BUNDLED_CACHE_NAME);
+    let compiler = root.join(BUNDLED_COMPILER_PATH);
     let declarations = root.join("package/lib/lib.dom.d.ts");
     if compiler.is_file() && declarations.is_file() {
         return Ok(compiler);
@@ -241,7 +314,7 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
         )));
     }
 
-    let staged_compiler = staging.join("package/lib/tsc");
+    let staged_compiler = staging.join(BUNDLED_COMPILER_PATH);
     let staged_declarations = staging.join("package/lib/lib.dom.d.ts");
     if !staged_compiler.is_file() || !staged_declarations.is_file() {
         let _ = fs::remove_dir_all(&staging);
@@ -274,6 +347,23 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
     Ok(compiler)
 }
 
+#[cfg(all(
+    feature = "typescript",
+    not(any(
+        all(target_os = "macos", target_arch = "aarch64"),
+        all(target_os = "macos", target_arch = "x86_64"),
+        all(target_os = "linux", target_arch = "aarch64"),
+        all(target_os = "linux", target_arch = "x86_64"),
+        all(target_os = "windows", target_arch = "aarch64"),
+        all(target_os = "windows", target_arch = "x86_64"),
+    ))
+))]
+fn bundled_compiler() -> Result<PathBuf, AssetError> {
+    Err(AssetError::TypeScript(
+        "no bundled TypeScript compiler is available for this target; set `typescript.compiler` to a compatible Microsoft tsc executable".to_string(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,7 +385,25 @@ mod tests {
         );
     }
 
-    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    #[cfg(not(feature = "typescript"))]
+    #[test]
+    fn bundled_compiler_is_opt_in() {
+        let temp = TempDir::new().unwrap();
+        let site = temp.path().join("site");
+        fs::create_dir_all(site.join("scripts")).unwrap();
+        fs::write(site.join("tsconfig.json"), "{}").unwrap();
+        let config = TypeScriptConfig {
+            enabled: true,
+            compiler: None,
+        };
+
+        let error = TypeScriptProcessor::process(&config, &site, &temp.path().join("dist"), false)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("--features typescript"));
+    }
+
+    #[cfg(all(feature = "typescript", target_os = "linux", target_arch = "x86_64"))]
     #[test]
     fn bundled_compiler_checks_emits_and_preserves_last_good_output_on_error() {
         let temp = TempDir::new().unwrap();

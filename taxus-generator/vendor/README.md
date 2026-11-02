@@ -1,15 +1,24 @@
-# Bundled TypeScript compiler
+# Bundled TypeScript compilers
 
-This directory carries the unmodified official TypeScript 7.0.2 Linux x64
-release archive from:
+This directory carries the unmodified official TypeScript 7.0.2 native release
+archives from:
 
 https://github.com/microsoft/TypeScript/releases/tag/v7.0.2
 
-Archive: `typescript-linux-x64-v7.0.2.tgz`
-SHA-256: `7ecad6f67377e831856367ab062ef394f21506a611405bf8ac0ff039348637d3`
+Taxus selects one archive at compile time for each supported release target:
 
-The archive is Apache-2.0 licensed. `typescript-LICENSE.txt` and
-`typescript-NOTICE.txt` are extracted from the same release package. Taxus
-embeds this Linux x64 archive in every build. Other platforms can provide a
-compatible Microsoft `tsc` executable through the `typescript.compiler`
-configuration setting.
+| Target family | Archive |
+|---|---|
+| macOS arm64 | `typescript-darwin-arm64.tgz` |
+| macOS x64 | `typescript-darwin-x64.tgz` |
+| Linux arm64 | `typescript-linux-arm64.tgz` |
+| Linux x64 | `typescript-linux-x64.tgz` |
+| Windows arm64 | `typescript-win32-arm64.tgz` |
+| Windows x64 | `typescript-win32-x64.tgz` |
+
+The archives are Apache-2.0 licensed. `typescript-LICENSE.txt` and
+`typescript-NOTICE.txt` are extracted from the same release package. The
+archives are compiled into Taxus only when the `typescript` Cargo feature is
+enabled; ordinary Cargo builds contain none of them. Taxus's release
+configuration enables the feature for published binaries. Each embedded archive
+is verified against its pinned SHA-256 digest at runtime.

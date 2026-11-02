@@ -34,11 +34,17 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --all-targets -- -D warnings
 
+      - name: Run Clippy with bundled TypeScript
+        run: cargo clippy --all-targets --features typescript -- -D warnings
+
       - name: Build
         run: cargo build
 
       - name: Run unit and integration tests
         run: cargo test
+
+      - name: Run TypeScript-enabled tests
+        run: cargo test --features typescript
 
       # The same command the deploy workflow runs, against the real
       # binary and CLI, so a change that breaks the product site build

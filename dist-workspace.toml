@@ -18,3 +18,6 @@ install-updater = false
 github-build-setup = "../build-setup.yml"
 # Build only the required packages, and individually
 precise-builds = true
+# Release binaries include the native TypeScript compiler for their target.
+# Ordinary Cargo builds remain compiler-free unless this feature is requested.
+features = ["typescript"]

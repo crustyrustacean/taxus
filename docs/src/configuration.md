@@ -102,6 +102,18 @@ existing sites are unchanged.
 enabled = true
 ```
 
+The native compiler is also a build-time opt-in. Default Cargo builds contain
+no TypeScript compiler. Build a binary with the bundled compiler by enabling the
+Cargo feature:
+
+```bash
+cargo build -p taxus --features typescript
+```
+
+A binary built without that feature can still use TypeScript by setting
+`typescript.compiler` to an installed Microsoft `tsc` executable. Taxus's
+published release binaries enable this feature for their target platform.
+
 Place TypeScript sources under `scripts/` and configure them in the site-root
 `tsconfig.json`. Taxus runs Microsoft's native TypeScript compiler during
 `taxus build` and every `taxus serve` rebuild. It type-checks before publishing
@@ -111,9 +123,10 @@ runs the checker without emitting files.
 
 This is a compiler, not a bundler: use relative ES module imports that browsers
 can resolve. Npm package imports and features requiring bundling are outside
-this compiler workflow. The bundled native compiler currently targets Linux x64;
-other platforms can use a compatible Microsoft `tsc` executable by setting
-`compiler`:
+this compiler workflow. TypeScript-enabled binaries bundle the official native
+compiler for the target platform. Taxus's release targets are covered for
+macOS arm64/x64, Linux arm64/x64, and Windows arm64/x64. Other platforms can
+use a compatible Microsoft `tsc` executable by setting `compiler`:
 
 ```toml
 [typescript]

@@ -22,7 +22,7 @@ every listing, feed and index from that tree, and writes the result. The
 - **Taxonomies**: tags, categories and series, with list and term pages
 - **Pagination**: `paginate_by` on any section
 - **Co-located assets**: non-Markdown files in `content/` are copied to the output
-- **TypeScript assets**: type-check and compile browser ES modules from `scripts/` without Node.js or a package manager
+- **TypeScript assets**: type-check and compile browser ES modules from `scripts/` without Node.js or a package manager (in TypeScript-enabled binaries)
 - **Hero images**: responsive variants, WebP conversion, `<picture>` markup
 - **Internal links**: `@/path.md` links checked at build time
 - **Sitemap, robots.txt, 404 page, alias redirects**
@@ -52,6 +52,8 @@ git clone https://github.com/crustyrustacean/taxus.git
 cd taxus
 cargo build --release
 # the binary is target/release/taxus
+# Include the native TypeScript compiler when needed:
+# cargo build --release --features typescript
 ```
 
 Prerequisites:
@@ -97,7 +99,7 @@ The table is the `Commands:` block of `taxus --help`.
 - `-u, --base-url <URL>` — Base URL for the site (must start with http:// or https://)
 - `-f, --force` — Initialize even if the directory is not empty
 - `--no-islands` — Disable islands support for a plain Tera/Markdown scaffold
-- `--typescript` — Scaffold TypeScript sources and enable TypeScript asset compilation
+- `--typescript` — Scaffold TypeScript sources and enable TypeScript asset compilation (the Taxus binary must include the `typescript` Cargo feature or use a configured compiler)
 
 **`build`**
 

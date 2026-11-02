@@ -31,6 +31,10 @@ lang-javascript = ["dep:tree-sitter-javascript"]
 # WebP output falls back to the `image` crate's lossless encoder and
 # `images.quality` is ignored for WebP.
 webp-lossy = ["dep:webp"]
+# Native TypeScript compiler archives are opt-in: default Taxus binaries do
+# not carry any compiler. Enable this feature when building a binary that
+# should compile TypeScript without an external `tsc`.
+typescript = ["dep:flate2", "dep:tar"]
 default = [
     "lang-rust",
     "lang-html",
@@ -81,8 +85,8 @@ tokio-stream = "0.1"
 webbrowser = "1.0"
 tera-contrib = { version = "0.2.0", features = ["date", "slug"] }
 sha2 = "0.10"
-flate2 = "1"
-tar = "0.4"
+flate2 = { version = "1", optional = true }
+tar = { version = "0.4", optional = true }
 
 [build-dependencies]
 wasm-bindgen-cli-support = "=0.2.126"
