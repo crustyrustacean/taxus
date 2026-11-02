@@ -29,7 +29,9 @@ pub mod taxonomy;
 pub mod wasm;
 
 use crate::CodeHighlighter;
-use crate::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+use crate::assets::{
+    AssetProcessor, AssetReport, ScssProcessor, StaticCopier, TypeScriptProcessor,
+};
 use crate::build::pipeline::internal_links::resolve_internal_links;
 use crate::build::ssr::block_on_ssr;
 use crate::config::SiteConfig;
@@ -237,6 +239,14 @@ pub fn process_assets(
         let static_report =
             static_copier.process(&config.build.static_dir, &static_output, dry_run)?;
         report.merge(static_report);
+    }
+
+    // TypeScript runs after static copying so generated bundles cannot be
+    // shadowed by a stale source file at the same output path.
+    let emitted =
+        TypeScriptProcessor::process(&config.typescript, &config.base_dir, output_dir, dry_run)?;
+    for _ in 0..emitted {
+        report.add_processed();
     }
 
     Ok(report)

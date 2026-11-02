@@ -4,6 +4,7 @@ use std::fs;
 use taxus_lib::build::SiteBuilder;
 use taxus_lib::config::{
     BuildConfig, FeedConfig, HighlightConfig, ImageConfig, MarkdownConfig, SiteConfig, SiteMeta,
+    TypeScriptConfig,
 };
 use taxus_lib::images::{ImageProcessor, ImageRegistry, render_picture};
 use tempfile::TempDir;
@@ -141,6 +142,7 @@ This post has a hero image.
         highlight: HighlightConfig::default(),
         images: ImageConfig::default(),
         markdown: MarkdownConfig::default(),
+        typescript: TypeScriptConfig::default(),
         base_dir: temp.path().to_path_buf(),
     }
 }
@@ -327,6 +329,7 @@ Content without hero_alt.
         highlight: HighlightConfig::default(),
         images: ImageConfig::default(),
         markdown: MarkdownConfig::default(),
+        typescript: TypeScriptConfig::default(),
         base_dir: temp.path().to_path_buf(),
     };
 

@@ -109,6 +109,7 @@ Options:
   -u, --base-url <URL>    Base URL (must start with http:// or https://)
   -f, --force             Initialize even if directory is not empty
       --no-islands        Disable WASM islands hydration (enabled by default)
+      --typescript        Scaffold TypeScript scripts instead of JavaScript
   -h, --help              Print help
 ```
 
@@ -130,8 +131,9 @@ Options:
 | `templates/404.html` | Not-found page |
 | `styles/main.scss` | Starter stylesheet |
 | `styles/_highlight-dark.scss`, `styles/_highlight-light.scss` | Code highlighting theme partials |
-| `static/scripts.js` | Placeholder scripts file |
+| `static/scripts.js` | JavaScript-mode script (omitted with `--typescript`) |
 | `static/favicon.png` | Placeholder favicon |
+| `scripts/main.ts`, `tsconfig.json` | TypeScript-mode files (only with `--typescript`) |
 
 ### Examples
 
@@ -147,6 +149,9 @@ taxus init my-site --name "My Blog" --base-url "https://myblog.com"
 
 # Initialize a plain site without islands
 taxus init my-site --no-islands
+
+# Initialize with TypeScript scripts instead of static/scripts.js
+taxus init my-site --typescript
 
 # Force initialization in non-empty directory
 taxus init my-site --force

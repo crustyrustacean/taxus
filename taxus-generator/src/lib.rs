@@ -58,7 +58,7 @@ pub mod templates;
 // Re-exports for convenience
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 pub use build::{BuildReport, SiteBuilder};
-pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta};
+pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta, TypeScriptConfig};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
 pub use error::{
     AssetError, ContentError, FeedError, GeneratorError, ImageError, InitError, Result, RouteError,

@@ -91,6 +91,42 @@ duplicate URLs, is in
 [Content: Organising files without changing URLs](./content.md#organising-files-without-changing-urls).
 
 
+### `[typescript]` Section
+
+Taxus type-checks and emits plain browser JavaScript from `.ts` files, with no
+Node.js, Bun, Vite, npm install, or bundler. TypeScript support is opt-in;
+existing sites are unchanged.
+
+```toml
+[typescript]
+enabled = true
+```
+
+Place TypeScript sources under `scripts/` and configure them in the site-root
+`tsconfig.json`. Taxus runs Microsoft's native TypeScript compiler during
+`taxus build` and every `taxus serve` rebuild. It type-checks before publishing
+emitted ES modules to `dist/static/ts/`; a failed type check fails the build and
+leaves the previous compiled script directory intact. `taxus build --dry-run`
+runs the checker without emitting files.
+
+This is a compiler, not a bundler: use relative ES module imports that browsers
+can resolve. Npm package imports and features requiring bundling are outside
+this compiler workflow. The bundled native compiler currently targets Linux x64;
+other platforms can use a compatible Microsoft `tsc` executable by setting
+`compiler`:
+
+```toml
+[typescript]
+enabled = true
+compiler = "/path/to/tsc"
+```
+
+The `taxus init --typescript` option creates `scripts/main.ts`,
+`tsconfig.json`, enables the setting, and adds the module script to the base
+template. It omits the JavaScript-mode `static/scripts.js` starter and script
+reference, so a fresh scaffold chooses one client-script mode rather than loading
+both. Without that flag, the JavaScript starter remains and TypeScript is disabled.
+
 ### `[feed]` Section
 
 RSS/Atom feed configuration for content syndication.

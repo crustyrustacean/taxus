@@ -37,9 +37,11 @@
 
 mod static_files;
 mod styles;
+mod typescript;
 
 pub use static_files::StaticCopier;
 pub use styles::ScssProcessor;
+pub use typescript::TypeScriptProcessor;
 
 use crate::error::AssetError;
 use std::path::Path;

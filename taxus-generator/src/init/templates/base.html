@@ -21,7 +21,7 @@
     <footer>
         <p>&copy; {{ now.year }} {{ site.name }}</p>
     </footer>
-    <!-- General interactivity via plain JavaScript -->
-    <script src="/static/scripts.js"></script>{{ wasm_script }}
+    <!-- Client-side interactivity: exactly one script mode is scaffolded. -->
+    {{ javascript_script }}{{ typescript_script }}{{ wasm_script }}
 </body>
 </html>

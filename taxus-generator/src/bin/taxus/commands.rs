@@ -134,6 +134,7 @@ pub struct InitArgs {
     pub base_url: Option<String>,
     pub force: bool,
     pub islands: bool,
+    pub typescript: bool,
 }
 
 pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
@@ -178,7 +179,8 @@ pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
     // Create options and scaffolder
     let options = InitOptions::new(&name, &base_url)
         .with_force(args.force)
-        .with_islands(args.islands);
+        .with_islands(args.islands)
+        .with_typescript(args.typescript);
     let scaffolder = InitScaffolder::new(options);
 
     // Scaffold the site

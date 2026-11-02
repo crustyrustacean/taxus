@@ -203,6 +203,10 @@ pub enum AssetError {
     #[error("SCSS compilation error: {0}")]
     Scss(String),
 
+    /// TypeScript type-check or emit failure
+    #[error("TypeScript compilation error: {0}")]
+    TypeScript(String),
+
     /// I/O error with path context
     #[error("I/O error for {path}: {source}")]
     Io {

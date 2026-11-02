@@ -4,9 +4,10 @@
 //!
 //! # Overview
 //!
-//! Every file the scaffolder writes is named here exactly once. The
-//! scaffolder walks this list to create files; `taxus init --help` walks the
-//! same list to describe them. Nothing else in the tree may name a scaffolded
+//! Every scaffold file is named here exactly once. The scaffolder walks this
+//! list to create files; `taxus init --help` walks the same list to describe
+//! them. TypeScript starter files are conditional on `--typescript`. Nothing
+//! else in the tree may name a scaffolded
 //! file — that duplication is the drift this module exists to close
 //! (#111). Adding a template is one row in [`TEMPLATES`]; the help text
 //! follows automatically.
@@ -78,9 +79,10 @@ impl Variants {
     ///
     /// The text carries its own leading and trailing newline, so the template
     /// can place the token mid-line and still produce well-formed markup.
-    pub const WASM_SCRIPT: Variants = Variants(&[Variant {
-        placeholder: "wasm_script",
-        text: r#"
+    pub const WASM_SCRIPT: Variants = Variants(&[
+        Variant {
+            placeholder: "wasm_script",
+            text: r#"
     <!-- WASM hydration client.
          client.js is a wasm-bindgen ES module; it must be loaded via
          `import init` inside a type="module" script, not via a plain src= tag. -->
@@ -91,7 +93,20 @@ impl Variants {
         bindings.hydrate_islands();
     </script>
 "#,
-    }]);
+        },
+        Variant {
+            placeholder: "javascript_script",
+            text: r#"
+    <script src="/static/scripts.js"></script>
+"#,
+        },
+        Variant {
+            placeholder: "typescript_script",
+            text: r#"
+    <script type="module" src="/static/ts/main.js"></script>
+"#,
+        },
+    ]);
 
     /// `{{ island_demo }}` in `section.html`: a `Counter` island in a comment.
     pub const ISLAND_DEMO: Variants = Variants(&[Variant {
@@ -210,8 +225,25 @@ pub const OTHER_FILES: &[(&str, &str)] = &[
         "styles/_highlight-light.scss",
         "light syntax highlighting theme",
     ),
-    ("static/scripts.js", "placeholder scripts file"),
+    (
+        "static/scripts.js",
+        "JavaScript-mode script (omitted with --typescript)",
+    ),
     ("static/favicon.png", "placeholder favicon"),
+];
+
+/// Files added only by `taxus init --typescript`.
+pub const TYPESCRIPT_FILES: &[(&str, &str, &str)] = &[
+    (
+        "tsconfig.json",
+        "TypeScript compiler config (only with --typescript)",
+        include_str!("typescript/tsconfig.json"),
+    ),
+    (
+        "scripts/main.ts",
+        "TypeScript entrypoint (only with --typescript)",
+        include_str!("typescript/main.ts"),
+    ),
 ];
 
 /// Every file the scaffold writes, as `(path, description)` pairs, in help-text
@@ -240,6 +272,11 @@ pub fn layout() -> Vec<(String, &'static str)> {
     for template in TEMPLATES {
         rows.push((format!("templates/{}", template.name), template.description));
     }
+    rows.extend(
+        TYPESCRIPT_FILES
+            .iter()
+            .map(|(path, description, _)| ((*path).to_string(), *description)),
+    );
     rows
 }
 
@@ -256,13 +293,39 @@ pub fn layout() -> Vec<(String, &'static str)> {
 /// Borrows when there is nothing to do, which is the case for eight of the ten
 /// templates and for every scaffold of a template without variants.
 pub fn resolve(template: &Template, islands: bool) -> Cow<'_, str> {
+    resolve_with_typescript(template, islands, false)
+}
+
+/// Resolve the scaffold's optional WASM and TypeScript script placeholders.
+pub fn resolve_with_typescript(
+    template: &Template,
+    islands: bool,
+    typescript: bool,
+) -> Cow<'_, str> {
     if template.variants.0.is_empty() {
         return Cow::Borrowed(template.contents);
     }
-    if islands {
-        Cow::Owned(substitute(template.contents, &template.variants))
+
+    let mut contents = template.contents.to_string();
+    for variant in template.variants.0 {
+        let enabled = match variant.placeholder {
+            "wasm_script" => islands,
+            "javascript_script" => !typescript,
+            "typescript_script" => typescript,
+            _ => false,
+        };
+        let one = Variants(std::slice::from_ref(variant));
+        contents = if enabled {
+            substitute(&contents, &one)
+        } else {
+            strip(&contents, &one)
+        };
+    }
+
+    if contents == template.contents {
+        Cow::Borrowed(template.contents)
     } else {
-        Cow::Owned(strip(template.contents, &template.variants))
+        Cow::Owned(contents)
     }
 }
 
