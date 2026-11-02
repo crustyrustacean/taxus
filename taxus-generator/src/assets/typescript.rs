@@ -1,9 +1,8 @@
 //! Optional TypeScript build step using Microsoft's native `tsc` compiler.
 //!
-//! The feasibility spike embeds Microsoft's native TypeScript 7 compiler for
-//! Linux x64, so site builds need no JavaScript runtime or package manager.
-//! Other platforms can provide an explicit compiler path until matching
-//! native archives are bundled.
+//! Taxus embeds Microsoft's native TypeScript 7 compiler for Linux x64, so site
+//! builds need no JavaScript runtime or package manager. Other platforms can
+//! provide an explicit compiler path until matching native archives are bundled.
 
 use crate::config::TypeScriptConfig;
 use crate::error::AssetError;
@@ -206,7 +205,7 @@ fn replace_compiled_output(staging: &Path, output: &Path) -> Result<(), AssetErr
 fn bundled_compiler() -> Result<PathBuf, AssetError> {
     if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
         return Err(AssetError::TypeScript(
-            "the bundled TypeScript compiler PoC currently supports Linux x64 only; set `typescript.compiler` to a compatible Microsoft tsc executable on this platform".to_string(),
+            "the bundled TypeScript compiler currently supports Linux x64 only; set `typescript.compiler` to a compatible Microsoft tsc executable on this platform".to_string(),
         ));
     }
 
