@@ -282,7 +282,8 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
     )
 ))]
 fn bundled_compiler() -> Result<PathBuf, AssetError> {
-    let root = std::env::temp_dir().join(BUNDLED_CACHE_NAME);
+    let parent = std::env::temp_dir();
+    let root = parent.join(BUNDLED_CACHE_NAME);
     let compiler = root.join(BUNDLED_COMPILER_PATH);
     let declarations = root.join("package/lib/lib.dom.d.ts");
     if compiler.is_file() && declarations.is_file() {
@@ -297,7 +298,6 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
         )));
     }
 
-    let parent = root.parent().expect("temp compiler path has parent");
     let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
     let staging = parent.join(format!(".taxus-tsc-{}-{id}", std::process::id()));
     fs::create_dir(&staging).map_err(|error| AssetError::Io {
@@ -426,9 +426,15 @@ mod tests {
         )
         .unwrap();
         let entry = site.join("scripts/main.ts");
+        let helper = site.join("scripts/greeting.ts");
+        fs::write(
+            &helper,
+            "export const greeting: string = 'hello from TypeScript';\n",
+        )
+        .unwrap();
         fs::write(
             &entry,
-            "const button: HTMLButtonElement | null = document.querySelector('#save');\nbutton?.click();\n",
+            "import { greeting } from './greeting.js';\nconst button: HTMLButtonElement | null = document.querySelector('#save');\nbutton?.setAttribute('aria-label', greeting);\n",
         )
         .unwrap();
         let config = TypeScriptConfig {
@@ -438,12 +444,19 @@ mod tests {
 
         assert_eq!(
             TypeScriptProcessor::process(&config, &site, &output, false).unwrap(),
-            1
+            2
         );
         let js = output.join("static/ts/main.js");
+        let helper_js = output.join("static/ts/greeting.js");
         let emitted = fs::read_to_string(&js).unwrap();
+        assert!(emitted.contains("./greeting.js"));
         assert!(emitted.contains("document.querySelector"));
         assert!(!emitted.contains("HTMLButtonElement"));
+        assert!(
+            fs::read_to_string(helper_js)
+                .unwrap()
+                .contains("hello from TypeScript")
+        );
 
         fs::write(&entry, "const broken: number = 'type error';\n").unwrap();
         assert!(TypeScriptProcessor::process(&config, &site, &output, false).is_err());
