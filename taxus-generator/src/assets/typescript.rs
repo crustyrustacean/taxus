@@ -282,7 +282,8 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
     )
 ))]
 fn bundled_compiler() -> Result<PathBuf, AssetError> {
-    let root = std::env::temp_dir().join(BUNDLED_CACHE_NAME);
+    let parent = std::env::temp_dir();
+    let root = parent.join(BUNDLED_CACHE_NAME);
     let compiler = root.join(BUNDLED_COMPILER_PATH);
     let declarations = root.join("package/lib/lib.dom.d.ts");
     if compiler.is_file() && declarations.is_file() {
@@ -297,7 +298,6 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
         )));
     }
 
-    let parent = root.parent().expect("temp compiler path has parent");
     let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
     let staging = parent.join(format!(".taxus-tsc-{}-{id}", std::process::id()));
     fs::create_dir(&staging).map_err(|error| AssetError::Io {
