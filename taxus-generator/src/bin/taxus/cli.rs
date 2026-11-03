@@ -14,6 +14,11 @@ use clap::{Parser, Subcommand};
 use std::net::IpAddr;
 use std::path::PathBuf;
 
+#[cfg(feature = "typescript")]
+const TAXUS_VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (TypeScript enabled)");
+#[cfg(not(feature = "typescript"))]
+const TAXUS_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// A static site generator founded in Tera with WebAssembly islands.
 ///
 /// taxus turns Markdown content and Tera templates into a fully static website.
@@ -26,7 +31,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(name = "taxus")]
 #[command(about = "A Yew-based static site generator")]
-#[command(version)]
+#[command(version = TAXUS_VERSION)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

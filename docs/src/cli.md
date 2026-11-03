@@ -133,7 +133,7 @@ Options:
 | `styles/_highlight-dark.scss`, `styles/_highlight-light.scss` | Code highlighting theme partials |
 | `static/scripts.js` | JavaScript-mode script (omitted with `--typescript`) |
 | `static/favicon.png` | Placeholder favicon |
-| `scripts/main.ts`, `tsconfig.json` | TypeScript-mode files (only with `--typescript`) |
+| `scripts/main.ts`, `scripts/greeting.ts`, `tsconfig.json` | TypeScript-mode files (only with `--typescript`) |
 
 ### Examples
 

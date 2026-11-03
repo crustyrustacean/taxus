@@ -155,9 +155,9 @@ enabled = true
 compiler = "/path/to/tsc"
 ```
 
-The `taxus init --typescript` option creates `scripts/main.ts`,
-`tsconfig.json`, enables the setting, and adds the module script to the base
-template. It omits the JavaScript-mode `static/scripts.js` starter and script
+The `taxus init --typescript` option creates `scripts/main.ts`, an imported
+`scripts/greeting.ts` example module, and `tsconfig.json`, enables the setting,
+and adds the module script to the base template. It omits the JavaScript-mode `static/scripts.js` starter and script
 reference, so a fresh scaffold chooses one client-script mode rather than loading
 both. Without that flag, the JavaScript starter remains and TypeScript is disabled.
 

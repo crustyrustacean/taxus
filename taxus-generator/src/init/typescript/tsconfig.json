@@ -6,7 +6,8 @@
     "strict": true,
     "rootDir": "scripts",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "noEmit": true
+    "noEmit": false,
+    "sourceMap": true
   },
   "include": ["scripts/**/*.ts"]
 }
