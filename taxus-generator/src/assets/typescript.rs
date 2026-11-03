@@ -426,9 +426,15 @@ mod tests {
         )
         .unwrap();
         let entry = site.join("scripts/main.ts");
+        let helper = site.join("scripts/greeting.ts");
+        fs::write(
+            &helper,
+            "export const greeting: string = 'hello from TypeScript';\n",
+        )
+        .unwrap();
         fs::write(
             &entry,
-            "const button: HTMLButtonElement | null = document.querySelector('#save');\nbutton?.click();\n",
+            "import { greeting } from './greeting.js';\nconst button: HTMLButtonElement | null = document.querySelector('#save');\nbutton?.setAttribute('aria-label', greeting);\n",
         )
         .unwrap();
         let config = TypeScriptConfig {
@@ -438,12 +444,19 @@ mod tests {
 
         assert_eq!(
             TypeScriptProcessor::process(&config, &site, &output, false).unwrap(),
-            1
+            2
         );
         let js = output.join("static/ts/main.js");
+        let helper_js = output.join("static/ts/greeting.js");
         let emitted = fs::read_to_string(&js).unwrap();
+        assert!(emitted.contains("./greeting.js"));
         assert!(emitted.contains("document.querySelector"));
         assert!(!emitted.contains("HTMLButtonElement"));
+        assert!(
+            fs::read_to_string(helper_js)
+                .unwrap()
+                .contains("hello from TypeScript")
+        );
 
         fs::write(&entry, "const broken: number = 'type error';\n").unwrap();
         assert!(TypeScriptProcessor::process(&config, &site, &output, false).is_err());
