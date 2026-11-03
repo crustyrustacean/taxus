@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.4.1] - 2026-10-29
+## [1.4.2] - 2026-11-03
+
+### Added
+
+- **assets**: opt-in TypeScript compilation from `scripts/` to browser ES
+  modules, with `taxus init --typescript`, TypeScript configuration, serve-mode
+  watching, atomic output replacement and a bundled native compiler for each
+  published macOS, Linux and Windows target
+- **testing**: archive validation and headless-browser smoke coverage for the
+  TypeScript build path
+
+### Changed
+
+- **docs**: document TypeScript module boundaries, compiler feature flags and
+  native compiler maintenance
+
+### Fixed
+
+- **security**: update `pulldown-cmark` to 0.13.6
 
 ### Fixed
 
