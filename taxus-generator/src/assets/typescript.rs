@@ -419,7 +419,8 @@ mod tests {
     "moduleResolution": "bundler",
     "strict": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "noEmit": true
+    "noEmit": true,
+    "sourceMap": true
   },
   "include": ["scripts/**/*.ts"]
 }"#,
@@ -444,7 +445,7 @@ mod tests {
 
         assert_eq!(
             TypeScriptProcessor::process(&config, &site, &output, false).unwrap(),
-            2
+            4
         );
         let js = output.join("static/ts/main.js");
         let helper_js = output.join("static/ts/greeting.js");
@@ -457,6 +458,8 @@ mod tests {
                 .unwrap()
                 .contains("hello from TypeScript")
         );
+        assert!(output.join("static/ts/main.js.map").is_file());
+        assert!(emitted.contains("sourceMappingURL=main.js.map"));
 
         fs::write(&entry, "const broken: number = 'type error';\n").unwrap();
         assert!(TypeScriptProcessor::process(&config, &site, &output, false).is_err());

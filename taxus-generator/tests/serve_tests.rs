@@ -512,6 +512,81 @@ mod watcher_scope_tests {
 }
 
 // =============================================================================
+// TypeScript serve integration
+// =============================================================================
+
+#[cfg(feature = "typescript")]
+mod typescript_serve_tests {
+    use std::fs;
+    use std::time::Duration;
+
+    use taxus_lib::assets::TypeScriptProcessor;
+    use taxus_lib::config::TypeScriptConfig;
+    use taxus_lib::serve::{ChangeType, FileWatcher};
+    use tempfile::TempDir;
+
+    fn tsconfig() -> &'static str {
+        r#"{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true
+  },
+  "include": ["scripts/**/*.ts"]
+}"#
+    }
+
+    async fn next_script_event(watcher: &mut FileWatcher) {
+        loop {
+            let event = tokio::time::timeout(Duration::from_secs(5), watcher.recv())
+                .await
+                .expect("a TypeScript change event should arrive")
+                .expect("watcher should remain alive");
+            if event.change_type == ChangeType::Script {
+                return;
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn typescript_changes_rebuild_and_recover_after_errors() {
+        let site = TempDir::new().unwrap();
+        let scripts = site.path().join("scripts");
+        let output = site.path().join("dist");
+        fs::create_dir_all(&scripts).unwrap();
+        fs::write(site.path().join("tsconfig.json"), tsconfig()).unwrap();
+
+        let mut watcher = FileWatcher::new(site.path().to_path_buf()).unwrap();
+        watcher.start().unwrap();
+        let config = TypeScriptConfig {
+            enabled: true,
+            compiler: None,
+        };
+        let entry = scripts.join("main.ts");
+
+        fs::write(&entry, "const marker: string = 'first';\n").unwrap();
+        next_script_event(&mut watcher).await;
+        TypeScriptProcessor::process(&config, site.path(), &output, false).unwrap();
+        let generated = output.join("static/ts/main.js");
+        let first_output = fs::read_to_string(&generated).unwrap();
+        assert!(first_output.contains("first"));
+
+        fs::write(&entry, "const marker: number = 'broken';\n").unwrap();
+        next_script_event(&mut watcher).await;
+        assert!(TypeScriptProcessor::process(&config, site.path(), &output, false).is_err());
+        assert_eq!(fs::read_to_string(&generated).unwrap(), first_output);
+
+        fs::write(&entry, "const marker: string = 'recovered';\n").unwrap();
+        next_script_event(&mut watcher).await;
+        TypeScriptProcessor::process(&config, site.path(), &output, false).unwrap();
+        assert!(fs::read_to_string(generated).unwrap().contains("recovered"));
+    }
+}
+
+// =============================================================================
 // #40: serve draft plumbing
 // =============================================================================
 

@@ -120,10 +120,15 @@ The vendored compiler archives and their pinned digests can be checked with:
 python3 scripts/check-typescript-vendor.py
 ```
 
-When updating TypeScript, download the matching official native archives,
-update the target mapping and digests in `taxus-generator/src/assets/typescript.rs`
-and `scripts/check-typescript-vendor.py`, refresh the license and notice files,
-and run the checker before committing.
+When updating TypeScript, run the updater with the new official release:
+
+```bash
+python3 scripts/update-typescript-vendor.py --version 7.0.3
+```
+
+Review the resulting binary/documentation diff, then run the checker before
+committing. The updater refreshes the six archives, hashes, cache version,
+license, and notice files.
 
 Place TypeScript sources under `scripts/` and configure them in the site-root
 `tsconfig.json`. Taxus runs Microsoft's native TypeScript compiler during
@@ -135,7 +140,9 @@ runs the checker without emitting files.
 This is a compiler, not a bundler: use relative ES module imports that browsers
 can resolve. Include the `.js` extension in relative imports so the emitted
 modules work directly in browsers; TypeScript's bundler resolution maps those
-imports back to the corresponding `.ts` sources during type-checking. Npm
+imports back to the corresponding `.ts` sources during type-checking. Set
+`sourceMap = true` in `compilerOptions` when you want browser developer tools
+to map generated JavaScript back to the original TypeScript files. Npm
 package imports and features requiring bundling are outside this compiler
 workflow. TypeScript-enabled binaries bundle the official native
 compiler for the target platform. Taxus's release targets are covered for
