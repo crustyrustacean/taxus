@@ -18,8 +18,11 @@
 //! a scratch copy of `get-taxus-org` with its posts moved into `blog/2026/`
 //! and compares it against the committed golden manifest.
 
+#[cfg(feature = "typescript")]
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet};
+#[cfg(feature = "typescript")]
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use taxus_common::search::SearchIndex;
@@ -585,13 +588,17 @@ fn empty_flatten_keeps_storage_urls() {
 // `tests/golden_output.rs` (hashing, normalisation, manifest reading).
 // ---------------------------------------------------------------------------
 
+#[cfg(feature = "typescript")]
 const UNSTABLE: &str = "<unstable>";
+#[cfg(feature = "typescript")]
 const TEXT_EXTENSIONS: &[&str] = &["html", "xml", "txt", "svg", "css", "js", "json"];
 
+#[cfg(feature = "typescript")]
 fn is_excluded(relative: &Path) -> bool {
     relative.starts_with("wasm") || relative == Path::new("search_index.bin")
 }
 
+#[cfg(feature = "typescript")]
 fn blank_element(xml: &str, tag: &str) -> String {
     let open = format!("<{tag}>");
     let close = format!("</{tag}>");
@@ -612,6 +619,7 @@ fn blank_element(xml: &str, tag: &str) -> String {
     out
 }
 
+#[cfg(feature = "typescript")]
 fn normalise(relative: &Path, bytes: Vec<u8>) -> Vec<u8> {
     let ext = relative.extension().and_then(|e| e.to_str());
     if ext.is_some_and(|e| TEXT_EXTENSIONS.contains(&e))
@@ -628,6 +636,7 @@ fn normalise(relative: &Path, bytes: Vec<u8>) -> Vec<u8> {
     bytes
 }
 
+#[cfg(feature = "typescript")]
 fn sha256_hex(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
         .iter()
@@ -635,6 +644,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
         .collect()
 }
 
+#[cfg(feature = "typescript")]
 fn manifest_of(output_dir: &Path) -> BTreeMap<String, String> {
     let mut manifest = BTreeMap::new();
     for entry in walkdir::WalkDir::new(output_dir)
@@ -657,6 +667,7 @@ fn manifest_of(output_dir: &Path) -> BTreeMap<String, String> {
     manifest
 }
 
+#[cfg(feature = "typescript")]
 fn read_manifest(path: &Path) -> BTreeMap<String, String> {
     let text = fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("missing golden manifest {} ({e})", path.display()));
@@ -672,6 +683,7 @@ fn read_manifest(path: &Path) -> BTreeMap<String, String> {
 }
 
 /// Insert `line` directly after the `[build]` header of a TOML document.
+#[cfg(feature = "typescript")]
 fn insert_after_build_header(toml: &str, line: &str) -> String {
     let toml = toml.replace("\r\n", "\n");
     let mut out = Vec::new();
@@ -687,6 +699,7 @@ fn insert_after_build_header(toml: &str, line: &str) -> String {
     out.join("\n") + "\n"
 }
 
+#[cfg(feature = "typescript")]
 #[test]
 fn get_taxus_org_with_year_folders_matches_golden_manifest() {
     let source = crate_dir().join("../get-taxus-org");

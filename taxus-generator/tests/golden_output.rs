@@ -84,6 +84,7 @@ const SITES: &[(&str, &str)] = &[
     // code-construct immunity for both fenced and inline uses.
     ("shortcode_site", "tests/fixtures/shortcode_site"),
     ("term_slug_site", "tests/fixtures/term_slug_site"),
+    #[cfg(feature = "typescript")]
     ("get-taxus-org", "../get-taxus-org"),
 ];
 
@@ -456,6 +457,7 @@ fn golden_flatten_site() {
     check_site("flatten_site");
 }
 
+#[cfg(feature = "typescript")]
 #[test]
 fn golden_get_taxus_org() {
     check_site("get-taxus-org");
