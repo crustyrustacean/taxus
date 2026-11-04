@@ -17,7 +17,9 @@ from urllib.parse import urlparse
 class Marionette:
     def __init__(self, host: str = "127.0.0.1", port: int = 2828):
         self.socket = socket.create_connection((host, port), timeout=5)
-        self.socket.settimeout(10)
+        # Firefox can take longer to create a WebDriver session on a cold CI
+        # runner than it takes to open the Marionette socket.
+        self.socket.settimeout(60)
         self.next_id = 1
         self._read_packet()  # greeting
 
@@ -69,6 +71,8 @@ def main() -> None:
         raise SystemExit("Firefox is required for the TypeScript browser smoke test")
 
     with tempfile.TemporaryDirectory(prefix="taxus-firefox-") as profile:
+        log_path = Path(profile) / "firefox.log"
+        log = log_path.open("w")
         process = subprocess.Popen(
             [
                 firefox,
@@ -79,19 +83,23 @@ def main() -> None:
                 "--marionette",
                 "about:blank",
             ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
         )
         driver = None
         try:
-            deadline = time.monotonic() + 15
+            deadline = time.monotonic() + 60
             while driver is None and time.monotonic() < deadline:
                 try:
                     driver = Marionette()
-                except (ConnectionRefusedError, TimeoutError, OSError):
+                except (ConnectionRefusedError, ConnectionResetError, TimeoutError, OSError):
                     time.sleep(0.25)
             if driver is None:
-                raise SystemExit("Firefox did not open its Marionette endpoint")
+                log.flush()
+                details = log_path.read_text(errors="replace")[-2000:]
+                raise SystemExit(
+                    "Firefox did not open its Marionette endpoint.\n" + details
+                )
 
             driver.command("WebDriver:NewSession", {"capabilities": {"alwaysMatch": {}}})
             driver.command("WebDriver:Navigate", {"url": args.url})
@@ -121,6 +129,7 @@ def main() -> None:
                 driver.close()
             process.terminate()
             process.wait(timeout=10)
+            log.close()
 
 
 if __name__ == "__main__":

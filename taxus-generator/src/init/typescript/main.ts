@@ -1,3 +1,4 @@
-// Taxus compiles this file to browser-native JavaScript modules.
-const pageTitle: string = document.title;
-console.log(`Loaded ${pageTitle}`);
+import { greeting } from "./greeting.js";
+
+// Taxus compiles this file and greeting.ts to browser-native JavaScript modules.
+document.body.dataset.taxusGreeting = greeting;

@@ -266,7 +266,7 @@ fn replace_compiled_output(staging: &Path, output: &Path) -> Result<(), AssetErr
 #[cfg(not(feature = "typescript"))]
 fn bundled_compiler() -> Result<PathBuf, AssetError> {
     Err(AssetError::TypeScript(
-        "this Taxus binary was built without bundled TypeScript support; rebuild with `--features typescript` or set `typescript.compiler` to a compatible Microsoft tsc executable".to_string(),
+        "TypeScript is enabled, but this Taxus binary has no bundled compiler; rebuild with `cargo build --features typescript` or set `typescript.compiler` to a compatible Microsoft tsc executable".to_string(),
     ))
 }
 
@@ -360,7 +360,7 @@ fn bundled_compiler() -> Result<PathBuf, AssetError> {
 ))]
 fn bundled_compiler() -> Result<PathBuf, AssetError> {
     Err(AssetError::TypeScript(
-        "no bundled TypeScript compiler is available for this target; set `typescript.compiler` to a compatible Microsoft tsc executable".to_string(),
+        "TypeScript is enabled, but no bundled compiler is available for this target; set `typescript.compiler` to a compatible Microsoft tsc executable".to_string(),
     ))
 }
 

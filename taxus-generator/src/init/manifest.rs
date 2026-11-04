@@ -244,6 +244,11 @@ pub const TYPESCRIPT_FILES: &[(&str, &str, &str)] = &[
         "TypeScript entrypoint (only with --typescript)",
         include_str!("typescript/main.ts"),
     ),
+    (
+        "scripts/greeting.ts",
+        "TypeScript module example (only with --typescript)",
+        include_str!("typescript/greeting.ts"),
+    ),
 ];
 
 /// Every file the scaffold writes, as `(path, description)` pairs, in help-text

@@ -472,6 +472,10 @@ mod tests {
 
         assert!(temp_dir.path().join("tsconfig.json").is_file());
         assert!(temp_dir.path().join("scripts/main.ts").is_file());
+        assert!(temp_dir.path().join("scripts/greeting.ts").is_file());
+        let tsconfig = std::fs::read_to_string(temp_dir.path().join("tsconfig.json")).unwrap();
+        assert!(tsconfig.contains("\"noEmit\": false"));
+        assert!(tsconfig.contains("\"sourceMap\": true"));
         assert!(!temp_dir.path().join("static/scripts.js").exists());
         let site_config = std::fs::read_to_string(temp_dir.path().join("site.toml")).unwrap();
         assert!(site_config.contains("[typescript]"));
@@ -479,7 +483,7 @@ mod tests {
         let base = std::fs::read_to_string(temp_dir.path().join("templates/base.html")).unwrap();
         assert!(base.contains("/static/ts/main.js"));
         assert!(!base.contains("/static/scripts.js"));
-        assert_eq!(report.files_created, 19);
+        assert_eq!(report.files_created, 20);
         assert_eq!(report.directories_created, 5);
     }
 
