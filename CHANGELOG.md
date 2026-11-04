@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **typescript**: the TypeScript scaffold now includes a browser-resolvable
+  multi-file module example and source maps by default
+
+### Changed
+
+- **cli**: `taxus --version` reports when the binary includes TypeScript support
+- **typescript**: generated `tsconfig.json` accurately declares emit behavior
+  and enables source maps for new sites
+
 ## [1.4.2] - 2026-11-03
 
 ### Added
