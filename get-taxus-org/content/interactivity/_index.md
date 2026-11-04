@@ -1,6 +1,6 @@
 +++
 title = "Interactivity"
-description = "Add interactivity to a Taxus site with plain JavaScript or WebAssembly islands powered by Yew — lightweight, performant, and dependency-free."
+description = "Add interactivity to a Taxus site with TypeScript, plain JavaScript, or WebAssembly islands powered by Yew — lightweight, performant, and dependency-free."
 
 [extra]
 counter = true
@@ -12,12 +12,22 @@ Taxus provides two options to make your static site interactive. Use them indepe
 
 | Layer | Technology | Best For |
 |-------|------------|----------|
-| General | `static/scripts.js` | DOM manipulation, toggles, analytics |
+| General | TypeScript modules or `static/scripts.js` | DOM manipulation, toggles, analytics |
 | Performance | Yew WASM islands | Complex state, heavy computation |
 
-### Plain 'ol JavaScript
+### TypeScript or Plain JavaScript
 
-Taxus outputs an empty `scripts.js` for you to fill as you see fit. Use it for simple interactivity across your site.
+For new sites, TypeScript is the recommended general-purpose option: it is
+checked at build time, emits browser-native modules, and needs no Node.js or
+npm. Initialize with `taxus init --typescript`, or enable it manually in an
+existing site with `[typescript] enabled = true` and a `tsconfig.json`.
+
+TypeScript is a compiler, not a bundler. Use browser-resolvable relative
+imports with the `.js` extension; npm package bundling is outside Taxus's
+scope. Source maps are enabled by default in the generated scaffold.
+
+Plain JavaScript remains a good fit for a tiny one-off behavior, and existing
+sites can keep their `static/scripts.js` entrypoint while migrating.
 
 ### WebAssembly with Yew
 

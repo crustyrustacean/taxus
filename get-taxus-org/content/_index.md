@@ -19,7 +19,7 @@ Taxus stands on the following pillars:
 
 - **Appearance is yours to determine** — flexible SCSS compilation with [grass](https://github.com/connorskees/grass). [Learn more →](/appearance/)
 
-- **Interactivity is simple, performant, or both** — JavaScript via ready-made `scripts.js`, or WebAssembly via the "islands" architecture with [Yew](https://yew.rs) components. [Learn more →](/interactivity/)
+- **Interactivity is simple, performant, or both** — type-checked browser modules with TypeScript, or WebAssembly via the "islands" architecture with [Yew](https://yew.rs) components. [Learn more →](/interactivity/)
 
 ## Documentation
 

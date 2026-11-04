@@ -95,7 +95,13 @@ impl TypeScriptProcessor {
             return Ok(0);
         }
 
-        let project = site_dir.join("tsconfig.json");
+        // The build pipeline may pass paths such as `get-taxus-org` while the
+        // compiler command runs with that directory as its current directory.
+        // Resolve every site/output argument first so paths are not doubled
+        // (`get-taxus-org/get-taxus-org/tsconfig.json`).
+        let site_root = absolute_path(site_dir)?;
+        let output_root = absolute_path(output_dir)?;
+        let project = site_root.join("tsconfig.json");
         if !project.is_file() {
             return Err(AssetError::TypeScript(format!(
                 "TypeScript is enabled but config file is missing: {}",
@@ -105,7 +111,7 @@ impl TypeScriptProcessor {
 
         let compiler = match &config.compiler {
             Some(path) if path.is_absolute() || path.components().count() > 1 => {
-                resolve_site_path(site_dir, path)
+                resolve_site_path(&site_root, path)
             }
             Some(path) => path.clone(),
             None => bundled_compiler()?,
@@ -113,7 +119,7 @@ impl TypeScriptProcessor {
 
         let mut command = Command::new(&compiler);
         command
-            .current_dir(site_dir)
+            .current_dir(&site_root)
             .arg("--pretty")
             .arg("false")
             .arg("--project")
@@ -123,7 +129,7 @@ impl TypeScriptProcessor {
             command
                 .arg("--noEmit")
                 .arg("--rootDir")
-                .arg(site_dir.join("scripts"));
+                .arg(site_root.join("scripts"));
             info!(compiler = %compiler.display(), project = %project.display(), "Type-checking TypeScript");
             let status = command.status().map_err(|error| {
                 AssetError::TypeScript(format!(
@@ -140,8 +146,8 @@ impl TypeScriptProcessor {
             return Ok(0);
         }
 
-        let js_output = output_dir.join("static/ts");
-        let root_dir = site_dir.join("scripts");
+        let js_output = output_root.join("static/ts");
+        let root_dir = site_root.join("scripts");
         let staging = make_staging_dir(&js_output)?;
         command
             // Override tsconfig's noEmit setting: a normal build must emit,
@@ -177,6 +183,18 @@ impl TypeScriptProcessor {
         replace_compiled_output(&staging, &js_output)?;
         Ok(emitted)
     }
+}
+
+fn absolute_path(path: &Path) -> Result<PathBuf, AssetError> {
+    if path.is_absolute() {
+        return Ok(path.to_path_buf());
+    }
+
+    let cwd = std::env::current_dir().map_err(|source| AssetError::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    Ok(cwd.join(path))
 }
 
 fn resolve_site_path(base: &Path, path: &Path) -> PathBuf {

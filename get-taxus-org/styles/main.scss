@@ -714,3 +714,27 @@ footer p + p {
 .install-hint p {
   margin: 0;
 }
+
+/* ── TypeScript copy buttons ── */
+pre {
+  position: relative;
+}
+
+.copy-code {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-end: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.copy-code:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}

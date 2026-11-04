@@ -26,7 +26,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build taxus binary
-        run: cargo build --release -p taxus
+        run: cargo build --release -p taxus --features typescript
 
       - name: Build the site
         working-directory: get-taxus-org
