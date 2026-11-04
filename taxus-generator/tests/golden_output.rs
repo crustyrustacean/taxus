@@ -176,7 +176,7 @@ fn blank_element(xml: &str, tag: &str) -> String {
 }
 
 /// Output files whose bytes are text: hashed with CRLF folded to LF.
-const TEXT_EXTENSIONS: &[&str] = &["html", "xml", "txt", "svg", "css", "js", "json"];
+const TEXT_EXTENSIONS: &[&str] = &["html", "xml", "txt", "svg", "css", "js", "json", "map"];
 
 /// Normalise build-time-dependent and platform-dependent bytes before
 /// hashing: feed timestamps, and CRLF line endings that a Windows checkout
@@ -187,6 +187,22 @@ fn normalise(relative: &Path, bytes: Vec<u8>) -> Vec<u8> {
         && let Ok(text) = String::from_utf8(bytes.clone())
     {
         let mut text = text.replace("\r\n", "\n");
+        if ext == Some("map") {
+            if let Ok(mut map) = serde_json::from_str::<serde_json::Value>(&text) {
+                if let Some(sources) = map.get_mut("sources").and_then(|v| v.as_array_mut()) {
+                    for source in sources {
+                        if let Some(path) = source.as_str() {
+                            *source = serde_json::Value::String(
+                                path.rsplit(['/', '\\']).next().unwrap_or(path).to_string(),
+                            );
+                        }
+                    }
+                }
+                if let Ok(normalized) = serde_json::to_string(&map) {
+                    return normalized.into_bytes();
+                }
+            }
+        }
         if ext == Some("xml") {
             for tag in ["lastBuildDate", "pubDate", "updated", "published"] {
                 text = blank_element(&text, tag);
