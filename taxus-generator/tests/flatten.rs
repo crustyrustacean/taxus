@@ -626,20 +626,20 @@ fn normalise(relative: &Path, bytes: Vec<u8>) -> Vec<u8> {
         && let Ok(text) = String::from_utf8(bytes.clone())
     {
         let mut text = text.replace("\r\n", "\n");
-        if ext == Some("map") {
-            if let Ok(mut map) = serde_json::from_str::<serde_json::Value>(&text) {
-                if let Some(sources) = map.get_mut("sources").and_then(|v| v.as_array_mut()) {
-                    for source in sources {
-                        if let Some(path) = source.as_str() {
-                            *source = serde_json::Value::String(
-                                path.rsplit(['/', '\\']).next().unwrap_or(path).to_string(),
-                            );
-                        }
+        if ext == Some("map")
+            && let Ok(mut map) = serde_json::from_str::<serde_json::Value>(&text)
+        {
+            if let Some(sources) = map.get_mut("sources").and_then(|v| v.as_array_mut()) {
+                for source in sources {
+                    if let Some(path) = source.as_str() {
+                        *source = serde_json::Value::String(
+                            path.rsplit(['/', '\\']).next().unwrap_or(path).to_string(),
+                        );
                     }
                 }
-                if let Ok(normalized) = serde_json::to_string(&map) {
-                    return normalized.into_bytes();
-                }
+            }
+            if let Ok(normalized) = serde_json::to_string(&map) {
+                return normalized.into_bytes();
             }
         }
         if ext == Some("xml") {
