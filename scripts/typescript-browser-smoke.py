@@ -17,7 +17,9 @@ from urllib.parse import urlparse
 class Marionette:
     def __init__(self, host: str = "127.0.0.1", port: int = 2828):
         self.socket = socket.create_connection((host, port), timeout=5)
-        self.socket.settimeout(10)
+        # Firefox can take longer to create a WebDriver session on a cold CI
+        # runner than it takes to open the Marionette socket.
+        self.socket.settimeout(60)
         self.next_id = 1
         self._read_packet()  # greeting
 
