@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-11-04
+
 ### Added
 
 - **typescript**: the TypeScript scaffold now includes a browser-resolvable
