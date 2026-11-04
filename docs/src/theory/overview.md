@@ -6,10 +6,10 @@ code.
 
 A compiler reads source files, builds a model of what they mean, computes
 facts about that model, and writes output files. Taxus does the same with
-a site. The input is a folder: content files, assets, templates and a
-config file. The output is a folder of HTML plus a few generated files
-(feeds, a sitemap, a search index, `robots.txt`, `404.html`, the WASM
-client).
+a site. The input is a folder: content files, assets, templates, optional browser
+scripts, and a config file. The output is a folder of HTML plus generated
+files (feeds, a sitemap, a search index, `robots.txt`, `404.html`, the WASM
+client, and optional compiled TypeScript modules).
 
 The build has three phases.
 
@@ -24,12 +24,12 @@ pages a feed should carry, the entries a sitemap needs. A derivation is a
 pure function of the tree and the config. Nothing is written back.
 
 **Emit.** Turn the tree and the derivations into files: render Markdown to
-HTML, run templates, resize hero images, compile SCSS, copy assets, and
-write everything under the output directory.
+HTML, run templates, resize hero images, compile SCSS and optional TypeScript,
+copy assets, and write everything under the output directory.
 
 ```mermaid
 flowchart TD
-    src["content/ · templates/ · styles/ · static/ · site.toml"]
+    src["content/ · templates/ · styles/ · static/ · scripts/ · site.toml"]
     parse["<b>Parse</b><br/>filesystem → Site Tree<br/>taxus-generator (routes::discovery) builds<br/>taxus-domain (tree, identity, schema) owns"]
     analyse["<b>Analyse</b><br/>derivations over (tree, config)<br/>taxus-domain (derivation) owns the pure functions;<br/>taxus-generator calls them"]
     emit["<b>Emit</b><br/>tree + derivations → files<br/>taxus-generator (build, templates, images, assets, feed);<br/>taxus-common supplies island components;<br/>taxus-client is written to dist/wasm/"]

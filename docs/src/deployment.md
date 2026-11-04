@@ -15,6 +15,7 @@ dist/
 ├── blog/…                # section pages, term pages, page/2/ pagination
 ├── css/                  # compiled SCSS
 ├── static/               # copied verbatim from static/
+│   └── ts/               # compiled TypeScript modules and optional source maps
 ├── images/               # hero image variants (WebP/srcset)
 ├── wasm/                 # islands hydration client (client.js, client_bg.wasm)
 ├── search_index.bin      # client-side search index
@@ -23,9 +24,11 @@ dist/
 └── 404.html              # alias redirects write more <alias>/index.html
 ```
 
-Everything is pre-rendered HTML. A page is readable with JavaScript
+Everything starts as pre-rendered HTML. A page is readable with JavaScript
 disabled; islands hydrate progressively in browsers that run the WASM
-client.
+client. TypeScript assets are ordinary browser JavaScript modules emitted at
+build time, so deployment still requires only a static file host. Visitors do
+not need Node.js, npm, or Taxus installed.
 
 ## Options that matter for deployment
 
@@ -80,7 +83,8 @@ workflow):
 
 1. Build command: `taxus build` (or `cargo run --release -- build` in CI)
 2. Output directory: `dist`
-3. That's the whole configuration.
+3. That's the whole configuration. TypeScript is compiled during the Taxus
+   build; the deployed site only contains the emitted browser modules.
 
 ### GitHub Pages
 

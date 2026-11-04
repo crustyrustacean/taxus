@@ -78,6 +78,37 @@ You should see the home page rendered from the Markdown content in
 it. Delete the `island(...)` line from `templates/section.html` — or
 initialize with `--no-islands` — for a site without it.
 
+## Optional TypeScript
+
+For browser behavior written in TypeScript, initialize the site with the
+TypeScript scaffold:
+
+```bash
+taxus init my-site --no-islands --typescript
+```
+
+This creates `scripts/main.ts`, an imported `scripts/greeting.ts` example,
+and `tsconfig.json`. A TypeScript-enabled Taxus binary compiles those files to
+browser ES modules under `dist/static/ts/`; no Node.js or npm installation is
+needed. The released Taxus binaries include the native compiler. When building
+Taxus yourself, enable it with:
+
+```bash
+cargo build --release --features typescript
+```
+
+Run the normal development workflow afterward:
+
+```bash
+taxus serve --dir my-site --open
+```
+
+Use browser-resolvable relative imports with the `.js` extension, such as
+`import { greeting } from "./greeting.js"`. Taxus compiles but does not bundle
+npm packages. Set `sourceMap = true` in `tsconfig.json` to map browser debugger
+locations back to TypeScript sources; the generated scaffold enables this by
+default.
+
 ## Next Steps
 
 - Read the [Theory](./theory/overview.md) chapters to learn how a build works

@@ -9,6 +9,7 @@ Taxus is a static site generator that combines:
 - **Tera templates** for the static "sea of HTML" — page layout, content, navigation
 - **Markdown content** with TOML frontmatter for writing pages and posts
 - **SCSS** for modern styling
+- **TypeScript** — optional type-checked browser modules compiled without Node.js or a package manager
 - **Yew components** — pre-rendered server-side at build time, hydrated by WASM in the browser for interactivity
 
 The key insight: pages are immediately visible with no JavaScript required. Interactive components load asynchronously and attach without re-rendering.
@@ -17,6 +18,7 @@ The key insight: pages are immediately visible with no JavaScript required. Inte
 
 - **Static-first**: Pre-rendered HTML for optimal performance and SEO
 - **Islands Architecture**: Interactive Yew WASM components embedded within static pages
+- **TypeScript assets**: Opt-in browser modules with source maps and serve-mode rebuilding
 - **Markdown Content**: Write content in Markdown files with TOML frontmatter
 - **Syntax Highlighting**: Tree-sitter based code highlighting (Rust, JavaScript, CSS and HTML built in)
 - **Co-located Assets**: Images and files in the content directory are automatically copied to output
@@ -37,6 +39,7 @@ Taxus is ideal for:
 
 - **Rust developers** who want to build websites without leaving their favorite language
 - **Performance enthusiasts** who want fast, optimized static sites with selective WASM interactivity
+- **Frontend developers** who want typed browser behavior without adopting a JavaScript build toolchain
 - **SEO-conscious developers** who need pre-rendered content with no JavaScript dependency for initial render
 - **Component lovers** who prefer the Yew component model for interactive UI pieces
 
@@ -47,6 +50,7 @@ Taxus is ideal for:
 - [Architecture](./architecture.md) — The crates, modules, and the build pipeline stage by stage
 - [Content Model](./content-model.md) — The content directory as a database: rows, parent pointers, indexes
 - [Configuration](./configuration.md) — `site.toml` format and options
+- [TypeScript Assets](./typescript.md) — typed browser modules without Node.js
 - [Content](./content.md) — Markdown files, frontmatter, taxonomies, pagination
 - [Templates](./templates.md) — Tera templates and context variables
 - [Images](./images.md) — Hero image processing and responsive variants
