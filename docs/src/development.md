@@ -39,8 +39,11 @@ cargo test --test config_loading
 # Build the site (islands and the WASM client are compiled and embedded automatically)
 cargo run -- build --dir my-site
 
-# Build release binary
+# Build release binary without the bundled TypeScript compiler
 cargo build --release
+
+# Build release binary with bundled TypeScript support
+cargo build --release --features typescript
 ```
 
 ## Development Server
@@ -78,7 +81,7 @@ The workspace includes an `xtask` crate (aliased as `cargo xtask` via
 
 | Command | Description |
 |---------|-------------|
-| `cargo xtask build [--release] [--features ...]` | Build the project |
+| `cargo xtask build [--release] [--features ...]` | Build the project; use `--features typescript` for bundled TypeScript |
 | `cargo xtask test [--release] [--nextest] [--features ...]` | Run unit and integration tests |
 | `cargo xtask check [--features ...]` | Fast compile check (no codegen) |
 | `cargo xtask lint [--features ...] [--fix]` | Lint with Clippy |

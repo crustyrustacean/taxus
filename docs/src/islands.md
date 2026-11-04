@@ -43,10 +43,14 @@ taxus supports two layers of interactivity:
 
 | Tier | Technology | Use For |
 |------|------------|---------|
-| 1 — General | `static/scripts.js` (vanilla JS) | DOM manipulation, toggles, analytics, lightweight events |
+| 1 — General | `static/scripts.js` (vanilla JS) or TypeScript modules | DOM manipulation, toggles, analytics, lightweight events |
 | 2 — Performance | Yew WASM island | Heavy computation, complex reactive state, data-intensive UI |
 
-Use vanilla JS for simple interactions; reserve Yew islands for components that benefit from the Yew component model.
+Use vanilla JavaScript or TypeScript for simple browser interactions; TypeScript
+adds type checking and source maps without requiring Node.js. Reserve Yew
+islands for components that benefit from the Yew component model. See
+[TypeScript configuration](./configuration.md#typescript-section) for the
+TypeScript workflow and its browser-module boundary.
 
 Islands can be placed from **templates** (`{{ island(...) | safe }}`, below)
 or from **content** (`{{ island(component="...") }}` as a

@@ -70,6 +70,18 @@ The base template defines the common HTML structure:
 </html>
 ```
 
+The JavaScript reference above is the default scaffold mode. A site initialized
+with `taxus init --typescript` instead references the compiled module:
+
+```html
+<script type="module" src="/static/ts/main.js"></script>
+```
+
+Taxus emits that module from `scripts/main.ts` (and any imported TypeScript
+modules) during the asset stage. Choose one mode for a scaffold rather than
+loading both starter scripts. See [TypeScript configuration](./configuration.md#typescript-section)
+for imports, source maps, and compiler requirements.
+
 ## Page Template
 
 Page templates extend the base template:

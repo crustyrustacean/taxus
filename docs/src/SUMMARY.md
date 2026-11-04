@@ -12,6 +12,7 @@
 - [Architecture](./architecture.md)
 - [Content Model](./content-model.md)
 - [Configuration](./configuration.md)
+- [TypeScript Assets](./typescript.md)
 - [Content](./content.md)
 - [Shortcodes](./shortcodes.md)
 - [Templates](./templates.md)

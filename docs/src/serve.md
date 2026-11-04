@@ -58,9 +58,14 @@ browsable address (`127.0.0.1` or `[::1]`) rather than the wildcard.
 ### Hot Reloading
 
 The server watches the source directories — `content/`, `templates/`,
-`styles/`, `static/`, and the `site.toml` file — and nothing else. The
-output directory is never watched, so a build's own writes cannot
-trigger another build.
+`styles/`, `static/`, `scripts/` — and the root configuration files
+`site.toml` and (when present) `tsconfig.json`. The output directory is never
+watched, so a build's own writes cannot trigger another build.
+
+When TypeScript is enabled, editing a file under `scripts/` triggers a
+TypeScript check and rebuild. A failed check leaves the last successful
+`dist/static/ts/` output in place; fix the source and the next rebuild recovers
+normally.
 
 When a change is detected, the server rebuilds and sends a reload signal to connected browsers via WebSocket.
 
@@ -143,6 +148,7 @@ Ensure files are in correct directories:
 - Templates: `templates/` with `.html` extension
 - Styles: `styles/` with `.scss` or `.sass`
 - Static: `static/`
+- TypeScript: `scripts/` and `tsconfig.json`
 
 ### Browser Not Refreshing
 

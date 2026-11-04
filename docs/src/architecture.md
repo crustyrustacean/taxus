@@ -121,9 +121,13 @@ processed pages and `[feed]` config. `feed_pages` selects dated, non-draft
 pages newest first (from `derivation::recent`), scoped by `sections` if
 set. Produces the RSS and Atom documents; written in stage 15.
 
-**[12/15] Processing assets** (emit). Reads `styles/` and `static/`.
-Compiles SCSS to `dist/css/` and copies static files to `dist/static/`.
-The co-located asset report from stage 5 is merged in here.
+**[12/15] Processing assets** (emit). Reads `styles/`, `static/`, and,
+when `[typescript].enabled = true`, `scripts/` plus `tsconfig.json`.
+Compiles SCSS to `dist/css/`, copies static files to `dist/static/`, and
+runs the native TypeScript compiler to emit browser modules and optional source
+maps under `dist/static/ts/`. The co-located asset report from stage 5 is
+merged in here. TypeScript output is staged and swapped atomically so a failed
+check does not replace the previous successful output.
 
 **[13/15] Generating search index** (emit). Reads the processed pages in
 registry order — skipped entirely when `[build] search = false`. Produces
@@ -173,7 +177,7 @@ Stages join the tree to the processed pages by **content file**: a
 | `templates` | emit | `TeraRenderer`, `TemplateContext`, `PageContext`, `SectionContext`, `SiteContext`, `PaginationContext`, `TaxonomyTermContext` | render Tera templates; tree functions |
 | `images` | emit | `ImageProcessor`, `ProcessedImage`, `ImageRegistry`, `render_picture` | hero image variants and `<picture>` markup |
 | `highlighting` | emit | `CodeHighlighter`, `LanguageRegistry` | tree-sitter syntax highlighting |
-| `assets` | emit | `ScssProcessor`, `StaticCopier`, `AssetReport` | SCSS and static files |
+| `assets` | emit | `ScssProcessor`, `StaticCopier`, `TypeScriptProcessor`, `AssetReport` | SCSS, static files, and optional TypeScript modules |
 | `feed` | emit | `FeedGenerator`, `FeedEntry`, `FeedConfig` | RSS and Atom documents |
 | `init` | none | `InitScaffolder`, `InitOptions`, `InitReport` | `taxus init` |
 | `serve` | none | `DevServer`, `DevServerConfig`, `FileWatcher` | dev server, file watching, live reload |
