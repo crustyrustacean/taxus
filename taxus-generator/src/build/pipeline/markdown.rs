@@ -80,6 +80,14 @@ pub fn markdown_to_html_with_toc(
     // the first marker — task_list_started guards "already retrofitted".
     let mut task_list_started = false;
 
+    // ── table state ──
+    // pulldown-cmark emits the table header cells as ordinary TableCell
+    // events nested inside TableHead, so the renderer must track whether a
+    // cell belongs to the header in order to choose <th> vs. <td>.
+    let mut table_alignments: Vec<pulldown_cmark::Alignment> = Vec::new();
+    let mut table_column = 0usize;
+    let mut in_table_head = false;
+
     // Deduplication: heading ids must be unique within the page.
     let mut id_counts: HashMap<String, usize> = HashMap::new();
 
@@ -130,6 +138,48 @@ pub fn markdown_to_html_with_toc(
                 }
 
                 code_lang = None;
+            }
+            Event::Start(Tag::Table(alignments)) => {
+                table_alignments = alignments;
+                table_column = 0;
+                output.push_str("<table>\n");
+            }
+            Event::Start(Tag::TableHead) => {
+                in_table_head = true;
+                table_column = 0;
+                output.push_str("<thead><tr>");
+            }
+            Event::Start(Tag::TableRow) => {
+                table_column = 0;
+                output.push_str("<tr>");
+            }
+            Event::Start(Tag::TableCell) => {
+                if in_table_head {
+                    let alignment = table_alignments.get(table_column);
+                    output.push_str(match alignment {
+                        Some(pulldown_cmark::Alignment::Left) => "<th align=\"left\">",
+                        Some(pulldown_cmark::Alignment::Center) => "<th align=\"center\">",
+                        Some(pulldown_cmark::Alignment::Right) => "<th align=\"right\">",
+                        Some(pulldown_cmark::Alignment::None) | None => "<th>",
+                    });
+                } else {
+                    output.push_str("<td>");
+                }
+                table_column += 1;
+            }
+            Event::End(TagEnd::TableCell) => {
+                output.push_str(if in_table_head { "</th>" } else { "</td>" });
+            }
+            Event::End(TagEnd::TableHead) => {
+                in_table_head = false;
+                output.push_str("</tr></thead><tbody>");
+            }
+            Event::End(TagEnd::TableRow) => {
+                output.push_str("</tr>\n");
+            }
+            Event::End(TagEnd::Table) => {
+                table_alignments.clear();
+                output.push_str("</tbody></table>\n");
             }
             Event::Start(Tag::Heading {
                 level, id, classes, ..
@@ -555,14 +605,61 @@ mod tests {
     }
 
     #[test]
-    fn test_tables_still_render() {
+    fn test_tables_render_header_cells_and_body_rows() {
         let (html, _) = markdown_to_html_with_toc(
-            "| a | b |\n|---|---|\n| 1 | 2 |\n",
+            "| Tier | Who writes it | Examples |\n|---|---|---|\n| 1 | The model | the bash tool |\n| 2 | The user | hooks |\n",
             None,
             &MarkdownOptions::default(),
         );
-        assert!(html.contains("<table>"), "got: {html}");
-        assert!(html.contains("<td>1</td>"), "got: {html}");
+
+        assert!(
+            html.contains(
+                "<thead><tr><th>Tier</th><th>Who writes it</th><th>Examples</th></tr></thead>"
+            ),
+            "header cells are malformed: {html}"
+        );
+        assert!(
+            html.contains(
+                "<tbody><tr><td>1</td><td>The model</td><td>the bash tool</td></tr>\n<tr><td>2</td><td>The user</td><td>hooks</td></tr>"
+            ),
+            "body rows are malformed: {html}"
+        );
+        assert!(!html.contains("<th></th>"), "empty header cell: {html}");
+    }
+
+    #[test]
+    fn test_table_alignment_is_preserved() {
+        let (html, _) = markdown_to_html_with_toc(
+            "| Left | Center | Right |\n|:---|:---:|---:|\n| a | b | c |\n",
+            None,
+            &MarkdownOptions::default(),
+        );
+
+        assert!(html.contains("<th align=\"left\">Left</th>"), "got: {html}");
+        assert!(
+            html.contains("<th align=\"center\">Center</th>"),
+            "got: {html}"
+        );
+        assert!(
+            html.contains("<th align=\"right\">Right</th>"),
+            "got: {html}"
+        );
+    }
+
+    #[test]
+    fn test_header_only_table_still_renders_header() {
+        let (html, _) = markdown_to_html_with_toc(
+            "| Name | Value |\n|---|---|\n",
+            None,
+            &MarkdownOptions::default(),
+        );
+
+        assert!(
+            html.contains("<thead><tr><th>Name</th><th>Value</th></tr></thead>"),
+            "header-only table is malformed: {html}"
+        );
+        assert!(html.contains("<tbody></tbody></table>"), "got: {html}");
+        assert!(!html.contains("<tbody><td>"), "loose body cell: {html}");
     }
 
     #[test]
