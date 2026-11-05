@@ -3059,7 +3059,7 @@ dependencies = [
 
 [[package]]
 name = "taxus"
-version = "1.4.3"
+version = "1.4.4"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3107,7 +3107,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-client"
-version = "1.4.3"
+version = "1.4.4"
 dependencies = [
  "js-sys",
  "serde-wasm-bindgen",
@@ -3121,7 +3121,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-common"
-version = "1.4.3"
+version = "1.4.4"
 dependencies = [
  "gloo-timers 0.4.0",
  "js-sys",
@@ -3137,7 +3137,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-domain"
-version = "1.4.3"
+version = "1.4.4"
 dependencies = [
  "chrono",
  "serde",
@@ -3982,7 +3982,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "1.4.3"
+version = "1.4.4"
 dependencies = [
  "clap",
 ]
