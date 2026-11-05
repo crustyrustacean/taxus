@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **markdown**: render pipe-table headers as semantic `<th>` cells and wrap the first body row correctly
+
 ## [1.4.3] - 2026-11-04
 
 ### Added
