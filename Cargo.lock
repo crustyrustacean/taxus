@@ -3058,7 +3058,48 @@ dependencies = [
 ]
 
 [[package]]
-name = "taxus"
+name = "taxus-client"
+version = "1.4.4"
+dependencies = [
+ "js-sys",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "taxus-common",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "yew",
+]
+
+[[package]]
+name = "taxus-common"
+version = "1.4.4"
+dependencies = [
+ "gloo-timers 0.4.0",
+ "js-sys",
+ "postcard",
+ "rust-stemmers",
+ "serde",
+ "serde-wasm-bindgen",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "yew",
+]
+
+[[package]]
+name = "taxus-domain"
+version = "1.4.4"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
+name = "taxus-ssg"
 version = "1.4.4"
 dependencies = [
  "axum",
@@ -3103,47 +3144,6 @@ dependencies = [
  "webbrowser",
  "webp",
  "yew",
-]
-
-[[package]]
-name = "taxus-client"
-version = "1.4.4"
-dependencies = [
- "js-sys",
- "serde-wasm-bindgen",
- "serde_json",
- "taxus-common",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "yew",
-]
-
-[[package]]
-name = "taxus-common"
-version = "1.4.4"
-dependencies = [
- "gloo-timers 0.4.0",
- "js-sys",
- "postcard",
- "rust-stemmers",
- "serde",
- "serde-wasm-bindgen",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "yew",
-]
-
-[[package]]
-name = "taxus-domain"
-version = "1.4.4"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "toml",
 ]
 
 [[package]]

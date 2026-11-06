@@ -1,8 +1,9 @@
 # API Reference
 
 This page documents the public API of the three library crates:
-`taxus-domain` (the model), `taxus_lib` (the generator library, crate
-`taxus-generator`) and `taxus-common` (islands and search). Terms are
+`taxus-domain` (the model), `taxus_lib` (the generator library, published as
+`taxus-ssg` from the `taxus-generator` directory) and `taxus-common` (islands
+and search). Terms are
 defined in the [Glossary](./theory/glossary.md). `cargo doc --workspace
 --no-deps --open` builds the full rustdoc, which is the authoritative
 reference; this page is the map.
@@ -184,7 +185,7 @@ pub fn stem(tokens: &[String]) -> Vec<String> // English Porter stemmer
 
 ---
 
-## `taxus-generator` Crate (`taxus_lib`)
+## `taxus-ssg` Crate (`taxus_lib`)
 
 ### Re-exports
 

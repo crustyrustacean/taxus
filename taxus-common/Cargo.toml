@@ -8,6 +8,11 @@ description.workspace = true
 license.workspace = true
 readme.workspace = true
 repository.workspace = true
+homepage = "https://get-taxus.org"
+documentation = "https://docs.rs/taxus-common"
+keywords = ["yew", "wasm", "static-site-generator"]
+categories = ["wasm", "web-programming"]
+publish = true
 
 [package.metadata.dist]
 dist = false

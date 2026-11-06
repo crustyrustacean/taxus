@@ -1,13 +1,18 @@
 [package]
-name = "taxus"
+name = "taxus-ssg"
 version.workspace = true
 rust-version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description.workspace = true
+description = "A Rust static site generator library and CLI."
 license.workspace = true
 readme.workspace = true
 repository.workspace = true
+homepage = "https://get-taxus.org"
+documentation = "https://docs.rs/taxus-ssg"
+keywords = ["static-site-generator", "ssg", "markdown", "tera", "wasm"]
+categories = ["command-line-utilities", "web-programming"]
+publish = true
 
 [[bin]]
 name = "taxus"

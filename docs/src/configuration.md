@@ -107,7 +107,7 @@ no TypeScript compiler. Build a binary with the bundled compiler by enabling the
 Cargo feature:
 
 ```bash
-cargo build -p taxus --features typescript
+cargo build -p taxus-ssg --features typescript
 ```
 
 A binary built without that feature can still use TypeScript by setting

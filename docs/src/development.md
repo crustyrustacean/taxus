@@ -24,7 +24,7 @@ cargo build
 cargo test
 
 # Run tests for a specific crate
-cargo test -p taxus
+cargo test -p taxus-ssg
 
 # Run unit tests only
 cargo test --lib
