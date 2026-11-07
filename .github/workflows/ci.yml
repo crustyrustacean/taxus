@@ -46,6 +46,9 @@ jobs:
       - name: Check library-only build
         run: cargo check -p taxus-ssg --no-default-features
 
+      - name: Validate packaged library consumer
+        run: python3 scripts/check-packaged-consumer.py
+
       - name: Run unit and integration tests
         run: cargo test
 

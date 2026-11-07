@@ -50,6 +50,9 @@ cargo build --release -p taxus-cli --features typescript
 
 # Check the library-only build (no workspace WASM/client build)
 cargo check -p taxus-ssg --no-default-features
+
+# Package and compile an external consumer against taxus-ssg
+python3 scripts/check-packaged-consumer.py
 ```
 
 ## Development Server
