@@ -52,6 +52,10 @@ pub enum GeneratorError {
     #[error("Search error: {0}")]
     Search(Box<SearchError>),
 
+    /// Embedded WASM client support is unavailable
+    #[error("WASM error: {0}")]
+    Wasm(Box<WasmError>),
+
     /// I/O errors with context
     #[error("I/O error for {path}: {source}")]
     Io {

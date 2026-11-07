@@ -114,6 +114,10 @@ A binary built without that feature can still use TypeScript by setting
 `typescript.compiler` to an installed Microsoft `tsc` executable. Taxus's
 published release binaries enable this feature for their target platform.
 
+Library-only builds can disable the product's embedded WASM client with
+`--no-default-features`; such builds can process sites initialized with
+`--no-islands` without requiring the workspace's `taxus-client` crate.
+
 The vendored compiler archives and their pinned digests can be checked with:
 
 ```bash

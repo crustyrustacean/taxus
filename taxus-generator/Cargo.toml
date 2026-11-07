@@ -36,11 +36,15 @@ lang-javascript = ["dep:tree-sitter-javascript"]
 # WebP output falls back to the `image` crate's lossless encoder and
 # `images.quality` is ignored for WebP.
 webp-lossy = ["dep:webp"]
+# Embedded WASM client generation is enabled for the standalone product build;
+# library consumers can disable it with --no-default-features.
+embedded-wasm = []
 # Native TypeScript compiler archives are opt-in: default Taxus binaries do
 # not carry any compiler. Enable this feature when building a binary that
 # should compile TypeScript without an external `tsc`.
 typescript = ["dep:flate2", "dep:tar"]
 default = [
+    "embedded-wasm",
     "lang-rust",
     "lang-html",
     "lang-css",

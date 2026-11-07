@@ -4,6 +4,12 @@ use std::env;
 use std::path::Path;
 use std::process::Command;
 fn main() {
+    // Library-only builds do not need the product's embedded WASM client or
+    // workspace sibling crates. The standalone product enables this feature.
+    if env::var_os("CARGO_FEATURE_EMBEDDED_WASM").is_none() {
+        return;
+    }
+
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=../taxus-client/src");
     // The client depends on taxus-common (every island component lives

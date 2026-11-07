@@ -25,9 +25,16 @@ impl Default for LanguageRegistry {
 
 impl LanguageRegistry {
     pub fn new() -> Self {
-        let mut registry = Self {
+        let registry = Self {
             languages: HashMap::new(),
         };
+        #[cfg(any(
+            feature = "lang-rust",
+            feature = "lang-javascript",
+            feature = "lang-css",
+            feature = "lang-html"
+        ))]
+        let mut registry = registry;
 
         #[cfg(feature = "lang-rust")]
         registry.register_rust();
@@ -53,6 +60,12 @@ impl LanguageRegistry {
         self.languages.iter()
     }
 
+    #[cfg(any(
+        feature = "lang-rust",
+        feature = "lang-javascript",
+        feature = "lang-css",
+        feature = "lang-html"
+    ))]
     fn register(&mut self, spec: LanguageSpec, aliases: &[&'static str]) {
         for alias in aliases {
             self.languages.insert(alias, spec.clone());

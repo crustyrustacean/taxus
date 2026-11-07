@@ -43,6 +43,9 @@ jobs:
       - name: Build
         run: cargo build
 
+      - name: Check library-only build
+        run: cargo check -p taxus-ssg --no-default-features
+
       - name: Run unit and integration tests
         run: cargo test
 
