@@ -40,7 +40,6 @@ embedded-wasm = []
 # should compile TypeScript without an external `tsc`.
 typescript = ["dep:flate2", "dep:tar"]
 default = [
-    "embedded-wasm",
     "lang-rust",
     "lang-html",
     "lang-css",

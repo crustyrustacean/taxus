@@ -23,8 +23,11 @@ cargo build
 # Run all unit, integration and doc tests
 cargo test
 
-# Run tests for a specific crate
-cargo test -p taxus-ssg
+# Run the reusable library unit tests without product WASM
+cargo test -p taxus-ssg --no-default-features --lib
+
+# Run the full library regression suite with embedded WASM
+cargo test -p taxus-ssg --features embedded-wasm
 
 # Run unit tests only
 cargo test --lib

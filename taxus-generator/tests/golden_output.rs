@@ -11,7 +11,7 @@
 //! # Re-baselining
 //!
 //! ```text
-//! GOLDEN_UPDATE=1 cargo test -p taxus-ssg --test golden_output
+//! GOLDEN_UPDATE=1 cargo test -p taxus-ssg --features embedded-wasm --test golden_output
 //! ```
 //!
 //! rewrites the manifests. Only do this in a dedicated commit whose message

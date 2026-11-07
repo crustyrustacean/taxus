@@ -137,7 +137,7 @@ impl LanguageRegistry {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "lang-rust"))]
 mod tests {
     use super::*;
 
