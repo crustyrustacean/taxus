@@ -27,7 +27,7 @@ enum Segment {
     Literal(String),
 }
 
-/// A parsed `[build] flatten` pattern. See the [module docs](crate::routes::flatten).
+/// A parsed `[build] flatten` pattern; see the module documentation for syntax.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FlattenPattern {
     raw: String,
