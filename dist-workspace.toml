@@ -21,3 +21,9 @@ precise-builds = true
 # Release binaries include the native TypeScript compiler for their target.
 # Ordinary Cargo builds remain compiler-free unless this feature is requested.
 features = ["typescript"]
+
+[dist.github-custom-runners]
+# GitHub retired the default macOS 14 arm64 configuration. Use the current
+# standard hosted runner labels for Apple Silicon and Intel targets.
+"aarch64-apple-darwin" = "macos-15"
+"x86_64-apple-darwin" = "macos-15-intel"
