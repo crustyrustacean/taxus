@@ -74,8 +74,8 @@ image = "0.25"
 webp = { version = "0.3.1", optional = true }
 
 # ── Islands (Yew SSR + WASM client) ───────────────────────────────────────────
-taxus-common = { path = "../taxus-common" }
-taxus-domain = { path = "../taxus-domain" }
+taxus-common = { version = "1.4", path = "../taxus-common" }
+taxus-domain = { version = "1.4", path = "../taxus-domain" }
 yew = { version = "0.23", features = ["ssr"] }
 
 # ── Dev server dependencies ───────────────────────────────────────────────────
