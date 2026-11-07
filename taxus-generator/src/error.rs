@@ -31,10 +31,6 @@ pub enum GeneratorError {
     #[error("Route error: {0}")]
     Route(Box<RouteError>),
 
-    /// Init-related errors
-    #[error("Init error: {0}")]
-    Init(Box<InitError>),
-
     /// Feed-related errors
     #[error("Feed error: {0}")]
     Feed(Box<FeedError>),
@@ -100,7 +96,6 @@ impl_from_for_generator_error! {
     TemplateError => Template,
     AssetError => Asset,
     RouteError => Route,
-    InitError => Init,
     FeedError => Feed,
     ImageError => Image,
     SearchError => Search,
@@ -240,42 +235,6 @@ pub enum RouteError {
     /// Content discovery failed
     #[error("Content discovery failed: {0}")]
     DiscoveryFailed(String),
-}
-
-/// Init-related errors.
-#[derive(Debug, thiserror::Error)]
-pub enum InitError {
-    /// Directory already exists and is not empty
-    #[error("Directory is not empty: {0}")]
-    DirectoryNotEmpty(PathBuf),
-
-    /// Failed to create directory
-    #[error("Failed to create directory '{path}': {source}")]
-    DirectoryCreation {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-
-    /// Failed to write file
-    #[error("Failed to write file '{path}': {source}")]
-    FileWrite {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-
-    /// User cancelled the operation
-    #[error("Operation cancelled by user")]
-    Cancelled,
-
-    /// Invalid site name
-    #[error("Invalid site name: {0}")]
-    InvalidName(String),
-
-    /// Invalid base URL
-    #[error("Invalid base URL: {0}")]
-    InvalidBaseUrl(String),
 }
 
 /// Feed-related errors.
@@ -595,66 +554,6 @@ mod tests {
         let msg = err.to_string();
         assert!(msg.contains("Failed to render"));
         assert!(msg.contains("/about/"));
-    }
-
-    #[test]
-    fn test_init_error_directory_not_empty() {
-        let err = InitError::DirectoryNotEmpty(PathBuf::from("my-site"));
-        let msg = err.to_string();
-        assert!(msg.contains("Directory is not empty"));
-        assert!(msg.contains("my-site"));
-    }
-
-    #[test]
-    fn test_init_error_directory_creation() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
-        let err = InitError::DirectoryCreation {
-            path: PathBuf::from("my-site"),
-            source: io_err,
-        };
-        let msg = err.to_string();
-        assert!(msg.contains("Failed to create directory"));
-        assert!(msg.contains("my-site"));
-    }
-
-    #[test]
-    fn test_init_error_file_write() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
-        let err = InitError::FileWrite {
-            path: PathBuf::from("my-site/site.toml"),
-            source: io_err,
-        };
-        let msg = err.to_string();
-        assert!(msg.contains("Failed to write file"));
-        assert!(msg.contains("site.toml"));
-    }
-
-    #[test]
-    fn test_init_error_cancelled() {
-        let err = InitError::Cancelled;
-        let msg = err.to_string();
-        assert!(msg.contains("cancelled"));
-    }
-
-    #[test]
-    fn test_init_error_invalid_name() {
-        let err = InitError::InvalidName("".to_string());
-        let msg = err.to_string();
-        assert!(msg.contains("Invalid site name"));
-    }
-
-    #[test]
-    fn test_init_error_invalid_base_url() {
-        let err = InitError::InvalidBaseUrl("not-a-url".to_string());
-        let msg = err.to_string();
-        assert!(msg.contains("Invalid base URL"));
-    }
-
-    #[test]
-    fn test_generator_error_from_init() {
-        let init_err = InitError::Cancelled;
-        let gen_err: GeneratorError = init_err.into();
-        assert!(matches!(gen_err, GeneratorError::Init(_)));
     }
 
     // ImageError tests

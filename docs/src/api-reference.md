@@ -200,9 +200,8 @@ pub use build::{BuildReport, SiteBuilder};
 pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
 pub use highlighting::{CodeHighlighter, LanguageRegistry};
 pub use images::{ImageProcessor, ImageRegistry, ProcessedImage, render_picture};
-pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
-pub use error::{AssetError, ContentError, FeedError, GeneratorError, ImageError, InitError, Result, RouteError, TemplateError};
+pub use error::{AssetError, ContentError, FeedError, GeneratorError, ImageError, Result, RouteError, TemplateError};
 ```
 
 ## `config` Module
@@ -708,87 +707,11 @@ pub struct FeedEntry { pub title, pub url, pub summary, pub content: Option<Stri
 | `FeedGenerator::rss_filename()`, `atom_filename()` | `feed.xml`, `feed.atom` |
 | `escape_xml(&str) -> String` | XML escaping |
 
-## `init` Module
+## Product APIs
 
-### `InitOptions`
-
-```rust
-pub struct InitOptions {
-    pub name: String,
-    pub base_url: String,
-    pub force: bool,
-    pub islands: bool,
-}
-```
-
-| Method | Description |
-|--------|-------------|
-| `new(name, base_url) -> Self` | Create options |
-| `with_force(self, bool) -> Self` | Set force |
-| `with_islands(self, bool) -> Self`, `without_islands(self) -> Self` | Islands on or off |
-| `validate(&self) -> Result<(), InitError>` | Non-empty name; base URL starts with `http://` or `https://` |
-
-### `InitScaffolder`
-
-| Method | Description |
-|--------|-------------|
-| `new(options: InitOptions) -> Self` | Create scaffolder |
-| `scaffold(&self, path: &Path) -> Result<InitReport>` | Scaffold site |
-
-### `InitReport`
-
-```rust
-pub struct InitReport {
-    pub path: PathBuf,
-    pub directories_created: usize,
-    pub files_created: usize,
-    pub created_dirs: Vec<PathBuf>,
-    pub created_files: Vec<PathBuf>,
-}
-```
-
-### Helpers
-
-```rust
-pub fn is_directory_empty(path: &Path) -> Result<bool>
-pub fn derive_site_name(path: &Path) -> String
-```
-
-## `serve` Module
-
-### `DevServer`
-
-| Method | Description |
-|--------|-------------|
-| `new(config: DevServerConfig, rebuild: RebuildFn) -> Self` | Create server; `RebuildFn` is `Arc<dyn Fn() -> Result<(), String> + Send + Sync>` |
-| `run(&self) -> Result<()>` | Start server (async) |
-| `host(&self) -> IpAddr`, `port(&self) -> u16` | Bind address |
-
-### `DevServerConfig`
-
-```rust
-pub struct DevServerConfig {
-    pub host: IpAddr,            // default: 127.0.0.1
-    pub port: u16,               // default: 3000
-    pub output_dir: PathBuf,
-    pub site_dir: PathBuf,
-    // ...
-}
-```
-
-| Method | Description |
-|--------|-------------|
-| `default() -> Self` | Create with defaults |
-| `with_host(self, host: IpAddr) -> Self` | Set bind address |
-| `with_port(self, port: u16) -> Self` | Set port |
-| `with_output_dir(self, dir: PathBuf) -> Self` | Set output dir |
-| `with_site_dir(self, dir: PathBuf) -> Self` | Set site dir |
-| `with_include_drafts(self, bool) -> Self` | Mirrored into every rebuild (#40) |
-| `with_open(self, bool) -> Self` | Open a browser after starting |
-
-Also exported: `browsable_url(SocketAddr) -> String`, `FileWatcher`,
-`WatchEvent`, `ChangeType`, `ReloadEvent`, `WebSocketMessage`,
-`inject_live_reload_script`, `LIVE_RELOAD_SCRIPT`.
+Site initialization, the development server, telemetry, and CLI error
+rendering belong to the unpublished `taxus-cli` package. The `taxus-ssg`
+library exposes only reusable site build and content APIs.
 
 ## `error` Module
 
@@ -801,8 +724,6 @@ pub enum GeneratorError {
     Template(Box<TemplateError>),
     Asset(Box<AssetError>),
     Route(Box<RouteError>),
-    Init(Box<InitError>),
-    Serve(Box<ServeError>),
     Feed(Box<FeedError>),
     Image(Box<ImageError>),
     Search(Box<SearchError>),
@@ -822,8 +743,6 @@ pub enum GeneratorError {
 | `RouteError` | Route errors (not found, duplicate, invalid path, discovery failed) |
 | `FeedError` | Feed generation errors |
 | `ImageError` | Image processing errors |
-| `InitError` | Initialization errors (invalid name or URL, file write, cancelled) |
-| `ServeError` | Server errors (port in use, WebSocket) |
 | `SearchError` | Search index serialization errors |
 | `WasmError` | WASM client write errors (not wrapped by `GeneratorError`) |
 
@@ -832,11 +751,3 @@ pub enum GeneratorError {
 ```rust
 pub type Result<T> = std::result::Result<T, GeneratorError>;
 ```
-
-## `telemetry` Module
-
-| Function | Description |
-|----------|-------------|
-| `init()` | Initialize with `RUST_LOG` env var |
-| `init_tracing(verbose: bool, quiet: bool)` | Initialize from CLI flags, falling back to `RUST_LOG` |
-| `init_with_level(level: &str)` | Initialize with specific level |
