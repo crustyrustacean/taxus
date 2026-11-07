@@ -38,7 +38,16 @@ embedded-wasm = ["dep:wasm-bindgen-cli-support"]
 # Native TypeScript compiler archives are opt-in: default Taxus binaries do
 # not carry any compiler. Enable this feature when building a binary that
 # should compile TypeScript without an external `tsc`.
-typescript = ["dep:flate2", "dep:tar"]
+typescript = [
+    "dep:flate2",
+    "dep:tar",
+    "dep:taxus-typescript-darwin-arm64",
+    "dep:taxus-typescript-darwin-x64",
+    "dep:taxus-typescript-linux-arm64",
+    "dep:taxus-typescript-linux-x64",
+    "dep:taxus-typescript-win32-arm64",
+    "dep:taxus-typescript-win32-x64",
+]
 default = [
     "lang-rust",
     "lang-html",
@@ -80,6 +89,24 @@ tera-contrib = { version = "0.2.0", features = ["date", "slug"] }
 sha2 = "0.10"
 flate2 = { version = "1", optional = true }
 tar = { version = "0.4", optional = true }
+
+[target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
+taxus-typescript-darwin-arm64 = { version = "1.4", path = "../taxus-typescript-darwin-arm64", optional = true }
+
+[target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
+taxus-typescript-darwin-x64 = { version = "1.4", path = "../taxus-typescript-darwin-x64", optional = true }
+
+[target.'cfg(all(target_os = "linux", target_arch = "aarch64"))'.dependencies]
+taxus-typescript-linux-arm64 = { version = "1.4", path = "../taxus-typescript-linux-arm64", optional = true }
+
+[target.'cfg(all(target_os = "linux", target_arch = "x86_64"))'.dependencies]
+taxus-typescript-linux-x64 = { version = "1.4", path = "../taxus-typescript-linux-x64", optional = true }
+
+[target.'cfg(all(target_os = "windows", target_arch = "aarch64"))'.dependencies]
+taxus-typescript-win32-arm64 = { version = "1.4", path = "../taxus-typescript-win32-arm64", optional = true }
+
+[target.'cfg(all(target_os = "windows", target_arch = "x86_64"))'.dependencies]
+taxus-typescript-win32-x64 = { version = "1.4", path = "../taxus-typescript-win32-x64", optional = true }
 
 [build-dependencies]
 # The library-only path must not resolve the product's WASM packaging toolchain.

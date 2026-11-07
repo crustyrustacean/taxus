@@ -7,7 +7,7 @@ in the [Glossary](./theory/glossary.md).
 
 ## Workspace
 
-Taxus is a Cargo workspace of six crates.
+Taxus is a Cargo workspace of twelve crates.
 
 ```text
 taxus/
@@ -16,6 +16,7 @@ taxus/
 ├── taxus-cli/       # the `taxus` product binary and CLI-only behavior
 ├── taxus-common/    # Yew island components and the search index, shared by both sides
 ├── taxus-client/    # the browser-side WASM that hydrates islands (embedded in the binary)
+├── taxus-typescript-*/ # target-specific bundled TypeScript archives
 └── xtask/           # developer task runner (`cargo xtask`)
 ```
 
@@ -26,6 +27,7 @@ taxus/
 | `taxus-cli` (`taxus-cli/`) | product | Owns the `taxus` command-line binary, CLI parsing, init, serve and user-facing error rendering. | binary `taxus` |
 | `taxus-common` | emit | Island components (`Counter`, `SearchBox`) rendered at build time and hydrated in the browser; the search index format. | library |
 | `taxus-client` | emit | Finds `[data-island]` mount points in the page and hydrates them; fetches the search index on demand. Compiled to WASM by the generator's build script and embedded with `include_bytes!`. | WASM bundle written to `dist/wasm/` |
+| `taxus-typescript-*` | product feature | One target-specific Microsoft TypeScript compiler archive per package; consumed by `taxus-ssg` only with the `typescript` feature. | library data |
 | `xtask` | none | `cargo xtask build`, `test`, `lint`, `book`, `release`, and the rest. | binary |
 
 How the crates depend on each other:
