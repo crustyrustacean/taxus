@@ -1,0 +1,14 @@
+[package]
+name = "taxus-downstream-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[features]
+default = ["embedded-wasm"]
+embedded-wasm = ["taxus/embedded-wasm"]
+
+[dependencies]
+taxus = { package = "taxus-ssg", path = "../../taxus-generator", default-features = false }

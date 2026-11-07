@@ -18,7 +18,7 @@
 
 use std::fs;
 use std::path::Path;
-use taxus_lib::build::SiteBuilder;
+use taxus::build::SiteBuilder;
 
 fn build_fixture() -> tempfile::TempDir {
     let tmp = tempfile::TempDir::new().unwrap();

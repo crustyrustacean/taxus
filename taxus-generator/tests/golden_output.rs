@@ -11,7 +11,7 @@
 //! # Re-baselining
 //!
 //! ```text
-//! GOLDEN_UPDATE=1 cargo test -p taxus-ssg --test golden_output
+//! GOLDEN_UPDATE=1 cargo test -p taxus-ssg --features embedded-wasm --test golden_output
 //! ```
 //!
 //! rewrites the manifests. Only do this in a dedicated commit whose message
@@ -53,7 +53,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use taxus_lib::build::SiteBuilder;
+use taxus::build::SiteBuilder;
 
 /// Sites that are complete enough to build: content + templates.
 ///

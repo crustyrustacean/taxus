@@ -19,8 +19,8 @@ use walkdir::WalkDir;
 /// # Example
 ///
 /// ```no_run
-/// use taxus_lib::assets::StaticCopier;
-/// use taxus_lib::assets::AssetProcessor;
+/// use taxus::assets::StaticCopier;
+/// use taxus::assets::AssetProcessor;
 /// use std::path::Path;
 ///
 /// let copier = StaticCopier::with_exclusions(vec!["*.scss".to_string()]);

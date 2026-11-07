@@ -10,8 +10,8 @@
 
 use std::path::Path;
 
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::config::SiteConfig;
+use taxus::build::SiteBuilder;
+use taxus::config::SiteConfig;
 
 /// Build the fixture site into a temp dir and return the output root.
 fn build_fixture() -> tempfile::TempDir {

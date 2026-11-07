@@ -23,8 +23,11 @@ cargo build
 # Run all unit, integration and doc tests
 cargo test
 
-# Run tests for a specific crate
-cargo test -p taxus-ssg
+# Run the reusable library unit tests without product WASM
+cargo test -p taxus-ssg --no-default-features --lib
+
+# Run the full library regression suite with embedded WASM
+cargo test -p taxus-ssg --features embedded-wasm
 
 # Run unit tests only
 cargo test --lib
@@ -47,6 +50,9 @@ cargo build --release -p taxus-cli --features typescript
 
 # Check the library-only build (no workspace WASM/client build)
 cargo check -p taxus-ssg --no-default-features
+
+# Package and compile an external consumer against taxus-ssg
+python3 scripts/check-packaged-consumer.py
 ```
 
 ## Development Server
@@ -115,7 +121,7 @@ cargo run -- build --quiet
 
 # Custom via RUST_LOG
 RUST_LOG=debug cargo run -- build
-RUST_LOG=taxus_lib=trace cargo run -- build
+RUST_LOG=taxus=trace cargo run -- build
 ```
 
 Add logging to code:

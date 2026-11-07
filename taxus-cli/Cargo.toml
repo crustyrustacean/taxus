@@ -21,6 +21,8 @@ name = "taxus"
 path = "src/main.rs"
 
 [features]
+default = ["embedded-wasm"]
+embedded-wasm = ["taxus-ssg/embedded-wasm"]
 typescript = ["taxus-ssg/typescript"]
 
 [dependencies]

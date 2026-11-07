@@ -1,10 +1,10 @@
 //! Integration tests for content loading.
 
 use std::path::PathBuf;
+use taxus::content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
+use taxus::error::{ContentError, GeneratorError};
+use taxus::routes::RouteDiscovery;
 use taxus_domain::NodePath;
-use taxus_lib::content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
-use taxus_lib::error::{ContentError, GeneratorError};
-use taxus_lib::routes::RouteDiscovery;
 
 #[test]
 fn test_load_page_from_file() {
@@ -117,8 +117,8 @@ fn test_page_draft_status() {
 /// `--include-drafts` must report zero skips.
 #[test]
 fn test_process_content_reports_observed_draft_count() {
-    use taxus_lib::config::SiteConfig;
-    use taxus_lib::routes::RouteRegistry;
+    use taxus::config::SiteConfig;
+    use taxus::routes::RouteRegistry;
 
     let config = SiteConfig::from_dir("tests/fixtures/content_site").unwrap();
 
@@ -126,13 +126,13 @@ fn test_process_content_reports_observed_draft_count() {
     let tree = RouteDiscovery::new(&content_dir).discover_tree().unwrap();
     let registry = RouteRegistry::from_tree(&tree);
 
-    let (processed, skipped) = taxus_lib::build::pipeline::process_content(
+    let (processed, skipped) = taxus::build::pipeline::process_content(
         &tree,
         &registry,
         &config,
         false,
         None,
-        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+        &taxus::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
     )
     .unwrap();
 
@@ -142,13 +142,13 @@ fn test_process_content_reports_observed_draft_count() {
     assert_eq!(skipped, 1, "exactly the one draft is counted as skipped");
     assert_eq!(processed.len(), 4);
 
-    let (processed, skipped) = taxus_lib::build::pipeline::process_content(
+    let (processed, skipped) = taxus::build::pipeline::process_content(
         &tree,
         &registry,
         &config,
         true,
         None,
-        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+        &taxus::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
     )
     .unwrap();
     assert_eq!(skipped, 0, "including drafts skips nothing");

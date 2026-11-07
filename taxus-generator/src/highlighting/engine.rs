@@ -144,7 +144,7 @@ pub(crate) fn escape_html(text: &str) -> String {
     escaped
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "lang-rust"))]
 mod tests {
     use super::*;
 
@@ -474,7 +474,12 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(
+    test,
+    feature = "lang-html",
+    feature = "lang-css",
+    feature = "lang-javascript"
+))]
 mod web_lang_tests {
     use super::*;
     use crate::highlighting::languages::LanguageRegistry;

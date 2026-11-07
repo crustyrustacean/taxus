@@ -5,8 +5,8 @@
 
 use std::fs;
 use std::path::PathBuf;
-use taxus_lib::assets::AssetReport;
-use taxus_lib::build::pipeline::copy_colocated_assets;
+use taxus::assets::AssetReport;
+use taxus::build::pipeline::copy_colocated_assets;
 use tempfile::TempDir;
 
 // =============================================================================

@@ -4,8 +4,8 @@
 //! SCSS compilation) without creating the output directory at all.
 
 use std::path::Path;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::config::SiteConfig;
+use taxus::build::SiteBuilder;
+use taxus::config::SiteConfig;
 use tempfile::TempDir;
 
 #[test]

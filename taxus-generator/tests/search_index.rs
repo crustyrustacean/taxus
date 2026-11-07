@@ -5,13 +5,13 @@
 //! filename path. Before the fix, search results navigated to a 404 for
 //! every slug-renamed page.
 
+use taxus::build::SiteBuilder;
+use taxus::build::pipeline::search::generate_search;
+use taxus::build::pipeline::{discover_routes, process_content};
+use taxus::config::SiteConfig;
+use taxus::highlighting::CodeHighlighter;
+use taxus::highlighting::LanguageRegistry;
 use taxus_common::search::SearchIndex;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::build::pipeline::search::generate_search;
-use taxus_lib::build::pipeline::{discover_routes, process_content};
-use taxus_lib::config::SiteConfig;
-use taxus_lib::highlighting::CodeHighlighter;
-use taxus_lib::highlighting::LanguageRegistry;
 
 /// Build the fixture site and return its generated search index, decoded.
 fn build_search_index() -> SearchIndex {
@@ -19,7 +19,7 @@ fn build_search_index() -> SearchIndex {
     let config = SiteConfig::from_dir(fixture).expect("fixture config");
 
     let registry = discover_routes(&config).expect("routes");
-    let tree = taxus_lib::build::pipeline::discover_tree(&config).expect("tree");
+    let tree = taxus::build::pipeline::discover_tree(&config).expect("tree");
     let mut highlighter = CodeHighlighter::new(LanguageRegistry::new(), "hl-");
     let (processed, _skipped) = process_content(
         &tree,
@@ -27,7 +27,7 @@ fn build_search_index() -> SearchIndex {
         &config,
         false,
         Some(&mut highlighter),
-        &taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
+        &taxus::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap(),
     )
     .expect("content");
 
@@ -217,14 +217,14 @@ fn search_index_excludes_shortcode_markup_and_args() {
     )
     .unwrap();
 
-    let config = taxus_lib::SiteConfig::from_dir(dir.path()).unwrap();
-    let discovery = taxus_lib::routes::RouteDiscovery::new(&config.build.content_dir);
+    let config = taxus::SiteConfig::from_dir(dir.path()).unwrap();
+    let discovery = taxus::routes::RouteDiscovery::new(&config.build.content_dir);
     let tree = discovery.discover_tree().unwrap();
-    let registry = taxus_lib::routes::RouteRegistry::from_tree(&tree);
-    let mut shortcodes = taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap();
+    let registry = taxus::routes::RouteRegistry::from_tree(&tree);
+    let mut shortcodes = taxus::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap();
     shortcodes.load_dir(&dir.path().join("shortcodes")).unwrap();
 
-    let (processed, _) = taxus_lib::build::pipeline::process_content(
+    let (processed, _) = taxus::build::pipeline::process_content(
         &tree,
         &registry,
         &config,
@@ -234,7 +234,7 @@ fn search_index_excludes_shortcode_markup_and_args() {
     )
     .unwrap();
 
-    let text = taxus_lib::build::pipeline::search::indexed_text(&processed[0]);
+    let text = taxus::build::pipeline::search::indexed_text(&processed[0]);
     assert!(text.contains("Prose"), "prose indexed: {text}");
     assert!(!text.contains("zzzsecretzzz"), "inline args leaked: {text}");
     assert!(!text.contains("qqqhiddenqqq"), "block body leaked: {text}");

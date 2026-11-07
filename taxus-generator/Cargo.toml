@@ -15,7 +15,7 @@ categories = ["command-line-utilities", "web-programming"]
 publish = true
 
 [lib]
-name = "taxus_lib"
+name = "taxus"
 path = "src/lib.rs"
 
 [features]
@@ -40,7 +40,6 @@ embedded-wasm = []
 # should compile TypeScript without an external `tsc`.
 typescript = ["dep:flate2", "dep:tar"]
 default = [
-    "embedded-wasm",
     "lang-rust",
     "lang-html",
     "lang-css",

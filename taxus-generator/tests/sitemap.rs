@@ -7,7 +7,7 @@
 //! Alias redirects are excluded deliberately. `<loc>` is XML-escaped.
 
 use std::path::{Path, PathBuf};
-use taxus_lib::config::SiteConfig;
+use taxus::config::SiteConfig;
 use tempfile::TempDir;
 
 /// Build a fixture site into a temp dir and return the generated
@@ -19,7 +19,7 @@ fn sitemap_for(site_dir: &Path) -> String {
 
     // Run the full pipeline via SiteBuilder so the sitemap reflects
     // the real stage composition (render → taxonomy → sitemap).
-    let builder = taxus_lib::build::SiteBuilder::new(config.clone()).output_dir(output_dir.clone());
+    let builder = taxus::build::SiteBuilder::new(config.clone()).output_dir(output_dir.clone());
     let _report = builder.build().unwrap();
 
     std::fs::read_to_string(output_dir.join("sitemap.xml")).unwrap()
@@ -69,8 +69,7 @@ fn sitemap_escapes_ampersand_in_loc() {
     std::fs::write(&toml_path, toml).unwrap();
 
     let config = SiteConfig::from_dir(staged.path()).unwrap();
-    let builder =
-        taxus_lib::build::SiteBuilder::new(config).output_dir(output.path().to_path_buf());
+    let builder = taxus::build::SiteBuilder::new(config).output_dir(output.path().to_path_buf());
     let _report = builder.build().unwrap();
 
     let xml = std::fs::read_to_string(output.path().join("sitemap.xml")).unwrap();

@@ -1,4 +1,4 @@
-//! # taxus_lib
+//! # taxus
 //!
 //! The Taxus generator: the crate that turns a site directory into an
 //! output directory.
@@ -26,8 +26,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::config::SiteConfig;
-//! use taxus_lib::content::Page;
+//! use taxus::config::SiteConfig;
+//! use taxus::content::Page;
 //!
 //! // Load configuration
 //! let config = SiteConfig::from_dir(".")?;
@@ -37,7 +37,7 @@
 //!
 //! println!("Building site: {}", config.site.name);
 //! println!("Page title: {}", page.frontmatter.title);
-//! # Ok::<(), taxus_lib::error::GeneratorError>(())
+//! # Ok::<(), taxus::error::GeneratorError>(())
 //! ```
 
 // Module declarations

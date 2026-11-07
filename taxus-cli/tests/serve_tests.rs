@@ -520,9 +520,9 @@ mod typescript_serve_tests {
     use std::fs;
     use std::time::Duration;
 
+    use taxus::assets::TypeScriptProcessor;
+    use taxus::config::TypeScriptConfig;
     use taxus_cli::serve::{ChangeType, FileWatcher};
-    use taxus_lib::assets::TypeScriptProcessor;
-    use taxus_lib::config::TypeScriptConfig;
     use tempfile::TempDir;
 
     fn tsconfig() -> &'static str {

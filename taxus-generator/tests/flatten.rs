@@ -25,11 +25,11 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use taxus::build::SiteBuilder;
+use taxus::build::pipeline::{discover_routes, discover_tree};
+use taxus::config::SiteConfig;
+use taxus::routes::{FlattenPattern, RouteDiscovery, RouteRegistry};
 use taxus_common::search::SearchIndex;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::build::pipeline::{discover_routes, discover_tree};
-use taxus_lib::config::SiteConfig;
-use taxus_lib::routes::{FlattenPattern, RouteDiscovery, RouteRegistry};
 use tempfile::TempDir;
 
 const FIXTURE: &str = "tests/fixtures/flatten_site";

@@ -4,8 +4,8 @@ use std::io::{self, BufRead, Write};
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use taxus_lib::error::{GeneratorError, InitError};
-use taxus_lib::{BuildReport, SiteBuilder};
+use taxus::error::{GeneratorError, InitError};
+use taxus::{BuildReport, SiteBuilder};
 
 use crate::error::CommandError;
 use crate::init::{InitOptions, InitReport, InitScaffolder};
@@ -31,7 +31,7 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), CommandError> {
     use crate::serve::{DevServer, DevServerConfig, RebuildFn, browsable_url};
 
     // Load config to get output directory
-    let config = taxus_lib::SiteConfig::from_dir(&args.dir)?;
+    let config = taxus::SiteConfig::from_dir(&args.dir)?;
 
     // Create server configuration
     let server_config = DevServerConfig::default()
@@ -48,7 +48,7 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), CommandError> {
     let verbose = args.verbose;
 
     let rebuild: RebuildFn = Arc::new(move || {
-        taxus_lib::SiteBuilder::from_dir(&site_dir)
+        taxus::SiteBuilder::from_dir(&site_dir)
             .map_err(|e| e.to_string())?
             .include_drafts(include_drafts)
             .verbose(verbose)
@@ -96,7 +96,7 @@ pub struct BuildArgs {
 
 pub fn run_build(args: &BuildArgs) -> Result<BuildReport, GeneratorError> {
     // Load config so we can apply the --output override before building
-    let mut config = taxus_lib::SiteConfig::from_dir(&args.dir)?;
+    let mut config = taxus::SiteConfig::from_dir(&args.dir)?;
     if let Some(ref output) = args.output {
         config.build.output_dir = output.clone();
     }
@@ -197,8 +197,8 @@ pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
 // ---------------------------------------------------------------------------
 
 pub fn run_routes(dir: &Path) -> Result<(), GeneratorError> {
-    use taxus_lib::SiteConfig;
-    use taxus_lib::build::pipeline::discover_routes;
+    use taxus::SiteConfig;
+    use taxus::build::pipeline::discover_routes;
 
     let config = SiteConfig::from_dir(dir)?;
     // The same tree-derived registry the build runs on, so the listed

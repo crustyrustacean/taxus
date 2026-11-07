@@ -1,6 +1,6 @@
 // src/generator/bin/taxus/error.rs
 
-use taxus_lib::error::{ConfigError, GeneratorError, InitError, TemplateError};
+use taxus::error::{ConfigError, GeneratorError, InitError, TemplateError};
 
 use crate::serve_error::ServeError;
 

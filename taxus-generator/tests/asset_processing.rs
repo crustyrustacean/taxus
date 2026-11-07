@@ -2,8 +2,8 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use taxus_lib::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
-use taxus_lib::error::AssetError;
+use taxus::assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
+use taxus::error::AssetError;
 use tempfile::TempDir;
 
 // =============================================================================
@@ -312,8 +312,8 @@ fn test_static_copier_dry_run_writes_nothing() {
 
 #[test]
 fn test_process_assets_dry_run_writes_nothing() {
-    use taxus_lib::build::pipeline;
-    use taxus_lib::config::SiteConfig;
+    use taxus::build::pipeline;
+    use taxus::config::SiteConfig;
 
     let temp_dir = TempDir::new().unwrap();
 

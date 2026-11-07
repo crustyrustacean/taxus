@@ -1,8 +1,8 @@
 //! Integration tests for syntax highlighting.
 
 use std::path::Path;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::config::SiteConfig;
+use taxus::build::SiteBuilder;
+use taxus::config::SiteConfig;
 use tempfile::TempDir;
 
 fn build_highlight_site() -> (TempDir, String) {

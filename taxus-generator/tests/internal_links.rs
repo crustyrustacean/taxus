@@ -1,8 +1,8 @@
 //! Integration tests for internal link resolution.
 
 use std::path::Path;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::config::SiteConfig;
+use taxus::build::SiteBuilder;
+use taxus::config::SiteConfig;
 use tempfile::TempDir;
 
 /// Test that internal links are correctly resolved in built output.
@@ -99,7 +99,7 @@ fn test_section_pages_have_word_count_and_reading_time() {
 /// Test that word_count and reading_time are correctly computed and available in templates.
 #[test]
 fn test_word_count_and_reading_time_in_section() {
-    use taxus_lib::content::Page;
+    use taxus::content::Page;
 
     // Load the first-post.md page
     let page = Page::from_file("tests/fixtures/internal_links_site/content/blog/first-post.md")

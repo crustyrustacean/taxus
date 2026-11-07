@@ -13,10 +13,10 @@
 //! is the hydration mount point wrapping the SSR'd initial value.
 
 use std::path::Path;
+use taxus::build::SiteBuilder;
+use taxus::build::pipeline::render_island_counter;
+use taxus::config::SiteConfig;
 use taxus_common::components::counter::CounterProps;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::build::pipeline::render_island_counter;
-use taxus_lib::config::SiteConfig;
 use tempfile::TempDir;
 
 /// Render a `Counter` island with `initial` and check the output shape.
@@ -149,9 +149,9 @@ fn build_with_island_template_writes_ssr_html_without_runtime() {
 
 #[test]
 fn island_props_with_quote_survive_attribute_embedding() {
+    use taxus::build::pipeline::{render_island_counter, render_search_box};
     use taxus_common::components::counter::CounterProps;
     use taxus_common::components::search_box::SearchBoxProps;
-    use taxus_lib::build::pipeline::{render_island_counter, render_search_box};
 
     // A placeholder containing a single quote — the #39 repro.
     let html = render_search_box(SearchBoxProps {

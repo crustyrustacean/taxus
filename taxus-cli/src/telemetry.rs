@@ -36,7 +36,7 @@
 //! RUST_LOG=error taxus build
 //!
 //! # Module-specific
-//! RUST_LOG=taxus_lib::build=debug taxus build
+//! RUST_LOG=taxus::build=debug taxus build
 //! ```
 
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};

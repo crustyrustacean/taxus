@@ -20,7 +20,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::routes::{RouteDiscovery, RouteRegistry, RouteInfo, RouteKind};
+//! use taxus::routes::{RouteDiscovery, RouteRegistry, RouteInfo, RouteKind};
 //!
 //! // Build the Site Tree from the content directory, then derive the routes
 //! let discovery = RouteDiscovery::new("content");
@@ -43,7 +43,7 @@
 //! if registry.contains("/blog/") {
 //!     println!("Blog section exists");
 //! }
-//! # Ok::<(), taxus_lib::error::GeneratorError>(())
+//! # Ok::<(), taxus::error::GeneratorError>(())
 //! ```
 
 mod discovery;
