@@ -228,6 +228,7 @@ cargo xtask book --serve
 | `taxus-cli` | Product CLI package providing the `taxus` binary |
 | `taxus-client` | WASM hydration client (built into the product at compile time) |
 | `taxus-common` | Shared Yew components for SSR and hydration, search index |
+| `taxus-typescript-*` | Target-specific bundled TypeScript compiler archives |
 | `xtask` | Workspace task runner (`cargo xtask`) for build, test, lint, release, … |
 
 ## License

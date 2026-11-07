@@ -221,6 +221,7 @@ taxus/
 ├── taxus-cli/       # Product CLI package providing the taxus binary
 ├── taxus-common/    # Shared Yew components and the search index
 ├── taxus-client/    # WASM hydration client
+├── taxus-typescript-*/ # Target-specific bundled TypeScript archives
 ├── xtask/           # Workspace task runner (`cargo xtask`)
 └── docs/            # mdBook documentation
 ```

@@ -1,5 +1,18 @@
 [workspace]
-members = ["taxus-cli", "taxus-client", "taxus-common", "taxus-domain", "taxus-generator", "xtask"]
+members = [
+    "taxus-cli",
+    "taxus-client",
+    "taxus-common",
+    "taxus-domain",
+    "taxus-generator",
+    "taxus-typescript-darwin-arm64",
+    "taxus-typescript-darwin-x64",
+    "taxus-typescript-linux-arm64",
+    "taxus-typescript-linux-x64",
+    "taxus-typescript-win32-arm64",
+    "taxus-typescript-win32-x64",
+    "xtask",
+]
 default-members = ["taxus-domain", "taxus-generator", "taxus-cli"]
 resolver = "3"
 

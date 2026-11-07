@@ -14,9 +14,8 @@ import tarfile
 from pathlib import Path
 
 VERSION = "7.0.2"
-VENDOR = Path(__file__).resolve().parents[1] / "taxus-generator" / "vendor"
-RUST_SOURCE = VENDOR.parent / "src" / "assets" / "typescript.rs"
-WORKSPACE_CONFIG = RUST_SOURCE.parents[3] / "dist-workspace.toml"
+ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_CONFIG = ROOT / "dist-workspace.toml"
 
 ARCHIVES = {
     "darwin-arm64": (
@@ -66,7 +65,6 @@ def sha256(path: Path) -> str:
 
 
 def main() -> None:
-    rust_source = RUST_SOURCE.read_text()
     dist_config = WORKSPACE_CONFIG.read_text()
     if 'features = ["typescript"]' not in dist_config:
         fail("dist-workspace.toml does not enable the TypeScript feature for releases")
@@ -81,15 +79,17 @@ def main() -> None:
         if target not in dist_config:
             fail(f"dist-workspace.toml does not publish {target}")
     for target, (filename, expected_hash, compiler) in ARCHIVES.items():
-        archive = VENDOR / filename
+        package = ROOT / f"taxus-typescript-{target}"
+        archive = package / "vendor" / filename
+        rust_source = package / "src" / "lib.rs"
         if not archive.is_file():
             fail(f"{target}: missing {archive}")
 
         actual_hash = sha256(archive)
         if actual_hash != expected_hash:
             fail(f"{target}: SHA-256 {actual_hash} does not match {expected_hash}")
-        if f'"{expected_hash}"' not in rust_source:
-            fail(f"{target}: SHA-256 is not pinned in {RUST_SOURCE}")
+        if f'"{expected_hash}"' not in rust_source.read_text():
+            fail(f"{target}: SHA-256 is not pinned in {rust_source}")
 
         try:
             with tarfile.open(archive, "r:gz") as tar:
