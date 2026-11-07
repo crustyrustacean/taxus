@@ -52,6 +52,12 @@ jobs:
       - name: Run unit and integration tests
         run: cargo test
 
+      - name: Run library-only tests
+        run: cargo test -p taxus-ssg --no-default-features --lib
+
+      - name: Verify product golden outputs
+        run: cargo test -p taxus-ssg --features embedded-wasm --test golden_output
+
       - name: Run TypeScript-enabled tests
         run: cargo test --features typescript
 
