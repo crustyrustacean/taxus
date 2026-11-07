@@ -3,7 +3,16 @@ name = "taxus-domain"
 version.workspace = true
 rust-version.workspace = true
 edition.workspace = true
+authors.workspace = true
 description = "Pure data model for Taxus sites: the Site Tree, its nodes, and the derivations computed over them."
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage = "https://get-taxus.org"
+documentation = "https://docs.rs/taxus-domain"
+keywords = ["static-site-generator", "site-tree", "markdown"]
+categories = ["data-structures", "web-programming"]
+publish = true
 
 [package.metadata.dist]
 dist = false

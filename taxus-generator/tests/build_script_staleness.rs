@@ -45,7 +45,7 @@ fn common_change_reruns_generator_build_script() {
     std::fs::write(&common_lib, original.clone() + &marker).expect("probe applied");
 
     let output = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()))
-        .args(["build", "-p", "taxus"])
+        .args(["build", "-p", "taxus-ssg"])
         .current_dir(&workspace_root)
         .output()
         .expect("cargo build runs");
@@ -55,7 +55,7 @@ fn common_change_reruns_generator_build_script() {
 
     assert!(
         output.status.success(),
-        "cargo build -p taxus failed after touching taxus-common"
+        "cargo build -p taxus-ssg failed after touching taxus-common"
     );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -82,7 +82,7 @@ fn common_change_reruns_generator_build_script() {
     };
     let progress = format!("{}{}", strip_ansi(&stdout), strip_ansi(&stderr));
     assert!(
-        progress.contains("Compiling taxus v"),
+        progress.contains("Compiling taxus-ssg v"),
         "touching taxus-common did not recompile the generator — the embedded \
          WASM would be stale (#45). cargo said:\n{progress}"
     );

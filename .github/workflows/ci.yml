@@ -57,7 +57,7 @@ jobs:
       # fails here rather than on the deploy.
       - name: Build get-taxus.org
         run: |
-          cargo run -p taxus --features typescript -- build --dir get-taxus-org --output "$RUNNER_TEMP/get-taxus-org"
+          cargo run -p taxus-ssg --features typescript -- build --dir get-taxus-org --output "$RUNNER_TEMP/get-taxus-org"
           test -f "$RUNNER_TEMP/get-taxus-org/index.html"
           test -f "$RUNNER_TEMP/get-taxus-org/feed.xml"
 

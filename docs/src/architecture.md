@@ -21,7 +21,7 @@ taxus/
 | Crate | Phase | Role | Output |
 |-------|-------|------|--------|
 | `taxus-domain` | parse, analyse | Defines what a site is (`SiteTree`, `SectionNode`, `PageNode`), how nodes are named (`Slug`, `NodePath`, `UrlPath`), the frontmatter schema, and the pure derivations. Reads no files. | library |
-| `taxus-generator` | all three | Fills the tree from disk, calls the derivations, renders Markdown and templates, processes images and assets, writes the output. | library `taxus_lib` and binary `taxus` |
+| `taxus-ssg` (`taxus-generator/`) | all three | Fills the tree from disk, calls the derivations, renders Markdown and templates, processes images and assets, writes the output. | library `taxus_lib` and binary `taxus` |
 | `taxus-common` | emit | Island components (`Counter`, `SearchBox`) rendered at build time and hydrated in the browser; the search index format. | library |
 | `taxus-client` | emit | Finds `[data-island]` mount points in the page and hydrates them; fetches the search index on demand. Compiled to WASM by the generator's build script and embedded with `include_bytes!`. | WASM bundle written to `dist/wasm/` |
 | `xtask` | none | `cargo xtask build`, `test`, `lint`, `book`, `release`, and the rest. | binary |
