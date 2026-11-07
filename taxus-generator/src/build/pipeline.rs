@@ -26,6 +26,7 @@ pub mod search;
 pub mod shortcodes;
 pub mod sitemap;
 pub mod taxonomy;
+#[cfg(feature = "embedded-wasm")]
 pub mod wasm;
 
 use crate::CodeHighlighter;

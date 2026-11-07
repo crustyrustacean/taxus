@@ -44,6 +44,9 @@ cargo build --release
 
 # Build release binary with bundled TypeScript support
 cargo build --release --features typescript
+
+# Check the library-only build (no workspace WASM/client build)
+cargo check -p taxus-ssg --no-default-features
 ```
 
 ## Development Server

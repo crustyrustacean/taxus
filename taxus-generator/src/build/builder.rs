@@ -336,6 +336,7 @@ impl SiteBuilder {
 
         {
             let _wasm_span = info_span!("build_wasm").entered();
+            #[cfg(feature = "embedded-wasm")]
             if self.config.build.islands {
                 info!("[14/15] Writing WASM client...");
                 let wasm_output =
@@ -343,6 +344,17 @@ impl SiteBuilder {
                 info!("WASM client written ({} bytes)", wasm_output.wasm_size);
             } else {
                 info!("[14/15] Skipping WASM client (build.islands = false)");
+            }
+
+            #[cfg(not(feature = "embedded-wasm"))]
+            if self.config.build.islands {
+                return Err(GeneratorError::Wasm(Box::new(
+                    crate::error::WasmError::BuildFailed(
+                        "this binary was built without embedded WASM support; disable `[build].islands` or rebuild with `--features embedded-wasm`".to_string(),
+                    ),
+                )));
+            } else {
+                info!("[14/15] Skipping WASM client (embedded-wasm feature disabled)");
             }
             drop(_wasm_span);
         }
