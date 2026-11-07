@@ -17,8 +17,8 @@ use tracing::{debug, debug_span, info, instrument};
 /// # Example
 ///
 /// ```no_run
-/// use taxus_lib::assets::ScssProcessor;
-/// use taxus_lib::assets::AssetProcessor;
+/// use taxus::assets::ScssProcessor;
+/// use taxus::assets::AssetProcessor;
 /// use std::path::Path;
 ///
 /// let processor = ScssProcessor::new()

@@ -15,7 +15,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::assets::{AssetProcessor, ScssProcessor, StaticCopier};
+//! use taxus::assets::{AssetProcessor, ScssProcessor, StaticCopier};
 //! use std::path::Path;
 //!
 //! // Process SCSS files

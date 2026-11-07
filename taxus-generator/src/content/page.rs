@@ -26,7 +26,7 @@ use super::Frontmatter;
 ///
 /// ```
 /// # use chrono::NaiveDate;
-/// # use taxus_lib::content::split_date_prefix;
+/// # use taxus::content::split_date_prefix;
 /// let (stem, date) = split_date_prefix("2026-04-06-my-post");
 /// assert_eq!(stem, "my-post");
 /// assert_eq!(date, NaiveDate::from_ymd_opt(2026, 4, 6));
@@ -79,11 +79,11 @@ impl Page {
     /// # Example
     ///
     /// ```no_run
-    /// use taxus_lib::content::Page;
+    /// use taxus::content::Page;
     ///
     /// let page = Page::from_file("content/about.md")?;
     /// println!("Title: {}", page.frontmatter.title);
-    /// # Ok::<(), taxus_lib::error::GeneratorError>(())
+    /// # Ok::<(), taxus::error::GeneratorError>(())
     /// ```
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
@@ -107,7 +107,7 @@ impl Page {
     /// # Example
     ///
     /// ```
-    /// use taxus_lib::content::Page;
+    /// use taxus::content::Page;
     ///
     /// let content = r#"+++
     /// title = "Test Page"
@@ -118,7 +118,7 @@ impl Page {
     ///
     /// let page = Page::from_str(content, "test.md")?;
     /// assert_eq!(page.frontmatter.title, "Test Page");
-    /// # Ok::<(), taxus_lib::error::GeneratorError>(())
+    /// # Ok::<(), taxus::error::GeneratorError>(())
     /// ```
     pub fn from_str(content: &str, source: &str) -> Result<Self> {
         let (mut frontmatter, raw_content) = Self::parse_frontmatter(content, source)?;

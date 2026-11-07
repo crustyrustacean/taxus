@@ -1,12 +1,12 @@
 //! Integration tests for hero image processing.
 
 use std::fs;
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::config::{
+use taxus::build::SiteBuilder;
+use taxus::config::{
     BuildConfig, FeedConfig, HighlightConfig, ImageConfig, MarkdownConfig, SiteConfig, SiteMeta,
     TypeScriptConfig,
 };
-use taxus_lib::images::{ImageProcessor, ImageRegistry, render_picture};
+use taxus::images::{ImageProcessor, ImageRegistry, render_picture};
 use tempfile::TempDir;
 
 fn create_hero_site(temp: &TempDir) -> SiteConfig {
@@ -437,10 +437,10 @@ fn test_image_registry() {
 /// site's processed pages, render, and check the threaded field.
 #[test]
 fn test_rendered_page_carries_hero_image_metadata() {
-    use taxus_lib::build::pipeline;
-    use taxus_lib::highlighting::{CodeHighlighter, LanguageRegistry};
-    use taxus_lib::routes::RouteRegistry;
-    use taxus_lib::templates::{SiteContext, TeraRenderer};
+    use taxus::build::pipeline;
+    use taxus::highlighting::{CodeHighlighter, LanguageRegistry};
+    use taxus::routes::RouteRegistry;
+    use taxus::templates::{SiteContext, TeraRenderer};
 
     let temp = TempDir::new().unwrap();
     let mut config = create_hero_site(&temp);

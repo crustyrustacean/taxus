@@ -16,7 +16,7 @@ the entry says so under **Zola**.
 
 **Site directory.** The folder that holds `site.toml`, `content/`,
 `templates/`, `styles/` and `static/`. Example: `my-site/`. Type:
-`taxus_lib::config::SiteConfig` (loaded from `site.toml`; `base_dir` is
+`taxus::config::SiteConfig` (loaded from `site.toml`; `base_dir` is
 this folder).
 
 **Config.** The `site.toml` file: site name, base URL, directory names,
@@ -48,7 +48,7 @@ Markdown. Example: the paragraphs of `project-launch.md`. Fields:
 
 **Date prefix.** A `YYYY-MM-DD-` at the start of a file name; it is removed
 from the slug and supplies a default `date`. Example: `2026-04-03-` in
-`2026-04-03-project-launch.md`. Function: `taxus_lib::content::split_date_prefix`.
+`2026-04-03-project-launch.md`. Function: `taxus::content::split_date_prefix`.
 **Zola:** the same convention, with the same effect.
 
 **Co-located asset.** A non-Markdown file inside the content directory,
@@ -115,7 +115,7 @@ excluded unless the build passes `--include-drafts`. Field:
 
 **Slug.** One segment of a URL path, already made safe for that use.
 Example: `project-launch`. Type: `taxus_domain::Slug`. Slugs are produced
-by `taxus_lib::routes::slugify::slugify_segment` (lowercase, ASCII,
+by `taxus::routes::slugify::slugify_segment` (lowercase, ASCII,
 dashes) or taken verbatim from the frontmatter `slug` field.
 **Zola:** the same word and the same override field.
 
@@ -133,7 +133,7 @@ and the template variable `page.path`.
 
 **Permalink.** The URL path joined to the site's base URL. Example:
 `https://get-taxus.org/blog/project-launch/`. Function:
-`taxus_lib::templates::compute_permalink`.
+`taxus::templates::compute_permalink`.
 
 **Output file.** The file under the output directory that a document is
 written to, mirroring the URL path. Example:
@@ -184,7 +184,7 @@ chooses.
 
 **Taxonomy.** One of the three ways a document says what it is about:
 tags, categories or series. Example: `tags = ["rust", "ssg"]`. Type:
-`taxus_lib::content::TaxonomyKind`. **Zola:** taxonomies are declared in
+`taxus::content::TaxonomyKind`. **Zola:** taxonomies are declared in
 `config.toml`; in Taxus the three kinds are fixed.
 
 **Term.** One value of a taxonomy, with the documents that carry it.
@@ -211,7 +211,7 @@ by the browser. Example: `dist/search_index.bin`. Types:
 ## Rendering
 
 **Template.** A Tera HTML file under `templates/`. Example:
-`templates/page.html`. Type: `taxus_lib::templates::TeraRenderer`.
+`templates/page.html`. Type: `taxus::templates::TeraRenderer`.
 
 **Context.** The set of variables one template render can see: `site`,
 `page`, `section`, `now` and `extra`. Type: `templates::TemplateContext`.

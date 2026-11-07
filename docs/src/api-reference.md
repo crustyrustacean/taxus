@@ -1,9 +1,9 @@
 # API Reference
 
 This page documents the public API of the three library crates:
-`taxus-domain` (the model), `taxus_lib` (the generator library, published as
+`taxus-domain` (the model), `taxus` (the generator library, published as
 `taxus-ssg` from the `taxus-generator` directory) and `taxus-common` (islands
-and search). Library consumers should start with `taxus_lib::prelude::*`;
+and search). Library consumers should start with `taxus::prelude::*`;
 the modules below expose more specialized APIs. Terms are
 defined in the [Glossary](./theory/glossary.md). `cargo doc --workspace
 --no-deps --open` builds the full rustdoc, which is the authoritative
@@ -186,7 +186,7 @@ pub fn stem(tokens: &[String]) -> Vec<String> // English Porter stemmer
 
 ---
 
-## `taxus-ssg` Crate (`taxus_lib`)
+## `taxus-ssg` Crate (`taxus`)
 
 ### Re-exports
 

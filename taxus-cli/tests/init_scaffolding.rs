@@ -1,9 +1,9 @@
 //! Integration tests for site initialization.
 
 use std::path::PathBuf;
+use taxus::TemplateRenderer;
+use taxus::error::InitError;
 use taxus_cli::init::{InitOptions, InitScaffolder, derive_site_name, is_directory_empty};
-use taxus_lib::TemplateRenderer;
-use taxus_lib::error::InitError;
 use tempfile::TempDir;
 
 #[test]
@@ -28,7 +28,7 @@ fn test_init_creates_valid_config() {
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
     // Verify the config can be loaded
-    let config = taxus_lib::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
+    let config = taxus::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
     assert_eq!(config.site.name, "My Site");
     assert_eq!(config.site.base_url, "https://my-site.example.com");
 }
@@ -42,8 +42,7 @@ fn test_init_creates_valid_content() {
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
     // Verify the index page can be loaded
-    let page =
-        taxus_lib::content::Page::from_file(temp_dir.path().join("content/_index.md")).unwrap();
+    let page = taxus::content::Page::from_file(temp_dir.path().join("content/_index.md")).unwrap();
     assert_eq!(page.frontmatter.title, "Home");
 }
 
@@ -57,7 +56,7 @@ fn test_init_creates_valid_templates() {
 
     // Verify templates can be loaded
     let renderer =
-        taxus_lib::templates::TeraRenderer::from_dir(temp_dir.path().join("templates")).unwrap();
+        taxus::templates::TeraRenderer::from_dir(temp_dir.path().join("templates")).unwrap();
     assert!(renderer.has_template("base.html"));
     assert!(renderer.has_template("page.html"));
     assert!(renderer.has_template("section.html"));
@@ -77,7 +76,7 @@ fn test_init_with_custom_name_and_url() {
 
     scaffolder.scaffold(temp_dir.path()).unwrap();
 
-    let config = taxus_lib::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
+    let config = taxus::config::SiteConfig::from_dir(temp_dir.path()).unwrap();
     assert_eq!(config.site.name, "Custom Name");
     assert_eq!(config.site.base_url, "https://custom.example.org");
 }

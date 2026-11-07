@@ -2,7 +2,7 @@
 //!
 //! The command-line package owns product-only concerns such as site
 //! scaffolding, the development server, telemetry, and command parsing. The
-//! reusable build APIs live in [`taxus_lib`].
+//! reusable build APIs live in [`taxus`].
 
 pub mod cli;
 pub mod commands;

@@ -278,7 +278,7 @@ taxus build --quiet
 
 # Custom via RUST_LOG
 RUST_LOG=debug taxus build
-RUST_LOG=taxus_lib=trace taxus build
+RUST_LOG=taxus=trace taxus build
 ```
 
 Log levels:

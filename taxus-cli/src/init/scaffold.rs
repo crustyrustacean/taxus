@@ -7,7 +7,7 @@
 use super::manifest;
 use super::{InitOptions, InitReport};
 use std::path::Path;
-use taxus_lib::error::{InitError, Result};
+use taxus::error::{InitError, Result};
 
 /// Scaffolder for creating new site structures.
 pub struct InitScaffolder {
@@ -332,7 +332,7 @@ This is your new static site. Start editing this file to add your content.
 #[cfg(test)]
 mod tests {
     use super::*;
-    use taxus_lib::error::GeneratorError;
+    use taxus::error::GeneratorError;
     use tempfile::TempDir;
 
     fn test_options() -> InitOptions {

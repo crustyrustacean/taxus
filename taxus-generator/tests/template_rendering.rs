@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use taxus_lib::error::TemplateError;
-use taxus_lib::templates::{
+use taxus::error::TemplateError;
+use taxus::templates::{
     PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer,
 };
 

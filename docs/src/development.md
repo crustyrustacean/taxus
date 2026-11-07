@@ -115,7 +115,7 @@ cargo run -- build --quiet
 
 # Custom via RUST_LOG
 RUST_LOG=debug cargo run -- build
-RUST_LOG=taxus_lib=trace cargo run -- build
+RUST_LOG=taxus=trace cargo run -- build
 ```
 
 Add logging to code:

@@ -3,8 +3,8 @@
 //! These tests verify the route discovery functionality using test fixtures.
 
 use std::path::PathBuf;
-use taxus_lib::content::FilesystemContentSource;
-use taxus_lib::routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
+use taxus::content::FilesystemContentSource;
+use taxus::routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 
 /// Test discovering routes from the content_site fixture.
 #[test]
@@ -295,7 +295,7 @@ fn test_empty_registry_iterators() {
 // above so they run against both.
 
 use std::path::Path;
-use taxus_lib::content::Page;
+use taxus::content::Page;
 
 /// Every content directory we ship: fixture sites plus get-taxus-org.
 fn content_dirs() -> Vec<PathBuf> {

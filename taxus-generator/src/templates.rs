@@ -21,7 +21,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext, PageContext};
+//! use taxus::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext, PageContext};
 //!
 //! // Create a renderer and load templates
 //! let mut renderer = TeraRenderer::from_dir("templates")?;
@@ -57,7 +57,7 @@
 //!
 //! // Render a template
 //! let html = renderer.render("page.html", &ctx)?;
-//! # Ok::<(), taxus_lib::error::TemplateError>(())
+//! # Ok::<(), taxus::error::TemplateError>(())
 //! ```
 
 mod context;

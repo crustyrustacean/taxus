@@ -22,7 +22,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::content::{Page, ContentSource, FilesystemContentSource};
+//! use taxus::content::{Page, ContentSource, FilesystemContentSource};
 //! use std::path::PathBuf;
 //!
 //! // Load a page from a file
@@ -35,7 +35,7 @@
 //! for file in files {
 //!     println!("Found: {}", file.display());
 //! }
-//! # Ok::<(), taxus_lib::error::GeneratorError>(())
+//! # Ok::<(), taxus::error::GeneratorError>(())
 //! ```
 
 mod page;

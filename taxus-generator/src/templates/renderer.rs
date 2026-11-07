@@ -21,7 +21,7 @@ use tera::{Context, Error as TeraError, Kwargs, State, Tera, TeraResult, Value};
 /// # Example
 ///
 /// ```no_run
-/// use taxus_lib::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext};
+/// use taxus::templates::{TemplateRenderer, TeraRenderer, TemplateContext, SiteContext};
 ///
 /// // Create a renderer
 /// let mut renderer = TeraRenderer::new()?;
@@ -31,7 +31,7 @@ use tera::{Context, Error as TeraError, Kwargs, State, Tera, TeraResult, Value};
 ///
 /// // Check if template exists
 /// assert!(renderer.has_template("page.html"));
-/// # Ok::<(), taxus_lib::error::TemplateError>(())
+/// # Ok::<(), taxus::error::TemplateError>(())
 /// ```
 pub trait TemplateRenderer: Send + Sync {
     /// Render a template with the given context.
@@ -85,7 +85,7 @@ pub trait TemplateRenderer: Send + Sync {
 /// # Example
 ///
 /// ```no_run
-/// use taxus_lib::templates::{TeraRenderer, TemplateRenderer, TemplateContext, SiteContext, PageContext};
+/// use taxus::templates::{TeraRenderer, TemplateRenderer, TemplateContext, SiteContext, PageContext};
 ///
 /// // Load templates from directory
 /// let renderer = TeraRenderer::from_dir("templates")?;
@@ -93,7 +93,7 @@ pub trait TemplateRenderer: Send + Sync {
 /// // Or create empty and register templates manually
 /// let mut renderer = TeraRenderer::new()?;
 /// renderer.register_template("page.html", "<h1>{{ page.title }}</h1>")?;
-/// # Ok::<(), taxus_lib::error::TemplateError>(())
+/// # Ok::<(), taxus::error::TemplateError>(())
 /// ```
 #[derive(Debug)]
 pub struct TeraRenderer {
@@ -181,7 +181,7 @@ impl TeraRenderer {
     /// # Example
     ///
     /// ```
-    /// use taxus_lib::templates::TeraRenderer;
+    /// use taxus::templates::TeraRenderer;
     ///
     /// let renderer = TeraRenderer::new();
     /// assert!(renderer.is_ok());
@@ -228,7 +228,7 @@ impl TeraRenderer {
     /// # Example
     ///
     /// ```no_run
-    /// use taxus_lib::templates::TeraRenderer;
+    /// use taxus::templates::TeraRenderer;
     ///
     /// let renderer = TeraRenderer::from_dir("templates");
     /// // Templates are loaded from templates/**/*.html

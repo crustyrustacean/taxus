@@ -17,7 +17,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::build::SiteBuilder;
+//! use taxus::build::SiteBuilder;
 //! use std::path::Path;
 //!
 //! // Build from a directory containing site.toml
@@ -26,7 +26,7 @@
 //!     .build()?;
 //!
 //! report.print_summary();
-//! # Ok::<(), taxus_lib::error::GeneratorError>(())
+//! # Ok::<(), taxus::error::GeneratorError>(())
 //! ```
 
 mod builder;

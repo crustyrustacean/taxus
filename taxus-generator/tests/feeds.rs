@@ -11,8 +11,8 @@
 
 use std::path::Path;
 
-use taxus_lib::build::SiteBuilder;
-use taxus_lib::config::SiteConfig;
+use taxus::build::SiteBuilder;
+use taxus::config::SiteConfig;
 
 /// Build the fixture site and return the generated `feed.xml`.
 fn build_fixture_feed() -> String {

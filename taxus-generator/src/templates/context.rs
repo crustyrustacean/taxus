@@ -151,7 +151,7 @@ pub struct HeroContext {
 /// # Examples
 ///
 /// ```
-/// use taxus_lib::templates::compute_permalink;
+/// use taxus::templates::compute_permalink;
 ///
 /// // base_url without trailing slash, path with leading slash
 /// assert_eq!(compute_permalink("https://example.com", "/about/"), "https://example.com/about/");
@@ -380,7 +380,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use taxus_lib::templates::{TemplateContext, SiteContext};
+    /// use taxus::templates::{TemplateContext, SiteContext};
     ///
     /// let site = SiteContext {
     ///     name: "My Site".to_string(),
@@ -410,7 +410,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use taxus_lib::templates::{TemplateContext, SiteContext, PageContext};
+    /// use taxus::templates::{TemplateContext, SiteContext, PageContext};
     ///
     /// let site = SiteContext {
     ///     name: "Test".to_string(),
@@ -452,7 +452,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use taxus_lib::templates::{TemplateContext, SiteContext, SectionContext};
+    /// use taxus::templates::{TemplateContext, SiteContext, SectionContext};
     ///
     /// let site = SiteContext {
     ///     name: "Test".to_string(),
@@ -485,7 +485,7 @@ impl TemplateContext {
     /// # Example
     ///
     /// ```
-    /// use taxus_lib::templates::{TemplateContext, SiteContext};
+    /// use taxus::templates::{TemplateContext, SiteContext};
     /// use std::collections::HashMap;
     /// use serde_json::json;
     ///

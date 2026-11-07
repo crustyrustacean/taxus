@@ -4,7 +4,7 @@
 //! path through a full build, and the positive paths already pinned
 //! byte-for-byte by the golden `shortcode_site` fixture.
 
-use taxus_lib::SiteBuilder;
+use taxus::SiteBuilder;
 
 use std::path::Path;
 
@@ -98,7 +98,7 @@ fn shortcodes_dir_collision_with_builtin_is_an_error() {
     )
     .unwrap();
 
-    let mut r = taxus_lib::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap();
+    let mut r = taxus::build::pipeline::shortcodes::ShortcodeRenderer::new().unwrap();
     let err = r.load_dir(&dir.path().join("shortcodes")).unwrap_err();
     assert!(err.to_string().contains("image"), "got: {err}");
 }

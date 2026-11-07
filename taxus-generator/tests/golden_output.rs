@@ -53,7 +53,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use taxus_lib::build::SiteBuilder;
+use taxus::build::SiteBuilder;
 
 /// Sites that are complete enough to build: content + templates.
 ///

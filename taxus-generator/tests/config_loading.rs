@@ -1,7 +1,7 @@
 //! Integration tests for configuration loading.
 
-use taxus_lib::config::SiteConfig;
-use taxus_lib::error::{ConfigError, GeneratorError};
+use taxus::config::SiteConfig;
+use taxus::error::{ConfigError, GeneratorError};
 
 #[test]
 fn test_load_minimal_site_config() {

@@ -18,8 +18,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::feed::{FeedEntry, FeedGenerator, FeedConfig};
-//! use taxus_lib::content::Frontmatter;
+//! use taxus::feed::{FeedEntry, FeedGenerator, FeedConfig};
+//! use taxus::content::Frontmatter;
 //!
 //! let config = FeedConfig {
 //!     title: "My Blog".to_string(),
@@ -42,7 +42,7 @@
 //!
 //! // Generate Atom feed
 //! let atom = generator.generate_atom_from_entries(entries)?;
-//! # Ok::<(), taxus_lib::error::GeneratorError>(())
+//! # Ok::<(), taxus::error::GeneratorError>(())
 //! ```
 
 mod atom;
