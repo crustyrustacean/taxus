@@ -34,7 +34,7 @@ lang-javascript = ["dep:tree-sitter-javascript"]
 webp-lossy = ["dep:webp"]
 # Embedded WASM client generation is enabled for the standalone product build;
 # library consumers can disable it with --no-default-features.
-embedded-wasm = []
+embedded-wasm = ["dep:wasm-bindgen-cli-support"]
 # Native TypeScript compiler archives are opt-in: default Taxus binaries do
 # not carry any compiler. Enable this feature when building a binary that
 # should compile TypeScript without an external `tsc`.
@@ -83,7 +83,8 @@ flate2 = { version = "1", optional = true }
 tar = { version = "0.4", optional = true }
 
 [build-dependencies]
-wasm-bindgen-cli-support = "=0.2.126"
+# The library-only path must not resolve the product's WASM packaging toolchain.
+wasm-bindgen-cli-support = { version = "=0.2.126", optional = true }
 
 [dev-dependencies]
 tempfile = "3"
