@@ -242,7 +242,7 @@ pub enum Commands {
 
 /// The file table printed at the end of `taxus init --help`.
 ///
-/// Built from [`taxus_lib::init::manifest`], the same source the scaffolder walks
+/// Built from [`crate::init::manifest`], the same source the scaffolder walks
 /// when writing files. The hardcoded list this replaces was already wrong: it
 /// named eight of the seventeen files `init` writes, and none of the six taxonomy
 /// templates. Deriving it makes the table correct by construction.
@@ -251,7 +251,7 @@ pub enum Commands {
 /// manifest is assembled from `include_str!` and a `const` list — neither of
 /// which can be expanded into a doc comment.
 fn init_layout() -> String {
-    let layout = taxus_lib::init::manifest::layout();
+    let layout = crate::init::manifest::layout();
 
     // Compute the column width rather than hardcoding it, so a newly added file
     // cannot silently break the alignment.

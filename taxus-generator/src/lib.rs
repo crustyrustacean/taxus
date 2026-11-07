@@ -21,7 +21,7 @@
 //! | parse | [`config`], [`content`], [`routes`] |
 //! | analyse and emit | [`build`] (the fifteen stages of [`SiteBuilder::build`]) |
 //! | emit | [`templates`], [`images`], [`highlighting`], [`assets`], [`feed`] |
-//! | none | [`init`], [`serve`], [`telemetry`], [`error`] |
+//! | none | [`error`] |
 //!
 //! # Example
 //!
@@ -49,11 +49,8 @@ pub mod error;
 pub mod feed;
 pub mod highlighting;
 pub mod images;
-pub mod init;
 pub mod prelude;
 pub mod routes;
-pub mod serve;
-pub mod telemetry;
 pub mod templates;
 
 // Re-exports for convenience
@@ -68,7 +65,6 @@ pub use error::{
 pub use feed::{FeedConfig, FeedEntry, FeedGenerator};
 pub use highlighting::{CodeHighlighter, LanguageRegistry};
 pub use images::{ImageProcessor, ImageRegistry, ProcessedImage, render_picture};
-pub use init::{InitOptions, InitReport, InitScaffolder};
 pub use routes::{RouteDiscovery, RouteInfo, RouteKind, RouteRegistry};
 pub use templates::{
     HeroContext, PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer,

@@ -259,7 +259,7 @@ taxus init my-site --no-islands
 
 ## Building the WASM Client
 
-The WASM client is compiled automatically as part of every Cargo build. A Cargo build script (`taxus-generator/build.rs`) compiles the `taxus-client` crate to `wasm32-unknown-unknown`, runs `wasm-bindgen` to generate JS bindings, and embeds the resulting `client.js` and `client_bg.wasm` into the generator binary via `include_bytes!`. At site build time, these embedded files are written to `dist/wasm/`.
+The WASM client is compiled automatically as part of every Cargo build. A Cargo build script (`taxus-generator/build.rs`) compiles the `taxus-client` crate to `wasm32-unknown-unknown`, runs `wasm-bindgen` to generate JS bindings, and embeds the resulting `client.js` and `client_bg.wasm` into the `taxus-ssg` library via `include_bytes!`; the product `taxus` binary links that library. At site build time, these embedded files are written to `dist/wasm/`.
 
 No separate build step or external tooling (such as Trunk) is required.
 

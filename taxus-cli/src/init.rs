@@ -10,9 +10,9 @@
 pub mod manifest;
 mod scaffold;
 
-use crate::error::{GeneratorError, InitError, Result};
 pub use scaffold::InitScaffolder;
 use std::path::{Path, PathBuf};
+use taxus_lib::error::{GeneratorError, InitError, Result};
 use tracing::info;
 
 /// Options for initializing a new site.

@@ -695,7 +695,7 @@ fn cmd_deploy(project: &str, branch: Option<&str>, prod_branch: &str, no_build: 
 
     require_tool(
         "taxus",
-        "Install with: cargo install --path taxus-generator --root ~/.local",
+        "Install with: cargo install --path taxus-cli --root ~/.local",
     );
     require_tool("npx", "Install Node.js from https://nodejs.org");
 

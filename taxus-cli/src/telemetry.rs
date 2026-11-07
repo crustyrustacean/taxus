@@ -50,7 +50,7 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 ///
 /// ```rust,ignore
 /// // Call early in main
-/// taxus_lib::telemetry::init();
+/// taxus_cli::telemetry::init();
 /// ```
 pub fn init() {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
@@ -99,10 +99,10 @@ pub fn init_tracing(verbose: bool, quiet: bool) {
 ///
 /// ```rust,ignore
 /// // For --quiet flag
-/// taxus_lib::telemetry::init_with_level("error");
+/// taxus_cli::telemetry::init_with_level("error");
 ///
 /// // For --verbose flag
-/// taxus_lib::telemetry::init_with_level("debug");
+/// taxus_cli::telemetry::init_with_level("debug");
 /// ```
 pub fn init_with_level(level: &str) {
     let filter = EnvFilter::new(level);

@@ -5,7 +5,10 @@ use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use taxus_lib::error::{GeneratorError, InitError};
-use taxus_lib::{BuildReport, InitOptions, InitReport, InitScaffolder, SiteBuilder};
+use taxus_lib::{BuildReport, SiteBuilder};
+
+use crate::error::CommandError;
+use crate::init::{InitOptions, InitReport, InitScaffolder};
 
 // ---------------------------------------------------------------------------
 // Serve
@@ -24,8 +27,8 @@ pub struct ServeArgs {
     pub verbose: bool,
 }
 
-pub async fn run_serve(args: &ServeArgs) -> Result<(), GeneratorError> {
-    use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn, browsable_url};
+pub async fn run_serve(args: &ServeArgs) -> Result<(), CommandError> {
+    use crate::serve::{DevServer, DevServerConfig, RebuildFn, browsable_url};
 
     // Load config to get output directory
     let config = taxus_lib::SiteConfig::from_dir(&args.dir)?;
@@ -138,7 +141,7 @@ pub struct InitArgs {
 }
 
 pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
-    use taxus_lib::init::{derive_site_name, is_directory_empty};
+    use crate::init::{derive_site_name, is_directory_empty};
 
     // Check if directory is empty
     if !args.force {

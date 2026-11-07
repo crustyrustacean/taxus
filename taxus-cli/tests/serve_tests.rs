@@ -4,7 +4,7 @@
 //! before implementation.
 
 use std::path::PathBuf;
-use taxus_lib::serve::{
+use taxus_cli::serve::{
     ChangeType, DevServerConfig, ReloadEvent, WatchEvent, WebSocketMessage,
     inject_live_reload_script,
 };
@@ -15,7 +15,7 @@ use taxus_lib::serve::{
 
 mod error_tests {
     use std::path::PathBuf;
-    use taxus_lib::serve::ServeError;
+    use taxus_cli::serve::ServeError;
 
     #[test]
     fn test_port_in_use_error_display() {
@@ -279,9 +279,9 @@ mod injector_tests {
     #[test]
     fn test_live_reload_script_content() {
         // Verify the script contains expected elements
-        assert!(taxus_lib::serve::LIVE_RELOAD_SCRIPT.contains("WebSocket"));
-        assert!(taxus_lib::serve::LIVE_RELOAD_SCRIPT.contains("__ws__"));
-        assert!(taxus_lib::serve::LIVE_RELOAD_SCRIPT.contains("location.reload"));
+        assert!(taxus_cli::serve::LIVE_RELOAD_SCRIPT.contains("WebSocket"));
+        assert!(taxus_cli::serve::LIVE_RELOAD_SCRIPT.contains("__ws__"));
+        assert!(taxus_cli::serve::LIVE_RELOAD_SCRIPT.contains("location.reload"));
     }
 }
 
@@ -383,7 +383,7 @@ mod change_type_regression_tests {
 mod watcher_scope_tests {
     use super::*;
     use std::time::Duration;
-    use taxus_lib::serve::FileWatcher;
+    use taxus_cli::serve::FileWatcher;
 
     /// A site-shaped temp directory with the four source dirs and dist/.
     fn site_skeleton() -> tempfile::TempDir {
@@ -520,9 +520,9 @@ mod typescript_serve_tests {
     use std::fs;
     use std::time::Duration;
 
+    use taxus_cli::serve::{ChangeType, FileWatcher};
     use taxus_lib::assets::TypeScriptProcessor;
     use taxus_lib::config::TypeScriptConfig;
-    use taxus_lib::serve::{ChangeType, FileWatcher};
     use tempfile::TempDir;
 
     fn tsconfig() -> &'static str {

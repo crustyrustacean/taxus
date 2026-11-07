@@ -15,7 +15,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use taxus_lib::serve::{DevServer, DevServerConfig, RebuildFn};
+//! use taxus_cli::serve::{DevServer, DevServerConfig, RebuildFn};
 //! use std::path::PathBuf;
 //! use std::sync::Arc;
 //!
@@ -35,13 +35,12 @@
 //! ```
 
 mod coordinator;
-mod error;
 mod injector;
 mod server;
 mod watcher;
 mod websocket;
 
-pub use error::ServeError;
+pub use crate::serve_error::ServeError;
 pub use injector::{LIVE_RELOAD_SCRIPT, inject_live_reload_script};
 pub use server::{DevServer, DevServerConfig, RebuildFn, browsable_url};
 pub use watcher::{ChangeType, FileWatcher, WatchEvent, WatcherGuard};

@@ -37,13 +37,13 @@ cargo test --test config_loading
 
 ```bash
 # Build the site (islands and the WASM client are compiled and embedded automatically)
-cargo run -- build --dir my-site
+cargo run -p taxus-cli -- build --dir my-site
 
 # Build release binary without the bundled TypeScript compiler
-cargo build --release
+cargo build --release -p taxus-cli
 
 # Build release binary with bundled TypeScript support
-cargo build --release --features typescript
+cargo build --release -p taxus-cli --features typescript
 
 # Check the library-only build (no workspace WASM/client build)
 cargo check -p taxus-ssg --no-default-features
@@ -53,7 +53,7 @@ cargo check -p taxus-ssg --no-default-features
 
 ```bash
 # Start server with auto-reload
-cargo run -- serve --dir my-site --open
+cargo run -p taxus-cli -- serve --dir my-site --open
 ```
 
 ## Documentation
@@ -208,7 +208,8 @@ Notes:
 ```
 taxus/
 ├── taxus-domain/    # Site Tree, identity types, frontmatter, derivations (no I/O)
-├── taxus-generator/ # SSG library and CLI
+├── taxus-generator/ # SSG library implementation for the taxus-ssg package
+├── taxus-cli/       # Product CLI package providing the taxus binary
 ├── taxus-common/    # Shared Yew components and the search index
 ├── taxus-client/    # WASM hydration client
 ├── xtask/           # Workspace task runner (`cargo xtask`)

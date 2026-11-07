@@ -5,18 +5,14 @@
 //! This is the CLI binary for the static site generator.
 //! It uses the generator library to build static sites from Markdown content.
 
-use crate::commands::{BuildArgs, InitArgs, ServeArgs};
 use clap::Parser;
-use taxus_lib::telemetry::{init, init_tracing};
+use taxus_cli::cli::{Cli, Commands};
+use taxus_cli::commands::{
+    BuildArgs, InitArgs, ServeArgs, run_build, run_clean, run_init, run_routes, run_serve,
+};
+use taxus_cli::error::{render_command_error, render_error};
+use taxus_cli::telemetry::{init, init_tracing};
 use tracing::info;
-
-mod cli;
-mod commands;
-mod error;
-
-use cli::{Cli, Commands};
-use commands::{run_build, run_clean, run_init, run_routes, run_serve};
-use error::render_error;
 
 #[tokio::main]
 async fn main() {
@@ -129,7 +125,7 @@ async fn main() {
             })
             .await
             {
-                render_error(&e);
+                render_command_error(&e);
                 std::process::exit(1);
             }
         }

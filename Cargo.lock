@@ -3058,6 +3058,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "taxus-cli"
+version = "1.4.4"
+dependencies = [
+ "axum",
+ "axum-extra",
+ "chrono",
+ "clap",
+ "futures-util",
+ "http-body-util",
+ "notify",
+ "serde",
+ "serde_json",
+ "taxus-ssg",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tokio",
+ "tokio-stream",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "webbrowser",
+]
+
+[[package]]
 name = "taxus-client"
 version = "1.4.4"
 dependencies = [
@@ -3102,15 +3127,10 @@ dependencies = [
 name = "taxus-ssg"
 version = "1.4.4"
 dependencies = [
- "axum",
- "axum-extra",
  "chrono",
- "clap",
  "deunicode",
  "flate2",
- "futures-util",
  "grass",
- "http-body-util",
  "image",
  "notify",
  "pulldown-cmark",
@@ -3126,13 +3146,9 @@ dependencies = [
  "tera-contrib",
  "thiserror 2.0.21",
  "tokio",
- "tokio-stream",
  "tokio-tungstenite",
  "toml",
- "tower",
- "tower-http",
  "tracing",
- "tracing-subscriber",
  "tree-sitter",
  "tree-sitter-css",
  "tree-sitter-highlight",
@@ -3141,7 +3157,6 @@ dependencies = [
  "tree-sitter-rust",
  "walkdir",
  "wasm-bindgen-cli-support",
- "webbrowser",
  "webp",
  "yew",
 ]

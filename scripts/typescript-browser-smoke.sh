@@ -14,7 +14,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-cargo run -p taxus-ssg --features typescript -- init "$root/site" \
+cargo run -p taxus-cli --features typescript -- init "$root/site" \
     --name "TypeScript Browser Smoke" --no-islands --typescript >/dev/null
 
 cat > "$root/site/scripts/main.ts" <<'TS'
@@ -22,7 +22,7 @@ const marker: string = "passed";
 document.documentElement.dataset.typescriptSmoke = marker;
 TS
 
-cargo run -p taxus-ssg --features typescript -- build \
+cargo run -p taxus-cli --features typescript -- build \
     --dir "$root/site" --output "$root/site/dist" >/dev/null
 
 python3 -m http.server 4173 --bind 127.0.0.1 --directory "$root/site/dist" \

@@ -1,0 +1,48 @@
+[package]
+name = "taxus-cli"
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "The Taxus command-line product."
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage = "https://get-taxus.org"
+keywords = ["static-site-generator", "ssg", "cli", "markdown"]
+categories = ["command-line-utilities", "web-programming"]
+publish = false
+
+[package.metadata.dist]
+dist = true
+
+[[bin]]
+name = "taxus"
+path = "src/main.rs"
+
+[features]
+typescript = ["taxus-ssg/typescript"]
+
+[dependencies]
+axum = { version = "0.8", features = ["ws"] }
+axum-extra = { version = "0.12", features = ["typed-header"] }
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+futures-util = "0.3"
+http-body-util = "0.1"
+notify = "8.2"
+serde = { workspace = true, features = ["derive"] }
+serde_json = "1"
+taxus-ssg = { version = "1.4", path = "../taxus-generator" }
+thiserror = "2"
+tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-stream = "0.1"
+tower = "0.5"
+tower-http = { version = "0.7", features = ["fs", "set-header"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+webbrowser = "1.0"
+
+[dev-dependencies]
+tempfile = "3.27"
+tokio = { version = "1.50", features = ["test-util"] }

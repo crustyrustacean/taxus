@@ -31,7 +31,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info};
 
-use super::error::ServeError;
+use crate::serve_error::ServeError;
 
 /// How long to wait after the first raw event before emitting one
 /// coalesced [`WatchEvent`].

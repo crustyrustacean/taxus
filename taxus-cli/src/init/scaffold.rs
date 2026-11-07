@@ -6,8 +6,8 @@
 //! job, and this module only writes what it lists (#111).
 use super::manifest;
 use super::{InitOptions, InitReport};
-use crate::error::{InitError, Result};
 use std::path::Path;
+use taxus_lib::error::{InitError, Result};
 
 /// Scaffolder for creating new site structures.
 pub struct InitScaffolder {
@@ -332,7 +332,7 @@ This is your new static site. Start editing this file to add your content.
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::GeneratorError;
+    use taxus_lib::error::GeneratorError;
     use tempfile::TempDir;
 
     fn test_options() -> InitOptions {
