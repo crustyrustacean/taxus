@@ -9,7 +9,7 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 homepage = "https://get-taxus.org"
-keywords = ["static-site-generator", "ssg", "cli", "markdown"]
+keywords = ["static-site", "ssg", "cli", "markdown"]
 categories = ["command-line-utilities", "web-programming"]
 publish = false
 
