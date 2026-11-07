@@ -82,7 +82,7 @@ fn common_change_reruns_generator_build_script() {
     };
     let progress = format!("{}{}", strip_ansi(&stdout), strip_ansi(&stderr));
     assert!(
-        progress.contains("Compiling taxus v"),
+        progress.contains("Compiling taxus-ssg v"),
         "touching taxus-common did not recompile the generator — the embedded \
          WASM would be stale (#45). cargo said:\n{progress}"
     );
