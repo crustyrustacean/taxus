@@ -1,11 +1,14 @@
 // taxus-generator/build.rs
 
 use std::env;
+#[cfg(feature = "embedded-wasm")]
 use std::path::Path;
+#[cfg(feature = "embedded-wasm")]
 use std::process::Command;
 fn main() {
     // Library-only builds do not need the product's embedded WASM client or
-    // workspace sibling crates. The standalone product enables this feature.
+    // workspace sibling crates. The standalone product enables this feature;
+    // the optional build dependency is cfg-gated below for the same reason.
     if env::var_os("CARGO_FEATURE_EMBEDDED_WASM").is_none() {
         return;
     }
@@ -20,14 +23,18 @@ fn main() {
     println!("cargo:rerun-if-changed=../taxus-client/Cargo.toml");
     println!("cargo:rerun-if-changed=../taxus-common/Cargo.toml");
 
-    let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set — must be run by Cargo");
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("CARGO_MANIFEST_DIR has no parent directory");
+    #[cfg(feature = "embedded-wasm")]
+    {
+        let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set — must be run by Cargo");
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("CARGO_MANIFEST_DIR has no parent directory");
 
-    build_wasm_client(workspace_root, Path::new(&out_dir));
+        build_wasm_client(workspace_root, Path::new(&out_dir));
+    }
 }
 
+#[cfg(feature = "embedded-wasm")]
 fn build_wasm_client(workspace_root: &Path, out_dir: &Path) {
     let manifest_path = workspace_root.join("taxus-client/Cargo.toml");
 

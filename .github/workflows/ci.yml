@@ -46,6 +46,13 @@ jobs:
       - name: Check library-only build
         run: cargo check -p taxus-ssg --no-default-features
 
+      - name: Check library-only build dependencies
+        run: |
+          if cargo tree -p taxus-ssg --no-default-features -e build | grep -q wasm-bindgen-cli-support; then
+            echo "wasm-bindgen-cli-support must not be in the library-only build graph"
+            exit 1
+          fi
+
       - name: Validate packaged library consumer
         run: python3 scripts/check-packaged-consumer.py
 
