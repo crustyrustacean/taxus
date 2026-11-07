@@ -20,13 +20,13 @@ source needs nothing but the script.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.sh | sh
+  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-cli-installer.sh | sh
 ```
 
 **Windows** (PowerShell):
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-cli-installer.ps1 | iex"
 ```
 
 Verify the install:

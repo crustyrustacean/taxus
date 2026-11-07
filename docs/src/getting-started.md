@@ -8,13 +8,13 @@ Install the `taxus` binary (macOS, Linux and Windows; ARM64 and x86-64):
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.sh | sh
+  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-cli-installer.sh | sh
 ```
 
 Windows (PowerShell):
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-cli-installer.ps1 | iex"
 ```
 
 The installer puts `taxus` in `~/.cargo/bin`, beside `cargo`. See
