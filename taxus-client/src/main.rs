@@ -3,8 +3,8 @@
 //! This crate is compiled to WebAssembly (`wasm32-unknown-unknown`) by the
 //! generator's build script (`taxus-generator/build.rs`) using
 //! `wasm-bindgen-cli`. The resulting `.js` shim and `.wasm` binary are
-//! embedded into the generator binary at compile time and later written to
-//! `dist/wasm/` during site builds.
+//! embedded into the `taxus-ssg` library at compile time and later written to
+//! `dist/wasm/` by the product `taxus` binary during site builds.
 //!
 //! # Lifecycle
 //!

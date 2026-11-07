@@ -49,10 +49,10 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tracing::{info, warn};
 
 use super::coordinator::RebuildCoordinator;
-use super::error::ServeError;
 use super::injector::inject_live_reload_script;
 use super::watcher::FileWatcher;
 use super::websocket::WebSocketMessage;
+use crate::serve_error::ServeError;
 
 // ---------------------------------------------------------------------------
 // Configuration

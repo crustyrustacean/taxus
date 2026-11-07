@@ -2,6 +2,19 @@
 
 use taxus_lib::error::{ConfigError, GeneratorError, InitError, TemplateError};
 
+use crate::serve_error::ServeError;
+
+/// Errors returned while executing a product command.
+#[derive(Debug, thiserror::Error)]
+pub enum CommandError {
+    /// An error from the reusable SSG library.
+    #[error(transparent)]
+    Generator(#[from] GeneratorError),
+    /// An error from the development server.
+    #[error("Serve error: {0}")]
+    Serve(#[from] ServeError),
+}
+
 // ---------------------------------------------------------------------------
 // Error rendering
 // ---------------------------------------------------------------------------
@@ -36,5 +49,16 @@ pub fn render_error(e: &GeneratorError) {
     if let Some(hint) = hint {
         tracing::warn!(hint = hint, "Suggestion");
         tracing::error!("  Hint: {hint}");
+    }
+}
+
+/// Render either a library or development-server command error.
+pub fn render_command_error(error: &CommandError) {
+    match error {
+        CommandError::Generator(error) => render_error(error),
+        CommandError::Serve(error) => {
+            tracing::error!(error = %error, error_type = std::any::type_name_of_val(error), "Serve failed");
+            eprintln!("\n✗ Error: Serve error: {error}");
+        }
     }
 }

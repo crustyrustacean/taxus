@@ -32,7 +32,7 @@
 //! `format!` strings with every literal brace doubled.
 //!
 //! ```
-//! use taxus_lib::init::manifest::{strip, substitute, Variants};
+//! use taxus_cli::init::manifest::{strip, substitute, Variants};
 //!
 //! // A claimed token is replaced with its variant's text...
 //! let out = substitute("{{ island_demo }}", &Variants::ISLAND_DEMO);
@@ -264,7 +264,7 @@ pub const TYPESCRIPT_FILES: &[(&str, &str, &str)] = &[
 /// called once to build a help string, so the allocation does not matter.
 ///
 /// ```
-/// let rows = taxus_lib::init::manifest::layout();
+/// let rows = taxus_cli::init::manifest::layout();
 /// assert_eq!(rows[0].0, "site.toml");
 /// assert!(rows.iter().any(|(path, _)| path == "templates/base.html"));
 /// assert!(rows.iter().all(|(_, description)| !description.is_empty()));

@@ -4,7 +4,7 @@ version.workspace = true
 rust-version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description = "A Rust static site generator library and CLI."
+description = "A reusable Rust static site generator library."
 license.workspace = true
 readme.workspace = true
 repository.workspace = true
@@ -13,10 +13,6 @@ documentation = "https://docs.rs/taxus-ssg"
 keywords = ["static-site-generator", "ssg", "markdown", "tera", "wasm"]
 categories = ["command-line-utilities", "web-programming"]
 publish = true
-
-[[bin]]
-name = "taxus"
-path = "src/bin/taxus/main.rs"
 
 [lib]
 name = "taxus_lib"
@@ -56,7 +52,6 @@ default = [
 deunicode = "1"
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
 chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "4.5", features = ["derive"] }
 grass = "0.13"
 pulldown-cmark = "0.13"
 serde = { workspace = true, features = ["derive"] }
@@ -66,7 +61,6 @@ thiserror = "2"
 tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
 toml = "1"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tree-sitter = "0.26"
 tree-sitter-highlight = "0.26"
 tree-sitter-rust = { version = "0.24", optional = true }
@@ -82,17 +76,9 @@ taxus-common = { version = "1.4", path = "../taxus-common" }
 taxus-domain = { version = "1.4", path = "../taxus-domain" }
 yew = { version = "0.23", features = ["ssr"] }
 
-# ── Dev server dependencies ───────────────────────────────────────────────────
-axum = { version = "0.8", features = ["ws"] }
-axum-extra = { version = "0.12", features = ["typed-header"] }
-futures-util = "0.3"
-http-body-util = "0.1"
-notify = "8.2"
-tower = "0.5"
-tower-http = { version = "0.7", features = ["fs", "set-header"] }
-tokio-stream = "0.1"
-webbrowser = "1.0"
+# ── Asset and optional compiler dependencies ──────────────────────────────────
 tera-contrib = { version = "0.2.0", features = ["date", "slug"] }
+notify = "8.2"
 sha2 = "0.10"
 flate2 = { version = "1", optional = true }
 tar = { version = "0.4", optional = true }

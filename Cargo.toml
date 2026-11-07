@@ -1,6 +1,6 @@
 [workspace]
-members = ["taxus-client", "taxus-common", "taxus-domain", "taxus-generator", "xtask"]
-default-members = ["taxus-domain", "taxus-generator"]
+members = ["taxus-cli", "taxus-client", "taxus-common", "taxus-domain", "taxus-generator", "xtask"]
+default-members = ["taxus-domain", "taxus-generator", "taxus-cli"]
 resolver = "3"
 
 [workspace.package]

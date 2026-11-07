@@ -3,7 +3,6 @@
 //! This module provides a comprehensive error hierarchy using `thiserror`
 //! for idiomatic error handling throughout the library.
 
-use crate::serve::ServeError;
 use std::path::PathBuf;
 
 /// Result alias for generator operations.
@@ -35,10 +34,6 @@ pub enum GeneratorError {
     /// Init-related errors
     #[error("Init error: {0}")]
     Init(Box<InitError>),
-
-    /// Serve-related errors
-    #[error("Serve error: {0}")]
-    Serve(Box<ServeError>),
 
     /// Feed-related errors
     #[error("Feed error: {0}")]
@@ -106,7 +101,6 @@ impl_from_for_generator_error! {
     AssetError => Asset,
     RouteError => Route,
     InitError => Init,
-    ServeError => Serve,
     FeedError => Feed,
     ImageError => Image,
     SearchError => Search,

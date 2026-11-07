@@ -224,8 +224,9 @@ cargo xtask book --serve
 | Crate | Description |
 |-------|-------------|
 | `taxus-domain` | The Site Tree, identity types, frontmatter schema and pure derivations; no I/O |
-| `taxus-ssg` | SSG library and `taxus` CLI binary |
-| `taxus-client` | WASM hydration client (built into the generator binary at compile time) |
+| `taxus-ssg` | Publishable SSG library |
+| `taxus-cli` | Product CLI package providing the `taxus` binary |
+| `taxus-client` | WASM hydration client (built into the product at compile time) |
 | `taxus-common` | Shared Yew components for SSR and hydration, search index |
 | `xtask` | Workspace task runner (`cargo xtask`) for build, test, lint, release, … |
 
