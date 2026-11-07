@@ -51,6 +51,18 @@ def main() -> int:
         f'patch.crates-io.taxus-common.path="{ROOT / "taxus-common"}"',
         "--config",
         f'patch.crates-io.taxus-domain.path="{ROOT / "taxus-domain"}"',
+        "--config",
+        f'patch.crates-io.taxus-typescript-darwin-arm64.path="{ROOT / "taxus-typescript-darwin-arm64"}"',
+        "--config",
+        f'patch.crates-io.taxus-typescript-darwin-x64.path="{ROOT / "taxus-typescript-darwin-x64"}"',
+        "--config",
+        f'patch.crates-io.taxus-typescript-linux-arm64.path="{ROOT / "taxus-typescript-linux-arm64"}"',
+        "--config",
+        f'patch.crates-io.taxus-typescript-linux-x64.path="{ROOT / "taxus-typescript-linux-x64"}"',
+        "--config",
+        f'patch.crates-io.taxus-typescript-win32-arm64.path="{ROOT / "taxus-typescript-win32-arm64"}"',
+        "--config",
+        f'patch.crates-io.taxus-typescript-win32-x64.path="{ROOT / "taxus-typescript-win32-x64"}"',
     )
 
     if not archive.is_file():
@@ -87,10 +99,34 @@ def main() -> int:
             package.extractall(temp_root)
             consumer = temp_root / "consumer"
             (consumer / "src").mkdir(parents=True)
-            (consumer / "Cargo.toml").write_text(
-                f"""[package]\nname = \"packaged-taxus-consumer\"\nversion = \"0.0.0\"\nedition = \"2024\"\npublish = false\n\n[workspace]\n\n[dependencies]\ntaxus = {{ package = \"taxus-ssg\", path = \"../taxus-ssg-{version}\", default-features = false }}\n\n[patch.crates-io]\ntaxus-common = {{ path = \"{ROOT / 'taxus-common'}\" }}\ntaxus-domain = {{ path = \"{ROOT / 'taxus-domain'}\" }}\n""",
-                encoding="utf-8",
+            patch_crates = [
+                "taxus-common",
+                "taxus-domain",
+                "taxus-typescript-darwin-arm64",
+                "taxus-typescript-darwin-x64",
+                "taxus-typescript-linux-arm64",
+                "taxus-typescript-linux-x64",
+                "taxus-typescript-win32-arm64",
+                "taxus-typescript-win32-x64",
+            ]
+            manifest = f"""[package]
+name = "packaged-taxus-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+taxus = {{ package = "taxus-ssg", path = "../taxus-ssg-{version}", default-features = false }}
+
+[patch.crates-io]
+"""
+            manifest += "".join(
+                f'{crate} = {{ path = "{ROOT / crate}" }}\n'
+                for crate in patch_crates
             )
+            (consumer / "Cargo.toml").write_text(manifest, encoding="utf-8")
             (consumer / "src/main.rs").write_text(
                 """use taxus::{SiteBuilder, SiteConfig};\n\nfn main() {\n    let _ = SiteBuilder::new as fn(SiteConfig) -> SiteBuilder;\n}\n""",
                 encoding="utf-8",

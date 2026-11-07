@@ -1,0 +1,22 @@
+[package]
+name = "taxus-typescript-darwin-x64"
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Bundled Microsoft TypeScript compiler archive for darwin-x64."
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+homepage = "https://get-taxus.org"
+documentation = "https://docs.rs/taxus-typescript-darwin-x64"
+keywords = ["typescript", "compiler", "tooling"]
+categories = ["development-tools"]
+publish = true
+
+[lib]
+name = "taxus_typescript_darwin_x64"
+path = "src/lib.rs"
+
+[package.metadata.dist]
+dist = false

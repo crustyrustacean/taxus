@@ -3091,6 +3091,12 @@ dependencies = [
  "tar",
  "taxus-common",
  "taxus-domain",
+ "taxus-typescript-darwin-arm64",
+ "taxus-typescript-darwin-x64",
+ "taxus-typescript-linux-arm64",
+ "taxus-typescript-linux-x64",
+ "taxus-typescript-win32-arm64",
+ "taxus-typescript-win32-x64",
  "tempfile",
  "tera",
  "tera-contrib",
@@ -3110,6 +3116,30 @@ dependencies = [
  "webp",
  "yew",
 ]
+
+[[package]]
+name = "taxus-typescript-darwin-arm64"
+version = "1.4.4"
+
+[[package]]
+name = "taxus-typescript-darwin-x64"
+version = "1.4.4"
+
+[[package]]
+name = "taxus-typescript-linux-arm64"
+version = "1.4.4"
+
+[[package]]
+name = "taxus-typescript-linux-x64"
+version = "1.4.4"
+
+[[package]]
+name = "taxus-typescript-win32-arm64"
+version = "1.4.4"
+
+[[package]]
+name = "taxus-typescript-win32-x64"
+version = "1.4.4"
 
 [[package]]
 name = "tempfile"
