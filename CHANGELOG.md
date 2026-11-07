@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.5] - 2026-11-07
+
+### Added
+
+- **crates.io**: publish the reusable `taxus-ssg` library under the `taxus` Rust crate name
+- **cli**: split the product command into the `taxus-cli` package while preserving the `taxus` binary
+- **typescript**: package bundled compiler archives in target-specific support crates
+- **packaging**: add downstream consumer and packaged-artifact validation
+
+### Changed
+
+- **wasm**: keep embedded WASM out of library defaults while retaining it in product defaults
+- **library**: remove CLI-only initialization, serving, telemetry, and error APIs
+
 ## [1.4.4] - 2026-11-05
 
 ### Fixed
