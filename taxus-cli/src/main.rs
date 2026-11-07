@@ -94,7 +94,7 @@ async fn main() {
                     report.print_summary();
                 }
                 Err(e) => {
-                    render_error(&e);
+                    render_command_error(&e);
                     std::process::exit(1);
                 }
             }

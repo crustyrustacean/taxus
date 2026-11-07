@@ -4,10 +4,10 @@ use std::io::{self, BufRead, Write};
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use taxus::error::{GeneratorError, InitError};
+use taxus::error::GeneratorError;
 use taxus::{BuildReport, SiteBuilder};
 
-use crate::error::CommandError;
+use crate::error::{CommandError, InitError};
 use crate::init::{InitOptions, InitReport, InitScaffolder};
 
 // ---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ pub struct InitArgs {
     pub typescript: bool,
 }
 
-pub fn run_init(args: &InitArgs) -> Result<InitReport, GeneratorError> {
+pub fn run_init(args: &InitArgs) -> Result<InitReport, CommandError> {
     use crate::init::{derive_site_name, is_directory_empty};
 
     // Check if directory is empty

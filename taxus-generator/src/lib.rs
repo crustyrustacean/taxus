@@ -59,7 +59,7 @@ pub use build::{BuildReport, SiteBuilder};
 pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta, TypeScriptConfig};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
 pub use error::{
-    AssetError, ContentError, FeedError, GeneratorError, ImageError, InitError, Result, RouteError,
+    AssetError, ContentError, FeedError, GeneratorError, ImageError, Result, RouteError,
     TemplateError,
 };
 pub use feed::{FeedConfig, FeedEntry, FeedGenerator};

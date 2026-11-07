@@ -16,6 +16,9 @@ publish = false
 [package.metadata.dist]
 dist = true
 
+[package.metadata.cargo-machete]
+ignored = ["taxus-ssg"]
+
 [[bin]]
 name = "taxus"
 path = "src/main.rs"
@@ -27,7 +30,6 @@ typescript = ["taxus-ssg/typescript"]
 
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
-axum-extra = { version = "0.12", features = ["typed-header"] }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }
 futures-util = "0.3"
@@ -38,7 +40,6 @@ serde_json = "1"
 taxus-ssg = { version = "1.4", path = "../taxus-generator" }
 thiserror = "2"
 tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
-tokio-stream = "0.1"
 tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "set-header"] }
 tracing = "0.1"

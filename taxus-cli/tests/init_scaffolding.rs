@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 use taxus::TemplateRenderer;
-use taxus::error::InitError;
+use taxus_cli::error::InitError;
 use taxus_cli::init::{InitOptions, InitScaffolder, derive_site_name, is_directory_empty};
 use tempfile::TempDir;
 

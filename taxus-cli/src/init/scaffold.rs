@@ -6,8 +6,8 @@
 //! job, and this module only writes what it lists (#111).
 use super::manifest;
 use super::{InitOptions, InitReport};
+use crate::error::{InitError, InitResult};
 use std::path::Path;
-use taxus::error::{InitError, Result};
 
 /// Scaffolder for creating new site structures.
 pub struct InitScaffolder {
@@ -28,7 +28,7 @@ impl InitScaffolder {
     /// Scaffold a new site at the given path.
     ///
     /// This creates the directory structure and all default files.
-    pub fn scaffold(&self, path: &Path) -> Result<InitReport> {
+    pub fn scaffold(&self, path: &Path) -> InitResult<InitReport> {
         // Validate options first
         self.options.validate()?;
 
@@ -54,7 +54,7 @@ impl InitScaffolder {
     /// Create the directory structure.
     ///
     /// The list is [`manifest::DIRECTORIES`](super::manifest::DIRECTORIES).
-    fn create_directories(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_directories(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         for (dir, _) in manifest::DIRECTORIES {
             let dir_path = path.join(dir);
             if !dir_path.exists() {
@@ -76,7 +76,7 @@ impl InitScaffolder {
     /// [`manifest::TEMPLATES`] and the rest from [`manifest::OTHER_FILES`],
     /// alongside the two files whose contents are built rather than read
     /// (`site.toml` and `_index.md`, both of which interpolate the site name).
-    fn create_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_files(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         // Resolve optional script placeholders as well as islands.
         for template in manifest::TEMPLATES {
             let contents = manifest::resolve_with_typescript(
@@ -109,7 +109,7 @@ impl InitScaffolder {
     }
 
     /// Create the site.toml configuration file.
-    fn create_site_config(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_site_config(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         let config_path = path.join("site.toml");
 
         if config_path.exists() {
@@ -166,7 +166,7 @@ quality = 80
     }
 
     /// Create the content/_index.md file.
-    fn create_index_content(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_index_content(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         let index_path = path.join("content/_index.md");
 
         if index_path.exists() {
@@ -208,7 +208,12 @@ This is your new static site. Start editing this file to add your content.
     ///
     /// Never overwrites: `taxus init` into a populated directory is additive,
     /// which is why the CLI warns but does not stop.
-    fn write_if_absent(&self, path: &Path, contents: &str, report: &mut InitReport) -> Result<()> {
+    fn write_if_absent(
+        &self,
+        path: &Path,
+        contents: &str,
+        report: &mut InitReport,
+    ) -> InitResult<()> {
         if path.exists() {
             return Ok(());
         }
@@ -222,7 +227,7 @@ This is your new static site. Start editing this file to add your content.
     }
 
     /// Create the main.scss stylesheet and associated dark/light syntax highlighting stylesheets.
-    fn create_stylesheet(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_stylesheet(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         let styles_path_main = path.join("styles/main.scss");
         let styles_path_highlight_dark = path.join("styles/_highlight-dark.scss");
         let styles_path_highlight_light = path.join("styles/_highlight-light.scss");
@@ -263,7 +268,7 @@ This is your new static site. Start editing this file to add your content.
     }
 
     /// Create TypeScript starter files for `taxus init --typescript`.
-    fn create_typescript_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_typescript_files(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         let scripts_dir = path.join("scripts");
         if !scripts_dir.exists() {
             std::fs::create_dir_all(&scripts_dir).map_err(|source| {
@@ -289,7 +294,7 @@ This is your new static site. Start editing this file to add your content.
     /// stays a byte array: it is binary, and a 1x1 transparent
     /// pixel is a placeholder the user replaces immediately, so a literal in
     /// the source says more than a file on disk would.
-    fn create_static_files(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_static_files(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         if !self.options.typescript {
             let scripts = include_str!("static/scripts.js");
             self.write_if_absent(&path.join("static/scripts.js"), scripts, report)?;
@@ -321,7 +326,7 @@ This is your new static site. Start editing this file to add your content.
         Ok(())
     }
 
-    fn create_agents_md(&self, path: &Path, report: &mut InitReport) -> Result<()> {
+    fn create_agents_md(&self, path: &Path, report: &mut InitReport) -> InitResult<()> {
         let agents_md = include_str!("AGENTS.md");
         self.write_if_absent(&path.join("AGENTS.md"), agents_md, report)?;
 
@@ -332,7 +337,7 @@ This is your new static site. Start editing this file to add your content.
 #[cfg(test)]
 mod tests {
     use super::*;
-    use taxus::error::GeneratorError;
+    use crate::error::InitError;
     use tempfile::TempDir;
 
     fn test_options() -> InitOptions {
@@ -577,10 +582,7 @@ mod tests {
         let result = scaffolder.scaffold(temp_dir.path());
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(matches!(
-            err,
-            GeneratorError::Init(inner) if matches!(*inner, InitError::InvalidName(_))
-        ));
+        assert!(matches!(err, InitError::InvalidName(_)));
     }
 
     #[test]
