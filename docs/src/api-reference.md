@@ -3,7 +3,8 @@
 This page documents the public API of the three library crates:
 `taxus-domain` (the model), `taxus_lib` (the generator library, published as
 `taxus-ssg` from the `taxus-generator` directory) and `taxus-common` (islands
-and search). Terms are
+and search). Library consumers should start with `taxus_lib::prelude::*`;
+the modules below expose more specialized APIs. Terms are
 defined in the [Glossary](./theory/glossary.md). `cargo doc --workspace
 --no-deps --open` builds the full rustdoc, which is the authoritative
 reference; this page is the map.
@@ -190,8 +191,9 @@ pub fn stem(tokens: &[String]) -> Vec<String> // English Porter stemmer
 ### Re-exports
 
 ```rust
-pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta};
+pub use config::{BuildConfig, ImageConfig, SiteConfig, SiteMeta, TypeScriptConfig};
 pub use content::{ContentSource, FilesystemContentSource, Frontmatter, Page};
+pub mod prelude;
 pub use templates::{HeroContext, PageContext, SectionContext, SiteContext, TemplateContext, TemplateRenderer, TeraRenderer};
 pub use assets::{AssetProcessor, AssetReport, ScssProcessor, StaticCopier};
 pub use build::{BuildReport, SiteBuilder};

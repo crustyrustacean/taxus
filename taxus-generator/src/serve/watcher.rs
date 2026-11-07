@@ -162,9 +162,9 @@ impl WatchEvent {
     /// Create a watch event from a notify event.
     ///
     /// `site_dir` is stripped from each path so classification sees
-    /// site-relative paths ([`ChangeType::from_path`]) — see
-    /// [`strip_site_prefix`] for why that strip needs an absolute
-    /// `site_dir` and what happens without one.
+    /// site-relative paths ([`ChangeType::from_path`]). The prefix strip
+    /// requires an absolute `site_dir`; differently spelled paths fall back
+    /// conservatively.
     pub fn from_notify_event(site_dir: &Path, event: &Event) -> Self {
         let paths: Vec<PathBuf> = event
             .paths
