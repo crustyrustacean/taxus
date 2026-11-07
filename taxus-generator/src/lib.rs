@@ -50,6 +50,7 @@ pub mod feed;
 pub mod highlighting;
 pub mod images;
 pub mod init;
+pub mod prelude;
 pub mod routes;
 pub mod serve;
 pub mod telemetry;

@@ -72,7 +72,7 @@ pub fn feed_pages<'a>(tree: &'a SiteTree, sections: &[String]) -> Vec<&'a PageNo
 /// Membership and order come from the tree via [`feed_pages`]: dated,
 /// non-draft pages, newest first, optionally scoped to `[feed] sections`.
 /// Each is joined to its rendered `ProcessedPage` by content file and
-/// converted to a [`FeedEntry`] carrying the page's *effective* URL
+/// converted to a [`crate::feed::FeedEntry`] carrying the page's *effective* URL
 /// (where a frontmatter `slug` override has moved it, #19); the feed
 /// generator applies the configured limit.
 pub fn generate_feeds(
