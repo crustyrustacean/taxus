@@ -10,7 +10,7 @@ readme.workspace = true
 repository.workspace = true
 homepage = "https://get-taxus.org"
 documentation = "https://docs.rs/taxus-common"
-keywords = ["yew", "wasm", "static-site-generator"]
+keywords = ["yew", "wasm", "static-site"]
 categories = ["wasm", "web-programming"]
 publish = true
 

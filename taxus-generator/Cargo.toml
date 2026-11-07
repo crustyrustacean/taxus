@@ -10,7 +10,7 @@ readme.workspace = true
 repository.workspace = true
 homepage = "https://get-taxus.org"
 documentation = "https://docs.rs/taxus-ssg"
-keywords = ["static-site-generator", "ssg", "markdown", "tera", "wasm"]
+keywords = ["static-site", "ssg", "markdown", "tera", "wasm"]
 categories = ["command-line-utilities", "web-programming"]
 publish = true
 

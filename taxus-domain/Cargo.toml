@@ -10,7 +10,7 @@ readme.workspace = true
 repository.workspace = true
 homepage = "https://get-taxus.org"
 documentation = "https://docs.rs/taxus-domain"
-keywords = ["static-site-generator", "site-tree", "markdown"]
+keywords = ["static-site", "site-tree", "markdown"]
 categories = ["data-structures", "web-programming"]
 publish = true
 
