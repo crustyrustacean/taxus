@@ -5,9 +5,9 @@
 //!
 //! ## Watch scope (#48)
 //!
-//! Only the source directories (`content/`, `templates/`, `styles/`,
-//! `static/`, `scripts/`) and `site.toml` are watched — never the site directory
-//! recursively. A recursive watch would include the output directory,
+//! Only the configured source directories (the defaults are `content/`,
+//! `templates/`, `styles/`, `static/`, and `scripts/`) and root config files
+//! are watched — never the site directory recursively. A recursive watch would include the output directory,
 //! so every build's own writes would be classified as source changes
 //! and trigger another build: an infinite rebuild loop for any site
 //! with a section named like a source directory (`content/templates/`
@@ -60,9 +60,9 @@ pub enum ChangeType {
 impl ChangeType {
     /// Determine the change type from a *site-relative* path.
     ///
-    /// The first component must name a source directory (`content`,
-    /// `templates`, `styles`, `static`, `scripts`) and have something under it;
-    /// matching on path *components*, not substrings, so
+    /// For the default layout, the first component must name a source
+    /// directory (`content`, `templates`, `styles`, `static`, `scripts`) and
+    /// have something under it; matching on path *components*, not substrings, so
     /// `my-content/notes.md` or `styles-archive/old.scss` never
     /// misclassify (#11), and a path under any other first component —
     /// `dist/templates/index.html` above all — is `Unknown` (#48).
@@ -153,29 +153,67 @@ fn strip_site_prefix(path: &Path, site_dir: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
+/// Classify an event path against configured source roots. The longest
+/// matching root wins so nested configured directories remain deterministic.
+fn classify_path(
+    absolute: &Path,
+    relative: &Path,
+    source_dirs: &[(PathBuf, ChangeType)],
+) -> ChangeType {
+    if relative == Path::new("site.toml") || relative == Path::new("tsconfig.json") {
+        return ChangeType::Config;
+    }
+
+    if source_dirs.is_empty() {
+        return ChangeType::from_path(relative);
+    }
+
+    source_dirs
+        .iter()
+        .filter_map(|(root, change_type)| {
+            let remainder = absolute.strip_prefix(root).ok()?;
+            (!remainder.as_os_str().is_empty()).then_some((root.components().count(), *change_type))
+        })
+        .max_by_key(|(depth, _)| *depth)
+        .map(|(_, change_type)| change_type)
+        .unwrap_or(ChangeType::Unknown)
+}
+
 impl WatchEvent {
     /// Create a new watch event.
     pub fn new(change_type: ChangeType, paths: Vec<PathBuf>) -> Self {
         Self { change_type, paths }
     }
 
-    /// Create a watch event from a notify event.
-    ///
-    /// `site_dir` is stripped from each path so classification sees
-    /// site-relative paths ([`ChangeType::from_path`]). The prefix strip
-    /// requires an absolute `site_dir`; differently spelled paths fall back
-    /// conservatively.
+    /// Create a watch event from a notify event using the default source
+    /// directory names.
     pub fn from_notify_event(site_dir: &Path, event: &Event) -> Self {
+        Self::from_notify_event_with_source_dirs(site_dir, event, &[])
+    }
+
+    /// Create a watch event using configured source roots.
+    ///
+    /// Notify reports absolute paths. The site prefix is stripped from the
+    /// paths exposed in the event, while classification uses the configured
+    /// absolute roots. This keeps custom directories such as `src/posts`
+    /// classified as [`ChangeType::Content`] without relying on their names.
+    pub fn from_notify_event_with_source_dirs(
+        site_dir: &Path,
+        event: &Event,
+        source_dirs: &[(PathBuf, ChangeType)],
+    ) -> Self {
         let paths: Vec<PathBuf> = event
             .paths
             .iter()
             .map(|p| strip_site_prefix(p, site_dir))
             .collect();
 
-        // Determine the change type from the first path
-        let change_type = paths
-            .first()
-            .map(|p| ChangeType::from_path(p.as_path()))
+        let change_type = event
+            .paths
+            .iter()
+            .zip(paths.iter())
+            .map(|(absolute, relative)| classify_path(absolute, relative, source_dirs))
+            .find(|change_type| *change_type != ChangeType::Unknown)
             .unwrap_or(ChangeType::Unknown);
 
         Self { change_type, paths }
@@ -230,6 +268,8 @@ impl Debouncer {
 pub struct FileWatcher {
     /// The site directory to watch.
     site_dir: PathBuf,
+    /// Configured source directories and their event classifications.
+    source_dirs: Vec<(PathBuf, ChangeType)>,
     /// The watcher instance.
     watcher: RecommendedWatcher,
     /// Event receiver channel.
@@ -247,6 +287,25 @@ impl FileWatcher {
     /// failed, every event classified `Unknown`, and hot reload did
     /// nothing. Canonicalizing once fixes both callers.
     pub fn new(site_dir: PathBuf) -> Result<Self, ServeError> {
+        let source_dirs = [
+            (site_dir.join("content"), ChangeType::Content),
+            (site_dir.join("templates"), ChangeType::Template),
+            (site_dir.join("styles"), ChangeType::Style),
+            (site_dir.join("static"), ChangeType::Static),
+            (site_dir.join("scripts"), ChangeType::Script),
+        ]
+        .into_iter()
+        .collect();
+        Self::new_with_source_dirs(site_dir, source_dirs)
+    }
+
+    /// Create a watcher with resolved source directories and their semantic
+    /// change types. Paths are canonicalized when they exist so comparisons
+    /// remain stable on platforms such as Windows.
+    pub fn new_with_source_dirs(
+        site_dir: PathBuf,
+        source_dirs: Vec<(PathBuf, ChangeType)>,
+    ) -> Result<Self, ServeError> {
         // `canonicalize` needs the directory to exist; `serve` has
         // already read site.toml from it, so it does. `dunce`-style
         // Windows paths are avoided by `canonicalize` normalising the
@@ -257,6 +316,13 @@ impl FileWatcher {
                 site_dir.display()
             ))
         })?;
+        let source_dirs = source_dirs
+            .into_iter()
+            .map(|(path, change_type)| {
+                let path = std::fs::canonicalize(&path).unwrap_or(path);
+                (path, change_type)
+            })
+            .collect::<Vec<_>>();
 
         let (tx, rx) = mpsc::channel(64);
         let debouncer = Arc::new(Mutex::new(Debouncer::default()));
@@ -293,6 +359,7 @@ impl FileWatcher {
         // Create the watcher with a callback that folds events into the
         // debounce window.
         let cb_debouncer = Arc::clone(&debouncer);
+        let source_dirs_for_cb = source_dirs.clone();
         let watcher = RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
                 let site_dir = &site_dir_for_cb;
@@ -323,8 +390,11 @@ impl FileWatcher {
                             return;
                         }
 
-                        let watch_event =
-                            WatchEvent::from_notify_event(site_dir, &Event { paths, ..event });
+                        let watch_event = WatchEvent::from_notify_event_with_source_dirs(
+                            site_dir,
+                            &Event { paths, ..event },
+                            &source_dirs_for_cb,
+                        );
 
                         if watch_event.should_rebuild() {
                             let mut guard = cb_debouncer.lock().unwrap();
@@ -342,6 +412,7 @@ impl FileWatcher {
 
         Ok(Self {
             site_dir,
+            source_dirs,
             watcher,
             event_rx: rx,
         })
@@ -349,9 +420,9 @@ impl FileWatcher {
 
     /// Start watching the site's sources.
     ///
-    /// Watches only the source directories that exist plus `site.toml`
-    /// (#48) — never the site directory recursively, which would include
-    /// the output directory and rebuild in a loop.
+    /// Watches only the configured source directories that exist plus the
+    /// root config files (#48) — never the site directory recursively, which
+    /// would include the output directory and rebuild in a loop.
     pub fn start(&mut self) -> Result<(), ServeError> {
         let mut watched = 0;
         for dir in self.watch_dirs() {
@@ -385,17 +456,14 @@ impl FileWatcher {
         Ok(())
     }
 
-    /// Get the directories being watched.
+    /// Get the configured source directories that exist and are being watched.
     pub fn watch_dirs(&self) -> Vec<PathBuf> {
-        let dirs = vec![
-            self.site_dir.join("content"),
-            self.site_dir.join("templates"),
-            self.site_dir.join("styles"),
-            self.site_dir.join("static"),
-            self.site_dir.join("scripts"),
-        ];
-
-        dirs.into_iter().filter(|d| d.exists()).collect()
+        self.source_dirs
+            .iter()
+            .map(|(path, _)| path)
+            .filter(|path| path.exists())
+            .cloned()
+            .collect()
     }
 
     /// Get the site configuration file path.
@@ -654,6 +722,46 @@ mod tests {
         };
         let we = WatchEvent::from_notify_event(Path::new("."), &event);
         assert_eq!(we.change_type, ChangeType::Template, "got {we:?}");
+    }
+
+    #[test]
+    fn from_notify_event_classifies_configured_source_roots() {
+        let site = tempfile::tempdir().unwrap();
+        let root = site.path().canonicalize().unwrap();
+        let roots = [
+            (root.join("src/posts"), ChangeType::Content),
+            (root.join("tpl"), ChangeType::Template),
+            (root.join("assets/styles"), ChangeType::Style),
+            (root.join("public"), ChangeType::Static),
+            (root.join("scripts"), ChangeType::Script),
+        ];
+
+        for (relative, expected) in [
+            ("src/posts/post.md", ChangeType::Content),
+            ("tpl/base.html", ChangeType::Template),
+            ("assets/styles/main.scss", ChangeType::Style),
+            ("public/logo.svg", ChangeType::Static),
+            ("scripts/main.ts", ChangeType::Script),
+        ] {
+            let absolute = root.join(relative);
+            let event = Event {
+                kind: EventKind::Modify(notify::event::ModifyKind::Any),
+                paths: vec![absolute],
+                attrs: Default::default(),
+            };
+            let watch_event = WatchEvent::from_notify_event_with_source_dirs(&root, &event, &roots);
+            assert_eq!(watch_event.change_type, expected, "path: {relative}");
+            assert_eq!(watch_event.paths, vec![PathBuf::from(relative)]);
+        }
+
+        let default_path = root.join("content/ignored.md");
+        let event = Event {
+            kind: EventKind::Modify(notify::event::ModifyKind::Any),
+            paths: vec![default_path],
+            attrs: Default::default(),
+        };
+        let watch_event = WatchEvent::from_notify_event_with_source_dirs(&root, &event, &roots);
+        assert_eq!(watch_event.change_type, ChangeType::Unknown);
     }
 
     /// #42: events within one debounce window fold into a single event

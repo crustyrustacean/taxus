@@ -3,7 +3,7 @@
 //! These tests follow TDD principles - testing the expected behavior
 //! before implementation.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use taxus_cli::serve::{
     ChangeType, DevServerConfig, ReloadEvent, WatchEvent, WebSocketMessage,
     inject_live_reload_script,
@@ -321,6 +321,17 @@ mod config_tests {
 
         assert_eq!(config.site_dir, PathBuf::from("mysite"));
     }
+
+    #[test]
+    fn test_config_with_custom_source_dirs() {
+        let source_dirs = vec![
+            (PathBuf::from("src/posts"), ChangeType::Content),
+            (PathBuf::from("tpl"), ChangeType::Template),
+        ];
+        let config = DevServerConfig::default().with_source_dirs(source_dirs.clone());
+
+        assert_eq!(config.source_dirs, source_dirs);
+    }
 }
 
 // =============================================================================
@@ -412,6 +423,42 @@ mod watcher_scope_tests {
         assert!(!watched.iter().any(|d| d.ends_with("dist")));
     }
 
+    /// Configured source directories replace the default names for both
+    /// watching and event classification (#134).
+    #[test]
+    fn test_custom_source_dirs_are_watched_instead_of_defaults() {
+        let dir = tempfile::TempDir::new().unwrap();
+        for sub in ["src/posts", "tpl", "assets/styles", "public", "scripts"] {
+            std::fs::create_dir_all(dir.path().join(sub)).unwrap();
+        }
+        std::fs::write(dir.path().join("site.toml"), "# site").unwrap();
+
+        let source_dirs = vec![
+            (dir.path().join("src/posts"), ChangeType::Content),
+            (dir.path().join("tpl"), ChangeType::Template),
+            (dir.path().join("assets/styles"), ChangeType::Style),
+            (dir.path().join("public"), ChangeType::Static),
+            (dir.path().join("scripts"), ChangeType::Script),
+        ];
+        let watcher =
+            FileWatcher::new_with_source_dirs(dir.path().to_path_buf(), source_dirs).unwrap();
+        let watched = watcher.watch_dirs();
+        let root = dir.path().canonicalize().unwrap();
+
+        for sub in ["src/posts", "tpl", "assets/styles", "public", "scripts"] {
+            assert!(
+                watched.contains(&root.join(sub)),
+                "missing configured source directory {sub}: {watched:?}"
+            );
+        }
+        for sub in ["content", "templates", "styles", "static"] {
+            assert!(
+                !watched.contains(&root.join(sub)),
+                "default source directory should not be watched: {sub}"
+            );
+        }
+    }
+
     /// A file write inside dist/ produces no watch event within a generous
     /// window, even though the write itself succeeds (#48: no loop).
     #[tokio::test]
@@ -431,6 +478,43 @@ mod watcher_scope_tests {
         assert!(
             none.is_err(),
             "an output-dir write must not trigger a rebuild event"
+        );
+    }
+
+    /// A custom content directory produces a Content event, while an
+    /// unconfigured default directory remains inert (#134).
+    #[tokio::test]
+    async fn test_custom_content_dir_rebuilds_and_default_dir_does_not() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join("src/posts")).unwrap();
+        std::fs::create_dir_all(dir.path().join("content")).unwrap();
+        std::fs::write(dir.path().join("site.toml"), "# site").unwrap();
+
+        let source_dirs = vec![(dir.path().join("src/posts"), ChangeType::Content)];
+        let mut watcher =
+            FileWatcher::new_with_source_dirs(dir.path().to_path_buf(), source_dirs).unwrap();
+        watcher.start().unwrap();
+
+        std::fs::write(dir.path().join("src/posts/post.md"), b"body").unwrap();
+        let event = tokio::time::timeout(Duration::from_secs(2), watcher.recv())
+            .await
+            .expect("a configured content change should arrive")
+            .expect("watcher alive");
+        assert_eq!(event.change_type, ChangeType::Content);
+        assert!(
+            event
+                .paths
+                .iter()
+                .any(|path| path == Path::new("src/posts/post.md")),
+            "paths: {:?}",
+            event.paths
+        );
+
+        std::fs::write(dir.path().join("content/ignored.md"), b"body").unwrap();
+        let none = tokio::time::timeout(Duration::from_millis(600), watcher.recv()).await;
+        assert!(
+            none.is_err(),
+            "an unconfigured default directory must not trigger a rebuild"
         );
     }
 
