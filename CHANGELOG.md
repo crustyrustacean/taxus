@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **serve**: watch configured `[build]` source directories instead of assuming the default layout
+- **build**: replace generated output transactionally so deleted pages, removed aliases, and newly drafted pages cannot remain in `dist/`
 
 ## [1.4.5] - 2026-11-07
 

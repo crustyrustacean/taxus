@@ -152,6 +152,40 @@ fn newly_drafted_page_is_removed_from_output_when_drafts_are_skipped() {
 }
 
 #[test]
+fn successful_build_removes_unowned_stale_output() {
+    let site = TestSite::new();
+    let stale = site.output_dir.join("legacy/index.html");
+    fs::create_dir_all(stale.parent().unwrap()).unwrap();
+    fs::write(&stale, "old output").unwrap();
+
+    let report = site.build(false);
+
+    assert_eq!(report.output_dir, site.output_dir);
+    assert!(!stale.exists(), "stale output survived a successful build");
+}
+
+#[test]
+fn failed_build_preserves_the_last_successful_output() {
+    let site = TestSite::new();
+    site.write_content("blog/old-post.md", &old_post(None, false));
+    site.build(false);
+
+    let page_output = site.output_dir.join("blog/old-post/index.html");
+    let previous_output = fs::read_to_string(&page_output).unwrap();
+    fs::write(
+        site.site_dir.join("templates/page.html"),
+        "{% this template is invalid %}",
+    )
+    .unwrap();
+
+    let mut config = SiteConfig::from_dir(&site.site_dir).unwrap();
+    config.build.output_dir = site.output_dir.clone();
+    assert!(SiteBuilder::new(config).build().is_err());
+
+    assert_eq!(fs::read_to_string(page_output).unwrap(), previous_output);
+}
+
+#[test]
 fn dry_run_does_not_delete_existing_output() {
     let site = TestSite::new();
     let sentinel = site.output_dir.join("stale/index.html");

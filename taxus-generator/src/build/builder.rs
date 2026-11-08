@@ -14,9 +14,148 @@ use crate::error::{GeneratorError, Result};
 use crate::highlighting::{CodeHighlighter, LanguageRegistry};
 use crate::routes::RouteRegistry;
 use crate::templates::SiteContext;
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
-use tracing::{debug, info, info_span};
+use tracing::{debug, info, info_span, warn};
+
+static NEXT_OUTPUT_TRANSACTION_ID: AtomicU64 = AtomicU64::new(0);
+
+/// Stages a build beside the configured output and swaps it into place only
+/// after every build stage succeeds. This keeps a failed rebuild from
+/// destroying the last successful output while ensuring successful builds
+/// cannot retain orphaned files.
+struct OutputTransaction {
+    final_dir: PathBuf,
+    staging_dir: PathBuf,
+    backup_dir: Option<PathBuf>,
+    committed: bool,
+}
+
+impl OutputTransaction {
+    fn begin(final_dir: &Path) -> Result<Self> {
+        let parent = final_dir
+            .parent()
+            .filter(|path| !path.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."));
+        fs::create_dir_all(parent).map_err(|source| GeneratorError::Io {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+
+        let stem = final_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("output");
+        let staging_dir = loop {
+            let id = NEXT_OUTPUT_TRANSACTION_ID.fetch_add(1, Ordering::Relaxed);
+            let candidate = parent.join(format!(".{stem}.taxus-stage-{}-{id}", std::process::id()));
+            match fs::create_dir(&candidate) {
+                Ok(()) => break candidate,
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(source) => {
+                    return Err(GeneratorError::Io {
+                        path: candidate,
+                        source,
+                    });
+                }
+            }
+        };
+
+        Ok(Self {
+            final_dir: final_dir.to_path_buf(),
+            staging_dir,
+            backup_dir: None,
+            committed: false,
+        })
+    }
+
+    fn staging_dir(&self) -> &Path {
+        &self.staging_dir
+    }
+
+    fn commit(&mut self) -> Result<()> {
+        if self.final_dir.exists() {
+            let parent = self
+                .final_dir
+                .parent()
+                .filter(|path| !path.as_os_str().is_empty())
+                .unwrap_or_else(|| Path::new("."));
+            let stem = self
+                .final_dir
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("output");
+            let backup = loop {
+                let id = NEXT_OUTPUT_TRANSACTION_ID.fetch_add(1, Ordering::Relaxed);
+                let candidate =
+                    parent.join(format!(".{stem}.taxus-backup-{}-{id}", std::process::id()));
+                if !candidate.exists() {
+                    break candidate;
+                }
+            };
+            fs::rename(&self.final_dir, &backup).map_err(|source| GeneratorError::Io {
+                path: self.final_dir.clone(),
+                source,
+            })?;
+            self.backup_dir = Some(backup);
+        }
+
+        if let Err(source) = fs::rename(&self.staging_dir, &self.final_dir) {
+            self.restore_backup();
+            return Err(GeneratorError::Io {
+                path: self.final_dir.clone(),
+                source,
+            });
+        }
+
+        if let Some(backup) = self.backup_dir.take()
+            && let Err(source) = fs::remove_dir_all(&backup)
+        {
+            warn!(
+                path = %backup.display(),
+                error = %source,
+                "Could not remove previous output backup after successful build"
+            );
+        }
+
+        self.committed = true;
+        Ok(())
+    }
+
+    fn rollback(&mut self) -> Result<()> {
+        if self.staging_dir.exists() {
+            fs::remove_dir_all(&self.staging_dir).map_err(|source| GeneratorError::Io {
+                path: self.staging_dir.clone(),
+                source,
+            })?;
+        }
+        self.restore_backup();
+        self.committed = true;
+        Ok(())
+    }
+
+    fn restore_backup(&mut self) {
+        if let Some(backup) = self.backup_dir.take()
+            && !self.final_dir.exists()
+        {
+            let _ = fs::rename(backup, &self.final_dir);
+        }
+    }
+}
+
+impl Drop for OutputTransaction {
+    fn drop(&mut self) {
+        if self.committed {
+            return;
+        }
+        if self.staging_dir.exists() {
+            let _ = fs::remove_dir_all(&self.staging_dir);
+        }
+        self.restore_backup();
+    }
+}
 
 /// Builder for generating static sites.
 ///
@@ -26,7 +165,7 @@ use tracing::{debug, info, info_span};
 /// use taxus::build::SiteBuilder;
 /// use std::path::Path;
 ///
-/// // Build from a directory containing site.toml
+/// // Build from a directory containing `site.toml`.
 /// let report = SiteBuilder::from_dir(Path::new("."))?
 ///     .build()?;
 ///
@@ -127,7 +266,34 @@ impl SiteBuilder {
     /// # Errors
     ///
     /// Returns an error if any stage of the build fails.
-    pub fn build(self) -> Result<BuildReport> {
+    pub fn build(mut self) -> Result<BuildReport> {
+        if self.dry_run {
+            return self.build_inner();
+        }
+
+        let final_output_dir = self.config.build.output_dir.clone();
+        let mut transaction = OutputTransaction::begin(&final_output_dir)?;
+        self.config.build.output_dir = transaction.staging_dir().to_path_buf();
+
+        match self.build_inner() {
+            Ok(mut report) => {
+                transaction.commit()?;
+                report.output_dir = final_output_dir;
+                Ok(report)
+            }
+            Err(error) => {
+                if let Err(rollback_error) = transaction.rollback() {
+                    warn!(
+                        error = %rollback_error,
+                        "Failed to remove staged build output after build failure"
+                    );
+                }
+                Err(error)
+            }
+        }
+    }
+
+    fn build_inner(self) -> Result<BuildReport> {
         let span = info_span!("build", site = %self.config.site.name);
         let _enter = span.enter();
 
