@@ -140,14 +140,14 @@ carries the archives plus generated one-line installers:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.sh | sh
+  https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-cli-installer.sh | sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c \
-  "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-installer.ps1 | iex"
+  "irm https://github.com/crustyrustacean/taxus/releases/latest/download/taxus-cli-installer.ps1 | iex"
 ```
 
 Both install into `~/.cargo/bin` (the install path is `CARGO_HOME`), so
