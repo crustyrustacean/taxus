@@ -7,7 +7,10 @@ that matter for deployment, and the common hosts.
 ## What gets built
 
 `taxus build` writes the site to the output directory (default `dist/`,
-configurable as `[build] output_dir`):
+configurable as `[build] output_dir`). Each successful build produces a fresh
+snapshot and replaces the previous generated output, so deleted pages,
+removed aliases, and newly drafted pages cannot survive into a deployment. If
+a build fails, the previous successful output remains in place.
 
 ```
 dist/

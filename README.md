@@ -75,7 +75,10 @@ taxus serve --dir my-site
 ```
 
 When you're ready to publish, the `dist/` directory is a complete
-static site — see [Deployment](docs/src/deployment.md) for Cloudflare
+static site. Each successful build replaces the previous generated output,
+so deleted pages, removed aliases, and newly drafted pages cannot remain in
+the deployment directory. A failed build leaves the previous successful
+output in place. See [Deployment](docs/src/deployment.md) for Cloudflare
 Pages, GitHub Pages and Netlify.
 
 ## CLI Commands
@@ -105,7 +108,8 @@ The table is the `Commands:` block of `taxus --help`.
 
 - `--include-drafts` — Include pages marked `draft = true` in frontmatter
 - `--dry-run` — Simulate the build without writing any output files
-- `--clean` — Remove all files from the output directory before building
+- `--clean` — Explicitly remove all files before building (normally a build
+  already replaces generated output transactionally)
 - `-o, --output <PATH>` — Override the output directory from site.toml
 
 **`serve`**
