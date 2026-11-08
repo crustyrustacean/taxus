@@ -50,7 +50,7 @@ use tracing::{info, warn};
 
 use super::coordinator::RebuildCoordinator;
 use super::injector::inject_live_reload_script;
-use super::watcher::FileWatcher;
+use super::watcher::{ChangeType, FileWatcher};
 use super::websocket::WebSocketMessage;
 use crate::serve_error::ServeError;
 
@@ -78,6 +78,8 @@ pub struct DevServerConfig {
     pub include_drafts: bool,
     /// Open the site in the browser after the initial build completes.
     pub open: bool,
+    /// Resolved source directories and their watcher classifications.
+    pub source_dirs: Vec<(PathBuf, ChangeType)>,
 }
 
 impl Default for DevServerConfig {
@@ -89,6 +91,7 @@ impl Default for DevServerConfig {
             site_dir: PathBuf::from("."),
             include_drafts: false,
             open: false,
+            source_dirs: Vec::new(),
         }
     }
 }
@@ -127,6 +130,13 @@ impl DevServerConfig {
     /// Create a new configuration that opens the browser after the initial build.
     pub fn with_open(mut self, open: bool) -> Self {
         self.open = open;
+        self
+    }
+
+    /// Create a new configuration with resolved source directories for
+    /// watcher classification.
+    pub fn with_source_dirs(mut self, source_dirs: Vec<(PathBuf, ChangeType)>) -> Self {
+        self.source_dirs = source_dirs;
         self
     }
 }
@@ -221,8 +231,17 @@ impl DevServer {
         // Create broadcast channel for reload events
         let (reload_tx, _) = broadcast::channel(16);
 
-        // Start file watcher
-        let mut watcher = FileWatcher::new(self.config.site_dir.clone())?;
+        // Start file watcher. An empty source list preserves the default
+        // directory layout for callers that construct DevServerConfig
+        // directly; the CLI supplies resolved paths from SiteConfig.
+        let mut watcher = if self.config.source_dirs.is_empty() {
+            FileWatcher::new(self.config.site_dir.clone())?
+        } else {
+            FileWatcher::new_with_source_dirs(
+                self.config.site_dir.clone(),
+                self.config.source_dirs.clone(),
+            )?
+        };
         watcher.start()?;
         let (watcher_guard, watch_events) = watcher.into_receiver();
 

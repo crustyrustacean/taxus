@@ -57,10 +57,13 @@ browsable address (`127.0.0.1` or `[::1]`) rather than the wildcard.
 
 ### Hot Reloading
 
-The server watches the source directories — `content/`, `templates/`,
-`styles/`, `static/`, `scripts/` — and the root configuration files
-`site.toml` and (when present) `tsconfig.json`. The output directory is never
-watched, so a build's own writes cannot trigger another build.
+The server watches the configured source directories — by default
+`content/`, `templates/`, `styles/`, `static/`, and `scripts/` — and the root
+configuration files `site.toml` and (when present) `tsconfig.json`. If
+`[build]` relocates `content_dir`, `templates_dir`, `styles_dir`, or
+`static_dir`, `taxus serve` watches those resolved locations instead. The
+output directory is never watched, so a build's own writes cannot trigger
+another build.
 
 When TypeScript is enabled, editing a file under `scripts/` triggers a
 TypeScript check and rebuild. A failed check leaves the last successful

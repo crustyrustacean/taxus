@@ -28,7 +28,7 @@ pub struct ServeArgs {
 }
 
 pub async fn run_serve(args: &ServeArgs) -> Result<(), CommandError> {
-    use crate::serve::{DevServer, DevServerConfig, RebuildFn, browsable_url};
+    use crate::serve::{ChangeType, DevServer, DevServerConfig, RebuildFn, browsable_url};
 
     // Load config to get output directory
     let config = taxus::SiteConfig::from_dir(&args.dir)?;
@@ -40,7 +40,14 @@ pub async fn run_serve(args: &ServeArgs) -> Result<(), CommandError> {
         .with_output_dir(config.build.output_dir.clone())
         .with_site_dir(args.dir.clone())
         .with_open(args.open)
-        .with_include_drafts(args.include_drafts);
+        .with_include_drafts(args.include_drafts)
+        .with_source_dirs(vec![
+            (config.build.content_dir.clone(), ChangeType::Content),
+            (config.build.templates_dir.clone(), ChangeType::Template),
+            (config.build.styles_dir.clone(), ChangeType::Style),
+            (config.build.static_dir.clone(), ChangeType::Static),
+            (args.dir.join("scripts"), ChangeType::Script),
+        ]);
 
     // Capture what the rebuild needs in the closure
     let site_dir = args.dir.clone();
