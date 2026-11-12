@@ -25,3 +25,17 @@ A static site built with Taxus. Content is in markdown, templates are Tera, outp
 - `{{ name(args) }}` spans in markdown content are shortcodes. An unknown name *with* parentheses fails the build (`TemplateError ; UnknownShortcode`); braces *without* parentheses stay as literal text
 - Template syntax inside code fences is left alone -- put examples of `{{ ... }}` in fenced blocks and they render as written
 - Pages with `draft = true` are skipped by `taxus build` unless `--include-drafts` is passed. If a new page "doesn't exist" check the draft flag
+
+## Modern web guidance
+When changing templates, styles, or browser scripts, consider installing
+[Modern Web Guidance](https://developer.chrome.com/blog/modern-web-guidance-v1)
+for this project:
+
+```bash
+npx modern-web-guidance@latest install
+```
+
+Use it to review accessibility, browser compatibility, performance, security,
+and modern HTML/CSS/JavaScript alternatives. This is an optional developer
+workflow; ordinary `taxus build` and `taxus serve` commands do not require Node,
+`npx`, or network access.
