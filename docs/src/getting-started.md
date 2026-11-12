@@ -116,6 +116,7 @@ default.
 - Understand [Content](./content.md) for writing pages and posts
 - Explore [Templates](./templates.md) for customizing HTML output
 - Read the [CLI Reference](./cli.md) for all command options
+- Use the optional [Modern Web Guidance](./development.md#modern-web-guidance) when working with a coding agent on templates, styles, or browser scripts
 - [Deploy](./deployment.md) the built site to a static host
 
 ## Opting Out of Islands
