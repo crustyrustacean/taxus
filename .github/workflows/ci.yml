@@ -68,6 +68,11 @@ jobs:
       - name: Run TypeScript-enabled tests
         run: cargo test --features typescript
 
+      - name: Install Firefox for TypeScript browser smoke test
+        uses: browser-actions/setup-firefox@v1
+        with:
+          firefox-version: latest
+
       - name: Run TypeScript browser smoke test
         run: scripts/typescript-browser-smoke.sh
 
