@@ -65,6 +65,24 @@ python3 scripts/check-packaged-consumer.py
 cargo run -p taxus-cli -- serve --dir my-site --open
 ```
 
+## Modern Web Guidance
+
+New Taxus sites include an `AGENTS.md` with an optional pointer to
+[Modern Web Guidance](https://developer.chrome.com/blog/modern-web-guidance-v1),
+which gives coding agents expert-vetted advice about accessibility, browser
+compatibility, performance, security, and modern HTML/CSS/JavaScript APIs.
+
+To install it for a site when working with an agent, run this from the site
+root:
+
+```bash
+npx modern-web-guidance@latest install
+```
+
+This is a developer workflow, not a Taxus build dependency. Ordinary
+`taxus build` and `taxus serve` commands do not require Node, `npx`, or network
+access.
+
 ## Documentation
 
 ```bash
