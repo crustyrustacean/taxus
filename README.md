@@ -2,6 +2,8 @@
 
 A Rust-based static site generator built with [Tera](https://keats.github.io/tera/), featuring WebAssembly "islands" for interactive components.
 
+[![Taxus on StartupScores](https://startupscores.com/badge/taxus.svg?style=shield&v=combo&theme=dark)](https://startupscores.com/open-source/taxus)
+
 Taxus is a compiler for websites: a folder of Markdown, templates, styles
 and static files goes in, a folder of HTML and a few generated files comes
 out. The build parses the content directory into a Site Tree, computes
