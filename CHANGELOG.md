@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-11-17
+
 ### Added
 
 - **init**: include Modern Web Guidance in the scaffolded `AGENTS.md` and documentation
