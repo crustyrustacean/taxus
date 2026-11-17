@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **init**: include Modern Web Guidance in the scaffolded `AGENTS.md` and documentation
+
+### Fixed
+
+- **typescript**: validate the complete extracted compiler cache via a manifest and safely replace incomplete caches instead of invoking a broken `tsc`
+
 ## [1.4.6] - 2026-11-08
 
 ### Fixed

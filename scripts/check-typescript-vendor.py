@@ -99,6 +99,8 @@ def main() -> None:
 
         if compiler not in names:
             fail(f"{target}: archive does not contain {compiler}")
+        if "package/lib/lib.d.ts" not in names:
+            fail(f"{target}: archive does not contain package/lib/lib.d.ts")
         if "package/lib/lib.dom.d.ts" not in names:
             fail(f"{target}: archive does not contain package/lib/lib.dom.d.ts")
 
