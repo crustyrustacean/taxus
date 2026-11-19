@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-19
+
 ### Fixed
 
 - **security**: disable `postcard` default features in `taxus-common` to remove unused `heapless 0.7.17` (`RUSTSEC-2026-0574` through `RUSTSEC-2026-0582`)
