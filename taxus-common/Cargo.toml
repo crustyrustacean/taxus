@@ -19,7 +19,7 @@ dist = false
 
 [dependencies]
 gloo-timers = "0.4.0"
-postcard = { version = "1", features = [ "alloc" ] }
+postcard = { version = "1", default-features = false, features = ["alloc"] }
 serde = { workspace = true }
 rust-stemmers = "1.2"
 wasm-bindgen = "0.2"
