@@ -3012,7 +3012,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-cli"
-version = "1.4.7"
+version = "2.0.0"
 dependencies = [
  "axum",
  "clap",
@@ -3035,7 +3035,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-client"
-version = "1.4.7"
+version = "2.0.0"
 dependencies = [
  "js-sys",
  "serde-wasm-bindgen",
@@ -3049,7 +3049,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-common"
-version = "1.4.7"
+version = "2.0.0"
 dependencies = [
  "gloo-timers 0.4.0",
  "postcard",
@@ -3064,7 +3064,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-domain"
-version = "1.4.7"
+version = "2.0.0"
 dependencies = [
  "jiff 1.0.1",
  "serde",
@@ -3075,7 +3075,7 @@ dependencies = [
 
 [[package]]
 name = "taxus-ssg"
-version = "1.4.7"
+version = "2.0.0"
 dependencies = [
  "deunicode",
  "flate2",
@@ -3118,27 +3118,27 @@ dependencies = [
 
 [[package]]
 name = "taxus-typescript-darwin-arm64"
-version = "1.4.7"
+version = "2.0.0"
 
 [[package]]
 name = "taxus-typescript-darwin-x64"
-version = "1.4.7"
+version = "2.0.0"
 
 [[package]]
 name = "taxus-typescript-linux-arm64"
-version = "1.4.7"
+version = "2.0.0"
 
 [[package]]
 name = "taxus-typescript-linux-x64"
-version = "1.4.7"
+version = "2.0.0"
 
 [[package]]
 name = "taxus-typescript-win32-arm64"
-version = "1.4.7"
+version = "2.0.0"
 
 [[package]]
 name = "taxus-typescript-win32-x64"
-version = "1.4.7"
+version = "2.0.0"
 
 [[package]]
 name = "tempfile"
@@ -3932,7 +3932,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "1.4.7"
+version = "2.0.0"
 dependencies = [
  "clap",
 ]
