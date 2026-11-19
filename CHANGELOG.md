@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **dates**: replace `chrono` with `jiff` 1.0 across `taxus-domain`, `taxus-ssg`, and `taxus-cli` (**breaking** for library consumers: `Frontmatter::date`, `Frontmatter::updated`, and `split_date_prefix` now use `jiff::civil::Date`; `FeedEntry::date`, `FeedEntry::updated`, and `ReloadEvent::timestamp` now use `jiff::Timestamp`)
+- **docs**: update API reference signatures for `jiff` date and timestamp types
+
 ## [1.4.7] - 2026-11-17
 
 ### Added

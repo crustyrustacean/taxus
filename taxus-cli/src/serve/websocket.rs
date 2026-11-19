@@ -3,7 +3,7 @@
 //! This module defines the messages sent between the server and browser
 //! via WebSocket for live reload functionality.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
 use super::watcher::ChangeType;
@@ -14,7 +14,7 @@ pub struct ReloadEvent {
     /// The type of change that triggered the reload.
     pub change_type: ChangeType,
     /// When the change occurred.
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: Timestamp,
     /// The files that changed.
     pub files: Vec<String>,
 }
@@ -24,7 +24,7 @@ impl ReloadEvent {
     pub fn new(change_type: ChangeType, files: Vec<String>) -> Self {
         Self {
             change_type,
-            timestamp: Utc::now(),
+            timestamp: Timestamp::now(),
             files,
         }
     }
@@ -58,7 +58,7 @@ mod tests {
     fn test_reload_event_serialization() {
         let event = ReloadEvent {
             change_type: ChangeType::Content,
-            timestamp: Utc::now(),
+            timestamp: Timestamp::now(),
             files: vec!["content/blog/post.md".to_string()],
         };
 
@@ -84,7 +84,7 @@ mod tests {
     fn test_websocket_message_reload() {
         let event = ReloadEvent {
             change_type: ChangeType::Style,
-            timestamp: Utc::now(),
+            timestamp: Timestamp::now(),
             files: vec!["styles/main.scss".to_string()],
         };
         let message = WebSocketMessage::Reload(event);

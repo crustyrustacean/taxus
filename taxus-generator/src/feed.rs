@@ -48,7 +48,7 @@
 mod atom;
 mod rss;
 
-use chrono::{DateTime, Utc};
+use jiff::{Timestamp, tz::Offset};
 use serde::{Deserialize, Serialize};
 
 use crate::content::Frontmatter;
@@ -136,10 +136,10 @@ pub struct FeedEntry {
     pub content: Option<String>,
 
     /// Publication date
-    pub date: DateTime<Utc>,
+    pub date: Timestamp,
 
     /// Last updated date
-    pub updated: Option<DateTime<Utc>>,
+    pub updated: Option<Timestamp>,
 
     /// Author name
     pub author: Option<String>,
@@ -177,23 +177,15 @@ impl FeedEntry {
             (None, None) => body_summary,
         };
 
-        // Convert date to DateTime<Utc>
+        // Convert date to UTC Timestamp
         let date = meta
             .date
-            .map(|d| {
-                d.and_hms_opt(0, 0, 0)
-                    .unwrap_or_else(|| chrono::NaiveDateTime::new(d, chrono::NaiveTime::MIN))
-            })
-            .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc))
-            .unwrap_or_else(Utc::now);
+            .and_then(|d| Offset::UTC.to_timestamp(d.at(0, 0, 0, 0)).ok())
+            .unwrap_or_else(Timestamp::now);
 
         let updated = meta
             .updated
-            .map(|d| {
-                d.and_hms_opt(0, 0, 0)
-                    .unwrap_or_else(|| chrono::NaiveDateTime::new(d, chrono::NaiveTime::MIN))
-            })
-            .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc));
+            .and_then(|d| Offset::UTC.to_timestamp(d.at(0, 0, 0, 0)).ok());
 
         Self {
             title: meta.title.clone(),
@@ -287,7 +279,7 @@ mod tests {
     use super::*;
 
     fn create_test_entry(title: &str, date_str: &str) -> FeedEntry {
-        let date = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok();
+        let date = date_str.parse().ok();
         let meta = Frontmatter {
             title: title.to_string(),
             date,

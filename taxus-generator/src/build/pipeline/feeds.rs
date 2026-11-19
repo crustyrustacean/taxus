@@ -267,7 +267,6 @@ mod feed_membership_tests {
     use crate::build::pipeline::test_support::tree_of;
     use crate::content::Page;
     use crate::routes::{RouteInfo, RouteKind};
-    use chrono::NaiveDate;
     use std::path::PathBuf;
     use taxus_domain::Frontmatter;
 
@@ -302,7 +301,7 @@ mod feed_membership_tests {
             RouteKind::Section,
             Frontmatter {
                 title: path.to_string(),
-                date: date.map(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap()),
+                date: date.map(|d| d.parse().unwrap()),
                 ..Frontmatter::default()
             },
         )
@@ -315,7 +314,7 @@ mod feed_membership_tests {
             RouteKind::Page,
             Frontmatter {
                 title: title.to_string(),
-                date: date.map(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap()),
+                date: date.map(|d| d.parse().unwrap()),
                 ..Frontmatter::default()
             },
         )

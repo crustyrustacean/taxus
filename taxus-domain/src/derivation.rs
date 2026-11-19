@@ -293,9 +293,9 @@ mod tests {
     use crate::identity::Slug;
     use crate::schema::SortBy;
     use crate::tree::SiteTreeBuilder;
-    use chrono::NaiveDate;
+    use jiff::civil::Date;
 
-    fn page(path: &str, date: NaiveDate) -> PageNode {
+    fn page(path: &str, date: Date) -> PageNode {
         PageNode {
             path: NodePath::parse(path).unwrap(),
             content_file: std::path::PathBuf::from(format!("{path}.md")),
@@ -324,7 +324,7 @@ mod tests {
         add(
             &mut builder,
             "root-note",
-            page("root-note", NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()).meta,
+            page("root-note", Date::constant(2026, 1, 1)).meta,
         );
         builder
             .add_section(
@@ -341,7 +341,7 @@ mod tests {
             add(
                 &mut builder,
                 path,
-                page(path, NaiveDate::from_ymd_opt(y, m, 15).unwrap()).meta,
+                page(path, Date::new(y, m, 15).unwrap()).meta,
             );
         }
         builder.build().unwrap()
@@ -469,7 +469,7 @@ mod tests {
     fn recent_sorts_by_date_desc_and_filters_drafts() {
         let mut builder = SiteTreeBuilder::new();
         let dated = |y, m, draft| crate::schema::Frontmatter {
-            date: Some(NaiveDate::from_ymd_opt(y, m, 1).unwrap()),
+            date: Some(Date::new(y, m, 1).unwrap()),
             draft,
             ..crate::schema::Frontmatter::default()
         };

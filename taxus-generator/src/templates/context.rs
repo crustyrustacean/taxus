@@ -393,14 +393,16 @@ impl TemplateContext {
     /// assert_eq!(ctx.site.name, "My Site");
     /// ```
     pub fn new(site: SiteContext) -> Self {
-        use chrono::{Datelike, Utc};
+        let year = i32::from(
+            jiff::Timestamp::now()
+                .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+                .year(),
+        );
         Self {
             page: None,
             section: None,
             site,
-            now: NowContext {
-                year: Utc::now().year(),
-            },
+            now: NowContext { year },
             extra: HashMap::new(),
         }
     }

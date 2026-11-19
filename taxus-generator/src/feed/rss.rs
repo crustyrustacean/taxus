@@ -6,18 +6,21 @@
 
 use super::{FeedConfig, FeedEntry, escape_xml};
 use crate::error::Result;
-use chrono::{DateTime, Utc};
+use jiff::{Timestamp, tz::TimeZone};
 
 /// Generate an RSS 2.0 feed from entries.
 pub fn generate_rss_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<String> {
-    // #38: the newest entry's date, not `Utc::now()` — a build that changed
+    // #38: the newest entry's date, not `Timestamp::now()` — a build that changed
     // no content must produce a byte-identical feed.
-    let now: DateTime<Utc> = entries
+    let now: Timestamp = entries
         .iter()
         .map(|e| e.date)
         .max()
-        .unwrap_or_else(Utc::now);
-    let now_rfc2822 = now.format("%a, %d %b %Y %H:%M:%S %z").to_string();
+        .unwrap_or_else(Timestamp::now);
+    let now_rfc2822 = now
+        .to_zoned_datetime(TimeZone::UTC)
+        .strftime("%a, %d %b %Y %H:%M:%S %z")
+        .to_string();
 
     let mut items_xml = String::new();
     for entry in entries {
@@ -55,7 +58,11 @@ pub fn generate_rss_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<S
 
 /// Generate XML for a single RSS item.
 fn generate_item_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> {
-    let pub_date = entry.date.format("%a, %d %b %Y %H:%M:%S %z").to_string();
+    let pub_date = entry
+        .date
+        .to_zoned_datetime(TimeZone::UTC)
+        .strftime("%a, %d %b %Y %H:%M:%S %z")
+        .to_string();
 
     let author_xml = match (&entry.author, &entry.author_email) {
         (Some(name), Some(email)) => format!(
@@ -131,7 +138,6 @@ fn escape_cdata(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
 
     fn create_test_entry(title: &str) -> FeedEntry {
         FeedEntry {
@@ -142,7 +148,7 @@ mod tests {
             ),
             summary: format!("Summary for {}", title),
             content: Some(format!("<p>Content for {}</p>", title)),
-            date: Utc::now(),
+            date: Timestamp::now(),
             updated: None,
             author: Some("Test Author".to_string()),
             author_email: Some("test@example.com".to_string()),
@@ -202,7 +208,7 @@ mod tests {
             url: "https://example.com/tom-jerry/?a=1&b=2".to_string(),
             summary: "An & summary".to_string(),
             content: Some("<p>If x ]]&gt; 3 then &amp; so</p>".to_string()),
-            date: Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap(),
+            date: "2026-01-01T00:00:00Z".parse().unwrap(),
             updated: None,
             author: None,
             author_email: None,
@@ -250,7 +256,7 @@ mod tests {
             url: "https://example.com/arrays/".to_string(),
             summary: "s".to_string(),
             content: Some("<pre>a[i]]>0 is the guard</pre>".to_string()),
-            date: Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap(),
+            date: "2026-01-01T00:00:00Z".parse().unwrap(),
             updated: None,
             author: None,
             author_email: None,
@@ -289,9 +295,9 @@ mod tests {
         };
 
         let mut older = create_test_entry("Older");
-        older.date = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap();
+        older.date = "2026-01-01T00:00:00Z".parse().unwrap();
         let mut newer = create_test_entry("Newer");
-        newer.date = Utc.with_ymd_and_hms(2026, 3, 15, 9, 30, 0).unwrap();
+        newer.date = "2026-03-15T09:30:00Z".parse().unwrap();
 
         let rss = generate_rss_feed(&[older, newer], &config).unwrap();
 

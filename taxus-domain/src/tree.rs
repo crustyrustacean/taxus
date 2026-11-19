@@ -753,7 +753,7 @@ mod tests {
                 &mut builder,
                 slug,
                 Frontmatter {
-                    date: date.map(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap()),
+                    date: date.map(|d| d.parse().unwrap()),
                     ..Frontmatter::default()
                 },
             );

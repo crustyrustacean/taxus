@@ -62,13 +62,13 @@ mod error_tests {
 
 mod websocket_tests {
     use super::*;
-    use chrono::Utc;
+    use jiff::Timestamp;
 
     #[test]
     fn test_reload_event_serialization() {
         let event = ReloadEvent {
             change_type: ChangeType::Content,
-            timestamp: Utc::now(),
+            timestamp: Timestamp::now(),
             files: vec!["content/blog/post.md".to_string()],
         };
 
@@ -94,7 +94,7 @@ mod websocket_tests {
     fn test_websocket_message_reload() {
         let event = ReloadEvent {
             change_type: ChangeType::Style,
-            timestamp: Utc::now(),
+            timestamp: Timestamp::now(),
             files: vec!["styles/main.scss".to_string()],
         };
         let message = WebSocketMessage::Reload(event);

@@ -9,7 +9,7 @@
 //! [`Frontmatter`]; it does not read files. See the book's
 //! [Glossary](https://crustyrustacean.github.io/taxus/theory/glossary.html#storage).
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -54,7 +54,7 @@ pub struct Frontmatter {
 
     /// Optional publication date (TOML datetime)
     #[serde(default, deserialize_with = "optional_date::deserialize")]
-    pub date: Option<NaiveDate>,
+    pub date: Option<Date>,
 
     /// Optional template override
     pub template: Option<String>,
@@ -112,7 +112,7 @@ pub struct Frontmatter {
 
     /// Last updated date
     #[serde(default, deserialize_with = "optional_date::deserialize")]
-    pub updated: Option<NaiveDate>,
+    pub updated: Option<Date>,
 
     /// Relative path to a co-located hero image
     pub hero_image: Option<String>,
@@ -121,19 +121,19 @@ pub struct Frontmatter {
     pub hero_alt: Option<String>,
 }
 
-/// Custom serialization module for optional NaiveDate with TOML datetime support.
+/// Custom serialization module for optional `jiff::civil::Date` with TOML datetime support.
 ///
-/// Dates are `NaiveDate` by design (#32): feeds sort by date, templates
+/// Dates are `jiff::civil::Date` by design (#32): feeds sort by date, templates
 /// display at day granularity, and the tree's ordering derivations are
 /// date-keyed. A full TOML datetime is therefore truncated to its date
 /// part — with a warning to stderr when a non-midnight time or an offset
 /// is discarded, so a migration from Hugo/Jekyll timestamps that quietly
 /// loses `15:00:00Z` is at least visible in the build log.
 mod optional_date {
-    use chrono::NaiveDate;
+    use jiff::civil::Date;
     use serde::{Deserialize, Deserializer};
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Date>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -147,13 +147,16 @@ mod optional_date {
                 if !midnight || dt.offset.is_some() {
                     eprintln!(
                         "warning: frontmatter date {:?} is truncated to its date part; \
-                         taxus dates are day-granular (NaiveDate)",
+                         taxus dates are day-granular (jiff::civil::Date)",
                         dt
                     );
                 }
             }
             dt.date.and_then(|d| {
-                NaiveDate::from_ymd_opt(i32::from(d.year), u32::from(d.month), u32::from(d.day))
+                let year = i16::try_from(d.year).ok()?;
+                let month = i8::try_from(d.month).ok()?;
+                let day = i8::try_from(d.day).ok()?;
+                Date::new(year, month, day).ok()
             })
         }))
     }
@@ -268,7 +271,7 @@ draft = true
 
         assert_eq!(fm.title, "Test Page");
         assert_eq!(fm.description, Some("A test page".to_string()));
-        assert_eq!(fm.date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+        assert_eq!(fm.date, Some(Date::constant(2024, 1, 15)));
         assert_eq!(fm.template, Some("custom.html".to_string()));
         assert!(fm.draft);
     }
@@ -616,11 +619,8 @@ template = "custom.html"
         )
         .unwrap();
 
-        assert_eq!(fm.date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
-        assert_eq!(
-            fm.updated,
-            Some(NaiveDate::from_ymd_opt(2024, 2, 20).unwrap())
-        );
+        assert_eq!(fm.date, Some(Date::constant(2024, 1, 15)));
+        assert_eq!(fm.updated, Some(Date::constant(2024, 2, 20)));
     }
 
     #[test]
@@ -731,29 +731,17 @@ template = "custom.html"
     #[test]
     fn datetime_truncates_to_date() {
         let fm = Frontmatter::from_str(r#"date = 2019-11-27T15:00:00Z"#).unwrap();
-        assert_eq!(
-            fm.date,
-            Some(chrono::NaiveDate::from_ymd_opt(2019, 11, 27).unwrap())
-        );
+        assert_eq!(fm.date, Some(Date::constant(2019, 11, 27)));
 
         let fm = Frontmatter::from_str(r#"date = 2019-11-27"#).unwrap();
-        assert_eq!(
-            fm.date,
-            Some(chrono::NaiveDate::from_ymd_opt(2019, 11, 27).unwrap())
-        );
+        assert_eq!(fm.date, Some(Date::constant(2019, 11, 27)));
 
         // Midnight WITH an offset still warns (offset information lost).
         let fm = Frontmatter::from_str(r#"date = 2019-11-27T00:00:00Z"#).unwrap();
-        assert_eq!(
-            fm.date,
-            Some(chrono::NaiveDate::from_ymd_opt(2019, 11, 27).unwrap())
-        );
+        assert_eq!(fm.date, Some(Date::constant(2019, 11, 27)));
 
         // Bare midnight, no offset: nothing lost, no complaint.
         let fm = Frontmatter::from_str(r#"date = 2019-11-27T00:00:00"#).unwrap();
-        assert_eq!(
-            fm.date,
-            Some(chrono::NaiveDate::from_ymd_opt(2019, 11, 27).unwrap())
-        );
+        assert_eq!(fm.date, Some(Date::constant(2019, 11, 27)));
     }
 }

@@ -738,7 +738,7 @@ mod tests {
         );
         assert_eq!(
             post.meta.date,
-            chrono::NaiveDate::from_ymd_opt(2026, 4, 6),
+            Some(jiff::civil::Date::constant(2026, 4, 6)),
             "filename date is the default publication date (#67)"
         );
     }

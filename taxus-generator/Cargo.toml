@@ -59,8 +59,8 @@ default = [
 [dependencies]
 deunicode = "1"
 # ── Core SSG dependencies (always compiled) ──────────────────────────────────
-chrono = { version = "0.4", features = ["serde"] }
 grass = "0.13"
+jiff = { version = "1", features = ["serde"] }
 pulldown-cmark = "0.13"
 serde = { workspace = true, features = ["derive"] }
 serde_json = "1"

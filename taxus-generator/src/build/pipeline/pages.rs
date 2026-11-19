@@ -614,7 +614,7 @@ This is the content.
                 page: Page {
                     frontmatter: Frontmatter {
                         title: "First Post".to_string(),
-                        date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15),
+                        date: Some(jiff::civil::Date::constant(2024, 1, 15)),
                         ..Default::default()
                     },
                     raw_content: "First post content".to_string(),
@@ -638,7 +638,7 @@ This is the content.
                 page: Page {
                     frontmatter: Frontmatter {
                         title: "Second Post".to_string(),
-                        date: chrono::NaiveDate::from_ymd_opt(2024, 2, 20),
+                        date: Some(jiff::civil::Date::constant(2024, 2, 20)),
                         ..Default::default()
                     },
                     raw_content: "Second post content".to_string(),
@@ -800,7 +800,7 @@ This is the content.
                 page: Page {
                     frontmatter: Frontmatter {
                         title: format!("Post {}", i),
-                        date: chrono::NaiveDate::from_ymd_opt(2024, 1, i as u32),
+                        date: jiff::civil::Date::new(2024, 1, i as i8).ok(),
                         ..Default::default()
                     },
                     raw_content: format!("Content {}", i),
@@ -1176,8 +1176,7 @@ Content here.
 
     fn dated_page(path: &str, file: &str, title: &str, date: Option<&str>) -> ProcessedPage {
         let mut page = plain_page(path, file, title);
-        page.page.frontmatter.date =
-            date.map(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap());
+        page.page.frontmatter.date = date.map(|d| d.parse().unwrap());
         page
     }
 

@@ -6,18 +6,24 @@
 
 use super::{FeedConfig, FeedEntry, escape_xml};
 use crate::error::Result;
-use chrono::{DateTime, Utc};
+use jiff::{Timestamp, fmt::temporal::DateTimePrinter, tz::Offset};
+
+/// Format a UTC timestamp as RFC 3339 with an explicit `+00:00` offset,
+/// matching the historical output format used by Atom feeds.
+fn format_rfc3339(ts: Timestamp) -> String {
+    DateTimePrinter::new().timestamp_with_offset_to_string(&ts, Offset::UTC)
+}
 
 /// Generate an Atom feed from entries.
 pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<String> {
-    // #38: the newest entry's updated date, not `Utc::now()` — a build
+    // #38: the newest entry's updated date, not `Timestamp::now()` — a build
     // that changed no content must produce a byte-identical feed.
-    let now: DateTime<Utc> = entries
+    let now: Timestamp = entries
         .iter()
         .map(|e| e.updated.unwrap_or(e.date))
         .max()
-        .unwrap_or_else(Utc::now);
-    let now_rfc3339 = now.to_rfc3339();
+        .unwrap_or_else(Timestamp::now);
+    let now_rfc3339 = format_rfc3339(now);
 
     let mut entries_xml = String::new();
     for entry in entries {
@@ -72,10 +78,10 @@ pub fn generate_atom_feed(entries: &[FeedEntry], config: &FeedConfig) -> Result<
 
 /// Generate XML for a single Atom entry.
 fn generate_entry_xml(entry: &FeedEntry, config: &FeedConfig) -> Result<String> {
-    let published = entry.date.to_rfc3339();
+    let published = format_rfc3339(entry.date);
     let updated = entry
         .updated
-        .map(|d| d.to_rfc3339())
+        .map(format_rfc3339)
         .unwrap_or_else(|| published.clone());
 
     let author_xml = match (&entry.author, &entry.author_email) {
@@ -174,7 +180,7 @@ mod tests {
             ),
             summary: format!("Summary for {}", title),
             content: Some(format!("<p>Content for {}</p>", title)),
-            date: Utc::now(),
+            date: Timestamp::now(),
             updated: None,
             author: Some("Test Author".to_string()),
             author_email: Some("test@example.com".to_string()),
@@ -221,8 +227,6 @@ mod tests {
     /// build time.
     #[test]
     fn atom_with_metacharacters_is_well_formed_xml() {
-        use chrono::TimeZone;
-
         let config = FeedConfig {
             title: "A & B".to_string(),
             base_url: "https://example.com".to_string(),
@@ -235,8 +239,8 @@ mod tests {
             url: "https://example.com/q-a/?x=1&y=2".to_string(),
             summary: "s".to_string(),
             content: Some("<pre>idx]]>size</pre>".to_string()),
-            date: Utc.with_ymd_and_hms(2026, 2, 2, 0, 0, 0).unwrap(),
-            updated: Some(Utc.with_ymd_and_hms(2026, 3, 3, 0, 0, 0).unwrap()),
+            date: "2026-02-02T00:00:00Z".parse().unwrap(),
+            updated: Some("2026-03-03T00:00:00Z".parse().unwrap()),
             author: None,
             author_email: None,
             tags: vec![],

@@ -5,7 +5,7 @@
 //! See the book's [Identity](https://crustyrustacean.github.io/taxus/theory/identity.html) chapter.
 
 use crate::error::{ContentError, Result};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -25,17 +25,17 @@ use super::Frontmatter;
 /// # Examples
 ///
 /// ```
-/// # use chrono::NaiveDate;
+/// # use jiff::civil::Date;
 /// # use taxus::content::split_date_prefix;
 /// let (stem, date) = split_date_prefix("2026-04-06-my-post");
 /// assert_eq!(stem, "my-post");
-/// assert_eq!(date, NaiveDate::from_ymd_opt(2026, 4, 6));
+/// assert_eq!(date, Some(Date::constant(2026, 4, 6)));
 ///
 /// // No (valid) prefix: unchanged.
 /// assert_eq!(split_date_prefix("my-post").0, "my-post");
 /// assert_eq!(split_date_prefix("2026-04-06").0, "2026-04-06");
 /// ```
-pub fn split_date_prefix(stem: &str) -> (&str, Option<NaiveDate>) {
+pub fn split_date_prefix(stem: &str) -> (&str, Option<Date>) {
     // Shape check: exactly `XXXX-XX-XX-` (11 bytes, digits in position).
     let b = stem.as_bytes();
     if b.len() <= 11 || b[4] != b'-' || b[7] != b'-' || b[10] != b'-' {
@@ -47,14 +47,14 @@ pub fn split_date_prefix(stem: &str) -> (&str, Option<NaiveDate>) {
     }
 
     // Parsing cannot fail: the digit shapes were just verified.
-    let year: i32 = stem[0..4].parse().expect("verified digits");
-    let month: u32 = stem[5..7].parse().expect("verified digits");
-    let day: u32 = stem[8..10].parse().expect("verified digits");
+    let year: i16 = stem[0..4].parse().expect("verified digits");
+    let month: i8 = stem[5..7].parse().expect("verified digits");
+    let day: i8 = stem[8..10].parse().expect("verified digits");
 
-    match NaiveDate::from_ymd_opt(year, month, day) {
+    match Date::new(year, month, day) {
         // `b.len() > 11` guarantees a non-empty remainder and that index 11
         // is a char boundary (bytes 0..=10 are ASCII).
-        Some(date) if b.len() > 11 => (&stem[11..], Some(date)),
+        Ok(date) if b.len() > 11 => (&stem[11..], Some(date)),
         _ => (stem, None),
     }
 }
@@ -551,10 +551,7 @@ title = "Test"
 Content
 "#;
         let page = Page::from_str(content.trim_start(), "2026-04-06-my-post.md").unwrap();
-        assert_eq!(
-            page.frontmatter.date,
-            chrono::NaiveDate::from_ymd_opt(2026, 4, 6)
-        );
+        assert_eq!(page.frontmatter.date, Some(Date::constant(2026, 4, 6)));
     }
 
     #[test]
@@ -567,10 +564,7 @@ date = 2020-01-01
 Content
 "#;
         let page = Page::from_str(content.trim_start(), "2026-04-06-my-post.md").unwrap();
-        assert_eq!(
-            page.frontmatter.date,
-            chrono::NaiveDate::from_ymd_opt(2020, 1, 1)
-        );
+        assert_eq!(page.frontmatter.date, Some(Date::constant(2020, 1, 1)));
     }
 
     #[test]

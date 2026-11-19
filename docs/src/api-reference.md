@@ -41,7 +41,7 @@ pub struct Frontmatter {
     pub title: String,                    // default ""
     pub description: Option<String>,
     pub tagline: Option<String>,
-    pub date: Option<NaiveDate>,
+    pub date: Option<jiff::civil::Date>,
     pub template: Option<String>,
     pub draft: bool,
     pub summary: Option<String>,
@@ -56,7 +56,7 @@ pub struct Frontmatter {
     pub paginate_template: Option<String>,
     pub weight: i32,
     pub pages_from: Vec<String>,          // donor sections, "blog"
-    pub updated: Option<NaiveDate>,
+    pub updated: Option<jiff::civil::Date>,
     pub hero_image: Option<String>,
     pub hero_alt: Option<String>,
 }
@@ -315,7 +315,7 @@ from the tree in stage 3; the served URL lives on
 ### `split_date_prefix`
 
 ```rust
-pub fn split_date_prefix(stem: &str) -> (&str, Option<NaiveDate>)
+pub fn split_date_prefix(stem: &str) -> (&str, Option<jiff::civil::Date>)
 ```
 
 Strips a valid `YYYY-MM-DD-` prefix from a file stem and returns the
@@ -695,7 +695,7 @@ pub struct AssetReport {
 
 ```rust
 pub struct FeedConfig { pub title, pub description, pub base_url, pub author, pub author_email, pub language, pub limit: Option<usize>, pub full_content, pub filename }
-pub struct FeedEntry { pub title, pub url, pub summary, pub content: Option<String>, pub date: DateTime<Utc>, pub updated, pub author, pub author_email, pub tags }
+pub struct FeedEntry { pub title, pub url, pub summary, pub content: Option<String>, pub date: jiff::Timestamp, pub updated, pub author, pub author_email, pub tags }
 ```
 
 | Item | Description |

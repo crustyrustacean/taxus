@@ -73,7 +73,7 @@ pub fn generate_sitemap(
             p.page
                 .frontmatter
                 .date
-                .map(|d| d.format("%Y-%m-%d").to_string())
+                .map(|d| d.to_string())
                 .map(|d| (p.route.content_file.as_path(), d))
         })
         .collect();
