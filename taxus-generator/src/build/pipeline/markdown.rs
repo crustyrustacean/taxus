@@ -67,22 +67,21 @@ fn markdown_parser_options() -> Options {
 }
 
 #[derive(Default)]
-struct CodeBlockState {
-    active: bool,
-    lang: Option<String>,
-    buffer: String,
+enum CaptureState {
+    #[default]
+    Normal,
+    CodeBlock {
+        lang: Option<String>,
+        buffer: String,
+    },
+    Heading {
+        level: u8,
+        explicit_id: Option<String>,
+        classes: Vec<String>,
+        text: String,
+    },
 }
 
-#[derive(Default)]
-struct HeadingState {
-    active: bool,
-    level: u8,
-    explicit_id: Option<String>,
-    classes: Vec<String>,
-    text: String,
-}
-
-#[derive(Default)]
 struct TableState {
     alignments: Vec<pulldown_cmark::Alignment>,
     column: usize,
@@ -94,9 +93,8 @@ struct MarkdownRenderer<'a, 'h> {
     toc: Vec<TocEntry>,
     highlighter: Option<&'h mut CodeHighlighter>,
     opts: &'a MarkdownOptions,
-    code_block: CodeBlockState,
-    heading: HeadingState,
-    table: TableState,
+    capture: CaptureState,
+    table: Option<TableState>,
     /// TaskListMarker events precede the item's text inside a list item;
     /// pulldown-cmark does not add the class itself. Lists are written as
     /// plain `<ul>` before markers are seen, so the class is retrofitted on
@@ -113,9 +111,8 @@ impl<'a, 'h> MarkdownRenderer<'a, 'h> {
             toc: Vec::new(),
             highlighter,
             opts,
-            code_block: CodeBlockState::default(),
-            heading: HeadingState::default(),
-            table: TableState::default(),
+            capture: CaptureState::Normal,
+            table: None,
             task_list_started: false,
             id_counts: HashMap::new(),
         }
@@ -177,95 +174,117 @@ impl<'a, 'h> MarkdownRenderer<'a, 'h> {
     }
 
     fn start_code_block(&mut self, kind: CodeBlockKind) {
-        self.code_block.active = true;
-        self.code_block.buffer.clear();
-        self.code_block.lang = match kind {
+        let lang = match kind {
             CodeBlockKind::Fenced(lang) => {
                 let lang = lang.trim().to_string();
                 if lang.is_empty() { None } else { Some(lang) }
             }
             CodeBlockKind::Indented => None,
         };
+        self.capture = CaptureState::CodeBlock {
+            lang,
+            buffer: String::new(),
+        };
     }
 
     fn finish_code_block(&mut self) {
-        self.code_block.active = false;
-        let lang = self.code_block.lang.take();
-        emit_code_block(
-            &mut self.output,
-            &self.code_block.buffer,
-            lang.as_deref(),
-            self.highlighter.as_deref_mut(),
-        );
+        if let CaptureState::CodeBlock { lang, buffer } = std::mem::take(&mut self.capture) {
+            emit_code_block(
+                &mut self.output,
+                &buffer,
+                lang.as_deref(),
+                self.highlighter.as_deref_mut(),
+            );
+        }
     }
 
     fn start_table(&mut self, alignments: Vec<pulldown_cmark::Alignment>) {
-        self.table.alignments = alignments;
-        self.table.column = 0;
+        self.table = Some(TableState {
+            alignments,
+            column: 0,
+            in_head: false,
+        });
         self.output.push_str("<table>\n");
     }
 
     fn start_table_head(&mut self) {
-        self.table.in_head = true;
-        self.table.column = 0;
+        if let Some(table) = &mut self.table {
+            table.in_head = true;
+            table.column = 0;
+        }
         self.output.push_str("<thead><tr>");
     }
 
     fn start_table_row(&mut self) {
-        self.table.column = 0;
+        if let Some(table) = &mut self.table {
+            table.column = 0;
+        }
         self.output.push_str("<tr>");
     }
 
     fn start_table_cell(&mut self) {
-        let tag = if self.table.in_head {
-            alignment_header_tag(self.table.alignments.get(self.table.column))
-        } else {
-            "<td>"
+        let tag = match &mut self.table {
+            Some(table) => {
+                let tag = if table.in_head {
+                    alignment_header_tag(table.alignments.get(table.column))
+                } else {
+                    "<td>"
+                };
+                table.column += 1;
+                tag
+            }
+            None => "<td>",
         };
         self.output.push_str(tag);
-        self.table.column += 1;
     }
 
     fn end_table_cell(&mut self) {
+        let in_head = self.table.as_ref().is_some_and(|t| t.in_head);
         self.output
-            .push_str(if self.table.in_head { "</th>" } else { "</td>" });
+            .push_str(if in_head { "</th>" } else { "</td>" });
     }
 
     fn end_table_head(&mut self) {
-        self.table.in_head = false;
+        if let Some(table) = &mut self.table {
+            table.in_head = false;
+        }
         self.output.push_str("</tr></thead><tbody>");
     }
 
     fn end_table(&mut self) {
-        self.table.alignments.clear();
+        self.table = None;
         self.output.push_str("</tbody></table>\n");
     }
 
     fn start_heading(&mut self, level: u8, explicit_id: Option<String>, classes: Vec<String>) {
-        self.heading.active = true;
-        self.heading.level = level;
-        self.heading.text.clear();
-        self.heading.classes = classes;
-        self.heading.explicit_id = explicit_id;
+        self.capture = CaptureState::Heading {
+            level,
+            explicit_id,
+            classes,
+            text: String::new(),
+        };
     }
 
     fn finish_heading(&mut self) {
-        self.heading.active = false;
+        let CaptureState::Heading {
+            level,
+            explicit_id,
+            classes,
+            text,
+        } = std::mem::take(&mut self.capture)
+        else {
+            return;
+        };
 
         // Resolve the id: explicit {#id} wins, else slugify text.
-        let base_id = self
-            .heading
-            .explicit_id
-            .take()
-            .unwrap_or_else(|| slugify_segment(&self.heading.text));
+        let base_id = explicit_id.unwrap_or_else(|| slugify_segment(&text));
         let id = unique_id(&base_id, &mut self.id_counts);
-        let level = self.heading.level;
 
         // Open the tag with the id (and any explicit classes).
         self.output.push_str(&format!("<h{level} id=\"{id}\""));
-        if !self.heading.classes.is_empty() {
+        if !classes.is_empty() {
             self.output
-                .push_str(&format!(" class=\"{}\"", self.heading.classes.join(" ")));
+                .push_str(&format!(" class=\"{}\"", classes.join(" ")));
         }
         self.output.push('>');
 
@@ -275,18 +294,17 @@ impl<'a, 'h> MarkdownRenderer<'a, 'h> {
             ));
         }
 
-        self.output.push_str(&escape_html(&self.heading.text));
+        self.output.push_str(&escape_html(&text));
         self.output.push_str(&format!("</h{level}>\n"));
 
         // Record in the TOC.
         let entry = TocEntry {
             level,
-            text: self.heading.text.clone(),
+            text,
             id,
             children: Vec::new(),
         };
         insert_toc_entry(&mut self.toc, entry);
-        self.heading.classes.clear();
     }
 
     fn start_list(&mut self, start: Option<u64>) {
@@ -318,18 +336,16 @@ impl<'a, 'h> MarkdownRenderer<'a, 'h> {
     }
 
     fn handle_text(&mut self, text: &str) {
-        if self.code_block.active {
-            self.code_block.buffer.push_str(text);
-        } else if self.heading.active {
-            self.heading.text.push_str(text);
-        } else {
-            self.output.push_str(&escape_html(text));
+        match &mut self.capture {
+            CaptureState::CodeBlock { buffer, .. } => buffer.push_str(text),
+            CaptureState::Heading { text: heading, .. } => heading.push_str(text),
+            CaptureState::Normal => self.output.push_str(&escape_html(text)),
         }
     }
 
     fn handle_code(&mut self, code: &str) {
-        if self.heading.active {
-            self.heading.text.push_str(code);
+        if let CaptureState::Heading { text, .. } = &mut self.capture {
+            text.push_str(code);
         } else {
             self.output.push_str("<code>");
             self.output.push_str(&escape_html(code));
@@ -338,8 +354,8 @@ impl<'a, 'h> MarkdownRenderer<'a, 'h> {
     }
 
     fn handle_break(&mut self, hard: bool) {
-        if self.heading.active {
-            self.heading.text.push(' ');
+        if let CaptureState::Heading { text, .. } = &mut self.capture {
+            text.push(' ');
         } else if hard {
             self.output.push_str("<br />\n");
         } else {
@@ -348,8 +364,8 @@ impl<'a, 'h> MarkdownRenderer<'a, 'h> {
     }
 
     fn handle_inline_html(&mut self, html: &str) {
-        if self.heading.active {
-            self.heading.text.push_str(html);
+        if let CaptureState::Heading { text, .. } = &mut self.capture {
+            text.push_str(html);
         } else {
             self.output.push_str(html);
         }
