@@ -45,255 +45,358 @@ pub struct MarkdownOptions {
 /// source provides `{#custom-id}` (requires heading attributes syntax).
 pub fn markdown_to_html_with_toc(
     markdown: &str,
-    mut highlighter: Option<&mut CodeHighlighter>,
+    highlighter: Option<&mut CodeHighlighter>,
     opts: &MarkdownOptions,
 ) -> (String, Vec<TocEntry>) {
+    let parser = Parser::new_ext(markdown, markdown_parser_options());
+    let mut renderer = MarkdownRenderer::new(highlighter, opts);
+    for event in parser {
+        renderer.handle_event(event);
+    }
+    (renderer.output, renderer.toc)
+}
+
+fn markdown_parser_options() -> Options {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_FOOTNOTES);
     options.insert(Options::ENABLE_TASKLISTS);
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
-    let parser = Parser::new_ext(markdown, options);
+    options
+}
 
-    let mut output = String::new();
-    let mut toc: Vec<TocEntry> = Vec::new();
+#[derive(Default)]
+struct CodeBlockState {
+    active: bool,
+    lang: Option<String>,
+    buffer: String,
+}
 
-    // ── code block state ──
-    let mut in_code_block = false;
-    let mut code_lang: Option<String> = None;
-    let mut code_buffer = String::new();
+#[derive(Default)]
+struct HeadingState {
+    active: bool,
+    level: u8,
+    explicit_id: Option<String>,
+    classes: Vec<String>,
+    text: String,
+}
 
-    // ── heading state ──
-    // Heading text is buffered so the id can be derived from the full
-    // text before the closing tag is written.
-    let mut in_heading = false;
-    let mut heading_level: u8 = 0;
-    let mut heading_explicit_id: Option<String> = None;
-    let mut heading_classes: Vec<String> = Vec::new();
-    let mut heading_text = String::new();
+#[derive(Default)]
+struct TableState {
+    alignments: Vec<pulldown_cmark::Alignment>,
+    column: usize,
+    in_head: bool,
+}
 
-    // ── task list state ──
-    // TaskListMarker events precede the item's text inside a list item;
-    // pulldown-cmark does not add the class itself. Lists are written as
-    // plain <ul> before markers are seen, so the class is retrofitted on
-    // the first marker — task_list_started guards "already retrofitted".
-    let mut task_list_started = false;
+struct MarkdownRenderer<'a, 'h> {
+    output: String,
+    toc: Vec<TocEntry>,
+    highlighter: Option<&'h mut CodeHighlighter>,
+    opts: &'a MarkdownOptions,
+    code_block: CodeBlockState,
+    heading: HeadingState,
+    table: TableState,
+    /// TaskListMarker events precede the item's text inside a list item;
+    /// pulldown-cmark does not add the class itself. Lists are written as
+    /// plain `<ul>` before markers are seen, so the class is retrofitted on
+    /// the first marker — `task_list_started` guards "already retrofitted".
+    task_list_started: bool,
+    /// Deduplication: heading ids must be unique within the page.
+    id_counts: HashMap<String, usize>,
+}
 
-    // ── table state ──
-    // pulldown-cmark emits the table header cells as ordinary TableCell
-    // events nested inside TableHead, so the renderer must track whether a
-    // cell belongs to the header in order to choose <th> vs. <td>.
-    let mut table_alignments: Vec<pulldown_cmark::Alignment> = Vec::new();
-    let mut table_column = 0usize;
-    let mut in_table_head = false;
+impl<'a, 'h> MarkdownRenderer<'a, 'h> {
+    fn new(highlighter: Option<&'h mut CodeHighlighter>, opts: &'a MarkdownOptions) -> Self {
+        Self {
+            output: String::new(),
+            toc: Vec::new(),
+            highlighter,
+            opts,
+            code_block: CodeBlockState::default(),
+            heading: HeadingState::default(),
+            table: TableState::default(),
+            task_list_started: false,
+            id_counts: HashMap::new(),
+        }
+    }
 
-    // Deduplication: heading ids must be unique within the page.
-    let mut id_counts: HashMap<String, usize> = HashMap::new();
-
-    for event in parser {
+    fn handle_event(&mut self, event: Event) {
         match event {
-            Event::Start(Tag::CodeBlock(kind)) => {
-                in_code_block = true;
-                code_buffer.clear();
-                code_lang = match kind {
-                    CodeBlockKind::Fenced(lang) => {
-                        let lang = lang.trim().to_string();
-                        if lang.is_empty() { None } else { Some(lang) }
-                    }
-                    CodeBlockKind::Indented => None,
-                };
-            }
-            Event::End(TagEnd::CodeBlock) => {
-                in_code_block = false;
+            Event::Start(tag) => self.handle_start(tag),
+            Event::End(tag) => self.handle_end(tag),
+            Event::Text(t) => self.handle_text(&t),
+            Event::Code(c) => self.handle_code(&c),
+            Event::TaskListMarker(checked) => self.handle_task_list_marker(checked),
+            Event::SoftBreak => self.handle_break(false),
+            Event::HardBreak => self.handle_break(true),
+            Event::Html(h) => self.output.push_str(&h),
+            Event::InlineHtml(h) => self.handle_inline_html(&h),
+            Event::FootnoteReference(name) => write_footnote_reference(&mut self.output, &name),
+            _ => {}
+        }
+    }
 
-                match &code_lang {
-                    Some(lang) => {
-                        let result = match highlighter {
-                            Some(ref mut h1) => h1.highlight(&code_buffer, lang),
-                            None => HighlightResult::Unsupported(escape_html(&code_buffer)),
-                        };
-                        match result {
-                            HighlightResult::Highlighted(html) => {
-                                output.push_str(&format!(
-                                    "<pre class=\"highlight\"><code class=\"language-{}\">",
-                                    lang
-                                ));
-                                output.push_str(&html);
-                                output.push_str("</code></pre>\n");
-                            }
-                            HighlightResult::Unsupported(escaped) => {
-                                output
-                                    .push_str(&format!("<pre><code class=\"language-{}\">", lang));
-                                output.push_str(&escaped);
-                                output.push_str("</code></pre>\n");
-                            }
-                        }
-                    }
-                    None => {
-                        output.push_str("<pre><code>");
-                        output.push_str(&escape_html(&code_buffer));
-                        output.push_str("</code></pre>\n");
-                    }
-                }
-
-                code_lang = None;
-            }
-            Event::Start(Tag::Table(alignments)) => {
-                table_alignments = alignments;
-                table_column = 0;
-                output.push_str("<table>\n");
-            }
-            Event::Start(Tag::TableHead) => {
-                in_table_head = true;
-                table_column = 0;
-                output.push_str("<thead><tr>");
-            }
-            Event::Start(Tag::TableRow) => {
-                table_column = 0;
-                output.push_str("<tr>");
-            }
-            Event::Start(Tag::TableCell) => {
-                if in_table_head {
-                    let alignment = table_alignments.get(table_column);
-                    output.push_str(match alignment {
-                        Some(pulldown_cmark::Alignment::Left) => "<th align=\"left\">",
-                        Some(pulldown_cmark::Alignment::Center) => "<th align=\"center\">",
-                        Some(pulldown_cmark::Alignment::Right) => "<th align=\"right\">",
-                        Some(pulldown_cmark::Alignment::None) | None => "<th>",
-                    });
-                } else {
-                    output.push_str("<td>");
-                }
-                table_column += 1;
-            }
-            Event::End(TagEnd::TableCell) => {
-                output.push_str(if in_table_head { "</th>" } else { "</td>" });
-            }
-            Event::End(TagEnd::TableHead) => {
-                in_table_head = false;
-                output.push_str("</tr></thead><tbody>");
-            }
-            Event::End(TagEnd::TableRow) => {
-                output.push_str("</tr>\n");
-            }
-            Event::End(TagEnd::Table) => {
-                table_alignments.clear();
-                output.push_str("</tbody></table>\n");
-            }
-            Event::Start(Tag::Heading {
+    fn handle_start(&mut self, tag: Tag) {
+        match tag {
+            Tag::CodeBlock(kind) => self.start_code_block(kind),
+            Tag::Table(alignments) => self.start_table(alignments),
+            Tag::TableHead => self.start_table_head(),
+            Tag::TableRow => self.start_table_row(),
+            Tag::TableCell => self.start_table_cell(),
+            Tag::Heading {
                 level, id, classes, ..
-            }) => {
-                in_heading = true;
-                heading_level = level as u8;
-                heading_text.clear();
-                heading_classes = classes.iter().map(|c| c.to_string()).collect();
-                heading_explicit_id = id.map(|i| i.to_string());
-            }
-            Event::End(TagEnd::Heading(_)) => {
-                in_heading = false;
+            } => self.start_heading(
+                level as u8,
+                id.map(|i| i.to_string()),
+                classes.iter().map(|c| c.to_string()).collect(),
+            ),
+            Tag::List(start) => self.start_list(start),
+            other => write_start_tag(&mut self.output, &other),
+        }
+    }
 
-                // Resolve the id: explicit {#id} wins, else slugify text.
-                let base_id = heading_explicit_id
-                    .clone()
-                    .unwrap_or_else(|| slugify_segment(&heading_text));
-                let id = unique_id(&base_id, &mut id_counts);
-
-                // Open the tag with the id (and any explicit classes).
-                output.push_str(&format!("<h{heading_level} id=\"{id}\""));
-                if !heading_classes.is_empty() {
-                    output.push_str(&format!(" class=\"{}\"", heading_classes.join(" ")));
-                }
-                output.push('>');
-
-                if opts.insert_anchor_links {
-                    output.push_str(&format!(
-                        "<a class=\"anchor\" href=\"#{id}\" aria-hidden=\"true\">#</a>"
-                    ));
-                }
-
-                output.push_str(&escape_html(&heading_text));
-                output.push_str(&format!("</h{heading_level}>\n"));
-
-                // Record in the TOC.
-                let entry = TocEntry {
-                    level: heading_level,
-                    text: heading_text.clone(),
-                    id: id.clone(),
-                    children: Vec::new(),
-                };
-                insert_toc_entry(&mut toc, entry);
-
-                heading_explicit_id = None;
-                heading_classes.clear();
-            }
-            Event::Text(t) if in_code_block => code_buffer.push_str(&t),
-            Event::Text(t) if in_heading => heading_text.push_str(&t),
-            Event::Code(c) if in_heading => heading_text.push_str(&c),
-            Event::Start(Tag::List(None)) => {
-                task_list_started = false;
-                output.push_str("<ul>");
-            }
-            Event::Start(Tag::List(Some(start))) => {
-                task_list_started = false;
-                if start == 1 {
-                    output.push_str("<ol>");
-                } else {
-                    output.push_str(&format!("<ol start=\"{start}\">"));
-                }
-            }
+    fn handle_end(&mut self, tag: TagEnd) {
+        match tag {
+            TagEnd::CodeBlock => self.finish_code_block(),
+            TagEnd::Heading(_) => self.finish_heading(),
+            TagEnd::TableCell => self.end_table_cell(),
+            TagEnd::TableHead => self.end_table_head(),
+            TagEnd::TableRow => self.output.push_str("</tr>\n"),
+            TagEnd::Table => self.end_table(),
             // `TagEnd::List(is_ordered)` carries the list kind: close
             // with the tag that matches the opener. A blanket `</ul>`
             // here produced `<ol>…</ul>` — invalid HTML that browsers
             // recover from but breaks validation and nested lists.
-            Event::End(TagEnd::List(false)) => {
-                output.push_str("</ul>\n");
+            TagEnd::List(is_ordered) => {
+                self.output
+                    .push_str(if is_ordered { "</ol>\n" } else { "</ul>\n" });
             }
-            Event::End(TagEnd::List(true)) => {
-                output.push_str("</ol>\n");
-            }
-            Event::TaskListMarker(checked) => {
-                // Task lists arrive as List(None) + TaskListMarker events,
-                // so the list tag is already written as a plain <ul>.
-                // Retrofit the class on the first marker of the list —
-                // the marker itself proves the list is a task list.
-                if !task_list_started {
-                    task_list_started = true;
-                    if let Some(pos) = output.rfind("<ul>") {
-                        output.replace_range(pos..pos + 4, "<ul class=\"task-list\">");
-                    }
-                }
-                output.push_str(if checked {
-                    "<input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled checked=\"checked\"> "
-                } else {
-                    "<input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled> "
-                });
-            }
-            Event::SoftBreak if in_heading => heading_text.push(' '),
-            Event::SoftBreak => output.push('\n'),
-            Event::HardBreak if in_heading => heading_text.push(' '),
-            Event::HardBreak => {
-                output.push_str("<br />\n");
-            }
-            Event::Html(h) => output.push_str(&h),
-            Event::InlineHtml(h) if in_heading => heading_text.push_str(&h),
-            Event::InlineHtml(h) => output.push_str(&h),
-            // Escape raw text outside code blocks and headings.
-            Event::Text(t) => output.push_str(&escape_html(&t)),
-            // Code spans outside headings.
-            Event::Code(c) => {
-                output.push_str("<code>");
-                output.push_str(&escape_html(&c));
-                output.push_str("</code>");
-            }
-            // Everything else falls through to a default pass-through.
-            other => {
-                write_event(&mut output, other);
-            }
+            other => self.output.push_str(simple_end_tag(other)),
         }
     }
 
-    (output, toc)
+    fn start_code_block(&mut self, kind: CodeBlockKind) {
+        self.code_block.active = true;
+        self.code_block.buffer.clear();
+        self.code_block.lang = match kind {
+            CodeBlockKind::Fenced(lang) => {
+                let lang = lang.trim().to_string();
+                if lang.is_empty() { None } else { Some(lang) }
+            }
+            CodeBlockKind::Indented => None,
+        };
+    }
+
+    fn finish_code_block(&mut self) {
+        self.code_block.active = false;
+        let lang = self.code_block.lang.take();
+        emit_code_block(
+            &mut self.output,
+            &self.code_block.buffer,
+            lang.as_deref(),
+            self.highlighter.as_deref_mut(),
+        );
+    }
+
+    fn start_table(&mut self, alignments: Vec<pulldown_cmark::Alignment>) {
+        self.table.alignments = alignments;
+        self.table.column = 0;
+        self.output.push_str("<table>\n");
+    }
+
+    fn start_table_head(&mut self) {
+        self.table.in_head = true;
+        self.table.column = 0;
+        self.output.push_str("<thead><tr>");
+    }
+
+    fn start_table_row(&mut self) {
+        self.table.column = 0;
+        self.output.push_str("<tr>");
+    }
+
+    fn start_table_cell(&mut self) {
+        let tag = if self.table.in_head {
+            alignment_header_tag(self.table.alignments.get(self.table.column))
+        } else {
+            "<td>"
+        };
+        self.output.push_str(tag);
+        self.table.column += 1;
+    }
+
+    fn end_table_cell(&mut self) {
+        self.output
+            .push_str(if self.table.in_head { "</th>" } else { "</td>" });
+    }
+
+    fn end_table_head(&mut self) {
+        self.table.in_head = false;
+        self.output.push_str("</tr></thead><tbody>");
+    }
+
+    fn end_table(&mut self) {
+        self.table.alignments.clear();
+        self.output.push_str("</tbody></table>\n");
+    }
+
+    fn start_heading(&mut self, level: u8, explicit_id: Option<String>, classes: Vec<String>) {
+        self.heading.active = true;
+        self.heading.level = level;
+        self.heading.text.clear();
+        self.heading.classes = classes;
+        self.heading.explicit_id = explicit_id;
+    }
+
+    fn finish_heading(&mut self) {
+        self.heading.active = false;
+
+        // Resolve the id: explicit {#id} wins, else slugify text.
+        let base_id = self
+            .heading
+            .explicit_id
+            .take()
+            .unwrap_or_else(|| slugify_segment(&self.heading.text));
+        let id = unique_id(&base_id, &mut self.id_counts);
+        let level = self.heading.level;
+
+        // Open the tag with the id (and any explicit classes).
+        self.output.push_str(&format!("<h{level} id=\"{id}\""));
+        if !self.heading.classes.is_empty() {
+            self.output
+                .push_str(&format!(" class=\"{}\"", self.heading.classes.join(" ")));
+        }
+        self.output.push('>');
+
+        if self.opts.insert_anchor_links {
+            self.output.push_str(&format!(
+                "<a class=\"anchor\" href=\"#{id}\" aria-hidden=\"true\">#</a>"
+            ));
+        }
+
+        self.output.push_str(&escape_html(&self.heading.text));
+        self.output.push_str(&format!("</h{level}>\n"));
+
+        // Record in the TOC.
+        let entry = TocEntry {
+            level,
+            text: self.heading.text.clone(),
+            id,
+            children: Vec::new(),
+        };
+        insert_toc_entry(&mut self.toc, entry);
+        self.heading.classes.clear();
+    }
+
+    fn start_list(&mut self, start: Option<u64>) {
+        self.task_list_started = false;
+        match start {
+            None => self.output.push_str("<ul>"),
+            Some(1) => self.output.push_str("<ol>"),
+            Some(n) => self.output.push_str(&format!("<ol start=\"{n}\">")),
+        }
+    }
+
+    fn handle_task_list_marker(&mut self, checked: bool) {
+        // Task lists arrive as List(None) + TaskListMarker events,
+        // so the list tag is already written as a plain <ul>.
+        // Retrofit the class on the first marker of the list —
+        // the marker itself proves the list is a task list.
+        if !self.task_list_started {
+            self.task_list_started = true;
+            if let Some(pos) = self.output.rfind("<ul>") {
+                self.output
+                    .replace_range(pos..pos + 4, "<ul class=\"task-list\">");
+            }
+        }
+        self.output.push_str(if checked {
+            "<input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled checked=\"checked\"> "
+        } else {
+            "<input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled> "
+        });
+    }
+
+    fn handle_text(&mut self, text: &str) {
+        if self.code_block.active {
+            self.code_block.buffer.push_str(text);
+        } else if self.heading.active {
+            self.heading.text.push_str(text);
+        } else {
+            self.output.push_str(&escape_html(text));
+        }
+    }
+
+    fn handle_code(&mut self, code: &str) {
+        if self.heading.active {
+            self.heading.text.push_str(code);
+        } else {
+            self.output.push_str("<code>");
+            self.output.push_str(&escape_html(code));
+            self.output.push_str("</code>");
+        }
+    }
+
+    fn handle_break(&mut self, hard: bool) {
+        if self.heading.active {
+            self.heading.text.push(' ');
+        } else if hard {
+            self.output.push_str("<br />\n");
+        } else {
+            self.output.push('\n');
+        }
+    }
+
+    fn handle_inline_html(&mut self, html: &str) {
+        if self.heading.active {
+            self.heading.text.push_str(html);
+        } else {
+            self.output.push_str(html);
+        }
+    }
+}
+
+fn emit_code_block(
+    output: &mut String,
+    code: &str,
+    lang: Option<&str>,
+    highlighter: Option<&mut CodeHighlighter>,
+) {
+    let Some(lang) = lang else {
+        output.push_str("<pre><code>");
+        output.push_str(&escape_html(code));
+        output.push_str("</code></pre>\n");
+        return;
+    };
+
+    let result = match highlighter {
+        Some(hl) => hl.highlight(code, lang),
+        None => HighlightResult::Unsupported(escape_html(code)),
+    };
+    let (pre_open, body) = match result {
+        HighlightResult::Highlighted(html) => ("<pre class=\"highlight\">", html),
+        HighlightResult::Unsupported(escaped) => ("<pre>", escaped),
+    };
+    output.push_str(pre_open);
+    output.push_str(&format!("<code class=\"language-{lang}\">"));
+    output.push_str(&body);
+    output.push_str("</code></pre>\n");
+}
+
+fn alignment_header_tag(alignment: Option<&pulldown_cmark::Alignment>) -> &'static str {
+    match alignment {
+        Some(pulldown_cmark::Alignment::Left) => "<th align=\"left\">",
+        Some(pulldown_cmark::Alignment::Center) => "<th align=\"center\">",
+        Some(pulldown_cmark::Alignment::Right) => "<th align=\"right\">",
+        Some(pulldown_cmark::Alignment::None) | None => "<th>",
+    }
+}
+
+fn write_footnote_reference(output: &mut String, name: &str) {
+    let escaped = escape_html(name);
+    output.push_str(&format!(
+        "<sup class=\"footnote-reference\"><a href=\"#{escaped}\">{escaped}</a></sup>"
+    ));
 }
 
 /// Percent-encode a URL for an `href`/`src` attribute, matching
@@ -330,169 +433,95 @@ const HREF_SAFE: [u8; 128] = [
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,
 ];
 
-/// Append a default rendering for events without special handling.
-///
-/// Keeps the event loop exhaustive without hand-writing every tag.
-fn write_event(output: &mut String, event: Event) {
-    use pulldown_cmark::Event as E;
+/// Write a non-stateful opening tag to `output`.
+fn write_start_tag(output: &mut String, tag: &Tag) {
+    if let Some(static_tag) = simple_start_tag(tag) {
+        output.push_str(static_tag);
+        return;
+    }
 
-    match event {
-        E::Start(tag) => {
-            let s = tag_to_html(&tag);
-            output.push_str(&s);
-        }
-        E::End(tag) => {
-            output.push_str(&end_tag_to_html(tag));
-        }
-        // Text/Code/Html are handled in the main loop; reachable only
-        // through nested structures that bypass those arms.
-        E::Text(t) => output.push_str(&escape_html(&t)),
-        E::Code(c) => {
-            output.push_str("<code>");
-            output.push_str(&escape_html(&c));
-            output.push_str("</code>");
-        }
-        E::Html(h) | E::InlineHtml(h) => output.push_str(&h),
-        E::SoftBreak => output.push('\n'),
-        E::HardBreak => output.push_str("<br />\n"),
-        E::TaskListMarker(c) => {
-            output.push_str(if c { "[x] " } else { "[ ] " });
-        }
-        E::FootnoteReference(name) => {
+    match tag {
+        Tag::FootnoteDefinition(name) => {
             output.push_str(&format!(
-                "<sup class=\"footnote-reference\"><a href=\"#{}\">{}</a></sup>",
-                escape_html(&name),
-                escape_html(&name)
+                "<div class=\"footnote-definition\" id=\"{name}\"><sup class=\"footnote-definition-label\">{name}</sup>"
             ));
         }
-        other => {
-            // Remaining events (e.g. inside tables) render via Display.
-            let _ = other;
+        Tag::Link {
+            link_type,
+            dest_url,
+            title,
+            ..
+        } => {
+            output.push_str(&format_link_start(*link_type, dest_url, title));
         }
+        Tag::Image {
+            dest_url, title, ..
+        } => {
+            output.push_str(&format_image_start(dest_url, title));
+        }
+        _ => {}
     }
 }
 
-/// Convert a start tag to its HTML opening string.
-fn tag_to_html(tag: &Tag) -> String {
+fn simple_start_tag(tag: &Tag) -> Option<&'static str> {
     use pulldown_cmark::Tag as T;
-    match tag {
-        T::Paragraph => "<p>".to_string(),
-        T::Heading { .. } => String::new(), // handled in the main loop
-        T::BlockQuote(_) => "<blockquote>\n".to_string(),
-        T::CodeBlock(_) => String::new(), // handled in the main loop
-        T::List(None) => "<ul>\n".to_string(),
-        T::List(Some(start)) => {
-            if *start == 1 {
-                "<ol>\n".to_string()
-            } else {
-                format!("<ol start=\"{start}\">\n")
-            }
-        }
-        T::Item => "<li>".to_string(),
-        T::FootnoteDefinition(name) => {
-            format!(
-                "<div class=\"footnote-definition\" id=\"{name}\"><sup class=\"footnote-definition-label\">{name}</sup>"
-            )
-        }
-        T::DefinitionList => "<dl>\n".to_string(),
-        T::DefinitionListTitle => "<dt>".to_string(),
-        T::DefinitionListDefinition => "<dd>".to_string(),
-        T::Table(aligns) => {
-            let mut s = String::from("<table>\n<thead><tr>");
-            for a in aligns {
-                s.push_str(match a {
-                    pulldown_cmark::Alignment::None => "<th>",
-                    pulldown_cmark::Alignment::Left => "<th align=\"left\">",
-                    pulldown_cmark::Alignment::Center => "<th align=\"center\">",
-                    pulldown_cmark::Alignment::Right => "<th align=\"right\">",
-                });
-            }
-            s
-        }
-        T::TableHead => "</tr></thead><tbody>".to_string(),
-        T::TableRow => "<tr>".to_string(),
-        T::TableCell => "<td>".to_string(),
-        T::Emphasis => "<em>".to_string(),
-        T::Strong => "<strong>".to_string(),
-        T::Strikethrough => "<del>".to_string(),
-        T::Superscript => "<sup>".to_string(),
-        T::Subscript => "<sub>".to_string(),
-        T::Link {
-            link_type,
-            dest_url,
-            title,
-            id,
-        } => {
-            let title_attr = if title.is_empty() {
-                String::new()
-            } else {
-                format!(" title=\"{}\"", escape_html(title))
-            };
-            match link_type {
-                pulldown_cmark::LinkType::Email => {
-                    format!("<a href=\"mailto:{dest_url}\"{title_attr}>")
-                }
-                pulldown_cmark::LinkType::Autolink => {
-                    format!("<a href=\"{}\"{title_attr}>", encode_href(dest_url))
-                }
-                pulldown_cmark::LinkType::Reference | pulldown_cmark::LinkType::Shortcut => {
-                    let _ = id;
-                    format!("<a href=\"{}\"{}>", encode_href(dest_url), title_attr)
-                }
-                _ => format!("<a href=\"{}\"{}>", encode_href(dest_url), title_attr),
-            }
-        }
-        T::Image {
-            link_type,
-            dest_url,
-            title,
-            id,
-        } => {
-            let _ = (link_type, id);
-            let title_attr = if title.is_empty() {
-                String::new()
-            } else {
-                format!(" title=\"{}\"", escape_html(title))
-            };
-            format!("<img src=\"{}\"{title_attr} alt=\"", encode_href(dest_url))
-        }
-        T::HtmlBlock => String::new(),
-        T::MetadataBlock(_) => String::new(),
+    Some(match tag {
+        T::Paragraph => "<p>",
+        T::BlockQuote(_) => "<blockquote>\n",
+        T::Item => "<li>",
+        T::DefinitionList => "<dl>\n",
+        T::DefinitionListTitle => "<dt>",
+        T::DefinitionListDefinition => "<dd>",
+        T::Emphasis => "<em>",
+        T::Strong => "<strong>",
+        T::Strikethrough => "<del>",
+        T::Superscript => "<sup>",
+        T::Subscript => "<sub>",
+        T::HtmlBlock | T::MetadataBlock(_) => "",
+        _ => return None,
+    })
+}
+
+fn format_title_attr(title: &str) -> String {
+    if title.is_empty() {
+        String::new()
+    } else {
+        format!(" title=\"{}\"", escape_html(title))
     }
 }
 
-/// Convert an end tag to its HTML closing string.
-fn end_tag_to_html(tag: TagEnd) -> String {
+fn format_link_start(link_type: pulldown_cmark::LinkType, dest_url: &str, title: &str) -> String {
+    let title_attr = format_title_attr(title);
+    if matches!(link_type, pulldown_cmark::LinkType::Email) {
+        format!("<a href=\"mailto:{dest_url}\"{title_attr}>")
+    } else {
+        format!("<a href=\"{}\"{title_attr}>", encode_href(dest_url))
+    }
+}
+
+fn format_image_start(dest_url: &str, title: &str) -> String {
+    let title_attr = format_title_attr(title);
+    format!("<img src=\"{}\"{title_attr} alt=\"", encode_href(dest_url))
+}
+
+/// Convert a non-stateful end tag to its HTML closing string.
+fn simple_end_tag(tag: TagEnd) -> &'static str {
     match tag {
-        TagEnd::Paragraph => "</p>\n".to_string(),
-        TagEnd::Heading(level) => format!("</h{}>\n", level as u8),
-        TagEnd::BlockQuote(_) => "</blockquote>\n".to_string(),
-        TagEnd::CodeBlock => String::new(),
-        TagEnd::List(is_ordered) => {
-            if is_ordered {
-                "</ol>\n".to_string()
-            } else {
-                "</ul>\n".to_string()
-            }
-        }
-        TagEnd::Item => "</li>\n".to_string(),
-        TagEnd::FootnoteDefinition => "</div>\n".to_string(),
-        TagEnd::DefinitionList => "</dl>\n".to_string(),
-        TagEnd::DefinitionListTitle => "</dt>".to_string(),
-        TagEnd::DefinitionListDefinition => "</dd>\n".to_string(),
-        TagEnd::Table => "</tbody></table>\n".to_string(),
-        TagEnd::TableHead => String::new(),
-        TagEnd::TableRow => "</tr>\n".to_string(),
-        TagEnd::TableCell => "</td>".to_string(),
-        TagEnd::Emphasis => "</em>".to_string(),
-        TagEnd::Strong => "</strong>".to_string(),
-        TagEnd::Strikethrough => "</del>".to_string(),
-        TagEnd::Superscript => "</sup>".to_string(),
-        TagEnd::Subscript => "</sub>".to_string(),
-        TagEnd::Link => "</a>".to_string(),
-        TagEnd::Image => "\">".to_string(),
-        TagEnd::HtmlBlock => String::new(),
-        TagEnd::MetadataBlock(_) => String::new(),
+        TagEnd::Paragraph => "</p>\n",
+        TagEnd::BlockQuote(_) => "</blockquote>\n",
+        TagEnd::Item => "</li>\n",
+        TagEnd::FootnoteDefinition => "</div>\n",
+        TagEnd::DefinitionList => "</dl>\n",
+        TagEnd::DefinitionListTitle => "</dt>",
+        TagEnd::DefinitionListDefinition => "</dd>\n",
+        TagEnd::Emphasis => "</em>",
+        TagEnd::Strong => "</strong>",
+        TagEnd::Strikethrough => "</del>",
+        TagEnd::Superscript => "</sup>",
+        TagEnd::Subscript => "</sub>",
+        TagEnd::Link => "</a>",
+        TagEnd::Image => "\">",
+        _ => "",
     }
 }
 
