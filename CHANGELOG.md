@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **security**: update `url` to 2.5.9 (`RUSTSEC-2026-0592`)
+
 ## [2.0.1] - 2026-11-19
 
 ### Fixed
