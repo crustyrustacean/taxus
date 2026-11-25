@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **security**: update `url` to 2.5.9 (`RUSTSEC-2026-0592`)
+- **serve**: canonicalize the temporary root in `typescript_source_and_config_are_in_watch_scope` so watcher path assertions match on Windows (#145)
 
 ## [2.0.1] - 2026-11-19
 
