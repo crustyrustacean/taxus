@@ -285,7 +285,10 @@ impl FileWatcher {
     /// prefix from the ABSOLUTE paths notify reports. With a relative
     /// `site_dir` — the CLI default is `.` — that strip silently
     /// failed, every event classified `Unknown`, and hot reload did
-    /// nothing. Canonicalizing once fixes both callers.
+    /// nothing. Canonicalizing once fixes both callers. Callers
+    /// comparing [`FileWatcher::watch_dirs`] or
+    /// [`FileWatcher::config_paths`] against local roots must
+    /// canonicalize their root first (Windows adds a `\\?\` prefix).
     pub fn new(site_dir: PathBuf) -> Result<Self, ServeError> {
         let source_dirs = [
             (site_dir.join("content"), ChangeType::Content),
@@ -561,15 +564,12 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         std::fs::create_dir(dir.path().join("scripts")).unwrap();
         std::fs::write(dir.path().join("tsconfig.json"), "{}").unwrap();
+        let root = dir.path().canonicalize().unwrap();
         let watcher = FileWatcher::new(dir.path().to_path_buf()).unwrap();
 
-        assert!(watcher.watch_dirs().contains(&dir.path().join("scripts")));
-        assert!(
-            watcher
-                .config_paths()
-                .contains(&dir.path().join("tsconfig.json"))
-        );
-        assert!(!watcher.watch_dirs().contains(&dir.path().to_path_buf()));
+        assert!(watcher.watch_dirs().contains(&root.join("scripts")));
+        assert!(watcher.config_paths().contains(&root.join("tsconfig.json")));
+        assert!(!watcher.watch_dirs().contains(&root));
     }
 
     #[test]
